@@ -17,27 +17,27 @@ class RawSpectrum(object):
     Then the data are in
         spec.data [counts]
         spec.channels
-
     """
 
     def __init__(self, data):
         """Initialize the spectrum."""
         self.data = np.array(data, dtype=float)
 
-        # TODO should channels be integers? 
-        # TODO what convention is used for channels? bin centers, lower edge etc...?
+        # TODO should channels be integers?
+        # TODO what convention is used for channels?
+        # bin centers, lower edge etc...?
         self.channels = np.arange(len(self.data), dtype=float)
         self.infilename = None
         self.infileobject = None
 
     @classmethod
     def from_file(cls, infilename):
-        # Read 
+        # Read
         spect_file_obj = _get_file_object(infilename)
 
         spect_obj = cls.__init__(spect_file_obj.data)
         spect_obj.infileobject = spect_file_obj
-        spect_obj.channels = self.infileobject.channels
+        spect_obj.channels = spect_obj.infileobject.channels
         return spect_obj
 
     # def __str__(self):
@@ -47,7 +47,6 @@ class RawSpectrum(object):
     #     s += 'Spectrum ID:           {:s}\n'.format(self.spectrum_id)
 
     #     return s
-
 
 
 class CalSpectrum(RawSpectrum):
@@ -67,10 +66,11 @@ class CalSpectrum(RawSpectrum):
 
     def __init__(self, data, bin_energies):
         """Initialize the spectrum."""
-        assert(len(bin_energies) == len(data)+1) 
+        assert(len(bin_energies) == len(data)+1)
         self.data = np.array(data, dtype=float)
-        # TODO should channels be integers? 
-        # TODO what convention is used for channels? bin centers, lower edge etc...?
+        # TODO should channels be integers?
+        # TODO what convention is used for channels?
+        # bin centers, lower edge etc...?
         self.channels = np.arange(len(self.data), dtype=float)
         self.bin_energies = np.array(bin_energies, dtype=float)
 
@@ -83,8 +83,8 @@ class CalSpectrum(RawSpectrum):
 
         spect_obj = cls.__init__(spect_file_obj.data, spect_file_obj.energies)
         spect_obj.infileobject = spect_file_obj
-        spect_obj.channels = self.infileobject.channels
-        
+        spect_obj.channels = spect_obj.infileobject.channels
+
         # TODO Get more attributes from self.infileobj
 
         return spect_obj
@@ -113,5 +113,6 @@ def _get_file_object(infilename):
     elif extension is 'cnf':
         spect_file_obj = parsers.cnf_file(infilename)
     else:
-        raise NotImplementedError('File type {} can not be read'.format(extensions))
+        raise NotImplementedError(
+            'File type {} can not be read'.format(extension))
     return spect_file_obj
