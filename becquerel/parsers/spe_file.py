@@ -194,7 +194,8 @@ if __name__ == '__main__':
         print(spec)
         fname, ext = os.path.splitext(data_file)
         path, fname = os.path.split(fname)
-        spec.write(os.path.join(path, '..', fname + '_copy' + ext))
+        writename = os.path.join(path, '..', fname + '_copy' + ext)
+        spec.write(writename)
         plt.semilogy(
             spec.energies,
             spec.data / spec.energy_bin_widths / spec.livetime,
@@ -202,5 +203,7 @@ if __name__ == '__main__':
         plt.xlabel('Energy (keV)')
         plt.ylabel('Counts/keV/sec')
         plt.xlim(0, 2800)
+        # remove test write file
+        os.remove(writename)
     plt.legend(prop={'size': 8})
     plt.show()
