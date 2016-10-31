@@ -47,6 +47,9 @@ class SpectrumFile(object):
 
     def __str__(self):
         """String form of the spectrum."""
+
+        print_channels = False
+
         s = ''
         s += 'Filename:              {:s}\n'.format(self.filename)
         s += 'Spectrum ID:           {:s}\n'.format(self.spectrum_id)
@@ -72,8 +75,11 @@ class SpectrumFile(object):
             s += ' '.join(['{:E}'.format(x) for x in self.cal_coeff])
             s += '\n'
         s += 'Data:                  \n'
-        for ch, dt in zip(self.channels, self.data):
-            s += '    {:5.0f}    {:5.0f}\n'.format(ch, dt)
+        if print_channels:
+            for ch, dt in zip(self.channels, self.data):
+                s += '    {:5.0f}    {:5.0f}\n'.format(ch, dt)
+        else:
+            s += '    [length {}]\n'.format(len(self.data))
         return s
 
     def read(self, verbose=False):
