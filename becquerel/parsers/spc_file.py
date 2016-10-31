@@ -197,8 +197,8 @@ class SpcFile(SpectrumFile):
             # read record data
             i_rec = 0
             for record_format in self.SPC_FORMAT_BEGINNING:
-                if not (len(data_records) == 279 and \
-                    record_format[0][0] == 'Location Description Record 2'):
+                if not (len(data_records) == 279 and
+                        record_format[0][0] == 'Location Description Record 2'):
                     binary_data = data_records[i_rec]
                     i_rec += 1
                     fmt = '<'
