@@ -253,27 +253,3 @@ class CnfFile(SpectrumFile):
         # finished
         assert self.realtime > 0.0
         assert self.livetime > 0.0
-
-
-if __name__ == '__main__':
-    import glob
-    import matplotlib.pyplot as plt
-
-    data_files = glob.glob('samples/*.[Cc][Nn][Ff]')
-    plt.figure()
-    for data_file in data_files:
-        print('')
-        print(data_file)
-        spec = CnfFile(data_file)
-        spec.read()
-        spec.apply_calibration()
-        print(spec)
-        plt.semilogy(
-            spec.energies,
-            spec.data / spec.energy_bin_widths / spec.livetime,
-            label=data_file.split('/')[-1])
-        plt.xlabel('Energy (keV)')
-        plt.ylabel('Counts/keV/sec')
-        plt.xlim(0, 2800)
-    plt.legend(prop={'size': 8})
-    plt.show()
