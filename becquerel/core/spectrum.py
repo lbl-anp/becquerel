@@ -37,7 +37,7 @@ class RawSpectrum(object):
         # Read
         spect_file_obj = _get_file_object(infilename)
 
-        spect_obj = cls.__init__(spect_file_obj.data)
+        spect_obj = cls(spect_file_obj.data)
         spect_obj.infileobject = spect_file_obj
         spect_obj.channels = spect_obj.infileobject.channels
         return spect_obj
@@ -68,7 +68,7 @@ class CalSpectrum(RawSpectrum):
 
     def __init__(self, data, bin_energies):
         """Initialize the spectrum."""
-        assert(len(bin_energies) == len(data)+1)
+        assert(len(bin_energies) == len(data))
         self.data = np.array(data, dtype=float)
         # TODO should channels be integers?
         # TODO what convention is used for channels?
@@ -83,7 +83,7 @@ class CalSpectrum(RawSpectrum):
     def from_file(cls, infilename):
         spect_file_obj = _get_file_object(infilename)
 
-        spect_obj = cls.__init__(spect_file_obj.data, spect_file_obj.energies)
+        spect_obj = cls(spect_file_obj.data, spect_file_obj.energies)
         spect_obj.infileobject = spect_file_obj
         spect_obj.channels = spect_obj.infileobject.channels
 
@@ -117,4 +117,5 @@ def _get_file_object(infilename):
     else:
         raise NotImplementedError(
             'File type {} can not be read'.format(extension))
+    assert False, 'data: {}'.format(len(spect_file_obj.data))
     return spect_file_obj
