@@ -5,7 +5,13 @@ import os
 import struct
 import dateutil.parser
 import numpy as np
-from .spectrum_file import SpectrumFile
+from .spectrum_file import SpectrumFile, SpectrumFileParsingError
+
+
+class SpcFileParsingError(SpectrumFileParsingError):
+    """Failed while parsing an SPC file."""
+
+    pass
 
 
 class SpcFile(SpectrumFile):
@@ -164,7 +170,9 @@ class SpcFile(SpectrumFile):
     def __init__(self, filename):
         """Initialize the SPC file."""
         super(SpcFile, self).__init__(filename)
-        assert os.path.splitext(self.filename)[1].lower() == '.spc'
+        _, ext = os.path.splitext(self.filename)
+        if ext.lower() != '.spc':
+            raise SpcFileParsingError('File extension is incorrect: ' + ext)
         self.metadata = {}
         # read in the data
         self.read()
@@ -188,13 +196,17 @@ class SpcFile(SpectrumFile):
                 try:
                     binary_data = f.read(128)
                 except IOError:
-                    raise Exception('Unable to read 128 bytes from file')
+                    raise SpcFileParsingError(
+                        'Unable to read 128 bytes from file')
                 if len(binary_data) < 128:
                     break
             print(
                 'Done reading in SPC file.  Number of records: ',
                 len(data_records))
-            assert len(data_records) == 279 or len(data_records) == 280
+            if len(data_records) not in (279, 280):
+                raise SpcFileParsingError(
+                    'Number of data records incorrect: {}'.format(
+                        len(data_records)))
             # read record data
             i_rec = 0
             for record_format in self.SPC_FORMAT_BEGINNING:
@@ -313,8 +325,16 @@ class SpcFile(SpectrumFile):
                 '\x00\x00\x00')[0].replace('\x00', '\n')
         self.livetime = float(self.metadata['Live Time'])
         self.realtime = float(self.metadata['Real Time'])
-        assert self.realtime > 0.0
-        assert self.livetime > 0.0
+        if self.realtime <= 0.0:
+            raise SpcFileParsingError(
+                'Realtime not parsed correctly: {}'.format(self.realtime))
+        if self.livetime <= 0.0:
+            raise SpcFileParsingError(
+                'Livetime not parsed correctly: {}'.format(self.livetime))
+        if self.livetime > self.realtime:
+            raise SpcFileParsingError(
+                'Livetime > realtime: {} > {}'.format(
+                    self.livetime, self.realtime))
         self.num_channels = len(self.channels)
         try:
             self.cal_coeff = [
@@ -323,4 +343,4 @@ class SpcFile(SpectrumFile):
                 float(self.metadata['Calibration parameter 2']),
             ]
         except KeyError:
-            print('Error - calibration parameters not found')
+            raise SpcFileParsingError('Calibration parameters not found')

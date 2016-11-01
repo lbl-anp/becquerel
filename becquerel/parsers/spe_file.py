@@ -5,7 +5,19 @@ import datetime
 import os
 import dateutil.parser
 import numpy as np
-from .spectrum_file import SpectrumFile
+from .spectrum_file import SpectrumFile, SpectrumFileParsingError
+
+
+class SpeFileParsingError(SpectrumFileParsingError):
+    """Failed while parsing an SPE file."""
+
+    pass
+
+
+class SpeFileWritingError(SpectrumFileParsingError):
+    """Failed while writing an SPE file."""
+
+    pass
 
 
 class SpeFile(SpectrumFile):
@@ -28,7 +40,9 @@ class SpeFile(SpectrumFile):
     def __init__(self, filename):
         """Initialize the SPE file."""
         super(SpeFile, self).__init__(filename)
-        assert os.path.splitext(self.filename)[1].lower() == '.spe'
+        _, ext = os.path.splitext(self.filename)
+        if ext.lower() != '.spe':
+            raise SpeFileParsingError('File extension is incorrect: ' + ext)
         # SPE-specific members
         self.first_channel = 0
         self.ROIs = []
@@ -84,7 +98,10 @@ class SpeFile(SpectrumFile):
                     i += 1
                     self.first_channel = int(lines[i].split(' ')[0])
                     # I don't know why it would be nonzero
-                    assert self.first_channel == 0
+                    if self.first_channel != 0:
+                        raise SpeFileParsingError(
+                            'First channel is not 0: {}'.format(
+                                self.first_channel))
                     self.num_channels = int(lines[i].split(' ')[1])
                     if verbose:
                         print(self.first_channel, self.num_channels)
@@ -128,8 +145,16 @@ class SpeFile(SpectrumFile):
                 else:
                     print('Unknown line: ', lines[i])
                 i += 1
-        assert self.realtime > 0.0
-        assert self.livetime > 0.0
+        if self.realtime <= 0.0:
+            raise SpeFileParsingError(
+                'Realtime not parsed correctly: {}'.format(self.realtime))
+        if self.livetime <= 0.0:
+            raise SpeFileParsingError(
+                'Livetime not parsed correctly: {}'.format(self.livetime))
+        if self.livetime > self.realtime:
+            raise SpeFileParsingError(
+                'Livetime > realtime: {} > {}'.format(
+                    self.livetime, self.realtime))
         self.collection_stop = self.collection_start + \
             datetime.timedelta(seconds=self.realtime)
 
@@ -175,6 +200,8 @@ class SpeFile(SpectrumFile):
 
     def write(self, filename):
         """Write back to a file."""
-        assert os.path.splitext(filename)[1].lower() == '.spe'
+        _, ext = os.path.splitext(filename)
+        if ext.lower() != '.spe':
+            raise SpeFileWritingError('File extension is incorrect: ' + ext)
         with open(filename, 'w') as outfile:
             print(self._spe_format(), file=outfile)

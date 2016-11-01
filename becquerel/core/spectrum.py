@@ -7,6 +7,12 @@ import becquerel.parsers as parsers
 # from ..parsers import SpeFile, SpcFile, CnfFile
 
 
+class RawSpectrumError(Exception):
+    """Exception raised by RawSpectrum."""
+
+    pass
+
+
 class RawSpectrum(object):
     """Raw spectrum class.
 
@@ -49,6 +55,12 @@ class RawSpectrum(object):
     #     s += 'Spectrum ID:           {:s}\n'.format(self.spectrum_id)
 
     #     return s
+
+
+class CalSpectrumError(RawSpectrumError):
+    """Exception raised by CalSpectrum."""
+
+    pass
 
 
 class CalSpectrum(RawSpectrum):

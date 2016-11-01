@@ -6,6 +6,12 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
+class SpectrumFileParsingError(Exception):
+    """Failed while parsing a spectrum file."""
+
+    pass
+
+
 class SpectrumFile(object):
     """Spectrum file parser base class.
 

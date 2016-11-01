@@ -15,7 +15,13 @@ import datetime
 import os
 import struct
 import numpy as np
-from .spectrum_file import SpectrumFile
+from .spectrum_file import SpectrumFile, SpectrumFileParsingError
+
+
+class CnfFileParsingError(SpectrumFileParsingError):
+    """Failed while parsing a CNF file."""
+
+    pass
 
 
 def _from_little_endian(data, index, n_bytes):
@@ -34,7 +40,7 @@ def _convert_date(data, index):
     try:
         return datetime.datetime.utcfromtimestamp(t)
     except:
-        raise Exception('Reading date failed')
+        raise CnfFileParsingError('Date conversion failed')
 
 
 def _convert_time(data, index):
@@ -94,7 +100,9 @@ class CnfFile(SpectrumFile):
     def __init__(self, filename):
         """Initialize the CNF file."""
         super(CnfFile, self).__init__(filename)
-        assert os.path.splitext(self.filename)[1].lower() == '.cnf'
+        _, ext = os.path.splitext(self.filename)
+        if ext.lower() != '.cnf':
+            raise CnfFileParsingError('File extension is incorrect: ' + ext)
         # read in the data
         self.read()
         self.apply_calibration()
@@ -154,7 +162,7 @@ class CnfFile(SpectrumFile):
                 or data[offset_sam + 1] != 0x20:
             print(offset_sam + 48 + 80, len(data))
             print(data[offset_sam], data[offset_sam + 1])
-            raise Exception('Sample information not found')
+            raise CnfFileParsingError('Sample information not found')
         else:
             sample_name = ''
             for j in range(offset_sam + 48, offset_sam + 48 + 64):
@@ -191,7 +199,7 @@ class CnfFile(SpectrumFile):
                 or data[offset_acq + 1] != 0x20:
             print(offset_acq + 48 + 128 + 10 + 4, len(data))
             print(data[offset_acq], data[offset_acq + 1])
-            raise Exception('Acquisition information not found')
+            raise CnfFileParsingError('Acquisition information not found')
         else:
             offset1 = _from_little_endian(data, offset_acq + 34, 2)
             offset2 = _from_little_endian(data, offset_acq + 36, 2)
@@ -199,23 +207,23 @@ class CnfFile(SpectrumFile):
             if chr(data[offset_pha + 0]) != 'P' \
                     and chr(data[offset_pha + 1]) != 'H' \
                     and chr(data[offset_pha + 2]) != 'A':
-                raise Exception('PHA keyword not found')
+                raise CnfFileParsingError('PHA keyword not found')
             self.num_channels = 256 * \
                 _from_little_endian(data, offset_pha + 10, 2)
             if self.num_channels < 256 or self.num_channels > 16384:
-                raise Exception(
+                raise CnfFileParsingError(
                     'Unexpected number of channels: ', self.num_channels)
             print('Number of channels: ', self.num_channels)
 
         # extract date and time information
         offset_date = offset_acq + 48 + offset2 + 1
-        assert offset_date + 24 < len(data)
+        if offset_date + 24 >= len(data):
+            raise CnfFileParsingError('Problem with date offset')
         self.collection_start = _convert_date(data, offset_date)
         self.realtime = _convert_time(data, offset_date + 8)
         print('realtime: ', self.realtime)
         self.livetime = _convert_time(data, offset_date + 16)
         print('livetime: ', self.livetime)
-        assert self.livetime < self.realtime
         print('{:%Y-%m-%d %H:%M:%S}'.format(self.collection_start))
         self.collection_stop = self.collection_start \
             + datetime.timedelta(seconds=self.realtime)
@@ -223,7 +231,8 @@ class CnfFile(SpectrumFile):
 
         # extract energy calibration information
         offset_cal = offset_enc + 48 + 32 + offset1
-        assert offset_enc + 48 + 32 + offset1 < len(data)
+        if offset_enc + 48 + 32 + offset1 >= len(data):
+            raise CnfFileParsingError('Problem with energy calibration offset')
         coeff = _read_energy_calibration(data, offset_enc + 48 + 32 + offset1)
         print(coeff)
         if coeff is None:
@@ -231,13 +240,13 @@ class CnfFile(SpectrumFile):
             coeff = _read_energy_calibration(data, offset_enc + 48 + 32)
             print(coeff)
         if coeff is None:
-            raise Exception('Energy calibration not found')
+            raise CnfFileParsingError('Energy calibration not found')
         self.cal_coeff = coeff
 
         # extract channel data
         if offset_chan + 512 + 4 * self.num_channels > len(data) \
                 or data[offset_chan] != 5 or data[offset_chan + 1] != 0x20:
-            raise Exception('Channel data not found')
+            raise CnfFileParsingError('Channel data not found')
         self.channels = np.array([], dtype=float)
         self.data = np.array([], dtype=float)
         for i in range(0, 2):
@@ -252,5 +261,13 @@ class CnfFile(SpectrumFile):
             self.channels = np.append(self.channels, i)
 
         # finished
-        assert self.realtime > 0.0
-        assert self.livetime > 0.0
+        if self.realtime <= 0.0:
+            raise CnfFileParsingError(
+                'Realtime not parsed correctly: {}'.format(self.realtime))
+        if self.livetime <= 0.0:
+            raise CnfFileParsingError(
+                'Livetime not parsed correctly: {}'.format(self.livetime))
+        if self.livetime > self.realtime:
+            raise CnfFileParsingError(
+                'Livetime > realtime: {} > {}'.format(
+                    self.livetime, self.realtime))
