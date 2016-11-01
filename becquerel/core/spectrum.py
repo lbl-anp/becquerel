@@ -107,13 +107,13 @@ def _get_file_object(infilename):
     Output:
         SpectrumFile
     '''
-    extension = self.infilename.split('.')[-1]
-    if extension is 'spe':
-        spect_file_obj = parsers.spe_file(infilename)
-    elif extension is 'spc':
-        spect_file_obj = parsers.spc_file(infilename)
-    elif extension is 'cnf':
-        spect_file_obj = parsers.cnf_file(infilename)
+    _, extension = os.path.splitext(infilename)
+    if extension.lower() == '.spe':
+        spect_file_obj = parsers.SpeFile(infilename)
+    elif extension.lower() == '.spc':
+        spect_file_obj = parsers.SpcFile(infilename)
+    elif extension.lower() == '.cnf':
+        spect_file_obj = parsers.CnfFile(infilename)
     else:
         raise NotImplementedError(
             'File type {} can not be read'.format(extension))
