@@ -15,7 +15,7 @@ import datetime
 import os
 import struct
 import numpy as np
-from spectrum_file import SpectrumFile
+from .spectrum_file import SpectrumFile
 
 
 def _from_little_endian(data, index, n_bytes):

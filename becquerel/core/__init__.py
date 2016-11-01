@@ -1,1 +1,2 @@
-import ..parsers as parsers
+
+from .spectrum import RawSpectrum, CalSpectrum

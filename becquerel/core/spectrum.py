@@ -3,6 +3,8 @@
 from __future__ import print_function
 import os
 import numpy as np
+import becquerel.parsers as parsers
+# from ..parsers import SpeFile, SpcFile, CnfFile
 
 
 class RawSpectrum(object):

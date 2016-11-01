@@ -5,7 +5,7 @@ import os
 import struct
 import dateutil.parser
 import numpy as np
-from spectrum_file import SpectrumFile
+from .spectrum_file import SpectrumFile
 
 
 class SpcFile(SpectrumFile):
