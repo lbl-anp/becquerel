@@ -80,10 +80,8 @@ def _read_energy_calibration(data, index):
 class CnfFile(SpectrumFile):
     """CNF binary file parser.
 
-    Basic operation is:
+    Just instantiate a class with a filename:
         spec = CnfFile(filename)
-        spec.read()
-        spec.apply_calibration()
 
     Then the data are in
         spec.data [counts]
@@ -97,6 +95,9 @@ class CnfFile(SpectrumFile):
         """Initialize the CNF file."""
         super(CnfFile, self).__init__(filename)
         assert os.path.splitext(self.filename)[1].lower() == '.cnf'
+        # read in the data
+        self.read()
+        self.apply_calibration()
 
     def read(self, verbose=False):
         """Read in the file."""

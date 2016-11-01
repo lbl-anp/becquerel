@@ -11,10 +11,8 @@ from .spectrum_file import SpectrumFile
 class SpeFile(SpectrumFile):
     """SPE ASCII file parser.
 
-    Basic operation is:
+    Just instantiate a class with a filename:
         spec = SpeFile(filename)
-        spec.read()
-        spec.apply_calibration()
 
     Then the data are in
         spec.data [counts]
@@ -36,6 +34,9 @@ class SpeFile(SpectrumFile):
         self.ROIs = []
         self.energy_cal = []
         self.shape_cal = []
+        # read in the data
+        self.read()
+        self.apply_calibration()
 
     def read(self, verbose=False):
         """Read in the file."""

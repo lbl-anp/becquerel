@@ -11,10 +11,8 @@ from .spectrum_file import SpectrumFile
 class SpcFile(SpectrumFile):
     """SPC binary file parser.
 
-    Basic operation is:
+    Just instantiate a class with a filename:
         spec = SpcFile(filename)
-        spec.read()
-        spec.apply_calibration()
 
     Then the data are in
         spec.data [counts]
@@ -168,6 +166,9 @@ class SpcFile(SpectrumFile):
         super(SpcFile, self).__init__(filename)
         assert os.path.splitext(self.filename)[1].lower() == '.spc'
         self.metadata = {}
+        # read in the data
+        self.read()
+        self.apply_calibration()
 
     def read(self, verbose=False):
         """Read in the file."""

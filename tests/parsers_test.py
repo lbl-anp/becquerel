@@ -36,8 +36,6 @@ class SpectrumFileTests(unittest.TestCase):
             print('')
             print(filename)
             spec = cls(filename)
-            spec.read()
-            spec.apply_calibration()
             print(spec)
             plt.semilogy(
                 spec.energies,

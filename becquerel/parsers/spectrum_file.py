@@ -9,10 +9,8 @@ from scipy.interpolate import interp1d
 class SpectrumFile(object):
     """Spectrum file parser base class.
 
-    Basic operation is:
+    Just instantiate a class with a filename:
         spec = SpectrumFile(filename)
-        spec.read()
-        spec.apply_calibration()
 
     Then the data are in
         spec.data [counts]

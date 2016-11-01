@@ -14,7 +14,6 @@ class RawSpectrum(object):
         spec = RawSpectrum(list or array)
         or
         spec = RawSpectrum.from_file("filename.extension")
-        spec.apply_calibration()
 
     Then the data are in
         spec.data [counts]
@@ -24,6 +23,7 @@ class RawSpectrum(object):
     def __init__(self, data):
         """Initialize the spectrum."""
         self.data = np.array(data, dtype=float)
+        assert len(data) > 0
 
         # TODO should channels be integers?
         # TODO what convention is used for channels?
@@ -69,6 +69,7 @@ class CalSpectrum(RawSpectrum):
     def __init__(self, data, bin_energies):
         """Initialize the spectrum."""
         assert(len(bin_energies) == len(data))
+        assert len(data) > 0
         self.data = np.array(data, dtype=float)
         # TODO should channels be integers?
         # TODO what convention is used for channels?
@@ -117,5 +118,4 @@ def _get_file_object(infilename):
     else:
         raise NotImplementedError(
             'File type {} can not be read'.format(extension))
-    assert False, 'data: {}'.format(len(spect_file_obj.data))
     return spect_file_obj
