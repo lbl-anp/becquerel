@@ -10,27 +10,34 @@ import becquerel as bq
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'samples')
 
+SAMPLES = {}
+for extension in ['.spe', '.spc', '.cnf']:
+    filenames = glob.glob(os.path.join(SAMPLES_PATH, '*.*'))
+    filenames_filtered = []
+    for filename in filenames:
+        fname, ext = os.path.splitext(filename)
+        if ext.lower() == extension:
+            filenames_filtered.append(filename)
+    SAMPLES[extension] = filenames_filtered
+
 
 class SpectrumFileTests(unittest.TestCase):
     """Test spectrum file parsers."""
 
     def run_parser(self, cls, extension, write=False):
         """Run the test for the given class and file extension."""
-        at_least_one_read = False
         plt.figure()
         plt.title('Testing ' + cls.__name__)
-        filenames = glob.glob(os.path.join(SAMPLES_PATH, '*.*'))
+        filenames = SAMPLES.get(extension, [])
+        self.assertTrue(len(filenames) >= 1)
         for filename in filenames:
             fname, ext = os.path.splitext(filename)
             path, fname = os.path.split(fname)
-            if ext.lower() != extension.lower():
-                continue
             print('')
             print(filename)
             spec = cls(filename)
             spec.read()
             spec.apply_calibration()
-            at_least_one_read = True
             print(spec)
             plt.semilogy(
                 spec.energies,
@@ -44,7 +51,6 @@ class SpectrumFileTests(unittest.TestCase):
                 spec.write(writename)
                 os.remove(writename)
         plt.legend(prop={'size': 8})
-        self.assertTrue(at_least_one_read)
         plt.show()
 
     def test_spe(self):
