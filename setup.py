@@ -7,7 +7,7 @@ in the setup metadata.
 """
 
 from __future__ import print_function
-from distutils.core import setup
+from setuptools import setup
 
 
 DOCLINES = (__doc__ or '').split('\n')
@@ -37,7 +37,6 @@ VERSION             = '{}.{}.{}'.format(MAJOR, MINOR, MICRO)
 # TODO: maintainer_email
 # TODO: author
 # TODO: license
-# TODO: test_suite
 
 setup(
     name = 'becquerel',
@@ -52,4 +51,7 @@ setup(
         'becquerel.core',
         'becquerel.parsers',
     ],
+    setup_requires=['nose>=1.0'],
+    test_suite='nose.collector',
+    tests_require=['nose'],
 )

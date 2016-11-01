@@ -1,4 +1,7 @@
+coverage
 matplotlib
+nose
 numpy
 python-dateutil
 scipy
+setuptools
