@@ -5,6 +5,7 @@
 To install the package:
 
 ```
+pip install -r requirements.txt
 python setup.py install
 ```
 
