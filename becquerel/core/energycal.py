@@ -22,8 +22,8 @@ class EnergyCal(object):
         if len(self.coeffs.shape) != 1:
             raise EnergyCalError('Coefficients input has wrong dimensions')
 
-        self.degree = len(self.coeffs)
-        if self.degree < 2 or self.degree > 3:
+        self.degree = len(self.coeffs) - 1
+        if self.degree < 1 or self.degree > 2:
             raise EnergyCalError('Require 2 or 3 coefficients')
 
     @classmethod
