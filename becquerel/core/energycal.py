@@ -8,6 +8,7 @@ import numpy as np
 
 class EnergyCal(object):
     """
+    Represents an energy calibration.
     """
 
     def __init__(self, coeffs):
@@ -24,7 +25,9 @@ class EnergyCal(object):
 
         self.degree = len(self.coeffs) - 1
         if self.degree < 1 or self.degree > 2:
-            raise EnergyCalError('Require 2 or 3 coefficients')
+            raise EnergyCalError(
+                'Require 2 or 3 coefficients, got {} instead'.format(
+                    self.degree + 1))
 
     @classmethod
     def from_file_obj(cls, fileobject):
@@ -34,13 +37,13 @@ class EnergyCal(object):
         energycal = cls(fileobject.cal_coeffs)
         return energycal
 
-    def channels_to_energies(self, channels):
+    def channel_to_energy(self, channel):
         """Convert channels to energies."""
-        channels = np.array(channels, dtype=float)
-        energies = np.zeros_like(channels)
+        channel = np.array(channel, dtype=float)
+        energy = np.zeros_like(channel)
         for i, coeff in enumerate(self.coeffs):
-            energies += coeff * channels**i
-        return energies
+            energy += coeff * channel**i
+        return energy
 
 
 class EnergyCalError(Exception):
