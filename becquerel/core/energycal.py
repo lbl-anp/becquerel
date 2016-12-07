@@ -24,9 +24,9 @@ class EnergyCal(object):
             raise EnergyCalError('Coefficients input has wrong dimensions')
 
         self.degree = len(self.coeffs) - 1
-        if self.degree < 1 or self.degree > 2:
+        if self.degree < 1 or self.degree > 3:
             raise EnergyCalError(
-                'Require 2 or 3 coefficients, got {} instead'.format(
+                'Require 2 to 4 coefficients, got {} instead'.format(
                     self.degree + 1))
 
     @classmethod
@@ -34,7 +34,7 @@ class EnergyCal(object):
         """
         Load the energy calibration from an existing file object e.g. SPEFile.
         """
-        energycal = cls(fileobject.cal_coeffs)
+        energycal = cls(fileobject.cal_coeff)
         return energycal
 
     def channel_to_energy(self, channel):
