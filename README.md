@@ -40,4 +40,4 @@ Use [google standards](https://google.github.io/styleguide/pyguide.html)
 
 * Use `flake8` in your IDE
 * Use `pylint` from command line (as in style guide)
-* Make a `pylintrc` file in the repo root
+* Make a `pylintrc` file in the repo root. Here is an [example](http://www.pymvpa.org/misc/pylintrc)
