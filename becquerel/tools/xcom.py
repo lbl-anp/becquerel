@@ -101,6 +101,19 @@ COLUMNS_LONG = {
 }
 
 
+ELEMENT_SYMBOLS = [
+    'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg',
+    'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr',
+    'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
+    'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd',
+    'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
+    'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf',
+    'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po',
+    'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm',
+    'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs',
+    'Mt', 'Ds', 'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+
+
 class XCOMError(Exception):
     """General XCOM error."""
 
@@ -115,13 +128,16 @@ class XCOMQuery(object):
 
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, arg, **kwargs):
         """Initialize and perform an XCOM query. Return a DataFrame."""
         self._url = _URL
         self._data = None
         self._req = None
         self._text = None
         self._df = None
+        self._data = dict(_DATA)
+        # determine which kind of argument 'arg' is (symbol, Z, compound, mix)
+        kwargs.update(XCOMQuery._argument_type(arg))
         self.update(**kwargs)
         if kwargs.get('perform', True):
             self.perform()
@@ -152,18 +168,37 @@ class XCOMQuery(object):
         return self._df.__format__(formatstr)
 
     @staticmethod
-    def check_keywords(**kwargs):
-        """Ensure only one of symbol, Z, compound, or mixture in kwargs."""
-        kws = ['symbol', 'Z', 'compound', 'mixture']
-        for kw1 in kws:
-            for kw2 in kws:
-                if kw1 != kw2:
-                    if kw1 in kwargs and kw2 in kwargs:
-                        raise XCOMError(
-                            'Cannot provide both {} and {}'.format(kw1, kw2))
+    def _argument_type(arg):
+        """Determine if argument is a symbol, Z, compound, or mixture."""
+        for sym in ELEMENT_SYMBOLS:
+            if arg == sym or arg == sym.upper() or arg == sym.lower():
+                return {'symbol': sym}
+        try:
+            int(arg)
+            return {'z': arg}
+        except (ValueError, TypeError):
+            pass
+        if isinstance(arg, str):
+            return {'compound': arg}
+        try:
+            for _ in arg:
+                pass
+            return {'mixture': arg}
+        except TypeError:
+            pass
+        raise XCOMError(
+            'Cannot determine if argument {}'.format(arg) +
+            ' is a symbol, Z, compound, or mixture')
 
     @staticmethod
-    def check_z(zstr):
+    def _check_symbol(sym):
+        """Check whether the symbol is valid. Raise XCOMError if not."""
+        if sym not in ELEMENT_SYMBOLS:
+            raise XCOMError(
+                'Element symbol {} not in {}'.format(sym, ELEMENT_SYMBOLS))
+
+    @staticmethod
+    def _check_z(zstr):
         """Check whether the Z is valid. Raise XCOMError if not."""
         zint = int(zstr)
         if zint < 1 or zint > 100:
@@ -171,13 +206,13 @@ class XCOMQuery(object):
                 'XCOM only supports Z from 1 to 100 (z={})'.format(zstr))
 
     @staticmethod
-    def check_compound(formula):
+    def _check_compound(formula):
         """Check whether the compound is valid. Raise XCOMError if not."""
         if not formula.isalnum():
             raise XCOMError('Formula not valid: {}'.format(formula))
 
     @staticmethod
-    def check_mixture(formulae):
+    def _check_mixture(formulae):
         """Check whether the mixture is valid. Raise XCOMError if not."""
         try:
             for formula in formulae:
@@ -193,7 +228,7 @@ class XCOMQuery(object):
                 raise XCOMError(
                     'Mixture formulae "{}" has bad line "{}"'.format(
                         formulae, formula))
-            XCOMQuery.check_compound(compound)
+            XCOMQuery._check_compound(compound)
             try:
                 float(weight)
             except:
@@ -202,30 +237,27 @@ class XCOMQuery(object):
                         formulae, weight))
 
     def update(self, **kwargs):
-        """Update the search criteria."""
-        self._data = dict(_DATA)
-
-        # check the keywords
-        XCOMQuery.check_keywords(**kwargs)
-
-        # determine the method (element, compound, or mixture)
+        """Update the search criteria. Need Z, symbol, compound, or mixture."""
+        # determine the search method (element, compound, or mixture)
         if 'symbol' in kwargs:
             self._data['Method'] = '1'
-            self._data['ZSym'] = kwargs['symbol']
-        elif 'Z' in kwargs:
+            sym = kwargs['symbol']
+            XCOMQuery._check_symbol(sym)
+            self._data['ZSym'] = sym
+        elif 'z' in kwargs:
             self._data['Method'] = '1'
-            znum = kwargs['Z']
-            XCOMQuery.check_z(znum)
+            znum = kwargs['z']
+            XCOMQuery._check_z(znum)
             self._data['ZNum'] = '{:d}'.format(int(znum))
         elif 'compound' in kwargs:
             self._data['Method'] = '2'
             formula = kwargs['compound']
-            XCOMQuery.check_compound(formula)
+            XCOMQuery._check_compound(formula)
             self._data['Formula'] = formula
         elif 'mixture' in kwargs:
             self._data['Method'] = '3'
             formulae = kwargs['mixture']
-            XCOMQuery.check_mixture(formulae)
+            XCOMQuery._check_mixture(formulae)
             formulae = '\r\n'.join(formulae)
             self._data['Formulae'] = formulae
 
@@ -283,6 +315,11 @@ class XCOMQuery(object):
 
     def perform(self):
         """Perform the query."""
+        if self._data['Method'] not in ['1', '2', '3']:
+            raise XCOMError(
+                'XCOM search method not set. Need to call update() method.')
+        if self._data['Energies'] == '' and self._data['Output'] == '':
+            raise XCOMError('No energies or e_range requested.')
         # submit the query
         self._request()
         # package the output into a pandas DataFrame

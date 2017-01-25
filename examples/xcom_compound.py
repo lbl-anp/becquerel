@@ -9,7 +9,7 @@ from xcom_element import plot_xcom
 
 if __name__ == '__main__':
     COMPOUND = 'H2O'
-    xd = xcom.XCOMQuery(e_range=[1., 100000.], compound=COMPOUND)
+    xd = xcom.XCOMQuery(COMPOUND, e_range=[1., 100000.])
     print(xd)
     plot_xcom(xd, COMPOUND)
 

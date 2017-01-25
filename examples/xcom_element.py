@@ -73,7 +73,7 @@ def plot_xcom(xcom_data, title):
 
 if __name__ == '__main__':
     SYMBOL = 'Pb'
-    xd = xcom.XCOMQuery(e_range=[1., 100000.], symbol=SYMBOL)
+    xd = xcom.XCOMQuery(SYMBOL, e_range=[1., 100000.])
     print(xd)
     plot_xcom(xd, SYMBOL)
 

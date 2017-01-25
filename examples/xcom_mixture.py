@@ -9,7 +9,7 @@ from xcom_element import plot_xcom
 
 if __name__ == '__main__':
     MIXTURE = ['H2O 0.9', 'NaCl 0.1']
-    xd = xcom.XCOMQuery(e_range=[1., 100000.], mixture=MIXTURE)
+    xd = xcom.XCOMQuery(MIXTURE, e_range=[1., 100000.])
     print(xd)
     plot_xcom(xd, ' '.join(MIXTURE))
 
