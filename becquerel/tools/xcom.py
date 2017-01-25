@@ -263,6 +263,29 @@ class XCOMQuery(object):
 
         # include standard grid of energies
         if 'e_range' in kwargs:
+            try:
+                for _ in kwargs['e_range']:
+                    pass
+            except TypeError:
+                raise XCOMError(
+                    'XCOM e_range must be an iterable of length 2: {}'.format(
+                        kwargs['e_range']))
+            if len(kwargs['e_range']) != 2:
+                raise XCOMError(
+                    'XCOM e_range must be an iterable of length 2: {}'.format(
+                        kwargs['e_range']))
+            if kwargs['e_range'][0] < 1:
+                raise XCOMError(
+                    'XCOM e_range[0] must be >= 1 keV: {}'.format(
+                        kwargs['e_range'][0]))
+            if kwargs['e_range'][1] > 1e8:
+                raise XCOMError(
+                    'XCOM e_range[1] must be <= 1E8 keV: {}'.format(
+                        kwargs['e_range'][1]))
+            if kwargs['e_range'][0] >= kwargs['e_range'][1]:
+                raise XCOMError(
+                    'XCOM e_range[0] must be < e_range[1]: {}'.format(
+                        kwargs['e_range']))
             self._data['WindowXmin'] = '{:.6f}'.format(
                 kwargs['e_range'][0] / 1000.)
             self._data['WindowXmax'] = '{:.6f}'.format(
@@ -271,6 +294,18 @@ class XCOMQuery(object):
 
         # additional energies
         if 'energies' in kwargs:
+            try:
+                for _ in kwargs['energies']:
+                    pass
+            except TypeError:
+                raise XCOMError(
+                    'XCOM energies must be an iterable: {}'.format(
+                        kwargs['energies']))
+            for energy in kwargs['energies']:
+                if energy < 1 or energy > 1e8:
+                    raise XCOMError(
+                        'XCOM energy must be >= 1 and <= 1E8 keV: {}'.format(
+                            energy))
             self._data['Energies'] = ';'.join(
                 ['{:.6f}'.format(erg / 1000.) for erg in kwargs['energies']])
 
