@@ -108,7 +108,12 @@ class XCOMError(Exception):
 
 
 class XCOMQuery(object):
-    """Query photon cross section data from NIST XCOM database."""
+    """Query photon cross section data from NIST XCOM database.
+
+    To prevent query from being immediately performed, instantiate with
+    keyword perform=False.
+
+    """
 
     def __init__(self, **kwargs):
         """Initialize and perform an XCOM query. Return a DataFrame."""
@@ -117,8 +122,9 @@ class XCOMQuery(object):
         self._req = None
         self._text = None
         self._df = None
-        self._set_data(**kwargs)
-        self._perform()
+        self.update(**kwargs)
+        if kwargs.get('perform', True):
+            self.perform()
 
     def __len__(self):
         """Length of any one of the data lists."""
@@ -195,8 +201,8 @@ class XCOMQuery(object):
                     'Mixture formulae "{}" has bad weight "{}"'.format(
                         formulae, weight))
 
-    def _set_data(self, **kwargs):
-        """Construct query data."""
+    def update(self, **kwargs):
+        """Update the search criteria."""
         self._data = dict(_DATA)
 
         # check the keywords
@@ -275,7 +281,7 @@ class XCOMQuery(object):
             if key != 'energy':
                 self._df[key] = [x * cm2_g for x in self._df[key]]
 
-    def _perform(self):
+    def perform(self):
         """Perform the query."""
         # submit the query
         self._request()

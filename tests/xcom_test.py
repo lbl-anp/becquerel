@@ -110,6 +110,13 @@ class XCOMQueryTests(unittest.TestCase):
             xcom.XCOMQuery(energies=[60., 662., 1460.], symbol='Ge')
         xcom._URL = XCOM_URL_ORIG
 
+    def test_18(self):
+        """Test XCOMQuery instantiated with perform=False.................."""
+        xd = xcom.XCOMQuery(perform=False)
+        xd.update(energies=[1460.], symbol='Ge')
+        xd.perform()
+        self.assertTrue(len(xd) == 1)
+
 
 def main():
     """Run unit tests."""
