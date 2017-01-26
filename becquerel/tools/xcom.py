@@ -238,6 +238,13 @@ class XCOMQuery(object):
 
     def update(self, **kwargs):
         """Update the search criteria. Need Z, symbol, compound, or mixture."""
+        # check for valid keywords
+        for kwarg in kwargs:
+            if kwarg not in [
+                    'symbol', 'z', 'compound', 'mixture',
+                    'e_range', 'energies', 'perform']:
+                raise XCOMError('Unknown keyword: "{}"'.format(kwarg))
+
         # determine the search method (element, compound, or mixture)
         if 'symbol' in kwargs:
             self._data['Method'] = '1'

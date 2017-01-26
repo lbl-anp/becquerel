@@ -168,6 +168,11 @@ class XCOMQueryTests(unittest.TestCase):
         with self.assertRaises(xcom.XCOMError):
             xcom.XCOMQuery('Ge', e_range=[1000., 1.])
 
+    def test_28(self):
+        """Test XCOMQuery raises exception if bad keyword given............"""
+        with self.assertRaises(xcom.XCOMError):
+            xcom.XCOMQuery('Ge', e_range=[1., 10000.], bad_keyword=None)
+
 
 def main():
     """Run unit tests."""
