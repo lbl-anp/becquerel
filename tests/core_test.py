@@ -63,7 +63,7 @@ class CalSpectrumFromRawTests(unittest.TestCase):
         self.assertTrue(len(filenames) >= 1)
         for filename in filenames:
             raw = bq.core.RawSpectrum.from_file(filename)
-            ecal = bq.core.EnergyCal.from_file_obj(raw.infileobject)
+            ecal = bq.core.PolynomialCal.from_file_obj(raw.infileobject)
             spec = bq.core.CalSpectrum.from_raw(raw, ecal)
 
 
@@ -95,8 +95,6 @@ class EnergyCalBasicTests(unittest.TestCase):
         """Test error on bad number of coefficients."""
         with self.assertRaises(bq.core.energycal.EnergyCalError):
             ecal = bq.core.EnergyCal([1.1])
-        with self.assertRaises(bq.core.energycal.EnergyCalError):
-            ecal = bq.core.EnergyCal([1.1, 2.2, 3.3, 4.4, 5.5])
 
 
 class EnergyCalFromFileObjTests(unittest.TestCase):
