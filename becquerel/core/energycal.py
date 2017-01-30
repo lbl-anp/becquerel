@@ -4,12 +4,24 @@ EnergyCal class.
 
 from __future__ import print_function
 import numpy as np
+import abc
 
 
-class EnergyCal(object):
+class EnergyCalBase(object):
     """
-    Represents an energy calibration.
+    Abstract base class for an energy calibration.
     """
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def channel_to_energy(self, channel):
+        """Convert channel(s) to energy(ies)."""
+        return
+
+
+class PolynomialCal(EnergyCalBase):
+    """Polynomial calibration, from coefficients."""
 
     def __init__(self, coeffs):
         """
@@ -19,26 +31,15 @@ class EnergyCal(object):
             energy = sum(coeffs[i] * ch**i)
         """
 
-        self.coeffs = np.squeeze(coeffs)
-        if len(self.coeffs.shape) != 1:
-            raise EnergyCalError('Coefficients input has wrong dimensions')
-
         self.degree = len(self.coeffs) - 1
-        if self.degree < 1 or self.degree > 3:
+        if self.degree < 1:
             raise EnergyCalError(
-                'Require 2 to 4 coefficients, got {} instead'.format(
+                'Require at least 2 coefficients, got {} instead'.format(
                     self.degree + 1))
-
-    @classmethod
-    def from_file_obj(cls, fileobject):
-        """
-        Load the energy calibration from an existing file object e.g. SPEFile.
-        """
-        energycal = cls(fileobject.cal_coeff)
-        return energycal
 
     def channel_to_energy(self, channel):
         """Convert channels to energies."""
+
         channel = np.array(channel, dtype=float)
         energy = np.zeros_like(channel)
         for i, coeff in enumerate(self.coeffs):
@@ -48,4 +49,5 @@ class EnergyCal(object):
 
 class EnergyCalError(Exception):
     """Exception raised by EnergyCal."""
+
     pass
