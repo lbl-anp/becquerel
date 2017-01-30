@@ -31,6 +31,7 @@ class PolynomialCal(EnergyCalBase):
             energy = sum(coeffs[i] * ch**i)
         """
 
+        self.coeffs = coeffs
         self.degree = len(self.coeffs) - 1
         if self.degree < 1:
             raise EnergyCalError(

@@ -31,3 +31,13 @@ is printed out stdout and a detailed HTML report is written to the
 ```
 python setup.py nosetests
 ```
+
+## Code Style Guide
+
+Use [google standards](https://google.github.io/styleguide/pyguide.html)
+
+## Linter
+
+* Use `flake8` in your IDE
+* Use `pylint` from command line (as in style guide)
+* Make a `pylintrc` file in the repo root. Here is an [example](http://www.pymvpa.org/misc/pylintrc)
