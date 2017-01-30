@@ -38,6 +38,15 @@ class PolynomialCal(EnergyCalBase):
                 'Require at least 2 coefficients, got {} instead'.format(
                     self.degree + 1))
 
+    @classmethod
+    def from_file_obj(cls, file_obj):
+        """
+        Create a polynomial energy calibration from a spectrum file object.
+        """
+
+        cal = cls(file_obj.cal_coeff)
+        return cal
+
     def channel_to_energy(self, channel):
         """Convert channels to energies."""
 
