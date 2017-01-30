@@ -111,7 +111,7 @@ class CalSpectrum(RawSpectrum):
     def from_raw(cls, raw_spectrum, energycal):
         """Generate CalSpectrum from a RawSpectrum plus energy calibration."""
         data = raw_spectrum.data
-        bin_energies = energycal.channels_to_energy(np.arange(len(data)))
+        bin_energies = energycal.channel_to_energy(np.arange(len(data)))
         spec = cls(data, bin_energies)
         return spec
 
