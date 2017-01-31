@@ -1,3 +1,3 @@
 
 from .spectrum import RawSpectrum, CalSpectrum
-from .energycal import EnergyCal
+from .energycal import PolynomialCal

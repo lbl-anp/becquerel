@@ -67,7 +67,7 @@ class CalSpectrumFromRawTests(unittest.TestCase):
             spec = bq.core.CalSpectrum.from_raw(raw, ecal)
 
 
-class EnergyCalBasicTests(unittest.TestCase):
+class PolynomialCalBasicTests(unittest.TestCase):
     """Test EnergyCal coefficient initialization and channel_to_energy()."""
 
     def test_linear(self):
@@ -77,7 +77,7 @@ class EnergyCalBasicTests(unittest.TestCase):
         ch = np.array([[0, 1], [2, 4]])
         etest = offset + ch * slope
 
-        ecal = bq.core.EnergyCal([offset, slope])
+        ecal = bq.core.PolynomialCal([offset, slope])
         self.assertTrue(np.all(ecal.channel_to_energy(ch) == etest))
 
     def test_quadratic(self):
@@ -88,16 +88,16 @@ class EnergyCalBasicTests(unittest.TestCase):
         ch = np.array([[0, 1], [2, 4]])
         etest = offset + ch * slope + ch**2 * quad
 
-        ecal = bq.core.EnergyCal([offset, slope, quad])
+        ecal = bq.core.PolynomialCal([offset, slope, quad])
         self.assertTrue(np.all(ecal.channel_to_energy(ch) == etest))
 
     def test_coeff_error(self):
         """Test error on bad number of coefficients."""
         with self.assertRaises(bq.core.energycal.EnergyCalError):
-            ecal = bq.core.EnergyCal([1.1])
+            ecal = bq.core.PolynomialCal([1.1])
 
 
-class EnergyCalFromFileObjTests(unittest.TestCase):
+class PolynomialCalFromFileObjTests(unittest.TestCase):
     """Test EnergyCal.from_file_obj() class method."""
 
     def run_from_file(self, extension):
@@ -106,7 +106,7 @@ class EnergyCalFromFileObjTests(unittest.TestCase):
         self.assertTrue(len(filenames) >= 1)
         for filename in filenames:
             raw = bq.core.RawSpectrum.from_file(filename)
-            ecal = bq.core.EnergyCal.from_file_obj(raw.infileobject)
+            ecal = bq.core.PolynomialCal.from_file_obj(raw.infileobject)
 
     def test_spe(self):
         """Test EnergyCal.from_file_obj for SPE file......................."""
