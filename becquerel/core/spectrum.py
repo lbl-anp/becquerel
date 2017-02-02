@@ -70,6 +70,8 @@ class CalSpectrum(RawSpectrum):
         spec = CalSpectrum(array of counts, bin_energies)
         or
         spec = CalSpectrum.from_file("filename.extension")
+        or
+        spec = CalSpectrum.from_raw(raw_spectrum, energycal)
 
     Then the data are in
         spec.data [counts]
@@ -94,6 +96,7 @@ class CalSpectrum(RawSpectrum):
 
     @classmethod
     def from_file(cls, infilename):
+        """Generate CalSpectrum from a file."""
         spect_file_obj = _get_file_object(infilename)
 
         spect_obj = cls(spect_file_obj.data, spect_file_obj.energies)
@@ -103,6 +106,14 @@ class CalSpectrum(RawSpectrum):
         # TODO Get more attributes from self.infileobj
 
         return spect_obj
+
+    @classmethod
+    def from_raw(cls, raw_spectrum, energycal):
+        """Generate CalSpectrum from a RawSpectrum plus energy calibration."""
+        data = raw_spectrum.data
+        bin_energies = energycal.channel_to_energy(np.arange(len(data)))
+        spec = cls(data, bin_energies)
+        return spec
 
 
     # def __str__(self):
