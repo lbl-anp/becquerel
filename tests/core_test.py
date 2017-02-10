@@ -43,17 +43,17 @@ class SpectrumConstructorTests(unittest.TestCase):
     def test_uncal(self):
         """Test simple uncalibrated construction."""
 
-        spec = bq.core.Spectrum(data)
-        self.assertEqual(len(spec.data), test_length)
+        spec = bq.core.Spectrum(self.data)
+        self.assertEqual(len(spec.data), self.test_length)
         self.assertFalse(spec.is_calibrated)
 
     def test_cal(self):
         """Test simple calibrated construction."""
 
-        spec = bq.core.Spectrum(data, bin_edges_kev=energy_edges)
-        self.assertEqual(len(spec.data), test_length)
-        self.assertEqual(len(spec.bin_edges_kev), test_length + 1)
-        self.assertEqual(len(spec.energies_kev), test_length)
+        spec = bq.core.Spectrum(self.data, bin_edges_kev=self.energy_edges)
+        self.assertEqual(len(spec.data), self.test_length)
+        self.assertEqual(len(spec.bin_edges_kev), self.test_length + 1)
+        self.assertEqual(len(spec.energies_kev), self.test_length)
         self.assertTrue(spec.is_calibrated)
 
     def test_init_exceptions(self):
@@ -62,12 +62,12 @@ class SpectrumConstructorTests(unittest.TestCase):
         with self.assertRaises(bq.core.SpectrumError):
             spec = bq.core.Spectrum([])
         with self.assertRaises(bq.core.SpectrumError):
-            spec = bq.core.Spectrum(data, bin_edges_kev=energy_edges[:-1])
+            spec = bq.core.Spectrum(self.data, bin_edges_kev=self.energy_edges[:-1])
 
     def test_uncalibrated_exception(self):
         """Test UncalibratedError."""
 
-        spec = bq.core.Spectrum(data)
+        spec = bq.core.Spectrum(self.data)
         with self.assertRaises(bq.core.UncalibratedError):
             _ = spec.energies_kev
 
