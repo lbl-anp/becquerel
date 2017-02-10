@@ -13,6 +13,13 @@ class SpectrumError(Exception):
     pass
 
 
+class UncalibratedError(SpectrumError):
+    """Exception raised when an uncalibrated spectrum is treated as calibrated.
+    """
+
+    pass
+
+
 class Spectrum(object):
     """
     Spectrum class.
@@ -53,8 +60,12 @@ class Spectrum(object):
 
     @property
     def energies_kev(self):
-        """Convenience function for energies of bin centers."""
-        return self.bin_centers_from_edges(self.bin_edges_kev)
+        """Convenience function for accessing the energies of bin centers."""
+
+        if self.bin_edges_kev is None:
+            raise UncalibratedError('Spectrum is not calibrated')
+        else:
+            return self.bin_centers_from_edges(self.bin_edges_kev)
 
     @property
     def is_calibrated(self):
