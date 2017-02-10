@@ -96,7 +96,7 @@ class Spectrum(object):
           True if spectrum has defined energy bin edges. False otherwise.
         """
 
-        return bool(self.bin_edges_kev)
+        return self.bin_edges_kev is not None
 
     @classmethod
     def from_file(cls, infilename):
