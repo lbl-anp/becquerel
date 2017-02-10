@@ -48,6 +48,7 @@ class SpectrumFile(object):
         # arrays to be calculated using calibration
         self.energies = np.array([], dtype=np.float)
         self.energy_bin_widths = np.array([], dtype=np.float)
+        self.energy_bin_edges = np.array([], dtype=np.float)
 
     def __str__(self):
         """String form of the spectrum."""
