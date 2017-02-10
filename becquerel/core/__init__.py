@@ -1,2 +1,2 @@
 
-from .spectrum import Spectrum
+from .spectrum import Spectrum, SpectrumError, UncalibratedError
