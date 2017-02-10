@@ -2,6 +2,8 @@
 
 from __future__ import print_function
 import unittest
+import numpy as np
+
 import becquerel as bq
 
 from parsers_test import SAMPLES
@@ -15,7 +17,7 @@ class SpectrumFromFileTests(unittest.TestCase):
         filenames = SAMPLES.get(extension, [])
         self.assertTrue(len(filenames) >= 1)
         for filename in filenames:
-            spec = bq.core.CalSpectrum.from_file(filename)
+            spec = bq.core.Spectrum.from_file(filename)
 
     def test_spe(self):
         """Test Spectrum.from_file for SPE file........................."""
@@ -28,6 +30,46 @@ class SpectrumFromFileTests(unittest.TestCase):
     def test_cnf(self):
         """Test Spectrum.from_file for CNF file........................."""
         self.run_from_file('.cnf')
+
+
+class SpectrumConstructorTests(unittest.TestCase):
+    """Test Spectrum.__init__()."""
+
+    test_length = 256
+    data = np.random.randint(0, 1e4, test_length, int)
+    test_gain = 8.23
+    energy_edges = np.arange(test_length + 1) * test_gain
+
+    def test_uncal(self):
+        """Test simple uncalibrated construction."""
+
+        spec = bq.core.Spectrum(data)
+        self.assertEqual(len(spec.data), test_length)
+        self.assertFalse(spec.is_calibrated)
+
+    def test_cal(self):
+        """Test simple calibrated construction."""
+
+        spec = bq.core.Spectrum(data, bin_edges_kev=energy_edges)
+        self.assertEqual(len(spec.data), test_length)
+        self.assertEqual(len(spec.bin_edges_kev), test_length + 1)
+        self.assertEqual(len(spec.energies_kev), test_length)
+        self.assertTrue(spec.is_calibrated)
+
+    def test_init_exceptions(self):
+        """Test errors on initialization."""
+
+        with self.assertRaises(bq.core.SpectrumError):
+            spec = bq.core.Spectrum([])
+        with self.assertRaises(bq.core.SpectrumError):
+            spec = bq.core.Spectrum(data, bin_edges_kev=energy_edges[:-1])
+
+    def test_uncalibrated_exception(self):
+        """Test UncalibratedError."""
+
+        spec = bq.core.Spectrum(data)
+        with self.assertRaises(bq.core.UncalibratedError):
+            _ = spec.energies_kev
 
 
 def main():
