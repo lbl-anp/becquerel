@@ -22,23 +22,30 @@ class UncalibratedError(SpectrumError):
 
 class Spectrum(object):
     """
-    Spectrum class.
+    Represents an energy spectrum.
 
-    ....
-    Basic operation is:
-        spec = CalSpectrum(array of counts, bin_energies)
-        or
-        spec = CalSpectrum.from_file("filename.extension")
+    Initialize a Spectrum directly, or with Spectrum.from_file(filename).
 
-    Then the data are in
-        spec.data [counts]
-        spec.channels
-        spec.bin_energies -- subject to convention!
-
+    Attributes:
+      data: np.array of counts in each channel
+      channels: [Read-only] np.array of channel index as integers
+      is_calibrated: [Read-only] bool
+      energies_kev: [Read-only] np.array of energy bin centers, if calibrated
+      bin_edges_kev: np.array of energy bin edges, if calibrated
     """
 
     def __init__(self, data, bin_edges_kev=None):
-        """Initialize the spectrum."""
+        """Initialize the spectrum.
+
+        Args:
+          data: an iterable of counts per channel
+          bin_edges_kev: an iterable of bin edge energies.
+            Defaults to None for an uncalibrated spectrum.
+            If not none, should have length of (len(data) + 1).
+
+        Raises:
+          SpectrumError: for bad input arguments
+        """
 
         if len(data) == 0:
             raise SpectrumError('Empty spectrum data')
@@ -56,11 +63,24 @@ class Spectrum(object):
 
     @property
     def channels(self):
+        """Channel index.
+
+        Returns:
+          np.array of int's from 0 to (len(self.data) - 1)
+        """
+
         return np.arange(len(self.data), dtype=int)
 
     @property
     def energies_kev(self):
-        """Convenience function for accessing the energies of bin centers."""
+        """Convenience function for accessing the energies of bin centers.
+
+        Returns:
+          np.array of floats, same length as self.data
+
+        Raises:
+          UncalibratedError: if spectrum is not calibrated
+        """
 
         if self.bin_edges_kev is None:
             raise UncalibratedError('Spectrum is not calibrated')
@@ -69,10 +89,29 @@ class Spectrum(object):
 
     @property
     def is_calibrated(self):
+        """Is the spectrum calibrated?
+
+        Returns:
+          A bool.
+          True if spectrum has defined energy bin edges. False otherwise.
+        """
+
         return bool(self.bin_edges_kev)
 
     @classmethod
     def from_file(cls, infilename):
+        """Construct a Spectrum object from a filename.
+
+        Args:
+          infilename: a string representing the path to a parsable file.
+
+        Returns:
+          A Spectrum object.
+
+        Raises:
+          IOError: for a bad filename.
+        """
+
         spect_file_obj = _get_file_object(infilename)
 
         spect_obj = cls(spect_file_obj.data,
@@ -85,18 +124,37 @@ class Spectrum(object):
 
     @staticmethod
     def bin_centers_from_edges(edges_kev):
+        """Calculate bin centers from bin edges.
+
+        Args:
+          edges_kev: an iterable representing bin edge energies in keV.
+
+        Returns:
+          np.array of length (len(edges_kev) - 1),
+          representing bin center energies.
+        """
+
         edges_kev = np.array(edges_kev)
         centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
         return centers_kev
 
 
 def _get_file_object(infilename):
-    '''
-    Input:
-        infilename
-    Output:
-        SpectrumFile
-    '''
+    """
+    Parse a file and return an object according to its extension.
+
+    Args:
+      infilename: a string representing a path to a parsable file.
+
+    Raises:
+      AssertionError: for a bad filename.  # TODO let this be an IOError
+      NotImplementedError: for an unparsable file extension.
+      ...?
+
+    Returns:
+      a file object of type SpeFile, SpcFile, or CnfFile
+    """
+
     _, extension = os.path.splitext(infilename)
     if extension.lower() == '.spe':
         spect_file_obj = parsers.SpeFile(infilename)
