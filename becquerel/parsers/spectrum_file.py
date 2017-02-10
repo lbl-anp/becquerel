@@ -98,6 +98,8 @@ class SpectrumFile(object):
         """Calculate energies corresponding to channels."""
         self.energies = self.channel_to_energy(self.channels)
         self.energy_bin_widths = self.bin_width(self.channels)
+        channel_edges = np.arange(-0.5, self.channels[-1] + 0.5)
+        self.energy_bin_edges = self.channel_to_energy(channel_edges)
 
     def channel_to_energy(self, channel):
         """Apply energy calibration to the given channel(s)."""

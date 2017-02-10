@@ -7,65 +7,17 @@ import becquerel.parsers as parsers
 # from ..parsers import SpeFile, SpcFile, CnfFile
 
 
-class RawSpectrumError(Exception):
-    """Exception raised by RawSpectrum."""
+class SpectrumError(Exception):
+    """Exception raised by Spectrum."""
 
     pass
 
 
-class RawSpectrum(object):
-    """Raw spectrum class.
-
-    Basic operation is:
-        spec = RawSpectrum(list or array)
-        or
-        spec = RawSpectrum.from_file("filename.extension")
-
-    Then the data are in
-        spec.data [counts]
-        spec.channels
+class Spectrum(object):
     """
+    Spectrum class.
 
-    def __init__(self, data):
-        """Initialize the spectrum."""
-        self.data = np.array(data, dtype=float)
-        assert len(data) > 0
-
-        # TODO should channels be integers?
-        # TODO what convention is used for channels?
-        # bin centers, lower edge etc...?
-        self.channels = np.arange(len(self.data), dtype=float)
-        self.infilename = None
-        self.infileobject = None
-
-    @classmethod
-    def from_file(cls, infilename):
-        # Read
-        spect_file_obj = _get_file_object(infilename)
-
-        spect_obj = cls(spect_file_obj.data)
-        spect_obj.infileobject = spect_file_obj
-        spect_obj.channels = spect_obj.infileobject.channels
-        return spect_obj
-
-    # def __str__(self):
-    #     """String form of the spectrum."""
-    #     s = ''
-    #     s += 'Filename:              {:s}\n'.format(self.filename)
-    #     s += 'Spectrum ID:           {:s}\n'.format(self.spectrum_id)
-
-    #     return s
-
-
-class CalSpectrumError(RawSpectrumError):
-    """Exception raised by CalSpectrum."""
-
-    pass
-
-
-class CalSpectrum(RawSpectrum):
-    """Cal spectrum class.
-
+    ....
     Basic operation is:
         spec = CalSpectrum(array of counts, bin_energies)
         or
@@ -78,40 +30,54 @@ class CalSpectrum(RawSpectrum):
 
     """
 
-    def __init__(self, data, bin_energies):
+    def __init__(self, data, bin_edges_kev=None):
         """Initialize the spectrum."""
-        assert(len(bin_energies) == len(data))
-        assert len(data) > 0
+
+        if len(data) == 0:
+            raise SpectrumError('Empty spectrum data')
         self.data = np.array(data, dtype=float)
-        # TODO should channels be integers?
-        # TODO what convention is used for channels?
-        # bin centers, lower edge etc...?
-        self.channels = np.arange(len(self.data), dtype=float)
-        self.bin_energies = np.array(bin_energies, dtype=float)
+
+        if bin_edges_kev is None:
+            self.bin_edges_kev = None
+        elif len(bin_edges_kev) != len(data) + 1:
+            raise SpectrumError('Bad length of bin edges vector')
+        else:
+            self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
 
         self.infilename = None
         self.infileobject = None
+
+    @property
+    def channels(self):
+        return np.arange(len(self.data), dtype=int)
+
+    @property
+    def energies_kev(self):
+        """Convenience function for energies of bin centers."""
+        return self.bin_centers_from_edges(self.bin_edges_kev)
+
+    @property
+    def is_calibrated(self):
+        return bool(self.bin_edges_kev)
 
     @classmethod
     def from_file(cls, infilename):
         spect_file_obj = _get_file_object(infilename)
 
-        spect_obj = cls(spect_file_obj.data, spect_file_obj.energies)
+        spect_obj = cls(spect_file_obj.data,
+                        bin_edges_kev=spect_file_obj.energy_bin_edges)
         spect_obj.infileobject = spect_file_obj
-        spect_obj.channels = spect_obj.infileobject.channels
 
         # TODO Get more attributes from self.infileobj
 
         return spect_obj
 
+    @staticmethod
+    def bin_centers_from_edges(edges_kev):
+        edges_kev = np.array(edges_kev)
+        centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
+        return centers_kev
 
-    # def __str__(self):
-    #     """String form of the spectrum."""
-    #     s = ''
-    #     s += 'Filename:              {:s}\n'.format(self.filename)
-    #     s += 'Spectrum ID:           {:s}\n'.format(self.spectrum_id)
-
-    #     return s
 
 def _get_file_object(infilename):
     '''
