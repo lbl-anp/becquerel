@@ -64,6 +64,11 @@ class SpectrumConstructorTests(unittest.TestCase):
         with self.assertRaises(bq.core.SpectrumError):
             spec = bq.core.Spectrum(self.data, bin_edges_kev=self.energy_edges[:-1])
 
+        bad_edges = self.energy_edges.copy()
+        bad_edges[12] = bad_edges[9]
+        with self.assertRaises(bq.core.SpectrumError):
+            spec = bq.core.Spectrum(self.data, bin_edges_kev=bad_edges)
+
     def test_uncalibrated_exception(self):
         """Test UncalibratedError."""
 

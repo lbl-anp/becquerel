@@ -55,11 +55,14 @@ class Spectrum(object):
             self.bin_edges_kev = None
         elif len(bin_edges_kev) != len(data) + 1:
             raise SpectrumError('Bad length of bin edges vector')
+        elif np.any(np.diff(bin_edges_kev) <= 0):
+            raise SpectrumError(
+                'Bin edge energies must be strictly increasing')
         else:
             self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
 
         self.infilename = None
-        self.infileobject = None
+        self._infileobject = None
 
     @property
     def channels(self):
@@ -116,7 +119,7 @@ class Spectrum(object):
 
         spect_obj = cls(spect_file_obj.data,
                         bin_edges_kev=spect_file_obj.energy_bin_edges)
-        spect_obj.infileobject = spect_file_obj
+        spect_obj._infileobject = spect_file_obj
 
         # TODO Get more attributes from self.infileobj
 
