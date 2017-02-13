@@ -36,7 +36,7 @@ class SpectrumConstructorTests(unittest.TestCase):
     """Test Spectrum.__init__()."""
 
     test_length = 256
-    data = np.random.randint(0, high=1e4, size=test_length, dtype=np.int)
+    data = int(np.random.randint(0, high=1e4, size=test_length))
     test_gain = 8.23
     energy_edges = np.arange(test_length + 1) * test_gain
 
