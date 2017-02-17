@@ -141,6 +141,32 @@ class Spectrum(object):
         centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
         return centers_kev
 
+    def __add__(self, other):
+        return self._add_sub(other, sub=False)
+
+    def __sub__(self, other):
+        return self._add_sub(other, sub=True)
+
+    def _add_sub(self, other, sub=False):
+        """Add or subtract two spectra. Handle errors."""
+
+        if not isinstance(other, Spectrum):
+            raise TypeError(
+                'Spectrum addition/subtraction must involve a Spectrum object')
+
+        # TODO: if both spectra are calibrated with different calibrations,
+        #   should one be rebinned to match energy bins?
+        if not self.is_calibrated and not other.is_calibrated:
+            if sub:
+                data = self.data - other.data
+            else:
+                data = self.data + other.data
+            spect_obj = Spectrum(data)
+        else:
+            raise NotImplementedError(
+                'Addition/subtraction for calibrated spectra not implemented')
+        return spect_obj
+
 
 def _get_file_object(infilename):
     """
