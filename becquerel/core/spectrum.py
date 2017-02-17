@@ -147,6 +147,12 @@ class Spectrum(object):
     def __sub__(self, other):
         return self._add_sub(other, sub=True)
 
+    def __mul__(self, other):
+        return self._mul_div(other, div=False)
+
+    def __div__(self, other):
+        return self._mul_div(other, div=True)
+
     def _add_sub(self, other, sub=False):
         """Add or subtract two spectra. Handle errors."""
 
@@ -166,6 +172,22 @@ class Spectrum(object):
             raise NotImplementedError(
                 'Addition/subtraction for calibrated spectra not implemented')
         return spect_obj
+
+    def _mul_div(self, other, div=False):
+        """Multiply or divide a spectrum by a scalar. Handle errors."""
+
+        try:
+            scaling_factor = float(other)
+        except TypeError:
+            raise TypeError('Spectrum must be multiplied/divided by a scalar')
+        else:
+            if div:
+                multiplier = 1 / scaling_factor
+            else:
+                multiplier = scaling_factor
+            data = self.data * multiplier
+            spect_obj = Spectrum(data, bin_edges_kev=self.bin_edges_kev)
+            return spect_obj
 
 
 def _get_file_object(infilename):
