@@ -159,6 +159,9 @@ class Spectrum(object):
         if not isinstance(other, Spectrum):
             raise TypeError(
                 'Spectrum addition/subtraction must involve a Spectrum object')
+        if len(self.data) != len(other.data):
+            raise SpectrumError(
+                'Cannot add/subtract spectra of different lengths')
 
         # TODO: if both spectra are calibrated with different calibrations,
         #   should one be rebinned to match energy bins?
@@ -181,6 +184,11 @@ class Spectrum(object):
         except TypeError:
             raise TypeError('Spectrum must be multiplied/divided by a scalar')
         else:
+            if (scaling_factor == 0 or
+                    np.isinf(scaling_factor) or
+                    np.isnan(scaling_factor)):
+                raise SpectrumError(
+                    'Scaling factor must be nonzero and finite')
             if div:
                 multiplier = 1 / scaling_factor
             else:
