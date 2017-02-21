@@ -8,6 +8,10 @@ import becquerel as bq
 
 from parsers_test import SAMPLES
 
+TEST_DATA_LENGTH = 256
+TEST_COUNTS = 4
+TEST_GAIN = 8.23
+
 
 class SpectrumFromFileTests(unittest.TestCase):
     """Test Spectrum.from_file() class method."""
@@ -35,46 +39,50 @@ class SpectrumFromFileTests(unittest.TestCase):
 class SpectrumConstructorTests(unittest.TestCase):
     """Test Spectrum.__init__()."""
 
-    test_length = 256
-    data = np.random.randint(0, high=1e4, size=test_length).astype(np.int)
-    test_gain = 8.23
-    energy_edges = np.arange(test_length + 1) * test_gain
+    energy_edges_kev = np.arange(TEST_DATA_LENGTH + 1) * TEST_GAIN
 
     def test_uncal(self):
         """Test simple uncalibrated construction."""
 
-        spec = bq.core.Spectrum(self.data)
-        self.assertEqual(len(spec.data), self.test_length)
+        spec = bq.core.Spectrum(get_test_data())
+        self.assertEqual(len(spec.data), TEST_DATA_LENGTH)
         self.assertFalse(spec.is_calibrated)
 
     def test_cal(self):
         """Test simple calibrated construction."""
 
-        spec = bq.core.Spectrum(self.data, bin_edges_kev=self.energy_edges)
-        self.assertEqual(len(spec.data), self.test_length)
-        self.assertEqual(len(spec.bin_edges_kev), self.test_length + 1)
-        self.assertEqual(len(spec.energies_kev), self.test_length)
+        spec = bq.core.Spectrum(
+            get_test_data(), bin_edges_kev=self.energy_edges_kev)
+        self.assertEqual(len(spec.data), TEST_DATA_LENGTH)
+        self.assertEqual(len(spec.bin_edges_kev), TEST_DATA_LENGTH + 1)
+        self.assertEqual(len(spec.energies_kev), TEST_DATA_LENGTH)
         self.assertTrue(spec.is_calibrated)
 
     def test_init_exceptions(self):
         """Test errors on initialization."""
 
         with self.assertRaises(bq.core.SpectrumError):
-            spec = bq.core.Spectrum([])
+            bq.core.Spectrum([])
         with self.assertRaises(bq.core.SpectrumError):
-            spec = bq.core.Spectrum(self.data, bin_edges_kev=self.energy_edges[:-1])
+            bq.core.Spectrum(
+                get_test_data(), bin_edges_kev=self.energy_edges_kev[:-1])
 
-        bad_edges = self.energy_edges.copy()
+        bad_edges = self.energy_edges_kev.copy()
         bad_edges[12] = bad_edges[9]
         with self.assertRaises(bq.core.SpectrumError):
-            spec = bq.core.Spectrum(self.data, bin_edges_kev=bad_edges)
+            bq.core.Spectrum(get_test_data(), bin_edges_kev=bad_edges)
 
     def test_uncalibrated_exception(self):
         """Test UncalibratedError."""
 
-        spec = bq.core.Spectrum(self.data)
+        spec = bq.core.Spectrum(get_test_data())
         with self.assertRaises(bq.core.UncalibratedError):
-            _ = spec.energies_kev
+            spec.energies_kev
+
+
+def get_test_data(length=TEST_DATA_LENGTH, expectation_val=TEST_COUNTS):
+    """Build a vector of random counts."""
+    return np.random.poisson(lam=expectation_val, size=length).astype(np.int)
 
 
 def main():
