@@ -147,6 +147,68 @@ class SpectrumAddSubtractTests(unittest.TestCase):
             spec1 - spec2
 
 
+class SpectrumMultiplyDivideTests(unittest.TestCase):
+    """Test multiplication and division of spectra"""
+
+    def test_uncal_mul_div(self):
+        """
+        Basic multiplication/division of uncalibrated spectrum by a scalar.
+        """
+
+        spec = get_test_uncal_spectrum()
+        doubled = spec * 2
+        self.assertTrue(np.all(doubled.data == 2 * spec.data))
+        halved = spec / 2
+        self.assertTrue(np.all(halved.data == spec.data / 2.0))
+
+    def test_cal_mul_div(self):
+        """Basic multiplication/division of calibrated spectrum by a scalar."""
+
+        spec = get_test_cal_spectrum()
+        doubled = spec * 2
+        self.assertTrue(np.all(doubled.data == 2 * spec.data))
+        halved = spec / 2
+        self.assertTrue(np.all(halved.data == spec.data / 2.0))
+        halved_again = spec * 0.5
+        self.assertTrue(np.all(halved_again.data == spec.data * 0.5))
+
+    def test_mul_div_type_error(self):
+        """Multiplication/division with a non-scalar gives a TypeError."""
+
+        spec = get_test_uncal_spectrum()
+
+        with self.assertRaises(TypeError):
+            spec * spec
+        with self.assertRaises(TypeError):
+            spec / spec
+        with self.assertRaises(TypeError):
+            spec * 'asdf'
+        with self.assertRaises(TypeError):
+            spec / 'asdf'
+        with self.assertRaises(TypeError):
+            spec * get_test_data()
+        with self.assertRaises(TypeError):
+            spec / get_test_data()
+
+    def test_mul_div_bad_factor(self):
+        """Multiplication/division with zero/inf/nan gives a SpectrumError."""
+
+        spec = get_test_uncal_spectrum()
+
+        with self.assertRaises(bq.core.SpectrumError):
+            spec * 0
+        with self.assertRaises(bq.core.SpectrumError):
+            spec / 0
+        with self.assertRaises(bq.core.SpectrumError):
+            spec * np.inf
+        with self.assertRaises(bq.core.SpectrumError):
+            spec / np.inf
+        with self.assertRaises(bq.core.SpectrumError):
+            spec * np.nan
+        with self.assertRaises(bq.core.SpectrumError):
+            spec / np.nan
+
+
 def get_test_data(length=TEST_DATA_LENGTH, expectation_val=TEST_COUNTS):
     """Build a vector of random counts."""
     return np.random.poisson(lam=expectation_val, size=length).astype(np.int)

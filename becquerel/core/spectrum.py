@@ -176,11 +176,11 @@ class Spectrum(object):
                 'Addition/subtraction for calibrated spectra not implemented')
         return spect_obj
 
-    def _mul_div(self, other, div=False):
+    def _mul_div(self, scaling_factor, div=False):
         """Multiply or divide a spectrum by a scalar. Handle errors."""
 
         try:
-            scaling_factor = float(other)
+            scaling_factor = float(scaling_factor)
         except TypeError:
             raise TypeError('Spectrum must be multiplied/divided by a scalar')
         else:
