@@ -11,6 +11,7 @@ from parsers_test import SAMPLES
 TEST_DATA_LENGTH = 256
 TEST_COUNTS = 4
 TEST_GAIN = 8.23
+TEST_EDGES_KEV = np.arange(TEST_DATA_LENGTH + 1) * TEST_GAIN
 
 
 class SpectrumFromFileTests(unittest.TestCase):
@@ -21,7 +22,7 @@ class SpectrumFromFileTests(unittest.TestCase):
         filenames = SAMPLES.get(extension, [])
         self.assertTrue(len(filenames) >= 1)
         for filename in filenames:
-            spec = bq.core.Spectrum.from_file(filename)
+            bq.core.Spectrum.from_file(filename)
 
     def test_spe(self):
         """Test Spectrum.from_file for SPE file........................."""
@@ -39,8 +40,6 @@ class SpectrumFromFileTests(unittest.TestCase):
 class SpectrumConstructorTests(unittest.TestCase):
     """Test Spectrum.__init__()."""
 
-    energy_edges_kev = np.arange(TEST_DATA_LENGTH + 1) * TEST_GAIN
-
     def test_uncal(self):
         """Test simple uncalibrated construction."""
 
@@ -51,8 +50,7 @@ class SpectrumConstructorTests(unittest.TestCase):
     def test_cal(self):
         """Test simple calibrated construction."""
 
-        spec = bq.core.Spectrum(
-            get_test_data(), bin_edges_kev=self.energy_edges_kev)
+        spec = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
         self.assertEqual(len(spec.data), TEST_DATA_LENGTH)
         self.assertEqual(len(spec.bin_edges_kev), TEST_DATA_LENGTH + 1)
         self.assertEqual(len(spec.energies_kev), TEST_DATA_LENGTH)
@@ -65,9 +63,9 @@ class SpectrumConstructorTests(unittest.TestCase):
             bq.core.Spectrum([])
         with self.assertRaises(bq.core.SpectrumError):
             bq.core.Spectrum(
-                get_test_data(), bin_edges_kev=self.energy_edges_kev[:-1])
+                get_test_data(), bin_edges_kev=TEST_EDGES_KEV[:-1])
 
-        bad_edges = self.energy_edges_kev.copy()
+        bad_edges = TEST_EDGES_KEV.copy()
         bad_edges[12] = bad_edges[9]
         with self.assertRaises(bq.core.SpectrumError):
             bq.core.Spectrum(get_test_data(), bin_edges_kev=bad_edges)
@@ -82,8 +80,6 @@ class SpectrumConstructorTests(unittest.TestCase):
 
 class SpectrumAddSubtractTests(unittest.TestCase):
     """Test addition and subtraction of spectra"""
-
-    energy_edges_kev = np.arange(TEST_DATA_LENGTH + 1) * TEST_GAIN
 
     def test_uncal_add(self):
         """Test basic addition of uncalibrated spectra"""
@@ -100,8 +96,7 @@ class SpectrumAddSubtractTests(unittest.TestCase):
         """
 
         spec1 = bq.core.Spectrum(get_test_data())
-        spec2 = bq.core.Spectrum(
-            get_test_data(), bin_edges_kev=self.energy_edges_kev)
+        spec2 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
         with self.assertRaises(NotImplementedError):
             spec1 + spec2
 
@@ -111,10 +106,8 @@ class SpectrumAddSubtractTests(unittest.TestCase):
         NOTE: not implemented yet - so check that it errors.
         """
 
-        spec1 = bq.core.Spectrum(
-            get_test_data(), bin_edges_kev=self.energy_edges_kev)
-        spec2 = bq.core.Spectrum(
-            get_test_data(), bin_edges_kev=self.energy_edges_kev)
+        spec1 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
+        spec2 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
         with self.assertRaises(NotImplementedError):
             spec1 + spec2
 
@@ -133,8 +126,7 @@ class SpectrumAddSubtractTests(unittest.TestCase):
         """
 
         spec1 = bq.core.Spectrum(get_test_data())
-        spec2 = bq.core.Spectrum(
-            get_test_data(), bin_edges_kev=self.energy_edges_kev)
+        spec2 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
         with self.assertRaises(NotImplementedError):
             spec1 - spec2
 
@@ -144,10 +136,8 @@ class SpectrumAddSubtractTests(unittest.TestCase):
         NOTE: not implemented yet - so check that it errors.
         """
 
-        spec1 = bq.core.Spectrum(
-            get_test_data(), bin_edges_kev=self.energy_edges_kev)
-        spec2 = bq.core.Spectrum(
-            get_test_data(), bin_edges_kev=self.energy_edges_kev)
+        spec1 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
+        spec2 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
         with self.assertRaises(NotImplementedError):
             spec1 - spec2
 
