@@ -43,14 +43,14 @@ class SpectrumConstructorTests(unittest.TestCase):
     def test_uncal(self):
         """Test simple uncalibrated construction."""
 
-        spec = bq.core.Spectrum(get_test_data())
+        spec = get_test_uncal_spectrum()
         self.assertEqual(len(spec.data), TEST_DATA_LENGTH)
         self.assertFalse(spec.is_calibrated)
 
     def test_cal(self):
         """Test simple calibrated construction."""
 
-        spec = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
+        spec = get_test_cal_spectrum()
         self.assertEqual(len(spec.data), TEST_DATA_LENGTH)
         self.assertEqual(len(spec.bin_edges_kev), TEST_DATA_LENGTH + 1)
         self.assertEqual(len(spec.energies_kev), TEST_DATA_LENGTH)
@@ -73,7 +73,7 @@ class SpectrumConstructorTests(unittest.TestCase):
     def test_uncalibrated_exception(self):
         """Test UncalibratedError."""
 
-        spec = bq.core.Spectrum(get_test_data())
+        spec = get_test_uncal_spectrum()
         with self.assertRaises(bq.core.UncalibratedError):
             spec.energies_kev
 
@@ -81,89 +81,85 @@ class SpectrumConstructorTests(unittest.TestCase):
 class SpectrumAddSubtractTests(unittest.TestCase):
     """Test addition and subtraction of spectra"""
 
-    def test_uncal_add(self):
-        """Test basic addition of uncalibrated spectra"""
+    def test_uncal_add_sub(self):
+        """Test basic addition/subtraction of uncalibrated spectra"""
 
-        spec1 = bq.core.Spectrum(get_test_data())
-        spec2 = bq.core.Spectrum(get_test_data())
+        spec1 = get_test_uncal_spectrum()
+        spec2 = get_test_uncal_spectrum()
         tot = spec1 + spec2
         self.assertTrue(np.all(tot.data == spec1.data + spec2.data))
+        diff = spec1 - spec2
+        self.assertTrue(np.all(diff.data == spec1.data - spec2.data))
 
-    def test_cal_uncal_add(self):
+    def test_cal_uncal_add_sub(self):
         """Test basic addition of a calibrated with an uncalibrated spectrum.
 
         NOTE: not implemented yet - so check that it errors.
         """
 
-        spec1 = bq.core.Spectrum(get_test_data())
-        spec2 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
+        spec1 = get_test_uncal_spectrum()
+        spec2 = get_test_cal_spectrum()
         with self.assertRaises(NotImplementedError):
             spec1 + spec2
+        with self.assertRaises(NotImplementedError):
+            spec1 - spec2
 
-    def test_cal_add(self):
+    def test_cal_add_sub(self):
         """Test basic addition of calibrated spectra.
 
         NOTE: not implemented yet - so check that it errors.
         """
 
-        spec1 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
-        spec2 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
+        spec1 = get_test_cal_spectrum()
+        spec2 = get_test_cal_spectrum()
         with self.assertRaises(NotImplementedError):
             spec1 + spec2
-
-    def test_uncal_subtract(self):
-        """Test basic subtraction of uncalibrated spectra"""
-
-        spec1 = bq.core.Spectrum(get_test_data())
-        spec2 = bq.core.Spectrum(get_test_data())
-        diff = spec1 - spec2
-        self.assertTrue(np.all(diff.data == spec1.data - spec2.data))
-
-    def test_cal_uncal_subtract(self):
-        """Test basic subtraction of a calibrated with an uncalibrated spectrum.
-
-        NOTE: not implemented yet - so check that it errors.
-        """
-
-        spec1 = bq.core.Spectrum(get_test_data())
-        spec2 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
         with self.assertRaises(NotImplementedError):
             spec1 - spec2
 
-    def test_cal_subtract(self):
-        """Test basic subtraction of calibrated spectra.
+    def test_add_sub_type_error(self):
+        """Check that adding/subtracting a non-Spectrum gives a TypeError."""
 
-        NOTE: not implemented yet - so check that it errors.
-        """
-
-        spec1 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
-        spec2 = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
-        with self.assertRaises(NotImplementedError):
-            spec1 - spec2
-
-    def test_add_type_error(self):
-        """Check that adding a non-Spectrum gives a TypeError."""
-
-        spec1 = bq.core.Spectrum(get_test_data())
+        spec1 = get_test_uncal_spectrum()
         with self.assertRaises(TypeError):
             spec1 + 5
         with self.assertRaises(TypeError):
+            spec1 - 5
+        with self.assertRaises(TypeError):
             spec1 + 'asdf'
         with self.assertRaises(TypeError):
+            spec1 - 'asdf'
+        with self.assertRaises(TypeError):
             spec1 + get_test_data()
+        with self.assertRaises(TypeError):
+            spec1 - get_test_data()
 
-    def test_add_wrong_length(self):
-        """Adding spectra of different lengths gives a SpectrumError."""
+    def test_add_sub_wrong_length(self):
+        """
+        Adding/subtracting spectra of different lengths gives a SpectrumError.
+        """
 
-        spec1 = bq.core.Spectrum(get_test_data())
+        spec1 = get_test_uncal_spectrum()
         spec2 = bq.core.Spectrum(get_test_data(length=TEST_DATA_LENGTH * 2))
         with self.assertRaises(bq.core.SpectrumError):
             spec1 + spec2
+        with self.assertRaises(bq.core.SpectrumError):
+            spec1 - spec2
 
 
 def get_test_data(length=TEST_DATA_LENGTH, expectation_val=TEST_COUNTS):
     """Build a vector of random counts."""
     return np.random.poisson(lam=expectation_val, size=length).astype(np.int)
+
+
+def get_test_uncal_spectrum():
+    uncal = bq.core.Spectrum(get_test_data())
+    return uncal
+
+
+def get_test_cal_spectrum():
+    cal = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
+    return cal
 
 
 def main():
