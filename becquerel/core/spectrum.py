@@ -153,6 +153,9 @@ class Spectrum(object):
     def __div__(self, other):
         return self._mul_div(other, div=True)
 
+    def __truediv__(self, other):
+        return self._mul_div(other, div=True)
+
     def _add_sub(self, other, sub=False):
         """Add or subtract two spectra. Handle errors."""
 
