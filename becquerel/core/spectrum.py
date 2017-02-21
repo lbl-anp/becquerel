@@ -181,7 +181,7 @@ class Spectrum(object):
 
         try:
             scaling_factor = float(scaling_factor)
-        except TypeError:
+        except (TypeError, ValueError):
             raise TypeError('Spectrum must be multiplied/divided by a scalar')
         else:
             if (scaling_factor == 0 or
