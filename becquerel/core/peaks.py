@@ -75,7 +75,7 @@ class GrossROIPeak(PeakBase):
         self._spec = spec
         self._left_ch = ROI_bounds_ch[0]
         self._right_ch = ROI_bounds_ch[1]
-        self._gross_area_c = integrate(spec, *ROI_bounds_ch)
+        self._gross_area_c = self._spec.integrate(*ROI_bounds_ch)
         self._centroid_ch = self._measure_centroid()
         self._FWHM_ch = self._measure_FWHM()
 
@@ -115,23 +115,3 @@ class GrossROIPeak(PeakBase):
     def FWHM_kev(self):
         width_kev = self._spec.cal.channel_to_energy(self.FWHM_ch)
         return width_kev
-
-
-def integrate(spec, ROI_left_ch, ROI_right_ch):
-    """Integrate a spectrum from one channel to another.
-
-    Args:
-      spec: a Spectrum object to integrate on
-      ROI_left_ch: channel to integrate from
-      ROI_right_ch: channel to integrate to
-
-    Returns:
-      a float of counts in the spectrum between ROI_left_ch and ROI_right_ch
-    """
-
-    left_ch = int(np.round(ROI_left_ch))
-    right_ch = int(np.round(ROI_right_ch))
-
-    integral = np.sum(spec.data[left_ch:right_ch + 1])  # end-bin inclusive
-
-    return integral

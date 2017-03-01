@@ -141,6 +141,25 @@ class Spectrum(object):
         centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
         return centers_kev
 
+    def integrate(self, left_ch, right_ch):
+        """Integrate over a region of interest.
+
+        Args:
+          left_ch: channel number of left side of region
+          right_ch: channel number of right side of region
+
+        Returns:
+          a float of counts between left_ch and right_ch, inclusive
+        """
+
+        # TODO inputs as floats and compute partial bins
+
+        left_ind = int(np.round(left_ch))
+        right_ind = int(np.round(right_ch))
+
+        integral = np.sum(self.data[left_ind:right_ind + 1])
+        return integral
+
     def __add__(self, other):
         return self._add_sub(other, sub=False)
 
