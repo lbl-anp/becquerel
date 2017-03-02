@@ -71,6 +71,8 @@ class FitEnergyCalBase(EnergyCalBase):
             self._peaks_dict.remove(id(peak))
         else:
             # ... restructure without using dict
+            pass
+
 
 class FixedLinearCal(EnergyCalBase):
     """Linear energy calibration, fixed by coefficients, not adaptable."""

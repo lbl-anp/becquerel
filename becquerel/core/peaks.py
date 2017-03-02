@@ -2,10 +2,26 @@ from __future__ import print_function
 
 import numpy as np
 from abc import ABCMeta, abstractmethod, abstractproperty
+from builtins import super
 
 
 class FeatureBase(object):
-    """Abstract base class for a spectral feature."""
+    """Abstract base class for any feature."""
+
+    __metaclass__ = ABCMeta
+
+
+class SpectralFeature(FeatureBase):
+    """Abstract base class for a feature associated with a spectrum."""
+
+    __metaclass__ = ABCMeta
+
+    def __init__(self, spec):
+        self._spec = spec
+
+
+class EnergyFeature(FeatureBase):
+    """Abstract base class for an energy feature."""
 
     __metaclass__ = ABCMeta
 
@@ -15,32 +31,41 @@ class FeatureBase(object):
         """
         pass
 
+    @energy_ch.setter
+    def energy_ch(self):
+        pass
+
     @property
-    def assigned_energy_kev(self):
+    def cal_energy_kev(self):
         """Energy assigned by user, e.g. for calibration."""
-        return self._assigned_energy_kev
+        return self._cal_energy_kev
 
-    @assigned_energy_kev.setter
-    def assigned_energy_kev(self, energy_kev):
-        self._assigned_energy_kev = energy_kev
+    @cal_energy_kev.setter
+    def cal_energy_kev(self, energy_kev):
+        self._cal_energy_kev = energy_kev
 
 
-class PeakBase(FeatureBase):
-    """Abstract base class for a peak feature."""
+class AreaFeature(FeatureBase):
+    """Abstract base class for an area (counts) feature."""
 
     __metaclass__ = ABCMeta
 
     @abstractproperty
-    def FWHM_kev(self):
-        """The FWHM of the peak."""
-        pass
-
     def area_c(self):
-        """The peak area."""
+        """The (measured) area of the feature, in counts."""
         pass
 
+    @property
+    def cal_area(self):
+        """Area assigned by user, e.g. activity for efficiency calibration."""
+        return self._cal_area
 
-class ArbitraryCalPoint(FeatureBase):
+    @cal_area.setter
+    def cal_area(self, area):
+        self._cal_area = area
+
+
+class ArbitraryCalPoint(EnergyFeature):
     """An arbitrary calibration point."""
 
     def __init__(self, ch, kev):
@@ -50,14 +75,14 @@ class ArbitraryCalPoint(FeatureBase):
           kev: the keV value to assign
         """
 
-        self._ch = ch
-        self._assigned_energy_kev = kev
+        self.energy_ch = ch
+        self.cal_energy_kev = kev
 
     def energy_ch(self):
-        return self._ch
+        return self.energy_ch
 
 
-class GrossROIPeak(PeakBase):
+class GrossROIPeak(SpectralFeature, EnergyFeature, AreaFeature):
     """A simplistic gross-area peak feature. For demonstration only."""
 
     def __init__(self, spec, ROI_bounds_ch):
@@ -72,7 +97,7 @@ class GrossROIPeak(PeakBase):
             raise ValueError('ROI bounds should be an iterable of length 2; ' +
                              'got length {}'.format(len(ROI_bounds_ch)))
 
-        self._spec = spec
+        super().__init__(self, spec)
         self._left_ch = ROI_bounds_ch[0]
         self._right_ch = ROI_bounds_ch[1]
         self._gross_area_c = self._spec.integrate(*ROI_bounds_ch)
@@ -94,6 +119,10 @@ class GrossROIPeak(PeakBase):
     @property
     def energy_ch(self):
         return self._centroid_ch
+
+    @energy_ch.setter
+    def energy_ch(self, ch):
+        self._centroid_ch = ch
 
     @property
     def energy_kev(self):
