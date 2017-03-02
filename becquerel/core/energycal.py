@@ -6,22 +6,53 @@ from abc import ABCMeta, abstractmethod
 
 
 class EnergyCalBase(object):
-    """Abstract base class for an energy calibration."""
+    """Abstract base class for an energy calibration.
+
+    Abstract methods:
+      ch2kev: convert channel(s) to energy(s)
+    """
 
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def ch2kev(self, channel):
-        """Convert channel(s) to energy(ies)."""
+        """Convert channel(s) to energy(s).
+
+        Args:
+          channel: a number or array of numbers representing channel number
+
+        Returns:
+          A float, if channel is a scalar.
+          Otherwise, a np.array of floats of the same shape as input.
+          Either way, it represents the energy(s) in keV.
+        """
         pass
 
 
 class FitEnergyCalBase(EnergyCalBase):
     """
     Abstract base class for an energy calibration based on spectral features.
+
+    Abstract methods:
+      fit: produce new calibration curve based on current calibration points
+
+    Properties:
+      ch_list (read-only): list of the channel values of the calibration points
+      kev_list (read-only): list of the energies of the calibration points
+
+    Methods:
+      __init__: assign the peaks_list property
+      add_peak: add a calibration point
+      rm_peak: remove a calibration point
     """
 
     def __init__(self, peaks_list, **kwargs):
+        """Assign the peaks_list property.
+
+        Args:
+          peaks_list: an iterable of objects derived from FeatureBase
+        """
+
         self._peaks_list = peaks_list
         super().__init__(**kwargs)
 
@@ -32,10 +63,15 @@ class FitEnergyCalBase(EnergyCalBase):
 
     @property
     def ch_list(self):
+        """A list of the channel values of the calibration points."""
+
         return [pk.energy_ch for pk in self._peaks_list]
 
     @property
     def kev_list(self):
+        """A list of the calibration energies [keV] of the calibration points.
+        """
+
         return [pk.cal_energy_kev for pk in self._peaks_list]
 
     def add_peak(self, peak, refit=True):
@@ -79,6 +115,13 @@ class FitEnergyCalBase(EnergyCalBase):
 
 class SimplePolyCal(EnergyCalBase):
     """Polynomial energy calibration, by coefficients, not spectral features.
+
+    Properties:
+      coeffs (read-only): array of polynomial coefficients
+
+    Methods:
+      __init__: assign the coeffs property, if wait is False
+      ch2kev: convert channel(s) to energy(s)
     """
 
     def __init__(self, coeffs=None, wait=False, **kwargs):
@@ -88,25 +131,56 @@ class SimplePolyCal(EnergyCalBase):
         Args:
           coeffs: the coefficients of the polynomial, in increasing order of
             terms.
+          wait: a bool. If True, do not assign coeffs property yet.
+            (Useful for subclasses.) [Default: False]
         """
 
         if not wait:
-            self._coeffs = np.array(coeffs, dtype=np.float)
+            self._coeffs = np.array(coeffs, dtype=float)
         super().__init__(**kwargs)
 
     @property
     def coeffs(self):
+        """Array of the polynomial coefficients, from 0th-order to highest."""
+
         return self._coeffs
 
     def ch2kev(self, channel):
-        ch_array = np.array(channel, dtype=np.float)
-        energy_kev = np.zeros_like(ch_array)
+        """Convert channel(s) to energy(s).
+
+        Args:
+          channel: a number or array of numbers representing channel number
+
+        Returns:
+          A float, if channel is a scalar.
+          Otherwise, a np.array of floats of the same shape as input.
+          Either way, it represents the energy(s) in keV.
+        """
+
+        if np.isscalar(channel):
+            ch_array = float(channel)
+            energy_kev = 0.
+        else:
+            ch_array = np.array(channel, dtype=float)
+            energy_kev = np.zeros_like(ch_array)
         for i, coeff in enumerate(self.coeffs):
             energy_kev += coeff * ch_array**i
         return energy_kev
 
 
 class FitPolyCal(FitEnergyCalBase, SimplePolyCal):
+    """
+    Polynomial energy calibration, from a list of spectral features (peaks).
+
+    Properties:
+      ch_list (read-only): list of the channel values of the calibration points
+      kev_list (read-only): list of the energies of the calibration points
+      order (read-only): the order of the polynomial
+      coeffs (read-only): array of polynomial coefficients
+
+    Methods:
+      ch2kev: convert channel(s) to energy(s)
+    """
 
     def __init__(self, order=2, **kwargs):
         """
@@ -117,14 +191,17 @@ class FitPolyCal(FitEnergyCalBase, SimplePolyCal):
         """
 
         super().__init__(wait=True, **kwargs)
-        self._order = 2
+        self._order = int(order)
         self.fit()
 
     @property
     def order(self):
+        """An integer indicating the polynomial order."""
+
         return self._order
 
     def fit(self):
-        """Produce new calibration curve based on current points."""
+        """Produce a new calibration curve based on current calibration points.
+        """
 
         self._coeffs = np.polyfit(self.ch_list, self.kev_list, self.order)
