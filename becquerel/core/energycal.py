@@ -6,11 +6,7 @@ from abc import ABCMeta, abstractmethod
 
 
 class EnergyCalBase(object):
-    """Abstract base class for an energy calibration.
-
-    Abstract methods:
-      ch2kev: convert channel(s) to energy(s)
-    """
+    """Abstract base class for an energy calibration."""
 
     __metaclass__ = ABCMeta
 
@@ -41,7 +37,6 @@ class FitEnergyCalBase(EnergyCalBase):
       kev_list (read-only): list of the energies of the calibration points
 
     Methods:
-      __init__: assign the peaks_list property
       add_peak: add a calibration point
       rm_peak: remove a calibration point
     """
@@ -59,6 +54,7 @@ class FitEnergyCalBase(EnergyCalBase):
     @abstractmethod
     def fit(self):
         """Produce new calibration curve based on current points."""
+
         pass
 
     @property
@@ -120,7 +116,6 @@ class SimplePolyCal(EnergyCalBase):
       coeffs (read-only): array of polynomial coefficients
 
     Methods:
-      __init__: assign the coeffs property, if wait is False
       ch2kev: convert channel(s) to energy(s)
     """
 

@@ -45,9 +45,6 @@ class EnergyFeature(FeatureBase):
     Properties:
       energy_ch (read-only): The (measured) energy of the feature, in channels.
       cal_energy_kev: Energy assigned by user, e.g. for calibration.
-
-    Methods:
-      __init__: Assign cal_energy_kev if provided.
     """
 
     __metaclass__ = ABCMeta
@@ -78,8 +75,6 @@ class EnergyFeature(FeatureBase):
 
     @cal_energy_kev.setter
     def cal_energy_kev(self, energy_kev):
-        """Energy assigned by user, e.g. for calibration."""
-
         self._cal_energy_kev = float(energy_kev)
 
 
@@ -89,9 +84,6 @@ class AreaFeature(FeatureBase):
     Properties:
       area_c (read-only): the area of the feature, in counts
       cal_area: the area assigned by the user for calibration (e.g. activity)
-
-    Methods:
-      __init__: Assign cal_area if provided
     """
 
     __metaclass__ = ABCMeta
@@ -123,20 +115,11 @@ class AreaFeature(FeatureBase):
 
     @cal_area.setter
     def cal_area(self, area):
-        """Area assigned by user for calibration.
-
-        E.g. source emissions for efficiency calibration.
-        """
-
         self._cal_area = area
 
 
 class ArbitraryCalPoint(EnergyFeature):
-    """An arbitrary calibration point.
-
-    Methods:
-      __init__: assign channel value and calibration value.
-    """
+    """An arbitrary calibration point."""
 
     def __init__(self, ch, kev, **kwargs):
         """
