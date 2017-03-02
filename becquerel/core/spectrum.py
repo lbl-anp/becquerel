@@ -141,6 +141,20 @@ class Spectrum(object):
         centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
         return centers_kev
 
+    def calibrate(self, cal):
+        """Assign a calibration to this spectrum.
+
+        Args:
+          cal: an energy cal object
+        """
+
+        if not isinstance(cal, energycal.EnergyCalBase):
+            raise TypeError('Bad calibration type')
+        # TODO sort out how calibration corresponds to bin edges; below is temp
+        bin_edges_ch = np.arange(-0.5, len(self.data) + 1)
+        self.bin_edges_kev = cal.channel_to_energy(bin_edges_ch)
+        self.cal = cal
+
     def integrate(self, left_ch, right_ch):
         """Integrate over a region of interest.
 

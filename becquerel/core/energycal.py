@@ -16,16 +16,61 @@ class EnergyCalBase(object):
         pass
 
 
-class FittedEnergyCalBase(EnergyCalBase):
+class FitEnergyCalBase(EnergyCalBase):
     """
     Abstract base class for an energy calibration based on spectral features.
     """
+
+    def __init__(self, peaks_list):
+        self._peaks_list = peaks_list
+        self._peaks_dict = {}
+        for i, pk in enumerate(peaks_list):
+            self._peaks_dict[id(pk)] = i
+        self._ch_list = [pk.energy_ch for pk in peaks_list]
+        self._kev_list = [pk.assigned_energy_kev for pk in peaks_list]
 
     @abstractmethod
     def fit(self):
         """Produce new calibration curve based on current points."""
         pass
 
+    def add_peak(self, peak, refit=True):
+        """Add a peak to the calibration.
+
+        Args:
+          peak: a Feature object representing the peak.
+          refit: if True, the calibration curve is automatically updated.
+            [default: True]
+        """
+
+        if not isinstance(peak, peaks.FeatureBase):
+            raise TypeError('peak should be subclassed from Feature')
+        if peak in self._peaks_list:
+            return None
+
+        self._peaks_dict[id(peak)] = len(self._peaks_list)
+        self._peaks_list.append(peak)
+        if refit:
+            self.fit()
+
+    def rm_peak(self, peak_or_energy, refit=True):
+        """Remove a peak from the calibration.
+
+        Args:
+          peak_or_energy: either a Feature object, or a value in keV
+            representing the assigned energy value of the peak to be removed.
+          refit: if True, the calibration curve is automatically updated.
+            [default: True]
+        """
+
+        if isinstance(peak_or_energy, peaks.FeatureBase):
+            peak = peak_or_energy
+            self._peaks_list.remove(peak)
+            del self._ch_list[self._peaks_dict[id(peak)]]
+            del self._kev_list[self._peaks_dict[id(peak)]]
+            self._peaks_dict.remove(id(peak))
+        else:
+            # ... restructure without using dict
 
 class FixedLinearCal(EnergyCalBase):
     """Linear energy calibration, fixed by coefficients, not adaptable."""
@@ -66,7 +111,7 @@ class FixedQuadraticCal(EnergyCalBase):
         return energy_kev
 
 
-class FitLinearCal(FittedEnergyCalBase, FixedLinearCal):
+class FitLinearCal(FitEnergyCalBase, FixedLinearCal):
 
     def __init__(self, peaks_list):
         """
@@ -75,31 +120,14 @@ class FitLinearCal(FittedEnergyCalBase, FixedLinearCal):
             module peaks.py
         """
 
-        self._peaks_list = peaks_list
+        super(FitLinearCal, self).__init__(peaks_list)
         self.fit()
 
     def fit(self):
         """Produce new calibration curve based on current points."""
 
-        ch = [pk.energy_ch for pk in self._peaks_list]
-        kev = [pk.assigned_energy_kev for pk in self._peaks_list]
-        slope_kev_ch, offset_kev = np.polyfit(ch, kev, 1)
+        slope_kev_ch, offset_kev = np.polyfit(
+            self._ch_list, self._kev_list, 1)
 
         self.offset_kev = offset_kev
         self.slope_kev_ch = slope_kev_ch
-
-    def add_peak(self, peak, refit=True):
-        """Add a peak to the calibration.
-
-        Args:
-          peak: a Feature object representing the peak.
-          refit: if True, the calibration curve is automatically updated.
-            [default: True]
-        """
-
-        if not isinstance(peak, peaks.FeatureBase):
-            raise TypeError('peak should be subclassed from Feature')
-
-        self._peaks_list.append(peak)
-        if refit:
-            self.fit()
