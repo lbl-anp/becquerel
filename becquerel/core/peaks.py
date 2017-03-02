@@ -16,8 +16,11 @@ class SpectralFeature(FeatureBase):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, spec):
+    def __init__(self, spec, **kwargs):
+        if not isinstance(spec, bq.core.spectrum.Spectrum):
+            raise TypeError('spec should be a Spectrum object')
         self._spec = spec
+        super().__init__(**kwargs)
 
 
 class EnergyFeature(FeatureBase):
@@ -25,15 +28,15 @@ class EnergyFeature(FeatureBase):
 
     __metaclass__ = ABCMeta
 
-    @abstractproperty
+    def __init__(self, cal_energy_kev=None, **kwargs):
+        self.cal_energy_kev = cal_energy_kev
+        super().__init__(**kwargs)
+
+    @property
     def energy_ch(self):
         """The (measured) characteristic energy of the feature, in channels.
         """
-        pass
-
-    @energy_ch.setter
-    def energy_ch(self):
-        pass
+        return self._energy_ch
 
     @property
     def cal_energy_kev(self):
@@ -50,10 +53,14 @@ class AreaFeature(FeatureBase):
 
     __metaclass__ = ABCMeta
 
-    @abstractproperty
+    def __init__(self, cal_area=None, **kwargs):
+        self.cal_area = cal_area
+        super().__init__(**kwargs)
+
+    @property
     def area_c(self):
         """The (measured) area of the feature, in counts."""
-        pass
+        return self._area_c
 
     @property
     def cal_area(self):
@@ -68,18 +75,15 @@ class AreaFeature(FeatureBase):
 class ArbitraryCalPoint(EnergyFeature):
     """An arbitrary calibration point."""
 
-    def __init__(self, ch, kev):
+    def __init__(self, ch, kev, **kwargs):
         """
         Args:
           ch: the channel value
           kev: the keV value to assign
         """
 
-        self.energy_ch = ch
-        self.cal_energy_kev = kev
-
-    def energy_ch(self):
-        return self.energy_ch
+        self._energy_ch = ch
+        super().__init__(cal_energy_kev=kev, **kwargs)
 
 
 class GrossROIPeak(SpectralFeature, EnergyFeature, AreaFeature):
@@ -97,12 +101,10 @@ class GrossROIPeak(SpectralFeature, EnergyFeature, AreaFeature):
             raise ValueError('ROI bounds should be an iterable of length 2; ' +
                              'got length {}'.format(len(ROI_bounds_ch)))
 
-        super().__init__(self, spec)
-        self._left_ch = ROI_bounds_ch[0]
-        self._right_ch = ROI_bounds_ch[1]
-        self._gross_area_c = self._spec.integrate(*ROI_bounds_ch)
-        self._centroid_ch = self._measure_centroid()
-        self._FWHM_ch = self._measure_FWHM()
+        super().__init__(spec)
+        self._left_ch, self._right_ch = ROI_bounds_ch
+        self._area_c = self._spec.integrate(self._left_ch, self._right_ch)
+        self._energy_ch = self._measure_centroid()
 
     def _measure_centroid(self):
         """Calculate energy centroid of region. (don't really do this)"""
@@ -112,18 +114,6 @@ class GrossROIPeak(SpectralFeature, EnergyFeature, AreaFeature):
         centroid = float(weighted_terms) / self._gross_area_c
         return centroid
 
-    def _measure_FWHM(self):
-        """Not really a FWHM, don't actually do this."""
-        return self._right_ch - self._left_ch
-
-    @property
-    def energy_ch(self):
-        return self._centroid_ch
-
-    @energy_ch.setter
-    def energy_ch(self, ch):
-        self._centroid_ch = ch
-
     @property
     def energy_kev(self):
         # TODO there needs to be some shortcut function for channel to energy,
@@ -131,16 +121,3 @@ class GrossROIPeak(SpectralFeature, EnergyFeature, AreaFeature):
         # so this form can later be simplified.
         centroid_kev = self._spec.cal.channel_to_energy(self.energy_ch)
         return centroid_kev
-
-    @property
-    def area_c(self):
-        return self._gross_area_c
-
-    @property
-    def FWHM_ch(self):
-        return self._FWHM_ch
-
-    @property
-    def FWHM_kev(self):
-        width_kev = self._spec.cal.channel_to_energy(self.FWHM_ch)
-        return width_kev

@@ -11,7 +11,7 @@ class EnergyCalBase(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def channel_to_energy(self, channel):
+    def ch2kev(self, channel):
         """Convert channel(s) to energy(ies)."""
         pass
 
@@ -21,18 +21,22 @@ class FitEnergyCalBase(EnergyCalBase):
     Abstract base class for an energy calibration based on spectral features.
     """
 
-    def __init__(self, peaks_list):
+    def __init__(self, peaks_list, **kwargs):
         self._peaks_list = peaks_list
-        self._peaks_dict = {}
-        for i, pk in enumerate(peaks_list):
-            self._peaks_dict[id(pk)] = i
-        self._ch_list = [pk.energy_ch for pk in peaks_list]
-        self._kev_list = [pk.assigned_energy_kev for pk in peaks_list]
+        super().__init__(**kwargs)
 
     @abstractmethod
     def fit(self):
         """Produce new calibration curve based on current points."""
         pass
+
+    @property
+    def ch_list(self):
+        return [pk.energy_ch for pk in self._peaks_list]
+
+    @property
+    def kev_list(self):
+        return [pk.cal_energy_kev for pk in self._peaks_list]
 
     def add_peak(self, peak, refit=True):
         """Add a peak to the calibration.
@@ -44,14 +48,13 @@ class FitEnergyCalBase(EnergyCalBase):
         """
 
         if not isinstance(peak, peaks.FeatureBase):
-            raise TypeError('peak should be subclassed from Feature')
+            raise TypeError('peak should be subclassed from FeatureBase')
         if peak in self._peaks_list:
             return None
-
-        self._peaks_dict[id(peak)] = len(self._peaks_list)
-        self._peaks_list.append(peak)
-        if refit:
-            self.fit()
+        else:
+            self._peaks_list.append(peak)
+            if refit:
+                self.fit()
 
     def rm_peak(self, peak_or_energy, refit=True):
         """Remove a peak from the calibration.
@@ -66,70 +69,62 @@ class FitEnergyCalBase(EnergyCalBase):
         if isinstance(peak_or_energy, peaks.FeatureBase):
             peak = peak_or_energy
             self._peaks_list.remove(peak)
-            del self._ch_list[self._peaks_dict[id(peak)]]
-            del self._kev_list[self._peaks_dict[id(peak)]]
-            self._peaks_dict.remove(id(peak))
         else:
-            # ... restructure without using dict
-            pass
+            energy_kev = peak_or_energy
+            ind = self.kev_list.index(energy_kev)
+            del self._peaks_list[ind]
+        if refit:
+            self.fit()
 
 
-class FixedLinearCal(EnergyCalBase):
-    """Linear energy calibration, fixed by coefficients, not adaptable."""
+class SimplePolyCal(EnergyCalBase):
+    """Polynomial energy calibration, by coefficients, not spectral features.
+    """
 
-    def __init__(self, offset_kev, slope_kev_ch):
+    def __init__(self, coeffs=None, wait=False, **kwargs):
         """
-        E[keV] = offset_kev + slope_kev_ch * channel
+        E[keV] = sum_i( energy^i * coeffs[i] )
 
         Args:
-          slope_kev_ch: the slope of the calibration, in keV/channel.
-          offset_kev: the offset of the calibration, in keV.
+          coeffs: the coefficients of the polynomial, in increasing order of
+            terms.
         """
 
-        self.offset_kev = float(offset_kev)
-        self.slope_kev_ch = float(slope_kev_ch)
+        if not wait:
+            self._coeffs = np.array(coeffs, dtype=np.float)
+        super().__init__(**kwargs)
 
-    def channel_to_energy(self, channel):
-        energy_kev = self.offset_kev + self.slope_kev_ch * np.array(channel)
+    @property
+    def coeffs(self):
+        return self._coeffs
+
+    def ch2kev(self, channel):
+        ch_array = np.array(channel, dtype=np.float)
+        energy_kev = np.zeros_like(ch_array)
+        for i, coeff in enumerate(self.coeffs):
+            energy_kev += coeff * ch_array**i
         return energy_kev
 
 
-class FixedQuadraticCal(EnergyCalBase):
+class FitPolyCal(FitEnergyCalBase, SimplePolyCal):
 
-    def __init__(self, offset_kev, slope_kev_ch, quad_kev_ch2):
-        """
-        E[keV] = offset_kev + slope_kev_ch * channel + quad_kev_ch2 * channel^2
-        """
-
-        self.offset_kev = float(offset_kev)
-        self.slope_kev_ch = float(slope_kev_ch)
-        self.quad = float(quad_kev_ch2)
-
-    def channel_to_energy(self, channel):
-        ch_array = np.array(channel)
-        energy_kev = (self.offset_kev +
-                      self.slope_kev_ch * ch_array +
-                      self.quad * ch_array**2)
-        return energy_kev
-
-
-class FitLinearCal(FitEnergyCalBase, FixedLinearCal):
-
-    def __init__(self, peaks_list):
+    def __init__(self, order=2, **kwargs):
         """
         Args:
           peaks_list: an iterable containing instances of Features from
             module peaks.py
+          order: an integer indicating the polynomial order. [Default: 2]
         """
 
-        super(FitLinearCal, self).__init__(peaks_list)
+        super().__init__(wait=True, **kwargs)
+        self._order = 2
         self.fit()
+
+    @property
+    def order(self):
+        return self._order
 
     def fit(self):
         """Produce new calibration curve based on current points."""
 
-        slope_kev_ch, offset_kev = np.polyfit(
-            self._ch_list, self._kev_list, 1)
-
-        self.offset_kev = offset_kev
-        self.slope_kev_ch = slope_kev_ch
+        self._coeffs = np.polyfit(self.ch_list, self.kev_list, self.order)
