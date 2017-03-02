@@ -4,6 +4,7 @@ from __future__ import print_function
 import os
 import numpy as np
 import becquerel.parsers as parsers
+import becquerel.core.energycal as energycal
 # from ..parsers import SpeFile, SpcFile, CnfFile
 
 

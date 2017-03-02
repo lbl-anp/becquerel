@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import numpy as np
 from abc import ABCMeta, abstractmethod
+from becquerel.core import peaks
 
 
 class EnergyCalBase(object):
