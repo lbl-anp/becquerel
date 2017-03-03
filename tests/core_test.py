@@ -209,6 +209,51 @@ class SpectrumMultiplyDivideTests(unittest.TestCase):
             spec / np.nan
 
 
+class PeaksTests(unittest.TestCase):
+    """Test core.peaks"""
+
+    def test_arbitrary_pt(self):
+        """Test peaks.ArbitraryCalPoint"""
+
+        bq.core.peaks.ArbitraryCalPoint(2345, 661.66)
+
+    def test_gross_roi(self):
+        """Test peaks.GrossROIPeak"""
+
+        spec = get_test_uncal_spectrum()
+        bq.core.peaks.GrossROIPeak(spec, (32, 48))
+
+
+class EnergyCalTests(unittest.TestCase):
+    """Test core.energycal"""
+
+    def test_simple_cal(self):
+        """Test energycal.SimplePolyCal"""
+
+        cal = bq.core.energycal.SimplePolyCal(coeffs=(1, 0.37))
+        self.assertEqual(cal.ch2kev(100), 38)
+
+    def test_fit_poly_cal(self):
+        """Test energycal.FitPolyCal"""
+
+        pts = []
+        pts.append(bq.core.peaks.ArbitraryCalPoint(32, 661.66))
+        pts.append(bq.core.peaks.ArbitraryCalPoint(88, 1460.83))
+        cal = bq.core.energycal.FitPolyCal(pts, order=1)
+        self.assertTrue(np.all(cal.ch2kev([32, 88]) == [661.66, 1460.83]))
+
+    def test_add_rm_peaks(self):
+        """Test features of energycal.FitEnergyCalBase"""
+
+        pts = []
+        pts.append(bq.core.peaks.ArbitraryCalPoint(32, 661.66))
+        pts.append(bq.core.peaks.ArbitraryCalPoint(88, 1460.83))
+        cal = bq.core.energycal.FitPolyCal(pts, order=1)
+        new_pt = bq.core.peaks.ArbitraryCalPoint(127, 2614)
+        cal.add_peak(new_pt)
+        cal.rm_peak(pts[0])
+
+
 def get_test_data(length=TEST_DATA_LENGTH, expectation_val=TEST_COUNTS):
     """Build a vector of random counts."""
     return np.random.poisson(lam=expectation_val, size=length).astype(np.int)
