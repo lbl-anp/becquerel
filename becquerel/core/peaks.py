@@ -3,7 +3,6 @@ from __future__ import print_function
 import numpy as np
 from abc import ABCMeta
 from builtins import super
-import becquerel as bq
 
 
 class FeatureBase(object):
@@ -28,7 +27,7 @@ class SpectralFeature(FeatureBase):
           spec: a Spectrum object with which this feature is associated.
         """
 
-        if not isinstance(spec, bq.core.Spectrum):
+        if not isinstance(spec, Spectrum):
             raise TypeError('spec should be a Spectrum object')
         self._spec = spec
         super().__init__(**kwargs)
