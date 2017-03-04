@@ -201,4 +201,5 @@ class FitPolyCal(FitEnergyCalBase, SimplePolyCal):
         """Produce a new calibration curve based on current calibration points.
         """
 
-        self._coeffs = np.polyfit(self.ch_list, self.kev_list, self.order)
+        self._coeffs = np.polyfit(
+            self.ch_list, self.kev_list, self.order)[::-1]
