@@ -248,7 +248,7 @@ class EnergyCalTests(unittest.TestCase):
         pts = []
         pts.append(bq.core.peaks.ArbitraryCalPoint(32, 661.66))
         pts.append(bq.core.peaks.ArbitraryCalPoint(88, 1460.83))
-        cal = bq.core.energycal.FitPolyCal(pts, order=1)
+        cal = bq.core.energycal.FitPolyCal(peak_list=pts, order=1)
         new_pt = bq.core.peaks.ArbitraryCalPoint(127, 2614)
         cal.add_peak(new_pt)
         cal.rm_peak(pts[0])
