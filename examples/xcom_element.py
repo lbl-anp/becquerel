@@ -63,7 +63,7 @@ def plot_xcom(xcom_data, title):
     plt.legend(
         prop={'size': 8}, loc='upper left',
         bbox_to_anchor=(0., -0.35, 1., 0.25))
-    plt.title(title)
+    plt.title('XCOMQuery result:\n' + title)
     plt.xlabel('Photon Energy (MeV)')
     plt.ylabel(r'Cross Section (cm$^2$/g)')
 
@@ -75,9 +75,10 @@ if __name__ == '__main__':
     plot_xcom(xd, SYMBOL)
 
     plt.figure(figsize=(8, 9.2))
+    plt.title('XCOM website screenshot:')
     ax = plt.subplot(111)
     ax.axis('off')
-    ax.set_position([0., 0., 1., 1.])
+    ax.set_position([0., 0., 1., 0.9])
     img = plt.imread(
         os.path.join(os.path.dirname(__file__), 'xcom_element.png'))
     ax.imshow(img)

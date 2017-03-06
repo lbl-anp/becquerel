@@ -14,9 +14,10 @@ if __name__ == '__main__':
     plot_xcom(xd, COMPOUND)
 
     plt.figure(figsize=(8, 9.2))
+    plt.title('XCOM website screenshot:')
     ax = plt.subplot(111)
     ax.axis('off')
-    ax.set_position([0., 0., 1., 1.])
+    ax.set_position([0., 0., 1., 0.9])
     img = plt.imread(
         os.path.join(os.path.dirname(__file__), 'xcom_compound.png'))
     ax.imshow(img)
