@@ -9,7 +9,7 @@ References:
 """
 
 from __future__ import print_function
-from collections import OrderedDict
+from collections import Iterable, OrderedDict
 import requests
 import pandas as pd
 
@@ -185,17 +185,14 @@ class XCOMQuery(object):
                 return {'symbol': sym}
         try:
             int(arg)
-            return {'z': arg}
         except (ValueError, TypeError):
             pass
+        else:
+            return {'z': arg}
         if isinstance(arg, str):
             return {'compound': arg}
-        try:
-            for _ in arg:
-                pass
+        if isinstance(arg, Iterable):
             return {'mixture': arg}
-        except TypeError:
-            pass
         raise XCOMInputError(
             'Cannot determine if argument {}'.format(arg) +
             ' is a symbol, Z, compound, or mixture')
@@ -217,24 +214,27 @@ class XCOMQuery(object):
     @staticmethod
     def _check_mixture(formulae):
         """Check whether the mixture is valid. Raise XCOMInputError if not."""
-        try:
-            for formula in formulae:
-                pass
-        except:
+        if not isinstance(formulae, Iterable):
             raise XCOMInputError(
                 'Mixture formulae must be an iterable: {}'.format(
                     formulae))
         for formula in formulae:
             try:
-                compound, weight = formula.split()
-            except:
+                formula.split()
+            except AttributeError:
                 raise XCOMInputError(
-                    'Mixture formulae "{}" has bad line "{}"'.format(
+                    'Mixture formulae "{}" line "{}" must be a string'.format(
+                        formulae, formula))
+            try:
+                compound, weight = formula.split()
+            except ValueError:
+                raise XCOMInputError(
+                    'Mixture formulae "{}" line "{}" must split into 2'.format(
                         formulae, formula))
             XCOMQuery._check_compound(compound)
             try:
                 float(weight)
-            except:
+            except (ValueError, TypeError):
                 raise XCOMInputError(
                     'Mixture formulae "{}" has bad weight "{}"'.format(
                         formulae, weight))
@@ -272,10 +272,7 @@ class XCOMQuery(object):
 
         # include standard grid of energies
         if 'e_range' in kwargs:
-            try:
-                for _ in kwargs['e_range']:
-                    pass
-            except TypeError:
+            if not isinstance(kwargs['e_range'], Iterable):
                 raise XCOMInputError(
                     'XCOM e_range must be an iterable of length 2: {}'.format(
                         kwargs['e_range']))
@@ -303,10 +300,7 @@ class XCOMQuery(object):
 
         # additional energies
         if 'energies' in kwargs:
-            try:
-                for _ in kwargs['energies']:
-                    pass
-            except TypeError:
+            if not isinstance(kwargs['energies'], Iterable):
                 raise XCOMInputError(
                     'XCOM energies must be an iterable: {}'.format(
                         kwargs['energies']))

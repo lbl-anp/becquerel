@@ -73,15 +73,20 @@ class XCOMQueryTests(unittest.TestCase):
             xd = xcom.XCOMQuery(getattr(xcom, mixture), energies=energies)
             self.assertTrue(len(xd) == len(energies))
 
-    def test_12(self):
+    def test_11(self):
         """Test XCOMQuery raises exception if z is out of range............"""
         with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery(130, energies=[60., 662., 1460.])
 
-    def test_13(self):
-        """Test XCOMQuery raises exception for badly formed mixture........"""
+    def test_12(self):
+        """Test XCOMQuery raises exception for badly formed mixture (1)...."""
         with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery(['H2O 0.9', 'NaCl'], energies=[60., 662., 1460.])
+
+    def test_13(self):
+        """Test XCOMQuery raises exception for badly formed mixture (2)...."""
+        with self.assertRaises(xcom.XCOMInputError):
+            xcom.XCOMQuery(['H2O 1 1', 'NaCl 1'], energies=[60., 662., 1460.])
 
     def test_14(self):
         """Test XCOMQuery raises exception if given bad argument..........."""
