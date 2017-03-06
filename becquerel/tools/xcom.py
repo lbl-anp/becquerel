@@ -12,7 +12,6 @@ from __future__ import print_function
 from collections import OrderedDict
 import requests
 import pandas as pd
-from .units import units
 
 
 # Dry air relative weights taken from:
@@ -345,15 +344,6 @@ class XCOMQuery(object):
         if len(self) == 0:
             raise XCOMError('Parsed DataFrame is empty')
 
-    def _add_units(self):
-        """Add units to column."""
-        self._df['energy'] = [
-            x * 1000. * units.keV for x in self._df['energy']]
-        cm2_g = units.parse_expression('cm^2 / g')
-        for key in self.keys():
-            if key != 'energy':
-                self._df[key] = [x * cm2_g for x in self._df[key]]
-
     def perform(self):
         """Perform the query."""
         if self._data['Method'] not in ['1', '2', '3']:
@@ -365,5 +355,5 @@ class XCOMQuery(object):
         self._request()
         # package the output into a pandas DataFrame
         self._parse_text()
-        # add column units
-        self._add_units()
+        # convert energy from MeV to keV
+        self._df['energy'] *= 1000.

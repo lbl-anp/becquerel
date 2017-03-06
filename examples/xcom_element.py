@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 from becquerel.tools import xcom
 
 
-ENERGY_UNITS = 'MeV'
-
 PLOT_KWARGS = {
     'T+C': {
         'label': xcom.COLUMNS_LONG['T+C'],
@@ -59,16 +57,15 @@ def plot_xcom(xcom_data, title):
     fig = plt.figure(figsize=(7.4, 8.8))
     axis = fig.gca()
     axis.set_position([0.13, 0.25, 0.62, 0.64])
-    erg = [x.to(ENERGY_UNITS).magnitude for x in xcom_data['energy']]
+    erg = xcom_data['energy'] / 1000.  # MeV
     for field in ['T+C', 'T-C', 'C', 'I', 'PA', 'PPN', 'PPE']:
-        xs = [x.magnitude for x in xcom_data[field]]
-        plt.loglog(erg, xs, **PLOT_KWARGS[field])
+        plt.loglog(erg, xcom_data[field], **PLOT_KWARGS[field])
     plt.legend(
         prop={'size': 8}, loc='upper left',
         bbox_to_anchor=(0., -0.35, 1., 0.25))
     plt.title(title)
-    plt.xlabel('Photon Energy ({})'.format(ENERGY_UNITS))
-    plt.ylabel(u'Cross Section ({:~P})'.format(xcom_data['C'][0].units))
+    plt.xlabel('Photon Energy (MeV)')
+    plt.ylabel(r'Cross Section (cm$^2$/g)')
 
 
 if __name__ == '__main__':
