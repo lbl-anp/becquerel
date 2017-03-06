@@ -141,7 +141,6 @@ class XCOMQuery(object):
     def __init__(self, arg, **kwargs):
         """Initialize and perform an XCOM query. Return a DataFrame."""
         self._url = _URL
-        self._data = None
         self._req = None
         self._text = None
         self._df = None
