@@ -73,43 +73,37 @@ class XCOMQueryTests(unittest.TestCase):
             xd = xcom.XCOMQuery(getattr(xcom, mixture), energies=energies)
             self.assertTrue(len(xd) == len(energies))
 
-    def test_11(self):
-        """Test XCOMQuery raises exception for unknown symbol.............."""
-        with self.assertRaises(xcom.XCOMError):
-            xcom.XCOMQuery(
-                'Xx', energies=[60., 662., 1460.], e_range=[1., 10000.])
-
     def test_12(self):
         """Test XCOMQuery raises exception if z is out of range............"""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery(130, energies=[60., 662., 1460.])
 
     def test_13(self):
         """Test XCOMQuery raises exception for badly formed mixture........"""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery(['H2O 0.9', 'NaCl'], energies=[60., 662., 1460.])
 
     def test_14(self):
         """Test XCOMQuery raises exception if given bad argument..........."""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery(None, energies=[60., 662., 1460.])
 
     def test_15(self):
         """Test XCOMQuery raises exception if no energies are requested...."""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge')
 
     def test_16(self):
         """Test XCOMQuery raises exception if website not found............"""
         xcom._URL = 'http://httpbin.org/status/404'
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMRequestError):
             xcom.XCOMQuery('Ge', energies=[60., 662., 1460.])
         xcom._URL = XCOM_URL_ORIG
 
     def test_17(self):
         """Test XCOMQuery raises exception if data from website is empty..."""
         xcom._URL = 'http://httpbin.org/post'
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMRequestError):
             xcom.XCOMQuery('Ge', energies=[60., 662., 1460.])
         xcom._URL = XCOM_URL_ORIG
 
@@ -130,47 +124,47 @@ class XCOMQueryTests(unittest.TestCase):
 
     def test_20(self):
         """Test XCOMQuery raises exception if energies not iterable........"""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', energies=1460.)
 
     def test_21(self):
         """Test XCOMQuery raises exception if energies out of range (low).."""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', energies=[60., 662., 1460., 0.001])
 
     def test_22(self):
         """Test XCOMQuery raises exception if energies out of range (high)."""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', energies=[60., 662., 1460., 1e9])
 
     def test_23(self):
         """Test XCOMQuery raises exception if e_range not an iterable......"""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range=100.)
 
     def test_24(self):
         """Test XCOMQuery raises exception if len(e_range) != 2............"""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range=[1., 10000., 100000.])
 
     def test_25(self):
         """Test XCOMQuery raises exception if e_range[0] is out of range..."""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range=[0.1, 10000.])
 
     def test_26(self):
         """Test XCOMQuery raises exception if e_range[1] is out of range..."""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range=[0.1, 1e9])
 
     def test_27(self):
         """Test XCOMQuery raises exception if e_range is out of order......"""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range=[1000., 1.])
 
     def test_28(self):
         """Test XCOMQuery raises exception if bad keyword given............"""
-        with self.assertRaises(xcom.XCOMError):
+        with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range=[1., 10000.], bad_keyword=None)
 
 

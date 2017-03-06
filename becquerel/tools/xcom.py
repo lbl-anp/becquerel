@@ -118,6 +118,18 @@ class XCOMError(Exception):
     pass
 
 
+class XCOMInputError(XCOMError):
+    """Error related to the user input to XCOMQuery."""
+
+    pass
+
+
+class XCOMRequestError(XCOMError):
+    """Error related to communicating with XCOM or parsing the result."""
+
+    pass
+
+
 class XCOMQuery(object):
     """Query photon cross section data from NIST XCOM database.
 
@@ -184,53 +196,53 @@ class XCOMQuery(object):
             return {'mixture': arg}
         except TypeError:
             pass
-        raise XCOMError(
+        raise XCOMInputError(
             'Cannot determine if argument {}'.format(arg) +
             ' is a symbol, Z, compound, or mixture')
 
     @staticmethod
     def _check_symbol(sym):
-        """Check whether the symbol is valid. Raise XCOMError if not."""
+        """Check whether the symbol is valid. Raise XCOMInputError if not."""
         if sym not in ELEMENT_SYMBOLS:
-            raise XCOMError(
+            raise XCOMInputError(
                 'Element symbol {} not in {}'.format(sym, ELEMENT_SYMBOLS))
 
     @staticmethod
     def _check_z(zstr):
-        """Check whether the Z is valid. Raise XCOMError if not."""
+        """Check whether the Z is valid. Raise XCOMInputError if not."""
         zint = int(zstr)
         if zint < 1 or zint > 100:
-            raise XCOMError(
+            raise XCOMInputError(
                 'XCOM only supports Z from 1 to 100 (z={})'.format(zstr))
 
     @staticmethod
     def _check_compound(formula):
-        """Check whether the compound is valid. Raise XCOMError if not."""
+        """Check whether the compound is valid. Raise XCOMInputError if not."""
         if not formula.isalnum():
-            raise XCOMError('Formula not valid: {}'.format(formula))
+            raise XCOMInputError('Formula not valid: {}'.format(formula))
 
     @staticmethod
     def _check_mixture(formulae):
-        """Check whether the mixture is valid. Raise XCOMError if not."""
+        """Check whether the mixture is valid. Raise XCOMInputError if not."""
         try:
             for formula in formulae:
                 pass
         except:
-            raise XCOMError(
+            raise XCOMInputError(
                 'Mixture formulae must be an iterable: {}'.format(
                     formulae))
         for formula in formulae:
             try:
                 compound, weight = formula.split()
             except:
-                raise XCOMError(
+                raise XCOMInputError(
                     'Mixture formulae "{}" has bad line "{}"'.format(
                         formulae, formula))
             XCOMQuery._check_compound(compound)
             try:
                 float(weight)
             except:
-                raise XCOMError(
+                raise XCOMInputError(
                     'Mixture formulae "{}" has bad weight "{}"'.format(
                         formulae, weight))
 
@@ -241,7 +253,7 @@ class XCOMQuery(object):
             if kwarg not in [
                     'symbol', 'z', 'compound', 'mixture',
                     'e_range', 'energies', 'perform']:
-                raise XCOMError('Unknown keyword: "{}"'.format(kwarg))
+                raise XCOMInputError('Unknown keyword: "{}"'.format(kwarg))
 
         # determine the search method (element, compound, or mixture)
         if 'symbol' in kwargs:
@@ -272,23 +284,23 @@ class XCOMQuery(object):
                 for _ in kwargs['e_range']:
                     pass
             except TypeError:
-                raise XCOMError(
+                raise XCOMInputError(
                     'XCOM e_range must be an iterable of length 2: {}'.format(
                         kwargs['e_range']))
             if len(kwargs['e_range']) != 2:
-                raise XCOMError(
+                raise XCOMInputError(
                     'XCOM e_range must be an iterable of length 2: {}'.format(
                         kwargs['e_range']))
             if kwargs['e_range'][0] < 1:
-                raise XCOMError(
+                raise XCOMInputError(
                     'XCOM e_range[0] must be >= 1 keV: {}'.format(
                         kwargs['e_range'][0]))
             if kwargs['e_range'][1] > 1e8:
-                raise XCOMError(
+                raise XCOMInputError(
                     'XCOM e_range[1] must be <= 1E8 keV: {}'.format(
                         kwargs['e_range'][1]))
             if kwargs['e_range'][0] >= kwargs['e_range'][1]:
-                raise XCOMError(
+                raise XCOMInputError(
                     'XCOM e_range[0] must be < e_range[1]: {}'.format(
                         kwargs['e_range']))
             self._data['WindowXmin'] = '{:.6f}'.format(
@@ -303,12 +315,12 @@ class XCOMQuery(object):
                 for _ in kwargs['energies']:
                     pass
             except TypeError:
-                raise XCOMError(
+                raise XCOMInputError(
                     'XCOM energies must be an iterable: {}'.format(
                         kwargs['energies']))
             for energy in kwargs['energies']:
                 if energy < 1 or energy > 1e8:
-                    raise XCOMError(
+                    raise XCOMInputError(
                         'XCOM energy must be >= 1 and <= 1E8 keV: {}'.format(
                             energy))
             self._data['Energies'] = ';'.join(
@@ -319,18 +331,18 @@ class XCOMQuery(object):
         self._req = requests.post(self._url, data=self._data)
         if not self._req.ok or self._req.reason != 'OK' or \
                 self._req.status_code != 200:
-            raise XCOMError(
+            raise XCOMRequestError(
                 'XCOM Request failed: reason={}, status_code={}'.format(
                     self._req.reason, self._req.status_code))
         if 'Error' in self._req.text:
-            raise XCOMError(
+            raise XCOMRequestError(
                 'XCOM returned an error:\n{}'.format(self._req.text))
 
     def _parse_text(self):
         """Parse table contained in the text into a dictionary."""
         self._text = str(self._req.text)
         if len(self._text) == 0:
-            raise XCOMError('XCOM returned no text')
+            raise XCOMRequestError('XCOM returned no text')
         lines = [line for line in self._text.split('\n')]
         table = OrderedDict()
         for key in COLUMNS_SHORT:
@@ -342,15 +354,15 @@ class XCOMQuery(object):
                     table[column].append(float(token))
         self._df = pd.DataFrame(table)
         if len(self) == 0:
-            raise XCOMError('Parsed DataFrame is empty')
+            raise XCOMRequestError('Parsed DataFrame is empty')
 
     def perform(self):
         """Perform the query."""
         if self._data['Method'] not in ['1', '2', '3']:
-            raise XCOMError(
+            raise XCOMInputError(
                 'XCOM search method not set. Need to call update() method.')
         if self._data['Energies'] == '' and self._data['Output'] == '':
-            raise XCOMError('No energies or e_range requested.')
+            raise XCOMInputError('No energies or e_range requested.')
         # submit the query
         self._request()
         # package the output into a pandas DataFrame
