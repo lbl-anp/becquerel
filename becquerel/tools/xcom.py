@@ -201,13 +201,6 @@ class XCOMQuery(object):
             ' is a symbol, Z, compound, or mixture')
 
     @staticmethod
-    def _check_symbol(sym):
-        """Check whether the symbol is valid. Raise XCOMInputError if not."""
-        if sym not in ELEMENT_SYMBOLS:
-            raise XCOMInputError(
-                'Element symbol {} not in {}'.format(sym, ELEMENT_SYMBOLS))
-
-    @staticmethod
     def _check_z(zstr):
         """Check whether the Z is valid. Raise XCOMInputError if not."""
         zint = int(zstr)
@@ -259,7 +252,6 @@ class XCOMQuery(object):
         if 'symbol' in kwargs:
             self._data['Method'] = '1'
             sym = kwargs['symbol']
-            XCOMQuery._check_symbol(sym)
             self._data['ZSym'] = sym
         elif 'z' in kwargs:
             self._data['Method'] = '1'
