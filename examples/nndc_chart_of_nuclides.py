@@ -3,48 +3,48 @@
 from __future__ import print_function
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from becquerel.tools import nndc, units
+from becquerel.tools import nndc
 
 
 def colorscale_half_life(half_life):
     """Color scale to mimic NNDC's nuclear chart color scale."""
     if half_life is None:
         return '#E1E1E1'
-    elif half_life < 1e-15 * units.s:
+    elif half_life < 1e-15:
         return '#FF9473'
-    elif half_life < 1e-7 * units.s:
+    elif half_life < 1e-7:
         return '#F7BDDD'
-    elif half_life < 1e-6 * units.s:
+    elif half_life < 1e-6:
         return '#FFC6A5'
-    elif half_life < 1e-5 * units.s:
+    elif half_life < 1e-5:
         return '#FFE7C6'
-    elif half_life < 1e-4 * units.s:
+    elif half_life < 1e-4:
         return '#FFFF9B'
-    elif half_life < 1e-3 * units.s:
+    elif half_life < 1e-3:
         return '#FFFF0C'
-    elif half_life < 1e-2 * units.s:
+    elif half_life < 1e-2:
         return '#E7F684'
-    elif half_life < 1e-1 * units.s:
+    elif half_life < 1e-1:
         return '#D6EF38'
-    elif half_life < 1e0 * units.s:
+    elif half_life < 1e0:
         return '#ADDE63'
-    elif half_life < 1e1 * units.s:
+    elif half_life < 1e1:
         return '#53B552'
-    elif half_life < 1e2 * units.s:
+    elif half_life < 1e2:
         return '#64BDB5'
-    elif half_life < 1e3 * units.s:
+    elif half_life < 1e3:
         return '#63C6DE'
-    elif half_life < 1e4 * units.s:
+    elif half_life < 1e4:
         return '#03A5C6'
-    elif half_life < 1e5 * units.s:
+    elif half_life < 1e5:
         return '#0A9A94'
-    elif half_life < 1e7 * units.s:
+    elif half_life < 1e7:
         return '#0284A5'
-    elif half_life < 1e10 * units.s:
+    elif half_life < 1e10:
         return '#3152A5'
-    elif half_life < 1e15 * units.s:
+    elif half_life < 1e15:
         return '#29016B'
-    elif half_life > 1e15 * units.s:
+    elif half_life > 1e15:
         return 'black'
 
 
@@ -62,7 +62,7 @@ for z in range(Z_RANGE[0], Z_RANGE[1] + 1):
         print('-' * 70)
         print(z, n)
         isotope = (data['Z'] == z) & (data['N'] == n) & (data['M'] == 0)
-        half_life = data[isotope]['T1/2']
+        half_life = data[isotope]['T1/2 (s)']
         if len(half_life) == 0:
             continue
         print('half_life:', half_life)

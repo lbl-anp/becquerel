@@ -12,7 +12,6 @@ import requests
 import numpy as np
 import pandas as pd
 from uncertainties import ufloat
-from .units import units
 
 
 WALLET_DECAY_MODE = {
@@ -343,7 +342,7 @@ class NNDCQuery(object):
         for col in ['A', 'Z', 'N', 'M']:
             if col in self.keys():
                 self._convert_column(col, int)
-        # add units and combine uncertainties
+        # combine uncertainty columns and add unit labels
         self._add_units_uncertainties()
         # add some more columns
         self._add_columns_energy_levels()
@@ -382,12 +381,12 @@ class NNDCQuery(object):
         for a, z in A_Z:
             isotope = (self['A'] == a) & (self['Z'] == z)
             e_levels = []
-            for e_level in self['Energy Level'][isotope]:
+            for e_level in self['Energy Level (MeV)'][isotope]:
                 if e_level not in e_levels:
                     e_levels.append(e_level)
-            e_levels = sorted(e_levels, key=lambda x: x.magnitude)
+            e_levels = sorted(e_levels)
             for M, e_level in enumerate(e_levels):
-                isomer = isotope & (self['Energy Level'] == e_level)
+                isomer = isotope & (self['Energy Level (MeV)'] == e_level)
                 self._df['M'][isomer] = M
                 if M > 0:
                     if len(e_levels) > 2:
@@ -398,57 +397,58 @@ class NNDCQuery(object):
     def _add_units_uncertainties(self):
         """Add units and uncertainties with some columns as applicable."""
         if 'Energy Level Unc.' in self.keys():
-            self._convert_column_uncertainty('Energy Level', units.MeV)
+            self._convert_column_uncertainty('Energy Level')
         else:
-            self._convert_column('Energy Level', float, units.MeV)
+            self._convert_column('Energy Level', float)
+        self._df.rename(
+            columns={'Energy Level': 'Energy Level (MeV)'}, inplace=True)
 
         if 'Mass Excess' in self.keys():
-            self._convert_column_uncertainty('Mass Excess', units.MeV)
+            self._convert_column_uncertainty('Mass Excess')
+        self._df.rename(
+            columns={'Mass Excess': 'Mass Excess (MeV)'}, inplace=True)
 
-        self._convert_column('T1/2 (s)', float, units.s)
-        self._df['T1/2'] = self._df['T1/2 (s)']
-        del self._df['T1/2 (s)']
+        self._convert_column('T1/2 (s)', float)
 
         if 'Abundance (%)' in self.keys():
-            self._convert_column_uncertainty('Abundance (%)', units.percent)
-            self._df['Abundance'] = self._df['Abundance (%)']
-            del self._df['Abundance (%)']
+            self._convert_column_uncertainty('Abundance (%)')
 
         if 'Branching (%)' in self.keys():
             self._convert_column(
                 'Branching (%)',
-                lambda x: _parse_float_uncertainty(x, ''), units.percent)
-            self._df['Branching'] = self._df['Branching (%)']
-            del self._df['Branching (%)']
+                lambda x: _parse_float_uncertainty(x, ''))
 
         if 'Radiation Energy' in self.keys():
-            self._convert_column_uncertainty('Radiation Energy', units.keV)
+            self._convert_column_uncertainty('Radiation Energy')
+            self._df.rename(
+                columns={'Radiation Energy': 'Radiation Energy (keV)'},
+                inplace=True)
 
         if 'Endpoint Energy' in self.keys():
-            self._convert_column_uncertainty('Endpoint Energy', units.keV)
+            self._convert_column_uncertainty('Endpoint Energy')
+            self._df.rename(
+                columns={'Endpoint Energy': 'Endpoint Energy (keV)'},
+                inplace=True)
 
         if 'Radiation Intensity (%)' in self.keys():
-            self._convert_column_uncertainty(
-                'Radiation Intensity (%)', units.percent)
+            self._convert_column_uncertainty('Radiation Intensity (%)')
 
         if 'Dose' in self.keys():
-            self._convert_column_uncertainty(
-                'Dose', units.parse_expression('MeV / (Bq * s)'))
+            self._convert_column_uncertainty('Dose')
+            self._df.rename(
+                columns={'Dose': 'Dose (MeV / Bq / s)'}, inplace=True)
 
-    def _convert_column(self, col, function, unit=None, null=None):
+    def _convert_column(self, col, function, null=None):
         """Convert column from string to another type."""
         col_new = []
         for x in self[col]:
             if x == '':
                 col_new.append(null)
             else:
-                if unit is None:
-                    col_new.append(function(x))
-                else:
-                    col_new.append(function(x) * unit)
+                col_new.append(function(x))
         self._df[col] = col_new
 
-    def _convert_column_uncertainty(self, col, unit=None):
+    def _convert_column_uncertainty(self, col):
         """Combine column and its uncertainty into one column."""
         new_col = []
         for x, dx in zip(self[col], self[col + ' Unc.']):
@@ -460,10 +460,7 @@ class NNDCQuery(object):
                 new_col.append(None)
             else:
                 x2 = _parse_float_uncertainty(x, dx)
-                if unit is None:
-                    new_col.append(x2)
-                else:
-                    new_col.append(x2 * unit)
+                new_col.append(x2)
         self._df[col] = new_col
         del self._df[col + ' Unc.']
 
@@ -471,9 +468,9 @@ class NNDCQuery(object):
         """Sort columns."""
         preferred_order = [
             'Z', 'Element', 'A', 'N', 'M', 'm', 'JPi', 'T1/2',
-            'Energy Level', 'Decay Mode', 'Branching',
+            'Energy Level (MeV)', 'Decay Mode', 'Branching (%)',
             'Radiation', 'Radiation subtype',
-            'Radiation Energy', 'Radiation Intensity',
+            'Radiation Energy (keV)', 'Radiation Intensity (%)',
         ]
         new_cols = []
         for col in preferred_order:
