@@ -387,12 +387,12 @@ class NNDCQuery(object):
             e_levels = sorted(e_levels)
             for M, e_level in enumerate(e_levels):
                 isomer = isotope & (self['Energy Level (MeV)'] == e_level)
-                self._df['M'][isomer] = M
+                self._df.loc[isomer, 'M'] = M
                 if M > 0:
                     if len(e_levels) > 2:
-                        self._df['m'][isomer] = 'm{}'.format(M)
+                        self._df.loc[isomer, 'm'] = 'm{}'.format(M)
                     else:
-                        self._df['m'][isomer] = 'm'
+                        self._df.loc[isomer, 'm'] = 'm'
 
     def _add_units_uncertainties(self):
         """Add units and uncertainties with some columns as applicable."""
