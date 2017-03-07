@@ -215,17 +215,14 @@ class XCOMQuery(object):
         """Check whether the mixture is valid. Raise XCOMInputError if not."""
         if not isinstance(formulae, Iterable):
             raise XCOMInputError(
-                'Mixture formulae must be an iterable: {}'.format(
-                    formulae))
+                'Mixture formulae must be an iterable: {}'.format(formulae))
         for formula in formulae:
             try:
-                formula.split()
+                compound, weight = formula.split()
             except AttributeError:
                 raise XCOMInputError(
                     'Mixture formulae "{}" line "{}" must be a string'.format(
                         formulae, formula))
-            try:
-                compound, weight = formula.split()
             except ValueError:
                 raise XCOMInputError(
                     'Mixture formulae "{}" line "{}" must split into 2'.format(
