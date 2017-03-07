@@ -14,8 +14,7 @@ class SpectrumError(Exception):
 
 
 class UncalibratedError(SpectrumError):
-    """Exception raised when an uncalibrated spectrum is treated as calibrated.
-    """
+    """Raised when an uncalibrated spectrum is treated as calibrated."""
 
     pass
 
@@ -26,12 +25,14 @@ class Spectrum(object):
 
     Initialize a Spectrum directly, or with Spectrum.from_file(filename).
 
-    Attributes:
+    Data Attributes:
       data: np.array of counts in each channel
-      channels: [Read-only] np.array of channel index as integers
-      is_calibrated: [Read-only] bool
-      energies_kev: [Read-only] np.array of energy bin centers, if calibrated
       bin_edges_kev: np.array of energy bin edges, if calibrated
+
+    Properties:
+      channels: (read-only) np.array of channel index as integers
+      is_calibrated: (read-only) bool
+      energies_kev: (read-only) np.array of energy bin centers, if calibrated
     """
 
     def __init__(self, data, bin_edges_kev=None):
@@ -39,9 +40,9 @@ class Spectrum(object):
 
         Args:
           data: an iterable of counts per channel
-          bin_edges_kev: an iterable of bin edge energies.
-            Defaults to None for an uncalibrated spectrum.
-            If not none, should have length of (len(data) + 1).
+          bin_edges_kev: an iterable of bin edge energies
+            Defaults to None for an uncalibrated spectrum
+            If not none, should have length of (len(data) + 1)
 
         Raises:
           SpectrumError: for bad input arguments
@@ -95,8 +96,7 @@ class Spectrum(object):
         """Is the spectrum calibrated?
 
         Returns:
-          A bool.
-          True if spectrum has defined energy bin edges. False otherwise.
+          bool, True if spectrum has defined energy bin edges. False otherwise
         """
 
         return self.bin_edges_kev is not None
@@ -106,13 +106,13 @@ class Spectrum(object):
         """Construct a Spectrum object from a filename.
 
         Args:
-          infilename: a string representing the path to a parsable file.
+          infilename: a string representing the path to a parsable file
 
         Returns:
-          A Spectrum object.
+          A Spectrum object
 
         Raises:
-          IOError: for a bad filename.
+          AssertionError: for a bad filename  # TODO make this an IOError
         """
 
         spect_file_obj = _get_file_object(infilename)
@@ -130,11 +130,11 @@ class Spectrum(object):
         """Calculate bin centers from bin edges.
 
         Args:
-          edges_kev: an iterable representing bin edge energies in keV.
+          edges_kev: an iterable representing bin edge values
 
         Returns:
-          np.array of length (len(edges_kev) - 1),
-          representing bin center energies.
+          np.array of length (len(edges_kev) - 1), representing bin center
+            values with the same units as the input
         """
 
         edges_kev = np.array(edges_kev)
@@ -206,11 +206,11 @@ def _get_file_object(infilename):
     Parse a file and return an object according to its extension.
 
     Args:
-      infilename: a string representing a path to a parsable file.
+      infilename: a string representing a path to a parsable file
 
     Raises:
-      AssertionError: for a bad filename.  # TODO let this be an IOError
-      NotImplementedError: for an unparsable file extension.
+      AssertionError: for a bad filename  # TODO let this be an IOError
+      NotImplementedError: for an unparsable file extension
       ...?
 
     Returns:
