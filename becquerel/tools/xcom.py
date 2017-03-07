@@ -1,6 +1,7 @@
 """Query photon cross section data from NIST XCOM database.
 
-Use the XCOMQuery class to query the database.
+Provides the XCOMQuery class to query the NIST XCOM database, as well as
+a few mixtures for common materials.
 
 References:
   https://www.nist.gov/pml/xcom-photon-cross-sections-database
@@ -133,13 +134,52 @@ class XCOMRequestError(XCOMError):
 class XCOMQuery(object):
     """Query photon cross section data from NIST XCOM database.
 
-    To prevent query from being immediately performed, instantiate with
-    keyword perform=False.
+    After the data have been successfully queried, they are stored in a
+    pandas DataFrame that is accessible through this class's methods.
+
+    The DataFrame column names amd units are:
+      'energy': Photon Energy [keV]
+      'C': coherent scattering cross section [cm^2/g]
+      'I': incoherent scattering cross section [cm^2/g]
+      'PA': photoelectric absorption cross section [cm^2/g]
+      'PPN': pair production cross section in nuclear field [cm^2/g]
+      'PPE': pair production cross section in electron field [cm^2/g]
+      'T+C': total attenuation with coherent scattering [cm^2/g]
+      'T-C': total attenuation without coherent scattering [cm^2/g]
+
+    Methods:
+      update: add or change the search criteria
+      perform: perform the query and parse the results
+      __getitem__: use [] to get the DataFrame column
+      __len__: len() returns the length of the DataFrame
+      __str__: str() returns the str method of the DataFrame
+      __format__: format() uses the format method of the DataFrame
+      keys: returns the DataFrame keys
 
     """
 
     def __init__(self, arg, **kwargs):
-        """Initialize and perform an XCOM query. Return a DataFrame."""
+        """Initialize and perform an XCOM query.
+
+        Args:
+          arg: the atomic number, element symbol, compound string, or mixture
+            (the type of argument will be inferred from its content).
+          e_range (optional): a length-2 iterable giving the lower and upper
+            bounds for a standard grid of energies in keV. Limits must be
+            between 1 keV and 1E8 keV, inclusive.
+          energies (optional): an iterable of specific energies in keV at
+            which cross sections will be evaluated. Energies must be between
+            1 keV and 1E8 keV, inclusive.
+          perform (optional): set to False to prevent query from immediately
+            being performed. [default: True]
+
+        Raises:
+          XCOMInputError: if bad search criteria are set or search criteria
+            are incomplete.
+          XCOMRequestError: if there is a problem with the URL request, or
+            a problem parsing the data.
+
+        """
         self._url = _URL
         self._req = None
         self._text = None
@@ -152,7 +192,7 @@ class XCOMQuery(object):
             self.perform()
 
     def __len__(self):
-        """Length of any one of the data lists."""
+        """Pass-through to use DataFrame len()."""
         if self._df is None:
             return 0
         elif len(self._df.keys()) == 0:
@@ -161,19 +201,19 @@ class XCOMQuery(object):
             return len(self._df[self._df.keys()[0]])
 
     def keys(self):
-        """Return the data columns."""
+        """Pass-through for DataFrame keys method."""
         return self._df.keys()
 
     def __getitem__(self, key):
-        """Return the column given by the key."""
+        """Pass-through so that [] accesses the DataFrame."""
         return self._df[key]
 
     def __str__(self):
-        """Use str method for DataFrame."""
+        """Pass-through to use DataFrame str method."""
         return str(self._df)
 
     def __format__(self, formatstr):
-        """Use format method for DataFrame."""
+        """Pass-through to use DataFrame format method."""
         return self._df.__format__(formatstr)
 
     @staticmethod
@@ -236,7 +276,29 @@ class XCOMQuery(object):
                         formulae, weight))
 
     def update(self, **kwargs):
-        """Update the search criteria. Need Z, symbol, compound, or mixture."""
+        """Update the search criteria.
+
+        Before calling perform(), one of the following search criteria must
+        be set here: z, symbol, compound, or mixture. A valid query will also
+        require setting either e_range and/or energies.
+
+        Args:
+          symbol (optional): a string of the element symbol, e.g., 'Ge'.
+          z (optional): an integer of the element atomic number, e.g., 32.
+          compound (optional): a string of the chemical formula, e.g., 'H2O'.
+          mixture (optional): a list of compounds and relative weights, e.g.,
+            ['H2O 0.5', 'Ge 0.5']
+          e_range (optional): a length-2 iterable giving the lower and upper
+            bounds for a standard grid of energies in keV. Limits must be
+            between 1 keV and 1E8 keV, inclusive.
+          energies (optional): an iterable of specific energies in keV at
+            which cross sections will be evaluated. Energies must be between
+            1 keV and 1E8 keV, inclusive.
+
+        Raises:
+          XCOMInputError: if bad search criteria are set.
+
+        """
         # check for valid keywords
         for kwarg in kwargs:
             if kwarg not in [
@@ -339,7 +401,17 @@ class XCOMQuery(object):
             raise XCOMRequestError('Parsed DataFrame is empty')
 
     def perform(self):
-        """Perform the query."""
+        """Perform the query.
+
+        Before calling perform(), set the search criteria using update()
+        or __init__().
+
+        Raises:
+          XCOMInputError: if search criteria are incomplete.
+          XCOMRequestError: if there is a problem with the URL request, or
+            a problem parsing the data.
+
+        """
         if self._data['Method'] not in ['1', '2', '3']:
             raise XCOMInputError(
                 'XCOM search method not set. Need to call update() method.')
