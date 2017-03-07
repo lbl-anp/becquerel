@@ -11,7 +11,7 @@ from __future__ import print_function
 import requests
 import numpy as np
 import pandas as pd
-from uncertainties import ufloat
+import uncertainties
 
 
 WALLET_DECAY_MODE = {
@@ -88,7 +88,7 @@ def _parse_float_uncertainty(x, dx):
     except ValueError:
         raise NNDCError(
             'Uncertainty cannot be parsed as float: "{}"'.format(dx))
-    return ufloat(x2, dx2)
+    return uncertainties.ufloat(x2, dx2)
 
 
 class NNDCQuery(object):
@@ -381,12 +381,19 @@ class NNDCQuery(object):
         for a, z in A_Z:
             isotope = (self['A'] == a) & (self['Z'] == z)
             e_levels = []
+            e_levels_nominal = []
             for e_level in self['Energy Level (MeV)'][isotope]:
-                if e_level not in e_levels:
+                if isinstance(e_level, uncertainties.core.Variable):
+                    e_level_nominal = e_level.nominal_value
+                else:
+                    e_level_nominal = e_level
+                if e_level_nominal not in e_levels_nominal:
                     e_levels.append(e_level)
+                    e_levels_nominal.append(e_level_nominal)
             e_levels = sorted(e_levels)
             for M, e_level in enumerate(e_levels):
-                isomer = isotope & (self['Energy Level (MeV)'] == e_level)
+                isomer = isotope & \
+                    (abs(self['Energy Level (MeV)'] - e_level) < 1e-10)
                 self._df.loc[isomer, 'M'] = M
                 if M > 0:
                     if len(e_levels) > 2:
