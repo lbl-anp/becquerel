@@ -1,2 +1,2 @@
 
-from .spectrum import RawSpectrum, CalSpectrum
+from .spectrum import Spectrum, SpectrumError, UncalibratedError

@@ -48,6 +48,7 @@ class SpectrumFile(object):
         # arrays to be calculated using calibration
         self.energies = np.array([], dtype=np.float)
         self.energy_bin_widths = np.array([], dtype=np.float)
+        self.energy_bin_edges = np.array([], dtype=np.float)
 
     def __str__(self):
         """String form of the spectrum."""
@@ -98,6 +99,9 @@ class SpectrumFile(object):
         """Calculate energies corresponding to channels."""
         self.energies = self.channel_to_energy(self.channels)
         self.energy_bin_widths = self.bin_width(self.channels)
+        n_edges = len(self.energies) + 1
+        channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
+        self.energy_bin_edges = self.channel_to_energy(channel_edges)
 
     def channel_to_energy(self, channel):
         """Apply energy calibration to the given channel(s)."""
