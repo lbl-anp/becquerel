@@ -4,47 +4,49 @@ from __future__ import print_function
 import os
 import matplotlib.pyplot as plt
 from becquerel.tools import xcom
+import pandas as pd
+pd.set_option('display.width', 120)
 
 
 PLOT_KWARGS = {
-    'T+C': {
-        'label': xcom.COLUMNS_LONG['T+C'],
+    'total_w_coh': {
+        'label': xcom.COLUMNS_LONG['total_w_coh'],
         'color': 'black',
         'lw': 3,
         'ls': '-',
     },
-    'T-C': {
-        'label': xcom.COLUMNS_LONG['T-C'],
+    'total_wo_coh': {
+        'label': xcom.COLUMNS_LONG['total_wo_coh'],
         'color': 'green',
         'lw': 3,
         'ls': '--',
     },
-    'C': {
-        'label': xcom.COLUMNS_LONG['C'],
+    'coherent': {
+        'label': xcom.COLUMNS_LONG['coherent'],
         'color': 'orange',
         'lw': 1,
         'ls': '--',
     },
-    'I': {
-        'label': xcom.COLUMNS_LONG['I'],
+    'incoherent': {
+        'label': xcom.COLUMNS_LONG['incoherent'],
         'color': 'blue',
         'lw': 1,
         'ls': ':',
     },
-    'PA': {
-        'label': xcom.COLUMNS_LONG['PA'],
+    'photoelec': {
+        'label': xcom.COLUMNS_LONG['photoelec'],
         'color': 'magenta',
         'lw': 1,
         'ls': '-',
     },
-    'PPN': {
-        'label': xcom.COLUMNS_LONG['PPN'],
+    'pair_nuc': {
+        'label': xcom.COLUMNS_LONG['pair_nuc'],
         'color': 'cyan',
         'lw': 1,
         'ls': '-',
     },
-    'PPE': {
-        'label': xcom.COLUMNS_LONG['PPE'],
+    'pair_elec': {
+        'label': xcom.COLUMNS_LONG['pair_elec'],
         'color': 'cyan',
         'lw': 1,
         'ls': '--',
@@ -58,7 +60,8 @@ def plot_xcom(xcom_data, title):
     axis = fig.gca()
     axis.set_position([0.13, 0.25, 0.62, 0.64])
     erg = xcom_data['energy'] / 1000.  # MeV
-    for field in ['T+C', 'T-C', 'C', 'I', 'PA', 'PPN', 'PPE']:
+    for field in ['total_w_coh', 'total_wo_coh', 'coherent', 'incoherent',
+                  'photoelec', 'pair_nuc', 'pair_elec']:
         plt.loglog(erg, xcom_data[field], **PLOT_KWARGS[field])
     plt.legend(
         prop={'size': 8}, loc='upper left',

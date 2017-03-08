@@ -74,30 +74,31 @@ _DATA = {
 }
 
 # abbreviated names for the table columns (these are used in the dataframe)
-COLUMNS_SHORT = ['energy', 'C', 'I', 'PA', 'PPN', 'PPE', 'T+C', 'T-C']
+COLUMNS_SHORT = ['energy', 'coherent', 'incoherent', 'photoelec',
+                 'pair_nuc', 'pair_elec', 'total_w_coh', 'total_wo_coh']
 
 # medium length names for the table columns
 COLUMNS_MEDIUM = {
     'energy': 'Energy',
-    'C': 'Coherent',
-    'I': 'Incoherent',
-    'PA': 'Photoelectric',
-    'PPN': 'Pair production (nuclear)',
-    'PPE': 'Pair Production (electron)',
-    'T+C': 'Total with coherent',
-    'T-C': 'Total without coherent'
+    'coherent': 'Coherent',
+    'incoherent': 'Incoherent',
+    'photoelec': 'Photoelectric',
+    'pair_nuc': 'Pair production (nuclear)',
+    'pair_elec': 'Pair Production (electron)',
+    'total_w_coh': 'Total with coherent',
+    'total_wo_coh': 'Total without coherent'
 }
 
 # verbose names for the table columns
 COLUMNS_LONG = {
     'energy': 'Photon Energy',
-    'C': 'Coherent Scattering',
-    'I': 'Incoherent Scattering',
-    'PA': 'Photoelectric Absorption',
-    'PPN': 'Pair Production in Nuclear Field',
-    'PPE': 'Pair Production in Electron Field',
-    'T+C': 'Total Attenuation with Coherent Scattering',
-    'T-C': 'Total Attenuation without Coherent Scattering'
+    'coherent': 'Coherent Scattering',
+    'incoherent': 'Incoherent Scattering',
+    'photoelec': 'Photoelectric Absorption',
+    'pair_nuc': 'Pair Production in Nuclear Field',
+    'pair_elec': 'Pair Production in Electron Field',
+    'total_w_coh': 'Total Attenuation with Coherent Scattering',
+    'total_wo_coh': 'Total Attenuation without Coherent Scattering'
 }
 
 
@@ -139,13 +140,13 @@ class XCOMQuery(object):
 
     The DataFrame column names amd units are:
       'energy': Photon Energy [keV]
-      'C': coherent scattering cross section [cm^2/g]
-      'I': incoherent scattering cross section [cm^2/g]
-      'PA': photoelectric absorption cross section [cm^2/g]
-      'PPN': pair production cross section in nuclear field [cm^2/g]
-      'PPE': pair production cross section in electron field [cm^2/g]
-      'T+C': total attenuation with coherent scattering [cm^2/g]
-      'T-C': total attenuation without coherent scattering [cm^2/g]
+      'coherent': coherent scattering cross section [cm^2/g]
+      'incoherent': incoherent scattering cross section [cm^2/g]
+      'photoelec': photoelectric absorption cross section [cm^2/g]
+      'pair_nuc': pair production cross section in nuclear field [cm^2/g]
+      'pair_elec': pair production cross section in electron field [cm^2/g]
+      'total_w_coh': total attenuation with coherent scattering [cm^2/g]
+      'total_wo_coh': total attenuation without coherent scattering [cm^2/g]
 
     Methods:
       update: add or change the search criteria
