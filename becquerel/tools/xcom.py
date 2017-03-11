@@ -132,7 +132,7 @@ class XCOMRequestError(XCOMError):
     pass
 
 
-class XCOMQuery(object):
+class _XCOMQuery(object):
     """Query photon cross section data from NIST XCOM database.
 
     After the data have been successfully queried, they are stored in a
@@ -184,38 +184,38 @@ class XCOMQuery(object):
         self._url = _URL
         self._req = None
         self._text = None
-        self._df = None
+        self.df = None
         self._data = dict(_DATA)
         # determine which kind of argument 'arg' is (symbol, Z, compound, mix)
-        kwargs.update(XCOMQuery._argument_type(arg))
+        kwargs.update(_XCOMQuery._argument_type(arg))
         self.update(**kwargs)
         if kwargs.get('perform', True):
             self.perform()
 
     def __len__(self):
         """Pass-through to use DataFrame len()."""
-        if self._df is None:
+        if self.df is None:
             return 0
-        elif len(self._df.keys()) == 0:
+        elif len(self.df.keys()) == 0:
             return 0
         else:
-            return len(self._df[self._df.keys()[0]])
+            return len(self.df[self.df.keys()[0]])
 
     def keys(self):
         """Pass-through for DataFrame keys method."""
-        return self._df.keys()
+        return self.df.keys()
 
     def __getitem__(self, key):
         """Pass-through so that [] accesses the DataFrame."""
-        return self._df[key]
+        return self.df[key]
 
     def __str__(self):
         """Pass-through to use DataFrame str method."""
-        return str(self._df)
+        return str(self.df)
 
     def __format__(self, formatstr):
         """Pass-through to use DataFrame format method."""
-        return self._df.__format__(formatstr)
+        return self.df.__format__(formatstr)
 
     @staticmethod
     def _argument_type(arg):
@@ -268,7 +268,7 @@ class XCOMQuery(object):
                 raise XCOMInputError(
                     'Mixture formulae "{}" line "{}" must split into 2'.format(
                         formulae, formula))
-            XCOMQuery._check_compound(compound)
+            _XCOMQuery._check_compound(compound)
             try:
                 float(weight)
             except (ValueError, TypeError):
@@ -315,17 +315,17 @@ class XCOMQuery(object):
         elif 'z' in kwargs:
             self._data['Method'] = '1'
             znum = kwargs['z']
-            XCOMQuery._check_z(znum)
+            _XCOMQuery._check_z(znum)
             self._data['ZNum'] = '{:d}'.format(int(znum))
         elif 'compound' in kwargs:
             self._data['Method'] = '2'
             formula = kwargs['compound']
-            XCOMQuery._check_compound(formula)
+            _XCOMQuery._check_compound(formula)
             self._data['Formula'] = formula
         elif 'mixture' in kwargs:
             self._data['Method'] = '3'
             formulae = kwargs['mixture']
-            XCOMQuery._check_mixture(formulae)
+            _XCOMQuery._check_mixture(formulae)
             formulae = '\r\n'.join(formulae)
             self._data['Formulae'] = formulae
 
@@ -398,7 +398,7 @@ class XCOMQuery(object):
             if len(tokens) == 9:
                 for column, token in zip(COLUMNS_SHORT, tokens):
                     table[column].append(float(token))
-        self._df = pd.DataFrame(table)
+        self.df = pd.DataFrame(table)
         if len(self) == 0:
             raise XCOMRequestError('Parsed DataFrame is empty')
 
@@ -424,4 +424,40 @@ class XCOMQuery(object):
         # package the output into a pandas DataFrame
         self._parse_text()
         # convert energy from MeV to keV
-        self._df['energy'] *= 1000.
+        self.df['energy'] *= 1000.
+
+
+def xcom_data(arg, **kwargs):
+    """Query photon cross section data from NIST XCOM database.
+
+    Returns a pandas DataFrame containing the cross section data.
+
+    The DataFrame column names amd units are:
+      'energy': Photon Energy [keV]
+      'coherent': coherent scattering cross section [cm^2/g]
+      'incoherent': incoherent scattering cross section [cm^2/g]
+      'photoelec': photoelectric absorption cross section [cm^2/g]
+      'pair_nuc': pair production cross section in nuclear field [cm^2/g]
+      'pair_elec': pair production cross section in electron field [cm^2/g]
+      'total_w_coh': total attenuation with coherent scattering [cm^2/g]
+      'total_wo_coh': total attenuation without coherent scattering [cm^2/g]
+
+    Args:
+      arg: the atomic number, element symbol, compound string, or mixture
+        (the type of argument will be inferred from its content).
+      e_range_kev (optional): a length-2 iterable giving the lower and
+        upper bounds for a standard grid of energies in keV. Limits must be
+        between 1 keV and 1E8 keV, inclusive.
+      energies_kev (optional): an iterable of specific energies in keV at
+        which cross sections will be evaluated. Energies must be between
+        1 keV and 1E8 keV, inclusive.
+
+    Raises:
+      XCOMInputError: if bad search criteria are set or search criteria
+        are incomplete.
+      XCOMRequestError: if there is a problem with the URL request, or
+        a problem parsing the data.
+
+    """
+    query = _XCOMQuery(arg, **kwargs)
+    return query.df
