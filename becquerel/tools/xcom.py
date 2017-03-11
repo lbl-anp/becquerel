@@ -165,10 +165,10 @@ class XCOMQuery(object):
         Args:
           arg: the atomic number, element symbol, compound string, or mixture
             (the type of argument will be inferred from its content).
-          e_range (optional): a length-2 iterable giving the lower and upper
-            bounds for a standard grid of energies in keV. Limits must be
+          e_range_kev (optional): a length-2 iterable giving the lower and
+            upper bounds for a standard grid of energies in keV. Limits must be
             between 1 keV and 1E8 keV, inclusive.
-          energies (optional): an iterable of specific energies in keV at
+          energies_kev (optional): an iterable of specific energies in keV at
             which cross sections will be evaluated. Energies must be between
             1 keV and 1E8 keV, inclusive.
           perform (optional): set to False to prevent query from immediately
@@ -281,7 +281,7 @@ class XCOMQuery(object):
 
         Before calling perform(), one of the following search criteria must
         be set here: z, symbol, compound, or mixture. A valid query will also
-        require setting either e_range and/or energies.
+        require setting either e_range_kev and/or energies_kev.
 
         Args:
           symbol (optional): a string of the element symbol, e.g., 'Ge'.
@@ -289,10 +289,10 @@ class XCOMQuery(object):
           compound (optional): a string of the chemical formula, e.g., 'H2O'.
           mixture (optional): a list of compounds and relative weights, e.g.,
             ['H2O 0.5', 'Ge 0.5']
-          e_range (optional): a length-2 iterable giving the lower and upper
-            bounds for a standard grid of energies in keV. Limits must be
+          e_range_kev (optional): a length-2 iterable giving the lower and
+            upper bounds for a standard grid of energies in keV. Limits must be
             between 1 keV and 1E8 keV, inclusive.
-          energies (optional): an iterable of specific energies in keV at
+          energies_kev (optional): an iterable of specific energies in keV at
             which cross sections will be evaluated. Energies must be between
             1 keV and 1E8 keV, inclusive.
 
@@ -304,7 +304,7 @@ class XCOMQuery(object):
         for kwarg in kwargs:
             if kwarg not in [
                     'symbol', 'z', 'compound', 'mixture',
-                    'e_range', 'energies', 'perform']:
+                    'e_range_kev', 'energies_kev', 'perform']:
                 raise XCOMInputError('Unknown keyword: "{}"'.format(kwarg))
 
         # determine the search method (element, compound, or mixture)
@@ -330,46 +330,47 @@ class XCOMQuery(object):
             self._data['Formulae'] = formulae
 
         # include standard grid of energies
-        if 'e_range' in kwargs:
-            if not isinstance(kwargs['e_range'], Iterable):
+        if 'e_range_kev' in kwargs:
+            if not isinstance(kwargs['e_range_kev'], Iterable):
                 raise XCOMInputError(
-                    'XCOM e_range must be an iterable of length 2: {}'.format(
-                        kwargs['e_range']))
-            if len(kwargs['e_range']) != 2:
+                    'XCOM e_range_kev must be iterable of length 2: {}'.format(
+                        kwargs['e_range_kev']))
+            if len(kwargs['e_range_kev']) != 2:
                 raise XCOMInputError(
-                    'XCOM e_range must be an iterable of length 2: {}'.format(
-                        kwargs['e_range']))
-            if kwargs['e_range'][0] < 1:
+                    'XCOM e_range_kev must be iterable of length 2: {}'.format(
+                        kwargs['e_range_kev']))
+            if kwargs['e_range_kev'][0] < 1:
                 raise XCOMInputError(
-                    'XCOM e_range[0] must be >= 1 keV: {}'.format(
-                        kwargs['e_range'][0]))
-            if kwargs['e_range'][1] > 1e8:
+                    'XCOM e_range_kev[0] must be >= 1 keV: {}'.format(
+                        kwargs['e_range_kev'][0]))
+            if kwargs['e_range_kev'][1] > 1e8:
                 raise XCOMInputError(
-                    'XCOM e_range[1] must be <= 1E8 keV: {}'.format(
-                        kwargs['e_range'][1]))
-            if kwargs['e_range'][0] >= kwargs['e_range'][1]:
+                    'XCOM e_range_kev[1] must be <= 1E8 keV: {}'.format(
+                        kwargs['e_range_kev'][1]))
+            if kwargs['e_range_kev'][0] >= kwargs['e_range_kev'][1]:
                 raise XCOMInputError(
-                    'XCOM e_range[0] must be < e_range[1]: {}'.format(
-                        kwargs['e_range']))
+                    'XCOM e_range_kev[0] must be < e_range_kev[1]: {}'.format(
+                        kwargs['e_range_kev']))
             self._data['WindowXmin'] = '{:.6f}'.format(
-                kwargs['e_range'][0] / 1000.)
+                kwargs['e_range_kev'][0] / 1000.)
             self._data['WindowXmax'] = '{:.6f}'.format(
-                kwargs['e_range'][1] / 1000.)
+                kwargs['e_range_kev'][1] / 1000.)
             self._data['Output'] = 'on'
 
         # additional energies
-        if 'energies' in kwargs:
-            if not isinstance(kwargs['energies'], Iterable):
+        if 'energies_kev' in kwargs:
+            if not isinstance(kwargs['energies_kev'], Iterable):
                 raise XCOMInputError(
-                    'XCOM energies must be an iterable: {}'.format(
-                        kwargs['energies']))
-            for energy in kwargs['energies']:
+                    'XCOM energies_kev must be an iterable: {}'.format(
+                        kwargs['energies_kev']))
+            for energy in kwargs['energies_kev']:
                 if energy < 1 or energy > 1e8:
                     raise XCOMInputError(
                         'XCOM energy must be >= 1 and <= 1E8 keV: {}'.format(
                             energy))
-            self._data['Energies'] = ';'.join(
-                ['{:.6f}'.format(erg / 1000.) for erg in kwargs['energies']])
+            self._data['Energies'] = ';'.join([
+                '{:.6f}'.format(erg / 1000.)
+                for erg in kwargs['energies_kev']])
 
     def _request(self):
         """Request data table from the URL."""
@@ -417,7 +418,7 @@ class XCOMQuery(object):
             raise XCOMInputError(
                 'XCOM search method not set. Need to call update() method.')
         if self._data['Energies'] == '' and self._data['Output'] == '':
-            raise XCOMInputError('No energies or e_range requested.')
+            raise XCOMInputError('No energies_kev or e_range_kev requested.')
         # submit the query
         self._request()
         # package the output into a pandas DataFrame
