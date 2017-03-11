@@ -131,42 +131,42 @@ class XCOMQueryTests(unittest.TestCase):
         self.assertTrue(len(xd) == len(energies))
 
     def test_20(self):
-        """Test XCOMQuery raises exception if energies not iterable........"""
+        """Test XCOMQuery raises exception if energies_kev not iterable...."""
         with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', energies_kev=1460.)
 
     def test_21(self):
-        """Test XCOMQuery raises exception if energies out of range (low).."""
+        """Test XCOMQuery raises exception if energies_kev too low........."""
         with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', energies_kev=[60., 662., 1460., 0.001])
 
     def test_22(self):
-        """Test XCOMQuery raises exception if energies out of range (high)."""
+        """Test XCOMQuery raises exception if energies_kev too high........"""
         with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', energies_kev=[60., 662., 1460., 1e9])
 
     def test_23(self):
-        """Test XCOMQuery raises exception if e_range not an iterable......"""
+        """Test XCOMQuery raises exception if e_range_kev not an iterable.."""
         with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range_kev=100.)
 
     def test_24(self):
-        """Test XCOMQuery raises exception if len(e_range) != 2............"""
+        """Test XCOMQuery raises exception if len(e_range_kev) != 2........"""
         with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range_kev=[1., 10000., 100000.])
 
     def test_25(self):
-        """Test XCOMQuery raises exception if e_range[0] is out of range..."""
+        """Test XCOMQuery raises exception if e_range_kev[0] out of range.."""
         with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range_kev=[0.1, 10000.])
 
     def test_26(self):
-        """Test XCOMQuery raises exception if e_range[1] is out of range..."""
+        """Test XCOMQuery raises exception if e_range_kev[1] out of range.."""
         with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range_kev=[0.1, 1e9])
 
     def test_27(self):
-        """Test XCOMQuery raises exception if e_range is out of order......"""
+        """Test XCOMQuery raises exception if e_range_kev out of order....."""
         with self.assertRaises(xcom.XCOMInputError):
             xcom.XCOMQuery('Ge', e_range_kev=[1000., 1.])
 
