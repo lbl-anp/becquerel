@@ -176,152 +176,152 @@ class XCOMQueryTests(unittest.TestCase):
             xcom._XCOMQuery('Ge', e_range_kev=[1., 10000.], bad_keyword=None)
 
 
-class XCOMDataTests(unittest.TestCase):
-    """Test xcom_data function."""
+class FetchXCOMDataTests(unittest.TestCase):
+    """Test fetch_xcom_data function."""
 
     def test_01(self):
-        """Test xcom_data with symbol and one energy......................."""
+        """Test fetch_xcom_data with symbol and one energy................."""
         energies = [1460.]
-        xd = xcom.xcom_data('Ge', energies_kev=energies)
+        xd = xcom.fetch_xcom_data('Ge', energies_kev=energies)
         self.assertTrue(len(xd) == len(energies))
 
     def test_02(self):
-        """Test xcom_data with symbol and three energies..................."""
+        """Test fetch_xcom_data with symbol and three energies............."""
         energies = [60., 662., 1460.]
-        xd = xcom.xcom_data('Ge', energies_kev=energies)
+        xd = xcom.fetch_xcom_data('Ge', energies_kev=energies)
         self.assertTrue(len(xd) == len(energies))
 
     def test_03(self):
-        """Test xcom_data with uppercase symbol and three energies........."""
+        """Test fetch_xcom_data with uppercase symbol and three energies..."""
         energies = [60., 662., 1460.]
-        xd = xcom.xcom_data('GE', energies_kev=energies)
+        xd = xcom.fetch_xcom_data('GE', energies_kev=energies)
         self.assertTrue(len(xd) == len(energies))
 
     def test_04(self):
-        """Test xcom_data with lowercase symbol and three energies........."""
+        """Test fetch_xcom_data with lowercase symbol and three energies..."""
         energies = [60., 662., 1460.]
-        xd = xcom.xcom_data('ge', energies_kev=energies)
+        xd = xcom.fetch_xcom_data('ge', energies_kev=energies)
         self.assertTrue(len(xd) == len(energies))
 
     def test_05(self):
-        """Test xcom_data with z (integer) and three energies.............."""
+        """Test fetch_xcom_data with z (integer) and three energies........"""
         energies = [60., 662., 1460.]
-        xd = xcom.xcom_data(32, energies_kev=energies)
+        xd = xcom.fetch_xcom_data(32, energies_kev=energies)
         self.assertTrue(len(xd) == len(energies))
 
     def test_06(self):
-        """Test xcom_data with z (string) and three energies..............."""
+        """Test fetch_xcom_data with z (string) and three energies........."""
         energies = [60., 662., 1460.]
-        xd = xcom.xcom_data('32', energies_kev=energies)
+        xd = xcom.fetch_xcom_data('32', energies_kev=energies)
         self.assertTrue(len(xd) == len(energies))
 
     def test_07(self):
-        """Test xcom_data with chemical compound (H2O) and three energies.."""
+        """Test fetch_xcom_data with compound (H2O) and three energies....."""
         energies = [60., 662., 1460.]
-        xd = xcom.xcom_data('H2O', energies_kev=energies)
+        xd = xcom.fetch_xcom_data('H2O', energies_kev=energies)
         self.assertTrue(len(xd) == len(energies))
 
     def test_08(self):
-        """Test xcom_data with mixture and three energies.................."""
+        """Test fetch_xcom_data with mixture and three energies............"""
         energies = [60., 662., 1460.]
-        xd = xcom.xcom_data(['H2O 0.9', 'NaCl 0.1'], energies_kev=energies)
+        xd = xcom.fetch_xcom_data(['H2O 0.9', 'NaCl 0.1'], energies_kev=energies)
         self.assertTrue(len(xd) == len(energies))
 
     def test_09(self):
-        """Test xcom_data with three energies and standard energy grid....."""
+        """Test fetch_xcom_data with three energies and standard grid......"""
         energies = [60., 662., 1460.]
-        xd = xcom.xcom_data('Ge', energies_kev=energies,
+        xd = xcom.fetch_xcom_data('Ge', energies_kev=energies,
                             e_range_kev=[1., 10000.])
         self.assertTrue(len(xd) > len(energies))
 
     def test_10(self):
-        """Test xcom_data for predefined mixtures.........................."""
+        """Test fetch_xcom_data for predefined mixtures...................."""
         energies = [60., 662., 1460.]
         mixtures = [key for key in dir(xcom) if key.startswith('MIXTURE')]
         for mixture in mixtures:
-            xd = xcom.xcom_data(getattr(xcom, mixture), energies_kev=energies)
+            xd = xcom.fetch_xcom_data(getattr(xcom, mixture), energies_kev=energies)
             self.assertTrue(len(xd) == len(energies))
 
     def test_11(self):
-        """Test xcom_data raises exception if z is out of range............"""
+        """Test fetch_xcom_data raises exception if z is out of range......"""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data(130, energies_kev=[60., 662., 1460.])
+            xcom.fetch_xcom_data(130, energies_kev=[60., 662., 1460.])
 
     def test_12(self):
-        """Test xcom_data raises exception for badly formed mixture (1)...."""
+        """Test fetch_xcom_data raises except for badly formed mixture (1)."""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data(['H2O 0.9', 'NaCl'],
+            xcom.fetch_xcom_data(['H2O 0.9', 'NaCl'],
                            energies_kev=[60., 662., 1460.])
 
     def test_13(self):
-        """Test xcom_data raises exception for badly formed mixture (2)...."""
+        """Test fetch_xcom_data raises except for badly formed mixture (2)."""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data(['H2O 1 1', 'NaCl 1'],
+            xcom.fetch_xcom_data(['H2O 1 1', 'NaCl 1'],
                            energies_kev=[60., 662., 1460.])
 
     def test_14(self):
-        """Test xcom_data raises exception if given bad argument..........."""
+        """Test fetch_xcom_data raises exception if given bad argument....."""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data(None, energies_kev=[60., 662., 1460.])
+            xcom.fetch_xcom_data(None, energies_kev=[60., 662., 1460.])
 
     def test_15(self):
-        """Test xcom_data raises exception if no energies are requested...."""
+        """Test fetch_xcom_data raises except if no energies are requested."""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data('Ge')
+            xcom.fetch_xcom_data('Ge')
 
     def test_16(self):
-        """Test xcom_data raises exception if website not found............"""
+        """Test fetch_xcom_data raises exception if website not found......"""
         xcom._URL = 'http://httpbin.org/status/404'
         with self.assertRaises(xcom.XCOMRequestError):
-            xcom.xcom_data('Ge', energies_kev=[60., 662., 1460.])
+            xcom.fetch_xcom_data('Ge', energies_kev=[60., 662., 1460.])
         xcom._URL = XCOM_URL_ORIG
 
     def test_17(self):
-        """Test xcom_data raises exception if data from website is empty..."""
+        """Test fetch_xcom_data raises except if data from website is empty"""
         xcom._URL = 'http://httpbin.org/post'
         with self.assertRaises(xcom.XCOMRequestError):
-            xcom.xcom_data('Ge', energies_kev=[60., 662., 1460.])
+            xcom.fetch_xcom_data('Ge', energies_kev=[60., 662., 1460.])
         xcom._URL = XCOM_URL_ORIG
 
     def test_20(self):
-        """Test xcom_data raises exception if energies_kev not iterable...."""
+        """Test fetch_xcom_data raises except if energies_kev not iterable."""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data('Ge', energies_kev=1460.)
+            xcom.fetch_xcom_data('Ge', energies_kev=1460.)
 
     def test_21(self):
-        """Test xcom_data raises exception if energies_kev too low........."""
+        """Test fetch_xcom_data raises exception if energies_kev too low..."""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data('Ge', energies_kev=[60., 662., 1460., 0.001])
+            xcom.fetch_xcom_data('Ge', energies_kev=[60., 662., 1460., 0.001])
 
     def test_22(self):
-        """Test xcom_data raises exception if energies_kev too high........"""
+        """Test fetch_xcom_data raises exception if energies_kev too high.."""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data('Ge', energies_kev=[60., 662., 1460., 1e9])
+            xcom.fetch_xcom_data('Ge', energies_kev=[60., 662., 1460., 1e9])
 
     def test_23(self):
-        """Test xcom_data raises exception if e_range_kev not an iterable.."""
+        """Test fetch_xcom_data raises except if e_range_kev not iterable.."""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data('Ge', e_range_kev=100.)
+            xcom.fetch_xcom_data('Ge', e_range_kev=100.)
 
     def test_24(self):
-        """Test xcom_data raises exception if len(e_range_kev) != 2........"""
+        """Test fetch_xcom_data raises exception if len(e_range_kev) != 2.."""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data('Ge', e_range_kev=[1., 10000., 100000.])
+            xcom.fetch_xcom_data('Ge', e_range_kev=[1., 10000., 100000.])
 
     def test_25(self):
-        """Test xcom_data raises exception if e_range_kev[0] out of range.."""
+        """Test fetch_xcom_data raises except if e_range_kev[0] bad........"""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data('Ge', e_range_kev=[0.1, 10000.])
+            xcom.fetch_xcom_data('Ge', e_range_kev=[0.1, 10000.])
 
     def test_26(self):
-        """Test xcom_data raises exception if e_range_kev[1] out of range.."""
+        """Test fetch_xcom_data raises except if e_range_kev[1] bad........"""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data('Ge', e_range_kev=[0.1, 1e9])
+            xcom.fetch_xcom_data('Ge', e_range_kev=[0.1, 1e9])
 
     def test_27(self):
-        """Test xcom_data raises exception if e_range_kev out of order....."""
+        """Test fetch_xcom_data raises except if e_range_kev out of order.."""
         with self.assertRaises(xcom.XCOMInputError):
-            xcom.xcom_data('Ge', e_range_kev=[1000., 1.])
+            xcom.fetch_xcom_data('Ge', e_range_kev=[1000., 1.])
 
 
 def main():

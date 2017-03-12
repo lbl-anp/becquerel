@@ -1,7 +1,7 @@
 """Query photon cross section data from NIST XCOM database.
 
-Provides the XCOMQuery class to query the NIST XCOM database, as well as
-a few mixtures for common materials.
+Provides the fetch_xcom_data function to query the NIST XCOM database,
+as well as a few mixtures for common materials.
 
 References:
   https://www.nist.gov/pml/xcom-photon-cross-sections-database
@@ -427,7 +427,7 @@ class _XCOMQuery(object):
         self.df['energy'] *= 1000.
 
 
-def xcom_data(arg, **kwargs):
+def fetch_xcom_data(arg, **kwargs):
     """Query photon cross section data from NIST XCOM database.
 
     Returns a pandas DataFrame containing the cross section data.

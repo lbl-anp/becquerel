@@ -1,5 +1,5 @@
 """Tools for radiation spectral analysis."""
 
-from . import xcom
+from .xcom import fetch_xcom_data
 
 __all__ = ['xcom']

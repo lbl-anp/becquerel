@@ -3,13 +3,13 @@
 from __future__ import print_function
 import os
 import matplotlib.pyplot as plt
-from becquerel.tools import xcom
+from becquerel.tools import fetch_xcom_data
 from xcom_element import plot_xcom
 
 
 if __name__ == '__main__':
     MIXTURE = ['H2O 0.9', 'NaCl 0.1']
-    xd = xcom.xcom_data(MIXTURE, e_range_kev=[1., 100000.])
+    xd = fetch_xcom_data(MIXTURE, e_range_kev=[1., 100000.])
     print(xd)
     plot_xcom(xd, ' '.join(MIXTURE))
 
