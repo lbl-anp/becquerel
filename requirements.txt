@@ -1,7 +1,9 @@
 coverage
+lxml
 matplotlib
 nose
 numpy
 python-dateutil
+requests
 scipy
 setuptools
