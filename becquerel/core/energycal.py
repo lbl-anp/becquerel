@@ -43,6 +43,8 @@ class FitEnergyCalBase(EnergyCalBase):
       rm_peak: remove a calibration point
     """
 
+    __metaclass__ = ABCMeta
+
     def __init__(self, peaks_list, **kwargs):
         """Assign the peaks_list property.
 
