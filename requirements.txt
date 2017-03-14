@@ -2,6 +2,8 @@ coverage
 matplotlib
 nose
 numpy
+pandas
 python-dateutil
+requests
 scipy
 setuptools
