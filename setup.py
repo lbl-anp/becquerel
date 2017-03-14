@@ -50,6 +50,7 @@ setup(
         'becquerel',
         'becquerel.core',
         'becquerel.parsers',
+        'becquerel.tools',
     ],
     setup_requires=['nose>=1.0'],
     test_suite='nose.collector',
