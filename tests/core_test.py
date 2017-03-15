@@ -213,9 +213,9 @@ class PeaksTests(unittest.TestCase):
     """Test core.peaks"""
 
     def test_arbitrary_pt(self):
-        """Test peaks.ArbitraryCalPoint"""
+        """Test peaks.ArbitraryEnergyPoint"""
 
-        bq.core.peaks.ArbitraryCalPoint(2345, 661.66)
+        bq.core.peaks.ArbitraryEnergyPoint(2345, 661.66)
 
     def test_gross_roi(self):
         """Test peaks.GrossROIPeak"""
@@ -237,8 +237,8 @@ class EnergyCalTests(unittest.TestCase):
         """Test energycal.FitPolyCal"""
 
         pts = []
-        pts.append(bq.core.peaks.ArbitraryCalPoint(32, 661.66))
-        pts.append(bq.core.peaks.ArbitraryCalPoint(88, 1460.83))
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(32, 661.66))
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(88, 1460.83))
         cal = bq.core.energycal.FitPolyCal(peaks_list=pts, order=1)
         self.assertTrue(np.all(
             np.isclose(cal.ch2kev([32, 88]), [661.66, 1460.83])))
@@ -247,10 +247,10 @@ class EnergyCalTests(unittest.TestCase):
         """Test features of energycal.FitEnergyCalBase"""
 
         pts = []
-        pts.append(bq.core.peaks.ArbitraryCalPoint(32, 661.66))
-        pts.append(bq.core.peaks.ArbitraryCalPoint(88, 1460.83))
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(32, 661.66))
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(88, 1460.83))
         cal = bq.core.energycal.FitPolyCal(peaks_list=pts, order=1)
-        new_pt = bq.core.peaks.ArbitraryCalPoint(127, 2614)
+        new_pt = bq.core.peaks.ArbitraryEnergyPoint(127, 2614)
         cal.add_peak(new_pt)
         cal.rm_peak(pts[0])
 
