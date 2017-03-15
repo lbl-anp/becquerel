@@ -125,8 +125,8 @@ class AreaFeature(FeatureBase):
             self._cal_area = None
 
 
-class ArbitraryCalPoint(EnergyFeature):
-    """An arbitrary calibration point."""
+class ArbitraryEnergyPoint(EnergyFeature):
+    """An arbitrary energy calibration point."""
 
     def __init__(self, ch, kev, **kwargs):
         """
@@ -139,6 +139,22 @@ class ArbitraryCalPoint(EnergyFeature):
 
         self._energy_ch = ch
         super().__init__(cal_energy_kev=kev, **kwargs)
+
+
+class ArbitraryEfficiencyPoint(AreaFeature):
+    """An arbitrary efficiency calibration point."""
+
+    def __init__(self, counts, cal_area, **kwargs):
+        """
+        Assign peak area and calibration area (e.g. emissions).
+
+        Args:
+          counts: the area in counts
+          cal_area: the calibration value (e.g. total source emissions)
+        """
+
+        self._area_c = counts
+        super().__init__(cal_area=cal_area, **kwargs)
 
 
 class GrossROIPeak(SpectralFeature, EnergyFeature, AreaFeature):
