@@ -144,16 +144,21 @@ class ArbitraryEnergyPoint(EnergyFeature):
 class ArbitraryEfficiencyPoint(AreaFeature):
     """An arbitrary efficiency calibration point."""
 
-    def __init__(self, counts, cal_area, **kwargs):
+    def __init__(self, counts, cal_area, energy_kev, **kwargs):
         """
         Assign peak area and calibration area (e.g. emissions).
 
         Args:
           counts: the area in counts
           cal_area: the calibration value (e.g. total source emissions)
+          energy_kev: a float representing the photon energy this efficiency
+            cal point is for.
         """
 
         self._area_c = counts
+        self._energy_kev = energy_kev
+        # TODO review how an efficiency point handles the energy value
+
         super().__init__(cal_area=cal_area, **kwargs)
 
 
