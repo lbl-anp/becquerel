@@ -212,16 +212,48 @@ class SpectrumMultiplyDivideTests(unittest.TestCase):
 class PeaksTests(unittest.TestCase):
     """Test core.peaks"""
 
-    def test_arbitrary_pt(self):
+    def test_01(self):
         """Test peaks.ArbitraryEnergyPoint"""
 
-        bq.core.peaks.ArbitraryEnergyPoint(2345, 661.66)
+        ch = 2345
+        kev = 661.66
+        energy_pt = bq.core.peaks.ArbitraryEnergyPoint(ch, kev)
+        self.assertEqual(energy_pt.energy_ch, ch)
+        self.assertEqual(energy_pt.cal_energy_kev, kev)
 
-    def test_gross_roi(self):
-        """Test peaks.GrossROIPeak"""
+    def test_02(self):
+        """Test peaks.ArbitraryEfficiencyPoint"""
+
+        counts = 1000
+        emissions = 65432
+        kev = 661.66
+        eff_pt = bq.core.peaks.ArbitraryEfficiencyPoint(
+            counts, emissions, energy_kev=kev)
+        self.assertEqual(eff_pt.area_c, counts)
+        self.assertEqual(eff_pt.cal_area, emissions)
+
+    def test_03(self):
+        """Test peaks.GrossROIPeak construction and basic properties"""
 
         spec = get_test_uncal_spectrum()
-        bq.core.peaks.GrossROIPeak(spec, (32, 48))
+        roi = (32, 48)
+        pk = bq.core.peaks.GrossROIPeak(spec, roi)
+        self.assertIs(pk.spectrum, spec)
+        self.assertTrue(np.all(np.array(pk.ROI_bounds_ch) == np.array(roi)))
+
+    def test_04(self):
+        """Test error on bad ROI_bounds"""
+
+        spec = get_test_uncal_spectrum()
+        roi = (125,)
+        with self.assertRaises(ValueError):
+            bq.core.peaks.GrossROIPeak(spec, roi)
+        roi = (125, 133, 139)
+        with self.assertRaises(ValueError):
+            bq.core.peaks.GrossROIPeak(spec, roi)
+        roi = 'string'
+        with self.assertRaises(ValueError):
+            bq.core.peaks.GrossROIPeak(spec, roi)
 
 
 class EnergyCalTests(unittest.TestCase):
