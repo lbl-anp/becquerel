@@ -36,6 +36,12 @@ class SpectrumFromFileTests(unittest.TestCase):
         """Test Spectrum.from_file for CNF file........................."""
         self.run_from_file('.cnf')
 
+    def test_bad_type(self):
+        """Test bad file type"""
+
+        with self.assertRaises(NotImplementedError):
+            bq.core.Spectrum.from_file('spectrum.doc')  # file needn't exist
+
 
 class SpectrumConstructorTests(unittest.TestCase):
     """Test Spectrum.__init__()."""
@@ -312,8 +318,17 @@ class EnergyCalTests(unittest.TestCase):
         pts.append(bq.core.peaks.ArbitraryEnergyPoint(32, 661.66))
         pts.append(bq.core.peaks.ArbitraryEnergyPoint(88, 1460.83))
         cal = bq.core.energycal.FitPolyCal(peaks_list=pts, order=1)
-        with self.AssertRaises(TypeError):
+        with self.assertRaises(TypeError):
             cal.add_peak(cal)
+
+    def test_05(self):
+        """Test Spectrum.calibrate()"""
+
+        spec = get_test_uncal_spectrum()
+        cal = bq.core.energycal.SimplePolyCal(coeffs=(1, 0.37))
+        spec.calibrate(cal)
+        with self.assertRaises(TypeError):
+            spec.calibrate(42)
 
 
 def get_test_data(length=TEST_DATA_LENGTH, expectation_val=TEST_COUNTS):
