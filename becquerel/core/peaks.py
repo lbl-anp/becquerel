@@ -144,8 +144,8 @@ class ArbitraryEnergyPoint(EnergyFeature):
           kev: the keV value to assign
         """
 
-        self._energy_ch = ch
         super().__init__(cal_energy_kev=kev, **kwargs)
+        self._energy_ch = ch
 
 
 class ArbitraryEfficiencyPoint(AreaFeature):
@@ -165,11 +165,10 @@ class ArbitraryEfficiencyPoint(AreaFeature):
             cal point is for.
         """
 
+        super().__init__(cal_area=cal_area, **kwargs)
         self._area_c = counts
         self._energy_kev = energy_kev
         # TODO review how an efficiency point handles the energy value
-
-        super().__init__(cal_area=cal_area, **kwargs)
 
 
 class GrossROIPeak(SpectralFeature, EnergyFeature, AreaFeature):
