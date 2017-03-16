@@ -52,7 +52,7 @@ class FitEnergyCalBase(EnergyCalBase):
           peaks_list: an iterable of objects derived from FeatureBase
         """
 
-        self._peaks_list = peaks_list
+        self._peaks_list = list(peaks_list)
         super().__init__(**kwargs)
 
     @abstractmethod
