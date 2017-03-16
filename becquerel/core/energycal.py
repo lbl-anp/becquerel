@@ -161,15 +161,17 @@ class SimplePolyCal(EnergyCalBase):
           Either way, it represents the energy(s) in keV.
         """
 
-        if np.isscalar(channel):
-            ch_array = float(channel)
-            energy_kev = 0.
-        else:
-            ch_array = np.array(channel, dtype=float)
-            energy_kev = np.zeros_like(ch_array)
+        scalar = np.isscalar(channel)
+
+        ch_array = np.array(channel, dtype=float)
+        energy_kev = np.zeros_like(ch_array)
         for i, coeff in enumerate(self.coeffs):
             energy_kev += coeff * ch_array**i
-        return energy_kev
+
+        if scalar:
+            return float(energy_kev)
+        else:
+            return energy_kev
 
 
 class FitPolyCal(FitEnergyCalBase, SimplePolyCal):
