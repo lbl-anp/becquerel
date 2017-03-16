@@ -116,6 +116,10 @@ class FitEnergyCalBase(EnergyCalBase):
 class SimplePolyCal(EnergyCalBase):
     """Polynomial energy calibration, by coefficients, not spectral features.
 
+      cal = SimplePolyCal(coeffs=[4.7, 0.374])
+      cal.ch2kev(32)
+      spec.calibrate(cal)
+
     Properties:
       coeffs (read-only): array of polynomial coefficients
 
@@ -171,6 +175,12 @@ class FitPolyCal(FitEnergyCalBase, SimplePolyCal):
     """
     Polynomial energy calibration, from a list of spectral features (peaks).
 
+      pks = [ArbitraryEnergyPoint(32, 661.66), ...]
+      cal = FitPolyCal(pks, order=1)
+      cal.coeffs
+      cal.add_peak(ArbitraryEnergyPoint(...))
+      spec.calibrate(cal)
+
     Properties:
       ch_list (read-only): list of the channel values of the calibration points
       kev_list (read-only): list of the energies of the calibration points
@@ -179,6 +189,8 @@ class FitPolyCal(FitEnergyCalBase, SimplePolyCal):
 
     Methods:
       ch2kev: convert channel(s) to energy(s)
+      add_peak: add a calibration point
+      rm_peak: remove a calibration point
     """
 
     def __init__(self, order=2, **kwargs):

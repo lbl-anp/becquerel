@@ -126,7 +126,10 @@ class AreaFeature(FeatureBase):
 
 
 class ArbitraryEnergyPoint(EnergyFeature):
-    """An arbitrary energy calibration point."""
+    """An arbitrary energy calibration point.
+
+      pt = ArbitraryEnergyPoint(32, 661.66)
+    """
 
     def __init__(self, ch, kev, **kwargs):
         """
@@ -142,7 +145,10 @@ class ArbitraryEnergyPoint(EnergyFeature):
 
 
 class ArbitraryEfficiencyPoint(AreaFeature):
-    """An arbitrary efficiency calibration point."""
+    """An arbitrary efficiency calibration point.
+
+      pt = ArbitraryEfficiencyPoint(1000, 64782.3, 661.66)
+    """
 
     def __init__(self, counts, cal_area, energy_kev, **kwargs):
         """
@@ -164,6 +170,10 @@ class ArbitraryEfficiencyPoint(AreaFeature):
 
 class GrossROIPeak(SpectralFeature, EnergyFeature, AreaFeature):
     """A simplistic gross-area peak feature. For demonstration only.
+
+      pk = GrossROIPeak(spec1, (2334, 2341))
+      pk.cal_energy_kev = 661.66
+      some_fitted_calibration.add_peak(pk)
 
     Properties:
       spectrum (read-only): the Spectrum object associated with this feature.
