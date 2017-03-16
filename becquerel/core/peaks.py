@@ -1,3 +1,5 @@
+"""Abstract and concrete classes for features (like peaks)."""
+
 from __future__ import print_function
 
 import numpy as np

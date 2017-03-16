@@ -1,3 +1,4 @@
+"""Abstract and concrete classes for energy calibration."""
 
 from __future__ import print_function
 
