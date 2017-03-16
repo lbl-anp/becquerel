@@ -259,13 +259,13 @@ class PeaksTests(unittest.TestCase):
 class EnergyCalTests(unittest.TestCase):
     """Test core.energycal"""
 
-    def test_simple_cal(self):
+    def test_01(self):
         """Test energycal.SimplePolyCal"""
 
         cal = bq.core.energycal.SimplePolyCal(coeffs=(1, 0.37))
         self.assertEqual(cal.ch2kev(100), 38)
 
-    def test_fit_poly_cal(self):
+    def test_02(self):
         """Test energycal.FitPolyCal"""
 
         pts = []
@@ -275,16 +275,45 @@ class EnergyCalTests(unittest.TestCase):
         self.assertTrue(np.all(
             np.isclose(cal.ch2kev([32, 88]), [661.66, 1460.83])))
 
-    def test_add_rm_peaks(self):
+    def test_03(self):
         """Test features of energycal.FitEnergyCalBase"""
+
+        pts = []
+        ch = [32, 88, 127]
+        kev = [661.66, 1460.83, 2614]
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(ch[0], kev[0]))
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(ch[1], kev[1]))
+        cal = bq.core.energycal.FitPolyCal(peaks_list=pts, order=1)
+        self.assertEqual(len(cal.ch_list), 2)
+        self.assertEqual(len(cal.kev_list), 2)
+        # test adding a point
+        new_pt = bq.core.peaks.ArbitraryEnergyPoint(ch[2], kev[2])
+        cal.add_peak(new_pt)
+        self.assertEqual(len(cal.ch_list), 3)
+        self.assertEqual(len(cal.kev_list), 3)
+        # test removing a point via the Feature object
+        cal.rm_peak(pts[0])
+        self.assertEqual(len(cal.ch_list), 2)
+        self.assertEqual(len(cal.kev_list), 2)
+        # test trying to add the same point twice
+        cal.add_peak(pts[0])
+        cal.add_peak(pts[0])
+        self.assertEqual(len(cal.ch_list), 3)
+        self.assertEqual(len(cal.kev_list), 3)
+        # test removing a point via its energy value
+        cal.rm_peak(kev[1])
+        self.assertEqual(len(cal.ch_list), 2)
+        self.assertEqual(len(cal.kev_list), 2)
+
+    def test_04(self):
+        """Test bad input to add_peak"""
 
         pts = []
         pts.append(bq.core.peaks.ArbitraryEnergyPoint(32, 661.66))
         pts.append(bq.core.peaks.ArbitraryEnergyPoint(88, 1460.83))
         cal = bq.core.energycal.FitPolyCal(peaks_list=pts, order=1)
-        new_pt = bq.core.peaks.ArbitraryEnergyPoint(127, 2614)
-        cal.add_peak(new_pt)
-        cal.rm_peak(pts[0])
+        with self.AssertRaises(TypeError):
+            cal.add_peak(cal)
 
 
 def get_test_data(length=TEST_DATA_LENGTH, expectation_val=TEST_COUNTS):
