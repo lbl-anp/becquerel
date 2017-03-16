@@ -153,7 +153,7 @@ class Spectrum(object):
             raise TypeError('Bad calibration type')
         # TODO sort out how calibration corresponds to bin edges; below is temp
         bin_edges_ch = np.arange(-0.5, len(self.data) + 1)
-        self.bin_edges_kev = cal.channel_to_energy(bin_edges_ch)
+        self.bin_edges_kev = cal.ch2kev(bin_edges_ch)
         self.cal = cal
 
     def integrate(self, left_ch, right_ch):
