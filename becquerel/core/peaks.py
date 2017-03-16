@@ -3,11 +3,11 @@
 from __future__ import print_function
 
 from abc import ABCMeta
-from builtins import super
+from builtins import super  # pylint: disable=redefined-builtin
 import numpy as np
 
 
-class FeatureBase(object):
+class FeatureBase(object):  # pylint: disable=too-few-public-methods
     """Abstract base class for any feature."""
 
     __metaclass__ = ABCMeta
@@ -60,7 +60,8 @@ class EnergyFeature(FeatureBase):
             (optional).
         """
 
-        self.cal_energy_kev = cal_energy_kev
+        self._energy_ch = None  # gets calculated during daughter __init__'s
+        self._cal_energy_kev = cal_energy_kev
         super().__init__(**kwargs)
 
     @property
@@ -102,7 +103,8 @@ class AreaFeature(FeatureBase):
             area (e.g. number of source emissions)
         """
 
-        self.cal_area = cal_area
+        self._area_c = None     # gets calculated during daughter __init__'s
+        self._cal_area = cal_area
         super().__init__(**kwargs)
 
     @property

@@ -3,7 +3,7 @@
 from __future__ import print_function
 
 from abc import ABCMeta, abstractmethod
-from builtins import super
+from builtins import super  # pylint: disable=redefined-builtin
 import numpy as np
 from . import peaks
 
