@@ -2,9 +2,9 @@
 
 from __future__ import print_function
 
-import numpy as np
 from abc import ABCMeta
 from builtins import super
+import numpy as np
 
 
 class FeatureBase(object):
