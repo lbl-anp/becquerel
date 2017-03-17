@@ -35,14 +35,14 @@ class Spectrum(object):
       energies_kev: (read-only) np.array of energy bin centers, if calibrated
     """
 
-    def __init__(self, data, bin_edges_kev=None):
+    def __init__(self, data, bin_edges_kev=None, input_file_object=None):
         """Initialize the spectrum.
 
         Args:
           data: an iterable of counts per channel
-          bin_edges_kev: an iterable of bin edge energies
-            Defaults to None for an uncalibrated spectrum
+          bin_edges_kev: an iterable of bin edge energies (optional)
             If not none, should have length of (len(data) + 1)
+          input_file_object: a parser file object (optional)
 
         Raises:
           SpectrumError: for bad input arguments
@@ -63,7 +63,7 @@ class Spectrum(object):
             self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
 
         self.infilename = None
-        self._infileobject = None
+        self._infileobject = input_file_object
 
     @property
     def channels(self):
@@ -118,8 +118,8 @@ class Spectrum(object):
         spect_file_obj = _get_file_object(infilename)
 
         spect_obj = cls(spect_file_obj.data,
-                        bin_edges_kev=spect_file_obj.energy_bin_edges)
-        spect_obj._infileobject = spect_file_obj
+                        bin_edges_kev=spect_file_obj.energy_bin_edges,
+                        input_file_object=spect_file_obj)
 
         # TODO Get more attributes from self.infileobj
 
@@ -219,12 +219,11 @@ def _get_file_object(infilename):
 
     _, extension = os.path.splitext(infilename)
     if extension.lower() == '.spe':
-        spect_file_obj = parsers.SpeFile(infilename)
+        return parsers.SpeFile(infilename)
     elif extension.lower() == '.spc':
-        spect_file_obj = parsers.SpcFile(infilename)
+        return parsers.SpcFile(infilename)
     elif extension.lower() == '.cnf':
-        spect_file_obj = parsers.CnfFile(infilename)
+        return parsers.CnfFile(infilename)
     else:
         raise NotImplementedError(
             'File type {} can not be read'.format(extension))
-    return spect_file_obj
