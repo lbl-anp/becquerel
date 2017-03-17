@@ -65,6 +65,7 @@ class Spectrum(object):
 
         self.infilename = None
         self._infileobject = None
+        self.cal = None
 
     @property
     def channels(self):
@@ -100,7 +101,7 @@ class Spectrum(object):
           bool, True if spectrum has defined energy bin edges. False otherwise
         """
 
-        return self.bin_edges_kev is not None
+        return self.cal is not None
 
     @classmethod
     def from_file(cls, infilename):
