@@ -62,8 +62,11 @@ class Spectrum(object):
         else:
             self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
 
-        self.infilename = None
         self._infileobject = input_file_object
+        if input_file_object is not None:
+            self.infilename = input_file_object.filename
+        else:
+            self.infilename = None
 
     @property
     def channels(self):
