@@ -16,6 +16,13 @@ or run:
 python setup.py clean --all
 ```
 
+For development purposes, it is more convenient to install using
+```
+python setup.py develop
+```
+so that the code is soft-linked from the installation directory,
+and the installed package will always use the current version of code.
+
 ## Running the tests
 
 To run the tests using `nose`:
