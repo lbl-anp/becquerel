@@ -55,6 +55,7 @@ class Spectrum(object):
 
         if bin_edges_kev is None:
             self.bin_edges_kev = None
+            self.cal = None
         elif len(bin_edges_kev) != len(data) + 1:
             raise SpectrumError('Bad length of bin edges vector')
         elif np.any(np.diff(bin_edges_kev) <= 0):
@@ -62,10 +63,10 @@ class Spectrum(object):
                 'Bin edge energies must be strictly increasing')
         else:
             self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
+            self.cal = 'arbitrary calibration'
 
         self.infilename = None
         self._infileobject = None
-        self.cal = None
 
     @property
     def channels(self):
