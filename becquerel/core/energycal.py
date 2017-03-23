@@ -25,6 +25,7 @@ class EnergyCalBase(object):
           Otherwise, a np.array of floats of the same shape as input.
           Either way, it represents the energy(s) in keV.
         """
+
         pass
 
 
@@ -122,6 +123,7 @@ class SimplePolyCal(EnergyCalBase):
       spec.calibrate(cal)
 
     Properties:
+      order (read-only): the order of the polynomial
       coeffs (read-only): array of polynomial coefficients
 
     Methods:
@@ -141,6 +143,7 @@ class SimplePolyCal(EnergyCalBase):
 
         if not wait:
             self._coeffs = np.array(coeffs, dtype=float)
+            self._order = len(self._coeffs) + 1
         super().__init__(**kwargs)
 
     @property
@@ -148,6 +151,12 @@ class SimplePolyCal(EnergyCalBase):
         """Array of the polynomial coefficients, from 0th-order to highest."""
 
         return self._coeffs
+
+    @property
+    def order(self):
+        """An integer indicating the polynomial order."""
+
+        return self._order
 
     def ch2kev(self, channel):
         """Convert channel(s) to energy(s).
@@ -207,12 +216,6 @@ class FitPolyCal(FitEnergyCalBase, SimplePolyCal):
         super().__init__(wait=True, **kwargs)
         self._order = int(order)
         self.fit()
-
-    @property
-    def order(self):
-        """An integer indicating the polynomial order."""
-
-        return self._order
 
     def fit(self):
         """Produce a new calibration curve based on current calibration points.
