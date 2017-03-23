@@ -33,7 +33,7 @@ class SpectrumFileTests(unittest.TestCase):
             return
         plt.title('Testing ' + cls.__name__)
         filenames = SAMPLES.get(extension, [])
-        self.assertTrue(len(filenames) >= 1)
+        assert len(filenames) >= 1
         for filename in filenames:
             fname, ext = os.path.splitext(filename)
             path, fname = os.path.split(fname)
