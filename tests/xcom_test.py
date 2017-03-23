@@ -225,14 +225,15 @@ class FetchXCOMDataTests(unittest.TestCase):
     def test_08(self):
         """Test fetch_xcom_data with mixture and three energies............"""
         energies = [60., 662., 1460.]
-        xd = xcom.fetch_xcom_data(['H2O 0.9', 'NaCl 0.1'], energies_kev=energies)
+        xd = xcom.fetch_xcom_data(
+            ['H2O 0.9', 'NaCl 0.1'], energies_kev=energies)
         assert len(xd) == len(energies)
 
     def test_09(self):
         """Test fetch_xcom_data with three energies and standard grid......"""
         energies = [60., 662., 1460.]
-        xd = xcom.fetch_xcom_data('Ge', energies_kev=energies,
-                            e_range_kev=[1., 10000.])
+        xd = xcom.fetch_xcom_data(
+            'Ge', energies_kev=energies, e_range_kev=[1., 10000.])
         assert len(xd) > len(energies)
 
     def test_10(self):
@@ -240,7 +241,8 @@ class FetchXCOMDataTests(unittest.TestCase):
         energies = [60., 662., 1460.]
         mixtures = [key for key in dir(xcom) if key.startswith('MIXTURE')]
         for mixture in mixtures:
-            xd = xcom.fetch_xcom_data(getattr(xcom, mixture), energies_kev=energies)
+            xd = xcom.fetch_xcom_data(
+                getattr(xcom, mixture), energies_kev=energies)
             assert len(xd) == len(energies)
 
     def test_11(self):
@@ -251,14 +253,14 @@ class FetchXCOMDataTests(unittest.TestCase):
     def test_12(self):
         """Test fetch_xcom_data raises except for badly formed mixture (1)."""
         with pytest.raises(xcom.XCOMInputError):
-            xcom.fetch_xcom_data(['H2O 0.9', 'NaCl'],
-                           energies_kev=[60., 662., 1460.])
+            xcom.fetch_xcom_data(
+                ['H2O 0.9', 'NaCl'], energies_kev=[60., 662., 1460.])
 
     def test_13(self):
         """Test fetch_xcom_data raises except for badly formed mixture (2)."""
         with pytest.raises(xcom.XCOMInputError):
-            xcom.fetch_xcom_data(['H2O 1 1', 'NaCl 1'],
-                           energies_kev=[60., 662., 1460.])
+            xcom.fetch_xcom_data(
+                ['H2O 1 1', 'NaCl 1'], energies_kev=[60., 662., 1460.])
 
     def test_14(self):
         """Test fetch_xcom_data raises exception if given bad argument....."""
