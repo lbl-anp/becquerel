@@ -25,7 +25,7 @@ and the installed package will always use the current version of code.
 
 ## Running the tests
 
-To run the tests using `pytest`:
+To run the tests using `pytest`, from the root directory of the repo:
 
 ```
 pytest
@@ -34,7 +34,7 @@ pytest
 (`python setup.py test` is still supported also.)
 By default, a code coverage report is printed to the terminal.
 Tests marked `webtest` or `plottest` are by default skipped for the sake of
-speed. To run all tests, clear the pre-configured markers option via
+speed. To run all tests, clear the pre-configured markers option:
 
 ```
 pytest -m ""
