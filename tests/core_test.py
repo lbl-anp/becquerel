@@ -1,7 +1,6 @@
 """Test becquerel's Spectrum."""
 
 from __future__ import print_function
-import unittest
 import pytest
 import numpy as np
 
@@ -234,12 +233,3 @@ class TestSpectrumMultiplyDivide(object):
             uncal_spec * np.nan
         with pytest.raises(bq.core.SpectrumError):
             uncal_spec / np.nan
-
-
-def main():
-    """Run unit tests."""
-    unittest.main()
-
-
-if __name__ == '__main__':
-    main()

@@ -3,7 +3,6 @@
 from __future__ import print_function
 import glob
 import os
-import unittest
 import pytest
 import matplotlib.pyplot as plt
 import becquerel as bq
@@ -23,7 +22,7 @@ for extension in ['.spe', '.spc', '.cnf']:
 
 
 @pytest.mark.plottest
-class SpectrumFileTests(unittest.TestCase):
+class TestSpectrumFile(object):
     """Test spectrum file parsers."""
 
     def run_parser(self, cls, extension, write=False):
@@ -68,12 +67,3 @@ class SpectrumFileTests(unittest.TestCase):
     def test_cnf(self):
         """Test parsers.CnfFile............................................"""
         self.run_parser(bq.parsers.CnfFile, '.cnf', write=False)
-
-
-def main():
-    """Run unit tests."""
-    unittest.main()
-
-
-if __name__ == '__main__':
-    main()

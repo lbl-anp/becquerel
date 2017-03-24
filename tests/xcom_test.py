@@ -1,7 +1,6 @@
 """Test XCOM data queries."""
 
 from __future__ import print_function
-import unittest
 from becquerel.tools import xcom
 import pytest
 
@@ -10,7 +9,7 @@ XCOM_URL_ORIG = xcom._URL
 
 
 @pytest.mark.webtest
-class XCOMQueryTests(unittest.TestCase):
+class TestXCOMQuery(object):
     """Test XCOM queries."""
 
     def test_01(self):
@@ -179,7 +178,7 @@ class XCOMQueryTests(unittest.TestCase):
 
 
 @pytest.mark.webtest
-class FetchXCOMDataTests(unittest.TestCase):
+class TestFetchXCOMData(object):
     """Test fetch_xcom_data function."""
 
     def test_01(self):
@@ -327,12 +326,3 @@ class FetchXCOMDataTests(unittest.TestCase):
         """Test fetch_xcom_data raises except if e_range_kev out of order.."""
         with pytest.raises(xcom.XCOMInputError):
             xcom.fetch_xcom_data('Ge', e_range_kev=[1000., 1.])
-
-
-def main():
-    """Run unit tests."""
-    unittest.main()
-
-
-if __name__ == '__main__':
-    main()
