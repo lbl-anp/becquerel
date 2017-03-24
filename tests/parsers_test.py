@@ -4,6 +4,7 @@ from __future__ import print_function
 import glob
 import os
 import unittest
+import pytest
 import matplotlib.pyplot as plt
 import becquerel as bq
 
@@ -21,6 +22,7 @@ for extension in ['.spe', '.spc', '.cnf']:
     SAMPLES[extension] = filenames_filtered
 
 
+@pytest.mark.plottest
 class SpectrumFileTests(unittest.TestCase):
     """Test spectrum file parsers."""
 

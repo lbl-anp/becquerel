@@ -9,6 +9,7 @@ import pytest
 XCOM_URL_ORIG = xcom._URL
 
 
+@pytest.mark.webtest
 class XCOMQueryTests(unittest.TestCase):
     """Test XCOM queries."""
 
@@ -177,6 +178,7 @@ class XCOMQueryTests(unittest.TestCase):
             xcom._XCOMQuery('Ge', e_range_kev=[1., 10000.], bad_keyword=None)
 
 
+@pytest.mark.webtest
 class FetchXCOMDataTests(unittest.TestCase):
     """Test fetch_xcom_data function."""
 
