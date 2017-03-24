@@ -25,18 +25,26 @@ and the installed package will always use the current version of code.
 
 ## Running the tests
 
-To run the tests using `nose`:
+To run the tests using `pytest`:
 
 ```
-python setup.py test
+pytest
 ```
 
-To run the tests using `nose` with a code coverage report (text report
-is printed out stdout and a detailed HTML report is written to the
-`htmlcov` directory):
+(`python setup.py test` is still supported also.)
+By default, a code coverage report is printed to the terminal.
+Tests marked `webtest` or `plottest` are by default skipped for the sake of
+speed. To run all tests, clear the pre-configured markers option via
 
 ```
-python setup.py nosetests
+pytest -m ""
+```
+
+To produce an HTML code coverage report in directory `htmlcov`
+with line-by-line highlighting:
+
+```
+pytest --cov-report html:htmlcov
 ```
 
 ## Code Style Guide
