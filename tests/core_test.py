@@ -16,33 +16,48 @@ TEST_EDGES_KEV = np.arange(TEST_DATA_LENGTH + 1) * TEST_GAIN
 
 
 @pytest.fixture
-def spec_data(length=TEST_DATA_LENGTH, expectation_val=TEST_COUNTS):
+def spec_data():
     """Build a vector of random counts."""
-    return np.random.poisson(lam=expectation_val, size=length).astype(np.int)
+
+    floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH)
+    return floatdata.astype(np.int)
 
 
 @pytest.fixture
 def uncal_spec(spec_data):
-    uncal = bq.core.Spectrum(spec_data)
-    return uncal
+    """Generate an uncalibrated spectrum."""
+
+    return bq.core.Spectrum(spec_data)
 
 
 @pytest.fixture
 def uncal_spec_2(spec_data):
-    uncal = bq.core.Spectrum(spec_data)
+    """Generate an uncalibrated spectrum (2nd instance)."""
+
+    return bq.core.Spectrum(spec_data)
+
+
+@pytest.fixture
+def uncal_spec_long(spec_data):
+    """Generate an uncalibrated spectrum, of longer length."""
+
+    floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH * 2)
+    uncal = bq.core.Spectrum(floatdata.astype(np.int))
     return uncal
 
 
 @pytest.fixture
 def cal_spec(spec_data):
-    cal = bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
-    return cal
+    """Generate a calibrated spectrum."""
+
+    return bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
 
 
 @pytest.fixture
 def cal_spec_2(spec_data):
-    cal = bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
-    return cal
+    """Generate a calibrated spectrum (2nd instance)."""
+
+    return bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
 
 
 class TestSpectrumFromFile(object):
@@ -154,16 +169,15 @@ class TestSpectrumAddSubtract(object):
         with pytest.raises(TypeError):
             uncal_spec - spec_data
 
-    def test_add_sub_wrong_length(self, uncal_spec, spec_data):
+    def test_add_sub_wrong_length(self, uncal_spec, uncal_spec_long):
         """
         Adding/subtracting spectra of different lengths gives a SpectrumError.
         """
 
-        spec2 = bq.core.Spectrum(get_test_data(length=TEST_DATA_LENGTH * 2))
         with pytest.raises(bq.core.SpectrumError):
-            uncal_spec + spec2
+            uncal_spec + uncal_spec_long
         with pytest.raises(bq.core.SpectrumError):
-            uncal_spec - spec2
+            uncal_spec - uncal_spec_long
 
 
 class TestSpectrumMultiplyDivide(object):
