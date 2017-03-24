@@ -3,6 +3,7 @@
 from __future__ import print_function
 import os
 import numpy as np
+from uncertainties import ufloat, UFloat, unumpy
 import becquerel.parsers as parsers
 # from ..parsers import SpeFile, SpcFile, CnfFile
 
@@ -50,7 +51,12 @@ class Spectrum(object):
 
         if len(data) == 0:
             raise SpectrumError('Empty spectrum data')
-        self.data = np.array(data, dtype=float)
+        if isinstance(data[0], UFloat):
+            self._data = np.array(data)
+        else:
+            unc = np.sqrt(data)
+            unc[unc == 0] = 1
+            self._data = unumpy.uarray(data, unc)
 
         if bin_edges_kev is None:
             self.bin_edges_kev = None
@@ -64,6 +70,36 @@ class Spectrum(object):
 
         self.infilename = None
         self._infileobject = None
+
+    @property
+    def data(self):
+        """Counts in each channel, with uncertainty.
+
+        Returns:
+          an np.ndarray of uncertainties.ufloats
+        """
+
+        return self._data
+
+    @property
+    def data_vals(self):
+        """Counts in each channel, no uncertainties.
+
+        Returns:
+          an np.ndarray of floats
+        """
+
+        return unumpy.nominal_values(self._data)
+
+    @property
+    def data_uncs(self):
+        """Uncertainties in each channel.
+
+        Returns:
+          an np.ndarray of floats
+        """
+
+        return unumpy.std_devs(self._data)
 
     @property
     def channels(self):
