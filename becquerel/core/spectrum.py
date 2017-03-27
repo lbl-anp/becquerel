@@ -49,6 +49,8 @@ class Spectrum(object):
           SpectrumError: for bad input arguments
         """
 
+        # TODO use EnergyCal object instead of bin_edges_kev
+
         if len(data) == 0:
             raise SpectrumError('Empty spectrum data')
         self.data = np.array(data, dtype=float)
@@ -170,6 +172,7 @@ class Spectrum(object):
         """
 
         # TODO inputs as floats and compute partial bins
+        # TODO kwarg units='ch' or 'kev'
 
         left_ind = int(np.round(left_ch))
         right_ind = int(np.round(right_ch))

@@ -17,7 +17,7 @@ class SpectralFeature(FeatureBase):
     """Abstract base class for a feature associated with a spectrum.
 
     Properties:
-      spectrum (read-only): the Spectrum object associated with this feature.
+      spectrum (read-only): the Spectrum object associated with this feature
     """
 
     __metaclass__ = ABCMeta
@@ -26,18 +26,15 @@ class SpectralFeature(FeatureBase):
         """Check and assign the spectrum property.
 
         Args:
-          spec: a Spectrum object with which this feature is associated.
+          spec: the Spectrum object associated with this feature
         """
 
-        # if not isinstance(spec, spectrum.Spectrum):
-        #     raise TypeError('spec should be a Spectrum object')
-        # # circular import if we import spectrum!
         self._spec = spec
         super().__init__(**kwargs)
 
     @property
     def spectrum(self):
-        """The Spectrum object with which this feature is associated."""
+        """The Spectrum object associated with this feature."""
 
         return self._spec
 
@@ -46,8 +43,8 @@ class EnergyFeature(FeatureBase):
     """Abstract base class for an energy feature.
 
     Properties:
-      energy_ch (read-only): The (measured) energy of the feature, in channels.
-      cal_energy_kev: Energy assigned by user, e.g. for calibration.
+      energy_ch (read-only): The (measured) energy of the feature, in channels
+      cal_energy_kev: Energy assigned by user, e.g. for calibration
     """
 
     __metaclass__ = ABCMeta
@@ -57,7 +54,7 @@ class EnergyFeature(FeatureBase):
 
         Args:
           cal_energy_kev: the calibration energy of the feature in keV
-            (optional).
+            (optional)
         """
 
         self._energy_ch = None  # gets calculated during daughter __init__'s
@@ -110,6 +107,7 @@ class AreaFeature(FeatureBase):
     @property
     def area_c(self):
         """The (measured) area of the feature, in counts."""
+
         return self._area_c
 
     @property
@@ -162,7 +160,7 @@ class ArbitraryEfficiencyPoint(AreaFeature):
           counts: the area in counts
           cal_area: the calibration value (e.g. total source emissions)
           energy_kev: a float representing the photon energy this efficiency
-            cal point is for.
+            cal point is for
         """
 
         super().__init__(cal_area=cal_area, **kwargs)
@@ -179,11 +177,11 @@ class GrossROIPeak(SpectralFeature, EnergyFeature, AreaFeature):
       some_fitted_calibration.add_peak(pk)
 
     Properties:
-      spectrum (read-only): the Spectrum object associated with this feature.
-      energy_ch (read-only): The (measured) energy of the feature, in channels.
-      energy_kev (read-only): energy_ch converted to kev by calibration.
+      spectrum (read-only): the Spectrum object associated with this feature
+      energy_ch (read-only): The (measured) energy of the feature, in channels
+      energy_kev (read-only): energy_ch converted to kev by calibration
       area_c (read-only): the area of the feature, in counts
-      cal_energy_kev: Energy assigned by user, e.g. for calibration.
+      cal_energy_kev: Energy assigned by user, e.g. for calibration
       cal_area: the area assigned by the user for calibration
       ROI_bounds_ch (read-only): the bounds of the ROI, in channels
     """
@@ -191,9 +189,9 @@ class GrossROIPeak(SpectralFeature, EnergyFeature, AreaFeature):
     def __init__(self, spec, ROI_bounds_ch):
         """
         Args:
-          spec: a Spectrum object.
+          spec: a Spectrum object
           ROI_bounds_ch: an iterable of length 2 indicating the left and right
-            sides of the ROI, in channels.
+            sides of the ROI, in channels
         """
 
         if len(ROI_bounds_ch) != 2:

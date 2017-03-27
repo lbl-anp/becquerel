@@ -135,9 +135,8 @@ class SimplePolyCal(EnergyCalBase):
         E[keV] = sum_i( energy^i * coeffs[i] )
 
         Args:
-          coeffs: the coefficients of the polynomial, in increasing order of
-            terms.
-          wait: a bool. If True, do not assign coeffs property yet.
+          coeffs: polynomial coefficients, from 0th-order to highest
+          wait: a bool. If True, do not assign coeffs property yet
             (Useful for subclasses.) [Default: False]
         """
 
@@ -170,14 +169,12 @@ class SimplePolyCal(EnergyCalBase):
           Either way, it represents the energy(s) in keV.
         """
 
-        scalar = np.isscalar(channel)
-
         ch_array = np.array(channel, dtype=float)
         energy_kev = np.zeros_like(ch_array)
         for i, coeff in enumerate(self.coeffs):
             energy_kev += coeff * ch_array**i
 
-        if scalar:
+        if np.isscalar(channel):
             return float(energy_kev)
         else:
             return energy_kev
@@ -187,10 +184,12 @@ class FitPolyCal(FitEnergyCalBase, SimplePolyCal):
     """
     Polynomial energy calibration, from a list of spectral features (peaks).
 
-      pks = [ArbitraryEnergyPoint(32, 661.66), ...]
+      pks = [ArbitraryEnergyPoint(1808, 661.7),
+             ArbitraryEnergyPoint(3990, 1460.8)]
       cal = FitPolyCal(pks, order=1)
       cal.coeffs
-      cal.add_peak(ArbitraryEnergyPoint(...))
+      cal.add_peak(ArbitraryEnergyPoint(7141, 2614.5))
+      cal.coeffs
       spec.calibrate(cal)
 
     Properties:
