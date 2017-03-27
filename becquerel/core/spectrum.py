@@ -3,7 +3,8 @@
 from __future__ import print_function
 import os
 import numpy as np
-import becquerel.parsers as parsers
+from .. import parsers
+from . import energycal
 # from ..parsers import SpeFile, SpcFile, CnfFile
 
 
@@ -48,12 +49,15 @@ class Spectrum(object):
           SpectrumError: for bad input arguments
         """
 
+        # TODO use EnergyCal object instead of bin_edges_kev
+
         if len(data) == 0:
             raise SpectrumError('Empty spectrum data')
         self.data = np.array(data, dtype=float)
 
         if bin_edges_kev is None:
             self.bin_edges_kev = None
+            self.cal = None
         elif len(bin_edges_kev) != len(data) + 1:
             raise SpectrumError('Bad length of bin edges vector')
         elif np.any(np.diff(bin_edges_kev) <= 0):
@@ -61,6 +65,7 @@ class Spectrum(object):
                 'Bin edge energies must be strictly increasing')
         else:
             self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
+            self.cal = 'arbitrary calibration'
 
         self.infilename = None
         self._infileobject = None
@@ -99,7 +104,7 @@ class Spectrum(object):
           bool, True if spectrum has defined energy bin edges. False otherwise
         """
 
-        return self.bin_edges_kev is not None
+        return self.cal is not None
 
     @classmethod
     def from_file(cls, infilename):
@@ -140,6 +145,40 @@ class Spectrum(object):
         edges_kev = np.array(edges_kev)
         centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
         return centers_kev
+
+    def calibrate(self, cal):
+        """Assign a calibration to this spectrum.
+
+        Args:
+          cal: an energy cal object
+        """
+
+        if not isinstance(cal, energycal.EnergyCalBase):
+            raise TypeError('Bad calibration type')
+        # TODO sort out how calibration corresponds to bin edges; below is temp
+        bin_edges_ch = np.arange(-0.5, len(self.data) + 1)
+        self.bin_edges_kev = cal.ch2kev(bin_edges_ch)
+        self.cal = cal
+
+    def integrate(self, left_ch, right_ch):
+        """Integrate over a region of interest.
+
+        Args:
+          left_ch: channel number of left side of region
+          right_ch: channel number of right side of region
+
+        Returns:
+          a float of counts between left_ch and right_ch, inclusive
+        """
+
+        # TODO inputs as floats and compute partial bins
+        # TODO kwarg units='ch' or 'kev'
+
+        left_ind = int(np.round(left_ch))
+        right_ind = int(np.round(right_ch))
+
+        integral = np.sum(self.data[left_ind:right_ind + 1])
+        return integral
 
     def __add__(self, other):
         return self._add_sub(other, sub=False)

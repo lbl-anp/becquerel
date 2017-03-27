@@ -36,6 +36,12 @@ class SpectrumFromFileTests(unittest.TestCase):
         """Test Spectrum.from_file for CNF file........................."""
         self.run_from_file('.cnf')
 
+    def test_bad_type(self):
+        """Test bad file type"""
+
+        with self.assertRaises(NotImplementedError):
+            bq.core.Spectrum.from_file('spectrum.doc')  # file needn't exist
+
 
 class SpectrumConstructorTests(unittest.TestCase):
     """Test Spectrum.__init__()."""
@@ -207,6 +213,122 @@ class SpectrumMultiplyDivideTests(unittest.TestCase):
             spec * np.nan
         with self.assertRaises(bq.core.SpectrumError):
             spec / np.nan
+
+
+class PeaksTests(unittest.TestCase):
+    """Test core.peaks"""
+
+    def test_01(self):
+        """Test peaks.ArbitraryEnergyPoint"""
+
+        ch = 2345
+        kev = 661.66
+        energy_pt = bq.core.peaks.ArbitraryEnergyPoint(ch, kev)
+        self.assertEqual(energy_pt.energy_ch, ch)
+        self.assertEqual(energy_pt.cal_energy_kev, kev)
+
+    def test_02(self):
+        """Test peaks.ArbitraryEfficiencyPoint"""
+
+        counts = 1000
+        emissions = 65432
+        kev = 661.66
+        eff_pt = bq.core.peaks.ArbitraryEfficiencyPoint(
+            counts, emissions, energy_kev=kev)
+        self.assertEqual(eff_pt.area_c, counts)
+        self.assertEqual(eff_pt.cal_area, emissions)
+
+    def test_03(self):
+        """Test peaks.GrossROIPeak construction and basic properties"""
+
+        spec = get_test_uncal_spectrum()
+        roi = (32, 48)
+        pk = bq.core.peaks.GrossROIPeak(spec, roi)
+        self.assertIs(pk.spectrum, spec)
+        self.assertTrue(np.all(np.array(pk.ROI_bounds_ch) == np.array(roi)))
+
+    def test_04(self):
+        """Test error on bad ROI_bounds"""
+
+        spec = get_test_uncal_spectrum()
+        roi = (125,)
+        with self.assertRaises(ValueError):
+            bq.core.peaks.GrossROIPeak(spec, roi)
+        roi = (125, 133, 139)
+        with self.assertRaises(ValueError):
+            bq.core.peaks.GrossROIPeak(spec, roi)
+        roi = 'string'
+        with self.assertRaises(ValueError):
+            bq.core.peaks.GrossROIPeak(spec, roi)
+
+
+class EnergyCalTests(unittest.TestCase):
+    """Test core.energycal"""
+
+    def test_01(self):
+        """Test energycal.SimplePolyCal"""
+
+        cal = bq.core.energycal.SimplePolyCal(coeffs=(1, 0.37))
+        self.assertEqual(cal.ch2kev(100), 38)
+
+    def test_02(self):
+        """Test energycal.FitPolyCal"""
+
+        pts = []
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(32, 661.66))
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(88, 1460.83))
+        cal = bq.core.energycal.FitPolyCal(peaks_list=pts, order=1)
+        self.assertTrue(np.all(
+            np.isclose(cal.ch2kev([32, 88]), [661.66, 1460.83])))
+
+    def test_03(self):
+        """Test features of energycal.FitEnergyCalBase"""
+
+        pts = []
+        ch = [32, 88, 127]
+        kev = [661.66, 1460.83, 2614]
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(ch[0], kev[0]))
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(ch[1], kev[1]))
+        cal = bq.core.energycal.FitPolyCal(peaks_list=pts, order=1)
+        self.assertEqual(len(cal.ch_list), 2)
+        self.assertEqual(len(cal.kev_list), 2)
+        # test adding a point
+        new_pt = bq.core.peaks.ArbitraryEnergyPoint(ch[2], kev[2])
+        cal.add_peak(new_pt)
+        self.assertEqual(len(cal.ch_list), 3)
+        self.assertEqual(len(cal.kev_list), 3)
+        # test removing a point via the Feature object
+        cal.rm_peak(pts[0])
+        self.assertEqual(len(cal.ch_list), 2)
+        self.assertEqual(len(cal.kev_list), 2)
+        # test trying to add the same point twice
+        cal.add_peak(pts[0])
+        cal.add_peak(pts[0])
+        self.assertEqual(len(cal.ch_list), 3)
+        self.assertEqual(len(cal.kev_list), 3)
+        # test removing a point via its energy value
+        cal.rm_peak(kev[1])
+        self.assertEqual(len(cal.ch_list), 2)
+        self.assertEqual(len(cal.kev_list), 2)
+
+    def test_04(self):
+        """Test bad input to add_peak"""
+
+        pts = []
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(32, 661.66))
+        pts.append(bq.core.peaks.ArbitraryEnergyPoint(88, 1460.83))
+        cal = bq.core.energycal.FitPolyCal(peaks_list=pts, order=1)
+        with self.assertRaises(TypeError):
+            cal.add_peak(cal)
+
+    def test_05(self):
+        """Test Spectrum.calibrate()"""
+
+        spec = get_test_uncal_spectrum()
+        cal = bq.core.energycal.SimplePolyCal(coeffs=(1, 0.37))
+        spec.calibrate(cal)
+        with self.assertRaises(TypeError):
+            spec.calibrate(42)
 
 
 def get_test_data(length=TEST_DATA_LENGTH, expectation_val=TEST_COUNTS):
