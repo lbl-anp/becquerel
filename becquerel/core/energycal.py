@@ -26,7 +26,6 @@ class EnergyCalBase(object):
         """
 
         self._calpoints = dict()
-        self._coeffs = None
         self._coeffs = dict()
         # initialize fit constraints?
 
@@ -106,12 +105,20 @@ class EnergyCalBase(object):
     def coeffs(self):
         return self._coeffs
 
-    @abstractmethod
     def ch2kev(self, ch):
         """Convert channel(s) to energy value(s)."""
 
-        # TODO handle scalar/array here, as a concrete method
-        #   then call a private abstract method to do actual calculation
+        ch_array = np.array(ch)
+        kev_array = self._ch2kev(ch_array)
+        if np.isscalar(ch):
+            return float(kev_array)
+        else:
+            return kev_array
+
+    @abstractmethod
+    def _ch2kev(self, ch_array):
+        """Convert np.array of channel(s) to energies. Internal method."""
+
         pass
 
     @abstractmethod
@@ -188,9 +195,8 @@ class LinearEnergyCal(EnergyCalBase):
     def offset(self):
         return self._coeffs['c']
 
-    def ch2kev(self, ch):
-        # see TODO in abstract method
-        return self.slope * ch + self.offset
+    def _ch2kev(self, ch_array):
+        return self.slope * ch_array + self.offset
 
     def kev2ch(self, kev):
         return (kev - self.offset) / self.slope
