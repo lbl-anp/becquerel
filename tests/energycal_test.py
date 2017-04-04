@@ -150,16 +150,6 @@ def test_methods_02():
 
 
 def test_methods_03():
-    """Test update_calpoint"""
-
-    cal = bq.core.LinearEnergyCal()
-    cal.new_calpoint(32, 661.7)
-    with pytest.raises(bq.core.EnergyCalError):
-        cal.update_calpoint(67, 1460.83)
-    cal.update_calpoint(35, 661.7)
-
-
-def test_methods_04():
     """Test rm_calpoint"""
 
     cal = bq.core.LinearEnergyCal()
@@ -168,7 +158,7 @@ def test_methods_04():
     cal.rm_calpoint(1460.83)
 
 
-def test_methods_05(slope, offset, channels):
+def test_methods_04(slope, offset, channels):
     """Test ch2kev (both scalar and array)"""
 
     coeffs = {'b': slope, 'c': offset}
@@ -181,7 +171,7 @@ def test_methods_05(slope, offset, channels):
             cal.ch2kev(channels) == slope * np.array(channels) + offset)
 
 
-def test_methods_06(slope, offset, channels):
+def test_methods_05(slope, offset, channels):
     """Test kev2ch"""
 
     coeffs = {'b': slope, 'c': offset}
