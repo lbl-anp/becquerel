@@ -2,7 +2,7 @@
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import Iterable
-from builtins import super  # pylint: disable=redefined-builtin
+from builtins import dict, super  # pylint: disable=redefined-builtin
 import numpy as np
 
 
@@ -107,7 +107,7 @@ class EnergyCalBase(object):
           an np.ndarray of channel values (may be float or int)
         """
 
-        return np.array(self._calpoints.values())
+        return np.fromiter(self._calpoints.itervalues(), dtype=float)
 
     @property
     def energies(self):
@@ -117,7 +117,7 @@ class EnergyCalBase(object):
           an np.ndarray of energy values [keV]
         """
 
-        return np.array(self._calpoints.keys(), dtype=float)
+        return np.fromiter(self._calpoints.iterkeys(), dtype=float)
 
     @property
     def calpoints(self):
