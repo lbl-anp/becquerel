@@ -51,11 +51,10 @@ class Spectrum(object):
 
         if len(data) == 0:
             raise SpectrumError('Empty spectrum data')
-        if isinstance(data[0], UFloat):
+        if np.issubdtype(data, UFloat):
             self._data = np.array(data)
         else:
-            unc = np.sqrt(data)
-            unc[unc == 0] = 1
+            unc = np.maximum(np.sqrt(data), 1)
             self._data = unumpy.uarray(data, unc)
 
         if bin_edges_kev is None:
