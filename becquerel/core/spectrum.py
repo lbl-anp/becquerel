@@ -57,7 +57,7 @@ class Spectrum(object):
 
         if len(data) == 0:
             raise SpectrumError('Empty spectrum data')
-        if np.issubdtype(data, UFloat):
+        if isinstance(data[0], UFloat):
             self._data = np.array(data)
         else:
             unc = np.maximum(np.sqrt(data), 1)
