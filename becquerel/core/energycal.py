@@ -1,5 +1,9 @@
+""""Energy calibration classes"""
+
 from abc import ABCMeta, abstractmethod, abstractproperty
+from collections import Iterable
 import numpy as np
+from builtins import super  # pylint: disable=redefined-builtin
 
 
 class EnergyCalError(Exception):
@@ -40,15 +44,19 @@ class EnergyCalBase(object):
         if not chlist and not kevlist and not pairlist:
             raise BadInput('Calibration points are required')
         if chlist and kevlist:
+            if (not isinstance(chlist, Iterable) or
+                    not isinstance(kevlist, Iterable)):
+                raise BadInput('Inputs should be iterables, not scalars')
             if len(chlist) != len(kevlist):
                 raise BadInput('Channels and energies must be same length')
             pairlist = zip(chlist, kevlist)
+        elif not isinstance(pairlist[0], Iterable):
+            raise BadInput('Inputs should be iterables, not scalars')
 
         cal = cls()
 
         for ch, kev in pairlist:
-            # TODO check integrity of pairlist
-            cal.add_calpoint(ch, kev)
+            cal.new_calpoint(ch, kev)
 
         return cal
 
@@ -58,8 +66,26 @@ class EnergyCalBase(object):
 
         cal = cls()
 
-        for coeff, val in coeffs:
+        for coeff, val in coeffs.iteritems():
             cal._set_coeff(coeff, val)
+
+        return cal
+
+    @property
+    def channels(self):
+        return np.array(self._calpoints.values())
+
+    @property
+    def energies(self):
+        return np.array(self._calpoints.keys())
+
+    @property
+    def calpoints(self):
+        return zip(self.channels, self.energies)
+
+    @property
+    def coeffs(self):
+        return self._coeffs
 
     def add_calpoint(self, ch, kev):
         """Add a calibration point (ch, kev) pair. May be new or existing."""
@@ -88,22 +114,6 @@ class EnergyCalBase(object):
         if kev in self._calpoints:
             del self._calpoints[kev]
         # TODO erroring version?
-
-    @property
-    def channels(self):
-        return np.array(self._calpoints.values)
-
-    @property
-    def energies(self):
-        return np.array(self._calpoints.keys)
-
-    @property
-    def calpoints(self):
-        return zip(self.channels, self.energies)
-
-    @property
-    def coeffs(self):
-        return self._coeffs
 
     def ch2kev(self, ch):
         """Convert channel(s) to energy value(s)."""
@@ -145,7 +155,7 @@ class EnergyCalBase(object):
     def update_fit(self):
         """Compute the calibration curve from the current points."""
 
-        num_coeffs = len(self._coeffs)
+        num_coeffs = len(self.valid_coeffs)
         # TODO: free coefficients, not all coefficients
         num_points = len(self._calpoints)
 
@@ -161,6 +171,9 @@ class EnergyCalBase(object):
         """Do the actual curve fitting."""
 
         pass
+
+
+# TODO: dummy class for testing?
 
 
 class LinearEnergyCal(EnergyCalBase):
@@ -181,9 +194,12 @@ class LinearEnergyCal(EnergyCalBase):
         elif 'm' in coeffs and 'b' in coeffs:
             new_coeffs['b'] = coeffs['m']
             new_coeffs['c'] = coeffs['b']
+        else:
+            new_coeffs = coeffs.copy()
         cal = super().from_coeffs(new_coeffs)
         return cal
 
+    @property
     def valid_coeffs(self):
         return ('b', 'c')
 
