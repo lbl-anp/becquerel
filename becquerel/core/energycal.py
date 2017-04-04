@@ -165,25 +165,6 @@ class EnergyCalBase(object):
             raise EnergyCalError('Calibration energy already exists')
         self.add_calpoint(ch, kev)
 
-    def update_calpoint(self, ch, kev):
-        """Update a calibration point. Error if it doesn't exist in the cal.
-
-        The calibration points are indexed by energy, so the keV value must
-        match a keV value in the calibration points.
-
-        Args:
-          ch: the channel value of the calibration point
-          kev: the energy value of the calibration point [keV]
-
-        Raises:
-          EnergyCalError: if energy value does not yet exist in calibration
-        """
-
-        if kev in self._calpoints:
-            self.add_calpoint(ch, kev)
-        else:
-            raise EnergyCalError('Calibration energy for updating not found')
-
     def rm_calpoint(self, kev):
         """Remove a calibration point, if it exists.
 
