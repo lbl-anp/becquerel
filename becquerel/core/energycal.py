@@ -101,27 +101,64 @@ class EnergyCalBase(object):
 
     @property
     def channels(self):
+        """The channel values of calibration points.
+
+        Returns:
+          an np.ndarray of channel values (may be float or int)
+        """
+
         return np.array(self._calpoints.values())
 
     @property
     def energies(self):
-        return np.array(self._calpoints.keys())
+        """The energy values of calibration points.
+
+        Returns:
+          an np.ndarray of energy values [keV]
+        """
+
+        return np.array(self._calpoints.keys(), dtype=float)
 
     @property
     def calpoints(self):
+        """The calibration points, in (ch, kev) pairs.
+
+        Returns:
+          a list of 2-element tuples of (channel, energy[keV])
+        """
+
         return zip(self.channels, self.energies)
 
     @property
     def coeffs(self):
+        """The coefficients of the current calibration curve.
+
+        Returns:
+          a dict of {coeff: value}
+        """
+
+        # TODO: if there are no coeffs, error?
         return self._coeffs
 
     def add_calpoint(self, ch, kev):
-        """Add a calibration point (ch, kev) pair. May be new or existing."""
+        """Add a calibration point (ch, kev) pair. May be new or existing.
+
+        Args:
+          ch: the channel value of the calibration point
+          kev: the energy value of the calibration point [keV]
+        """
 
         self._calpoints[float(kev)] = float(ch)
 
     def new_calpoint(self, ch, kev):
         """Add a new calibration point. Error if energy matches existing point.
+
+        Args:
+          ch: the channel value of the calibration point
+          kev: the energy value of the calibration point [keV]
+
+        Raises:
+          EnergyCalError: if energy value already exists in calibration
         """
 
         if kev in self._calpoints:
@@ -129,7 +166,18 @@ class EnergyCalBase(object):
         self.add_calpoint(ch, kev)
 
     def update_calpoint(self, ch, kev):
-        """Update a calibration point. Error if it doesn't exist."""
+        """Update a calibration point. Error if it doesn't exist in the cal.
+
+        The calibration points are indexed by energy, so the keV value must
+        match a keV value in the calibration points.
+
+        Args:
+          ch: the channel value of the calibration point
+          kev: the energy value of the calibration point [keV]
+
+        Raises:
+          EnergyCalError: if energy value does not yet exist in calibration
+        """
 
         if kev in self._calpoints:
             self.add_calpoint(ch, kev)
@@ -137,14 +185,26 @@ class EnergyCalBase(object):
             raise EnergyCalError('Calibration energy for updating not found')
 
     def rm_calpoint(self, kev):
-        """Remove a calibration point."""
+        """Remove a calibration point, if it exists.
+
+        Args:
+          the energy value of the point to remove [keV]
+        """
 
         if kev in self._calpoints:
             del self._calpoints[kev]
         # TODO erroring version?
 
     def ch2kev(self, ch):
-        """Convert channel(s) to energy value(s)."""
+        """Convert channel(s) to energy value(s).
+
+        Args:
+          ch: a scalar or iterable of channel values
+
+        Returns:
+          the energy value(s) corresponding to the channel value(s).
+            a float if input is scalar. an np.array if input is iterable
+        """
 
         ch_array = np.array(ch)
         kev_array = self._ch2kev(ch_array)
@@ -155,25 +215,52 @@ class EnergyCalBase(object):
 
     @abstractmethod
     def _ch2kev(self, ch_array):
-        """Convert np.array of channel(s) to energies. Internal method."""
+        """Convert np.array of channel(s) to energies. Internal method.
+
+        Args:
+          ch_array: an np.array of channel values
+
+        Returns:
+          an np.array of energy values, the same size as ch_array
+        """
 
         pass
 
     @abstractmethod
     def kev2ch(self, kev):
-        """Convert energy value(s) to channel(s)."""
+        """Convert energy value(s) to channel(s).
+
+        Args:
+          kev: a scalar or iterable of energy values [keV]
+
+        Returns:
+          the channel value(s) corresponding to the input energies.
+            a float if input is scalar. an np.array if input is iterable
+        """
 
         # if this is not possible, raise a NotImplementedError ?
         pass
 
     @abstractproperty
     def valid_coeffs(self):
-        """A list of valid coefficients for the calibration curve."""
+        """A list of valid coefficients for the calibration curve.
+
+        Returns:
+          a tuple of strings, the names of the coefficients for this curve
+        """
 
         pass
 
     def _set_coeff(self, name, val):
-        """Set a coefficient for the calibration curve."""
+        """Set a coefficient for the calibration curve.
+
+        Args:
+          name: a string, the name of the coefficient to set
+          val: the value to set the coefficient to
+
+        Raises:
+          EnergyCalError: if name is not in valid_coeffs
+        """
 
         if name in self.valid_coeffs:
             self._coeffs[name] = val
@@ -181,7 +268,11 @@ class EnergyCalBase(object):
             raise EnergyCalError('Invalid coefficient name: {}'.format(name))
 
     def update_fit(self):
-        """Compute the calibration curve from the current points."""
+        """Compute the calibration curve from the current points.
+
+        Raises:
+          EnergyCalError: if there are too few calibration points to fit
+        """
 
         num_coeffs = len(self.valid_coeffs)
         # TODO: free coefficients, not all coefficients
@@ -211,7 +302,19 @@ class LinearEnergyCal(EnergyCalBase):
 
     @classmethod
     def from_coeffs(self, coeffs):
-        # allow other names for linear coefficients
+        """Construct LinearEnergyCal from equation coefficients dict.
+
+        Valid coefficient names (slope, offset):
+          ('b', 'c')
+          ('p1', 'p0')
+          ('slope', 'offset')
+          ('m', 'b')
+
+        Args:
+          coeffs: a dict with keys equal to valid coeff names,
+            and values specifying the value of the coefficient
+        """
+
         new_coeffs = {}
         if 'p0' in coeffs and 'p1' in coeffs:
             new_coeffs['b'] = coeffs['p1']
@@ -229,23 +332,54 @@ class LinearEnergyCal(EnergyCalBase):
 
     @property
     def valid_coeffs(self):
+        """A list of valid coefficients for the calibration curve.
+
+        Returns:
+          a tuple of strings, the names of the coefficients for this curve
+        """
+
         return ('b', 'c')
 
     @property
     def slope(self):
+        """Return the slope coefficient value."""
+
         return self._coeffs['b']
 
     @property
     def offset(self):
+        """Return the offset coefficient value."""
+
         return self._coeffs['c']
 
     def _ch2kev(self, ch_array):
+        """Convert np.array of channel(s) to energies. Internal method.
+
+        Args:
+          ch_array: an np.array of channel values
+
+        Returns:
+          an np.array of energy values, the same size as ch_array
+        """
+
         return self.slope * ch_array + self.offset
 
     def kev2ch(self, kev):
+        """Convert energy value(s) to channel(s).
+
+        Args:
+          kev: a scalar or iterable of energy values [keV]
+
+        Returns:
+          the channel value(s) corresponding to the input energies.
+            a float if input is scalar. an np.array if input is iterable
+        """
+
         return (kev - self.offset) / self.slope
 
     def _perform_fit(self):
+        """Do the actual curve fitting."""
+
         b, c = np.polyfit(self.channels, self.energies, 1)
         self._set_coeff('b', b)
         self._set_coeff('c', c)
