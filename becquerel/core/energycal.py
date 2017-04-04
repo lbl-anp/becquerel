@@ -2,8 +2,8 @@
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import Iterable
-from future.utils import listvalues
-from builtins import dict, super  # pylint: disable=redefined-builtin
+from future.utils import viewitems
+from builtins import dict, super, zip  # pylint: disable=redefined-builtin
 import numpy as np
 
 
@@ -93,7 +93,7 @@ class EnergyCalBase(object):
 
         cal = cls()
 
-        for coeff, val in coeffs.iteritems():
+        for coeff, val in viewitems(coeffs):
             cal._set_coeff(coeff, val)
 
         # TODO make sure all coefficients are specified
@@ -128,7 +128,7 @@ class EnergyCalBase(object):
           a list of 2-element tuples of (channel, energy[keV])
         """
 
-        return zip(self.channels, self.energies)
+        return list(zip(self.channels, self.energies))
 
     @property
     def coeffs(self):
