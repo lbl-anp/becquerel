@@ -2,8 +2,8 @@
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import Iterable
-import numpy as np
 from builtins import super  # pylint: disable=redefined-builtin
+import numpy as np
 
 
 class EnergyCalError(Exception):
@@ -301,7 +301,7 @@ class LinearEnergyCal(EnergyCalBase):
     """
 
     @classmethod
-    def from_coeffs(self, coeffs):
+    def from_coeffs(cls, coeffs):
         """Construct LinearEnergyCal from equation coefficients dict.
 
         Valid coefficient names (slope, offset):

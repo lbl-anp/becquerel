@@ -12,26 +12,40 @@ TEST_GAIN = 8.23
 TEST_EDGES_KEV = np.arange(TEST_DATA_LENGTH + 1) * TEST_GAIN
 
 
+@pytest.fixture(params=[0.37, 3.7, 1, 2])
+def slope(request):
+    return request.param
+
+
+@pytest.fixture(params=[-4, 0, 1.1])
+def offset(request):
+    return request.param
+
+
 @pytest.fixture
-def spec_data():
-    """Build a vector of random counts."""
-
-    floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH)
-    return floatdata.astype(np.int)
+def pairlist():
+    lst = (
+        (32, 661.66),
+        (67, 1460.83),
+        (115, 2614.5))
+    return lst
 
 
 @pytest.fixture
-def uncal_spec(spec_data):
-    """Generate an uncalibrated spectrum."""
+def chkevlists(pairlist):
+    chlist, kevlist = zip(*pairlist)
+    return chlist, kevlist
 
-    return bq.core.Spectrum(spec_data)
+
+@pytest.fixture(params=[
+    32, -5, 67.83, (34, 35), np.arange(113, 7678.3, 55.5)])
+def channels(request):
+    return request.param
 
 
 # ----------------------------------------------------
 #        Construction tests
 # ----------------------------------------------------
-
-# TODO: parameterize inputs with pytest
 
 def test_construction_01():
     """Test empty construction"""
@@ -39,11 +53,10 @@ def test_construction_01():
     bq.core.LinearEnergyCal()
 
 
-def test_construction_02():
+def test_construction_02(chkevlists):
     """Test construction (not fitting) from chlist, kevlist"""
 
-    chlist = [67, 133, 241]
-    kevlist = [661.7, 1460.83, 2614.5]
+    chlist, kevlist = chkevlists
     cal = bq.core.LinearEnergyCal.from_points(
         chlist=chlist, kevlist=kevlist)
     assert len(cal.channels) == 3
@@ -52,44 +65,37 @@ def test_construction_02():
     assert len(cal.calpoints[0]) == 2
 
 
-def test_construction_03():
+def test_construction_03(pairlist):
     """Test construction (not fitting) from pairlist"""
 
-    pairlist = ((67, 661.7), (133, 1460.83), (241, 2614.5))
     cal = bq.core.LinearEnergyCal.from_points(pairlist=pairlist)
-    assert len(cal.channels) == 3
-    assert len(cal.energies) == 3
-    assert len(cal.calpoints) == 3
+    assert len(cal.channels) == len(pairlist)
+    assert len(cal.energies) == len(pairlist)
+    assert len(cal.calpoints) == len(pairlist)
     assert len(cal.calpoints[0]) == 2
 
 
-def test_construction_04():
+def test_construction_04(slope, offset):
     """Test construction from coefficients"""
 
-    slope = 0.37
-    offset = -4
     coeffs = {'b': slope, 'c': offset}
     cal = bq.core.LinearEnergyCal.from_coeffs(coeffs)
     assert cal.coeffs['b'] == slope
     assert cal.coeffs['c'] == offset
 
 
-def test_construction_05():
+def test_construction_05(slope, offset):
     """Test construction with bad coefficients"""
 
-    slope = 0.37
-    offset = -4
     coeffs = {'a': offset, 'b': slope}
     with pytest.raises(bq.core.EnergyCalError):
         bq.core.LinearEnergyCal.from_coeffs(coeffs)
 
 
-def test_construction_06():
+def test_construction_06(chkevlists, pairlist):
     """Test from_points with bad input"""
 
-    chlist = [67, 133, 241]
-    kevlist = [661.7, 1460.83, 2614.5]
-    pairlist = ((67, 661.7), (133, 1460.83), (241, 2614.5))
+    chlist, kevlist = chkevlists
     with pytest.raises(bq.core.BadInput) as excinfo:
         bq.core.LinearEnergyCal.from_points(chlist=chlist, pairlist=pairlist)
     excinfo.match('Redundant calibration inputs')
@@ -162,34 +168,29 @@ def test_methods_04():
     cal.rm_calpoint(1460.83)
 
 
-def test_methods_05():
+def test_methods_05(slope, offset, channels):
     """Test ch2kev (both scalar and array)"""
 
-    slope = 0.37
-    offset = -4
     coeffs = {'b': slope, 'c': offset}
     cal = bq.core.LinearEnergyCal.from_coeffs(coeffs)
 
-    ch = 37
-    assert cal.ch2kev(ch) == slope * ch + offset
-    ch = [37, 99]
-    assert cal.ch2kev(ch)[0] == slope * ch[0] + offset
-    assert cal.ch2kev(ch)[1] == slope * ch[1] + offset
+    if np.isscalar(channels):
+        assert cal.ch2kev(channels) == slope * channels + offset
+    else:
+        assert np.all(
+            cal.ch2kev(channels) == slope * np.array(channels) + offset)
 
 
-def test_methods_06():
+def test_methods_06(slope, offset, channels):
     """Test kev2ch"""
 
-    slope = 0.37
-    offset = -4
     coeffs = {'b': slope, 'c': offset}
     cal = bq.core.LinearEnergyCal.from_coeffs(coeffs)
 
-    ch = 37
-    assert np.isclose(cal.kev2ch(cal.ch2kev(ch)), ch)
-    ch = [37, 99]
-    assert np.isclose(cal.kev2ch(cal.ch2kev(ch))[0], ch[0])
-    assert np.isclose(cal.kev2ch(cal.ch2kev(ch))[1], ch[1])
+    if np.isscalar(channels):
+        assert np.isclose(cal.kev2ch(cal.ch2kev(channels)), channels)
+    else:
+        assert np.all(np.isclose(cal.kev2ch(cal.ch2kev(channels)), channels))
 
 # update_fit is in LinearEnergyCal section
 
@@ -198,11 +199,9 @@ def test_methods_06():
 #        LinearEnergyCal tests
 # ----------------------------------------------------
 
-def test_linear_01():
+def test_linear_01(slope, offset):
     """Test alternate construction coefficient names"""
 
-    slope = 0.37
-    offset = -4
     coeffs = {'p0': offset, 'p1': slope}
     cal = bq.core.LinearEnergyCal.from_coeffs(coeffs)
     assert cal.slope == slope
@@ -219,10 +218,9 @@ def test_linear_01():
     assert cal.offset == offset
 
 
-def test_linear_02():
+def test_linear_02(pairlist):
     """Test fitting"""
 
-    pairlist = ((67, 661.7), (133, 1460.83), (241, 2614.5))
     cal = bq.core.LinearEnergyCal.from_points(pairlist=pairlist)
     cal.update_fit()
 
