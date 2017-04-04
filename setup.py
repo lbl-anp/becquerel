@@ -42,8 +42,8 @@ setup(
     name = 'becquerel',
     description = DOCLINES[0],
     long_description = '\n'.join(DOCLINES[2:]),
-    url = 'https://github.com/bearing/becquerel/wiki',
-    download_url = 'https://github.com/bearing/becquerel/releases',
+    url = 'https://github.com/anp-lbl/becquerel/wiki',
+    download_url = 'https://github.com/anp-lbl/becquerel/releases',
     classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
     platforms = ['Windows', 'Linux', 'Solaris', 'Mac OS-X', 'Unix'],
     packages=[
@@ -52,7 +52,6 @@ setup(
         'becquerel.parsers',
         'becquerel.tools',
     ],
-    setup_requires=['nose>=1.0'],
-    test_suite='nose.collector',
-    tests_require=['nose'],
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest', 'pytest-cov'],
 )
