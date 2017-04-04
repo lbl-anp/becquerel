@@ -27,7 +27,9 @@ class Spectrum(object):
     Initialize a Spectrum directly, or with Spectrum.from_file(filename).
 
     Data Attributes:
-      data: np.array of counts in each channel
+      data: np.array of UFloat objects, of counts in each channel
+      data_vals: np.array of floats of counts
+      data_uncs: np.array of uncertainties for each bin
       bin_edges_kev: np.array of energy bin edges, if calibrated
 
     Properties:
@@ -40,7 +42,11 @@ class Spectrum(object):
         """Initialize the spectrum.
 
         Args:
-          data: an iterable of counts per channel
+          data: an iterable of counts per channel.
+            If it is NOT an uncertainties.UFloat type, the uncertainty is
+            assumed to be sqrt(N) except that values of 0 are assigned an
+            uncertainty of 1.
+            uncertainties.UFloat arrays' uncertainty values are preserved.
           bin_edges_kev: an iterable of bin edge energies (optional)
             If not none, should have length of (len(data) + 1)
           input_file_object: a parser file object (optional)
