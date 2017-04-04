@@ -3,7 +3,7 @@
 from __future__ import print_function
 import pytest
 import numpy as np
-from uncertainties import ufloat, UFloat
+from uncertainties import ufloat, UFloat, unumpy
 
 import becquerel as bq
 
@@ -124,6 +124,19 @@ class TestUncertainties(object):
     """Test uncertainties functionality in Spectrum"""
 
     def test_01(self, spec_data):
+        """Construct spectrum with non-UFloats (float and int)."""
+
+        spec = bq.core.Spectrum(spec_data)
+        assert isinstance(spec.data[0], UFloat)
+
+    def test_02(self, spec_data):
+        """Construct spectrum with UFloats"""
+
+        udata = unumpy.uarray(spec_data, np.ones_like(spec_data))
+        spec = bq.core.Spectrum(udata)
+        assert isinstance(spec.data[0], UFloat)
+
+    def test_03(self, spec_data):
         """Test data_vals and data_uncs."""
 
         spec = bq.core.Spectrum(spec_data)
@@ -132,6 +145,12 @@ class TestUncertainties(object):
         expected_uncs = np.sqrt(spec_data)
         expected_uncs[expected_uncs == 0] = 1
         assert np.allclose(spec.data_uncs, expected_uncs)
+
+        uncs = spec_data
+        udata = unumpy.uarray(spec_data, uncs)
+        spec = bq.core.Spectrum(udata)
+        assert np.allclose(spec.data_vals, spec_data)
+        assert np.allclose(spec.data_uncs, uncs)
 
 
 class TestSpectrumAddSubtract(object):
