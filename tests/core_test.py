@@ -3,6 +3,7 @@
 from __future__ import print_function
 import pytest
 import numpy as np
+from uncertainties import ufloat, UFloat
 
 import becquerel as bq
 
@@ -119,6 +120,20 @@ class TestSpectrumConstructor(object):
             uncal_spec.energies_kev
 
 
+class TestUncertainties(object):
+    """Test uncertainties functionality in Spectrum"""
+
+    def test_01(self, spec_data):
+        """Test data_vals and data_uncs."""
+
+        spec = bq.core.Spectrum(spec_data)
+        assert isinstance(spec.data[0], UFloat)
+        assert np.allclose(spec.data_vals, spec_data)
+        expected_uncs = np.sqrt(spec_data)
+        expected_uncs[expected_uncs == 0] = 1
+        assert np.allclose(spec.data_uncs, expected_uncs)
+
+
 class TestSpectrumAddSubtract(object):
     """Test addition and subtraction of spectra"""
 
@@ -126,9 +141,18 @@ class TestSpectrumAddSubtract(object):
         """Test basic addition/subtraction of uncalibrated spectra"""
 
         tot = uncal_spec + uncal_spec_2
-        assert np.all(tot.data == uncal_spec.data + uncal_spec_2.data)
+        uncs = np.sqrt(uncal_spec.data_uncs**2 + uncal_spec_2.data_uncs**2)
+        assert np.all(
+            tot.data == uncal_spec.data + uncal_spec_2.data)
+        assert np.all(
+            tot.data_vals == uncal_spec.data_vals + uncal_spec_2.data_vals)
+        assert np.allclose(tot.data_uncs, uncs)
         diff = uncal_spec - uncal_spec_2
-        assert np.all(diff.data == uncal_spec.data - uncal_spec_2.data)
+        assert np.all(
+            diff.data == uncal_spec.data - uncal_spec_2.data)
+        assert np.all(
+            diff.data_vals == uncal_spec.data_vals - uncal_spec_2.data_vals)
+        assert np.allclose(tot.data_uncs, uncs)
 
     def test_cal_uncal_add_sub(self, uncal_spec, cal_spec):
         """Test basic addition of a calibrated with an uncalibrated spectrum.
@@ -189,18 +213,41 @@ class TestSpectrumMultiplyDivide(object):
 
         doubled = uncal_spec * 2
         assert np.all(doubled.data == 2 * uncal_spec.data)
+        assert np.all(doubled.data_vals == 2 * uncal_spec.data_vals)
+        assert np.all(doubled.data_uncs == 2 * uncal_spec.data_uncs)
         halved = uncal_spec / 2
         assert np.all(halved.data == uncal_spec.data / 2.0)
+        assert np.allclose(halved.data_vals, uncal_spec.data_vals / 2.0)
+        assert np.allclose(halved.data_uncs, uncal_spec.data_uncs / 2.0)
 
     def test_cal_mul_div(self, cal_spec):
         """Basic multiplication/division of calibrated spectrum by a scalar."""
 
         doubled = cal_spec * 2
         assert np.all(doubled.data == 2 * cal_spec.data)
+        assert np.all(doubled.data_vals == 2 * cal_spec.data_vals)
+        assert np.all(doubled.data_uncs == 2 * cal_spec.data_uncs)
         halved = cal_spec / 2
         assert np.all(halved.data == cal_spec.data / 2.0)
+        assert np.allclose(halved.data_vals, cal_spec.data_vals / 2.0)
+        assert np.allclose(halved.data_uncs, cal_spec.data_uncs / 2.0)
         halved_again = cal_spec * 0.5
         assert np.all(halved_again.data == cal_spec.data * 0.5)
+        assert np.allclose(halved.data_vals, cal_spec.data_vals * 0.5)
+        assert np.allclose(halved.data_uncs, cal_spec.data_uncs * 0.5)
+
+    def test_uncal_mul_div_uncertainties(self, uncal_spec):
+        """
+        Multiplication/division of uncal spectrum by a scalar with uncertainty.
+        """
+
+        factor = ufloat(2, 0.1)
+        doubled = uncal_spec * factor
+        assert np.all(doubled.data_vals == 2 * uncal_spec.data_vals)
+        assert np.all(doubled.data_uncs >= 2 * uncal_spec.data_uncs)
+        halved = uncal_spec / factor
+        assert np.allclose(halved.data_vals, uncal_spec.data_vals / 2.0)
+        assert np.all(halved.data_uncs >= uncal_spec.data_uncs / 2.0)
 
     def test_mul_div_type_error(self, uncal_spec, spec_data):
         """Multiplication/division with a non-scalar gives a TypeError."""

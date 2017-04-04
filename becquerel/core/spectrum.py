@@ -3,7 +3,7 @@
 from __future__ import print_function
 import os
 import numpy as np
-from uncertainties import ufloat, UFloat, unumpy
+from uncertainties import UFloat, unumpy
 import becquerel.parsers as parsers
 # from ..parsers import SpeFile, SpcFile, CnfFile
 
@@ -218,23 +218,30 @@ class Spectrum(object):
     def _mul_div(self, scaling_factor, div=False):
         """Multiply or divide a spectrum by a scalar. Handle errors."""
 
-        try:
-            scaling_factor = float(scaling_factor)
-        except (TypeError, ValueError):
-            raise TypeError('Spectrum must be multiplied/divided by a scalar')
-        else:
+        if not isinstance(scaling_factor, UFloat):
+            try:
+                scaling_factor = float(scaling_factor)
+            except (TypeError, ValueError):
+                raise TypeError(
+                    'Spectrum must be multiplied/divided by a scalar')
             if (scaling_factor == 0 or
                     np.isinf(scaling_factor) or
                     np.isnan(scaling_factor)):
                 raise SpectrumError(
                     'Scaling factor must be nonzero and finite')
-            if div:
-                multiplier = 1 / scaling_factor
-            else:
-                multiplier = scaling_factor
-            data = self.data * multiplier
-            spect_obj = Spectrum(data, bin_edges_kev=self.bin_edges_kev)
-            return spect_obj
+        else:
+            if (scaling_factor.nominal_value == 0 or
+                    np.isinf(scaling_factor.nominal_value) or
+                    np.isnan(scaling_factor.nominal_value)):
+                raise SpectrumError(
+                    'Scaling factor must be nonzero and finite')
+        if div:
+            multiplier = 1 / scaling_factor
+        else:
+            multiplier = scaling_factor
+        data = self.data * multiplier
+        spect_obj = Spectrum(data, bin_edges_kev=self.bin_edges_kev)
+        return spect_obj
 
 
 def _get_file_object(infilename):
