@@ -19,7 +19,14 @@ class BadInput(EnergyCalError):
 
 
 class EnergyCalBase(object):
-    """Abstract base class for energy calibration."""
+    """Abstract base class for energy calibration.
+
+    Subclasses must implement:
+      _ch2kev (method)
+      kev2ch (method)
+      valid_coeffs (property)
+      _perform_fit (method)
+    """
 
     __metaclass__ = ABCMeta
 
@@ -27,6 +34,9 @@ class EnergyCalBase(object):
         """Create an empty calibration instance.
 
         Normally you should use from_points or from_coeffs classmethods.
+
+        Args:
+          none
         """
 
         self._calpoints = dict()
@@ -35,7 +45,18 @@ class EnergyCalBase(object):
 
     @classmethod
     def from_points(cls, chlist=None, kevlist=None, pairlist=None):
-        """Construct EnergyCal from calibration points."""
+        """Construct EnergyCal from calibration points.
+
+        Specify either pairlist, or (chlist and kevlist).
+
+        Args:
+          chlist: an iterable of the channel values of calibration points
+          kevlist: an iterable of the corresponding energy values [keV]
+          pairlist: an iterable of paired values, (ch, kev)
+
+        Raises:
+          BadInput: for bad pairlist, chlist, and/or kevlist.
+        """
 
         if pairlist and (chlist or kevlist):
             raise BadInput('Redundant calibration inputs')
@@ -62,12 +83,19 @@ class EnergyCalBase(object):
 
     @classmethod
     def from_coeffs(cls, coeffs):
-        """Construct EnergyCal from equation coefficients dict."""
+        """Construct EnergyCal from equation coefficients dict.
+
+        Args:
+          coeffs: a dict with keys equal to elements in valid_coeffs,
+            and values specifying the value of the coefficient
+        """
 
         cal = cls()
 
         for coeff, val in coeffs.iteritems():
             cal._set_coeff(coeff, val)
+
+        # TODO make sure all coefficients are specified
 
         return cal
 
