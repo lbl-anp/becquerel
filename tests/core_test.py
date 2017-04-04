@@ -1,7 +1,7 @@
 """Test becquerel's Spectrum."""
 
 from __future__ import print_function
-import unittest
+import pytest
 import numpy as np
 
 import becquerel as bq
@@ -14,13 +14,58 @@ TEST_GAIN = 8.23
 TEST_EDGES_KEV = np.arange(TEST_DATA_LENGTH + 1) * TEST_GAIN
 
 
-class SpectrumFromFileTests(unittest.TestCase):
+@pytest.fixture
+def spec_data():
+    """Build a vector of random counts."""
+
+    floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH)
+    return floatdata.astype(np.int)
+
+
+@pytest.fixture
+def uncal_spec(spec_data):
+    """Generate an uncalibrated spectrum."""
+
+    return bq.core.Spectrum(spec_data)
+
+
+@pytest.fixture
+def uncal_spec_2(spec_data):
+    """Generate an uncalibrated spectrum (2nd instance)."""
+
+    return bq.core.Spectrum(spec_data)
+
+
+@pytest.fixture
+def uncal_spec_long(spec_data):
+    """Generate an uncalibrated spectrum, of longer length."""
+
+    floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH * 2)
+    uncal = bq.core.Spectrum(floatdata.astype(np.int))
+    return uncal
+
+
+@pytest.fixture
+def cal_spec(spec_data):
+    """Generate a calibrated spectrum."""
+
+    return bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
+
+
+@pytest.fixture
+def cal_spec_2(spec_data):
+    """Generate a calibrated spectrum (2nd instance)."""
+
+    return bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
+
+
+class TestSpectrumFromFile(object):
     """Test Spectrum.from_file() class method."""
 
     def run_from_file(self, extension):
         """Run the test of from_file() for files with the given extension."""
         filenames = SAMPLES.get(extension, [])
-        self.assertTrue(len(filenames) >= 1)
+        assert len(filenames) >= 1
         for filename in filenames:
             bq.core.Spectrum.from_file(filename)
 
@@ -37,197 +82,154 @@ class SpectrumFromFileTests(unittest.TestCase):
         self.run_from_file('.cnf')
 
 
-class SpectrumConstructorTests(unittest.TestCase):
+class TestSpectrumConstructor(object):
     """Test Spectrum.__init__()."""
 
-    def test_uncal(self):
+    def test_uncal(self, uncal_spec):
         """Test simple uncalibrated construction."""
 
-        spec = get_test_uncal_spectrum()
-        self.assertEqual(len(spec.data), TEST_DATA_LENGTH)
-        self.assertFalse(spec.is_calibrated)
+        assert len(uncal_spec.data) == TEST_DATA_LENGTH
+        assert not uncal_spec.is_calibrated
 
-    def test_cal(self):
+    def test_cal(self, cal_spec):
         """Test simple calibrated construction."""
 
-        spec = get_test_cal_spectrum()
-        self.assertEqual(len(spec.data), TEST_DATA_LENGTH)
-        self.assertEqual(len(spec.bin_edges_kev), TEST_DATA_LENGTH + 1)
-        self.assertEqual(len(spec.energies_kev), TEST_DATA_LENGTH)
-        self.assertTrue(spec.is_calibrated)
+        assert len(cal_spec.data) == TEST_DATA_LENGTH
+        assert len(cal_spec.bin_edges_kev) == TEST_DATA_LENGTH + 1
+        assert len(cal_spec.energies_kev) == TEST_DATA_LENGTH
+        assert cal_spec.is_calibrated
 
-    def test_init_exceptions(self):
+    def test_init_exceptions(self, spec_data):
         """Test errors on initialization."""
 
-        with self.assertRaises(bq.core.SpectrumError):
+        with pytest.raises(bq.core.SpectrumError):
             bq.core.Spectrum([])
-        with self.assertRaises(bq.core.SpectrumError):
-            bq.core.Spectrum(
-                get_test_data(), bin_edges_kev=TEST_EDGES_KEV[:-1])
+        with pytest.raises(bq.core.SpectrumError):
+            bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV[:-1])
 
         bad_edges = TEST_EDGES_KEV.copy()
         bad_edges[12] = bad_edges[9]
-        with self.assertRaises(bq.core.SpectrumError):
-            bq.core.Spectrum(get_test_data(), bin_edges_kev=bad_edges)
+        with pytest.raises(bq.core.SpectrumError):
+            bq.core.Spectrum(spec_data, bin_edges_kev=bad_edges)
 
-    def test_uncalibrated_exception(self):
+    def test_uncalibrated_exception(self, uncal_spec):
         """Test UncalibratedError."""
 
-        spec = get_test_uncal_spectrum()
-        with self.assertRaises(bq.core.UncalibratedError):
-            spec.energies_kev
+        with pytest.raises(bq.core.UncalibratedError):
+            uncal_spec.energies_kev
 
 
-class SpectrumAddSubtractTests(unittest.TestCase):
+class TestSpectrumAddSubtract(object):
     """Test addition and subtraction of spectra"""
 
-    def test_uncal_add_sub(self):
+    def test_uncal_add_sub(self, uncal_spec, uncal_spec_2):
         """Test basic addition/subtraction of uncalibrated spectra"""
 
-        spec1 = get_test_uncal_spectrum()
-        spec2 = get_test_uncal_spectrum()
-        tot = spec1 + spec2
-        self.assertTrue(np.all(tot.data == spec1.data + spec2.data))
-        diff = spec1 - spec2
-        self.assertTrue(np.all(diff.data == spec1.data - spec2.data))
+        tot = uncal_spec + uncal_spec_2
+        assert np.all(tot.data == uncal_spec.data + uncal_spec_2.data)
+        diff = uncal_spec - uncal_spec_2
+        assert np.all(diff.data == uncal_spec.data - uncal_spec_2.data)
 
-    def test_cal_uncal_add_sub(self):
+    def test_cal_uncal_add_sub(self, uncal_spec, cal_spec):
         """Test basic addition of a calibrated with an uncalibrated spectrum.
 
         NOTE: not implemented yet - so check that it errors.
         """
 
-        spec1 = get_test_uncal_spectrum()
-        spec2 = get_test_cal_spectrum()
-        with self.assertRaises(NotImplementedError):
-            spec1 + spec2
-        with self.assertRaises(NotImplementedError):
-            spec1 - spec2
+        with pytest.raises(NotImplementedError):
+            uncal_spec + cal_spec
+        with pytest.raises(NotImplementedError):
+            uncal_spec - cal_spec
 
-    def test_cal_add_sub(self):
+    def test_cal_add_sub(self, cal_spec, cal_spec_2):
         """Test basic addition of calibrated spectra.
 
         NOTE: not implemented yet - so check that it errors.
         """
 
-        spec1 = get_test_cal_spectrum()
-        spec2 = get_test_cal_spectrum()
-        with self.assertRaises(NotImplementedError):
-            spec1 + spec2
-        with self.assertRaises(NotImplementedError):
-            spec1 - spec2
+        with pytest.raises(NotImplementedError):
+            cal_spec + cal_spec_2
+        with pytest.raises(NotImplementedError):
+            cal_spec - cal_spec_2
 
-    def test_add_sub_type_error(self):
+    def test_add_sub_type_error(self, uncal_spec, spec_data):
         """Check that adding/subtracting a non-Spectrum gives a TypeError."""
 
-        spec1 = get_test_uncal_spectrum()
-        with self.assertRaises(TypeError):
-            spec1 + 5
-        with self.assertRaises(TypeError):
-            spec1 - 5
-        with self.assertRaises(TypeError):
-            spec1 + 'asdf'
-        with self.assertRaises(TypeError):
-            spec1 - 'asdf'
-        with self.assertRaises(TypeError):
-            spec1 + get_test_data()
-        with self.assertRaises(TypeError):
-            spec1 - get_test_data()
+        with pytest.raises(TypeError):
+            uncal_spec + 5
+        with pytest.raises(TypeError):
+            uncal_spec - 5
+        with pytest.raises(TypeError):
+            uncal_spec + 'asdf'
+        with pytest.raises(TypeError):
+            uncal_spec - 'asdf'
+        with pytest.raises(TypeError):
+            uncal_spec + spec_data
+        with pytest.raises(TypeError):
+            uncal_spec - spec_data
 
-    def test_add_sub_wrong_length(self):
+    def test_add_sub_wrong_length(self, uncal_spec, uncal_spec_long):
         """
         Adding/subtracting spectra of different lengths gives a SpectrumError.
         """
 
-        spec1 = get_test_uncal_spectrum()
-        spec2 = bq.core.Spectrum(get_test_data(length=TEST_DATA_LENGTH * 2))
-        with self.assertRaises(bq.core.SpectrumError):
-            spec1 + spec2
-        with self.assertRaises(bq.core.SpectrumError):
-            spec1 - spec2
+        with pytest.raises(bq.core.SpectrumError):
+            uncal_spec + uncal_spec_long
+        with pytest.raises(bq.core.SpectrumError):
+            uncal_spec - uncal_spec_long
 
 
-class SpectrumMultiplyDivideTests(unittest.TestCase):
+class TestSpectrumMultiplyDivide(object):
     """Test multiplication and division of spectra"""
 
-    def test_uncal_mul_div(self):
+    def test_uncal_mul_div(self, uncal_spec):
         """
         Basic multiplication/division of uncalibrated spectrum by a scalar.
         """
 
-        spec = get_test_uncal_spectrum()
-        doubled = spec * 2
-        self.assertTrue(np.all(doubled.data == 2 * spec.data))
-        halved = spec / 2
-        self.assertTrue(np.all(halved.data == spec.data / 2.0))
+        doubled = uncal_spec * 2
+        assert np.all(doubled.data == 2 * uncal_spec.data)
+        halved = uncal_spec / 2
+        assert np.all(halved.data == uncal_spec.data / 2.0)
 
-    def test_cal_mul_div(self):
+    def test_cal_mul_div(self, cal_spec):
         """Basic multiplication/division of calibrated spectrum by a scalar."""
 
-        spec = get_test_cal_spectrum()
-        doubled = spec * 2
-        self.assertTrue(np.all(doubled.data == 2 * spec.data))
-        halved = spec / 2
-        self.assertTrue(np.all(halved.data == spec.data / 2.0))
-        halved_again = spec * 0.5
-        self.assertTrue(np.all(halved_again.data == spec.data * 0.5))
+        doubled = cal_spec * 2
+        assert np.all(doubled.data == 2 * cal_spec.data)
+        halved = cal_spec / 2
+        assert np.all(halved.data == cal_spec.data / 2.0)
+        halved_again = cal_spec * 0.5
+        assert np.all(halved_again.data == cal_spec.data * 0.5)
 
-    def test_mul_div_type_error(self):
+    def test_mul_div_type_error(self, uncal_spec, spec_data):
         """Multiplication/division with a non-scalar gives a TypeError."""
 
-        spec = get_test_uncal_spectrum()
+        with pytest.raises(TypeError):
+            uncal_spec * uncal_spec
+        with pytest.raises(TypeError):
+            uncal_spec / uncal_spec
+        with pytest.raises(TypeError):
+            uncal_spec * 'asdf'
+        with pytest.raises(TypeError):
+            uncal_spec / 'asdf'
+        with pytest.raises(TypeError):
+            uncal_spec * spec_data
+        with pytest.raises(TypeError):
+            uncal_spec / spec_data
 
-        with self.assertRaises(TypeError):
-            spec * spec
-        with self.assertRaises(TypeError):
-            spec / spec
-        with self.assertRaises(TypeError):
-            spec * 'asdf'
-        with self.assertRaises(TypeError):
-            spec / 'asdf'
-        with self.assertRaises(TypeError):
-            spec * get_test_data()
-        with self.assertRaises(TypeError):
-            spec / get_test_data()
-
-    def test_mul_div_bad_factor(self):
+    def test_mul_div_bad_factor(self, uncal_spec):
         """Multiplication/division with zero/inf/nan gives a SpectrumError."""
 
-        spec = get_test_uncal_spectrum()
-
-        with self.assertRaises(bq.core.SpectrumError):
-            spec * 0
-        with self.assertRaises(bq.core.SpectrumError):
-            spec / 0
-        with self.assertRaises(bq.core.SpectrumError):
-            spec * np.inf
-        with self.assertRaises(bq.core.SpectrumError):
-            spec / np.inf
-        with self.assertRaises(bq.core.SpectrumError):
-            spec * np.nan
-        with self.assertRaises(bq.core.SpectrumError):
-            spec / np.nan
-
-
-def get_test_data(length=TEST_DATA_LENGTH, expectation_val=TEST_COUNTS):
-    """Build a vector of random counts."""
-    return np.random.poisson(lam=expectation_val, size=length).astype(np.int)
-
-
-def get_test_uncal_spectrum():
-    uncal = bq.core.Spectrum(get_test_data())
-    return uncal
-
-
-def get_test_cal_spectrum():
-    cal = bq.core.Spectrum(get_test_data(), bin_edges_kev=TEST_EDGES_KEV)
-    return cal
-
-
-def main():
-    """Run unit tests."""
-    unittest.main()
-
-
-if __name__ == '__main__':
-    main()
+        with pytest.raises(bq.core.SpectrumError):
+            uncal_spec * 0
+        with pytest.raises(bq.core.SpectrumError):
+            uncal_spec / 0
+        with pytest.raises(bq.core.SpectrumError):
+            uncal_spec * np.inf
+        with pytest.raises(bq.core.SpectrumError):
+            uncal_spec / np.inf
+        with pytest.raises(bq.core.SpectrumError):
+            uncal_spec * np.nan
+        with pytest.raises(bq.core.SpectrumError):
+            uncal_spec / np.nan
