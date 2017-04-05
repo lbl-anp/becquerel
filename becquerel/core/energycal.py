@@ -188,7 +188,7 @@ class EnergyCalBase(object):
             a float if input is scalar. an np.array if input is iterable
         """
 
-        if isinstance(ch, list) or isinstance(ch, tuple):
+        if isinstance(ch, (list, tuple)):
             ch = np.array(ch)
 
         return self._ch2kev(ch)
@@ -219,7 +219,7 @@ class EnergyCalBase(object):
             a float if input is scalar. an np.array if input is iterable
         """
 
-        if isinstance(kev, list) or isinstance(kev, tuple):
+        if isinstance(kev, (list, tuple)):
             kev = np.array(kev)
 
         return self._kev2ch(kev)
