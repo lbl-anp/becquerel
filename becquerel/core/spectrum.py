@@ -38,18 +38,20 @@ class Spectrum(object):
       energies_kev: (read-only) np.array of energy bin centers, if calibrated
     """
 
-    def __init__(self, data, bin_edges_kev=None, input_file_object=None):
+    def __init__(self, data, uncs=None, bin_edges_kev=None,
+                 input_file_object=None):
         """Initialize the spectrum.
 
         Args:
-          data: an iterable of counts per channel.
-            If it is NOT an uncertainties.UFloat type, the uncertainty is
-            assumed to be sqrt(N) except that values of 0 are assigned an
-            uncertainty of 1.
-            uncertainties.UFloat arrays' uncertainty values are preserved.
-          bin_edges_kev: an iterable of bin edge energies (optional)
+          data: an iterable of counts per channel. may be a np.array of UFloats
+          uncs (optional): an iterable of uncertainty on the counts for each
+            channel.
+            If data is NOT an uncertainties.UFloat type, and uncs is not given,
+            the uncertainties are assumed to be sqrt(N), with a minimum
+            uncertainty of 1 (e.g. for 0 counts).
+          bin_edges_kev (optional): an iterable of bin edge energies
             If not none, should have length of (len(data) + 1)
-          input_file_object: a parser file object (optional)
+          input_file_object (optional): a parser file object
 
         Raises:
           SpectrumError: for bad input arguments
@@ -57,11 +59,20 @@ class Spectrum(object):
 
         if len(data) == 0:
             raise SpectrumError('Empty spectrum data')
-        if isinstance(data[0], UFloat):
-            self._data = np.array(data)
+        are_ufloats = [isinstance(d, UFloat) for d in data]
+        if all(are_ufloats):
+            if uncs is None:
+                self._data = np.array(data)
+            else:
+                raise SpectrumError('Specify uncertainties via uncs arg ' +
+                                    'or via UFloats, but not both')
+        elif any(are_ufloats):
+            raise SpectrumError(
+                'Spectrum data should be all UFloats or no UFloats')
         else:
-            unc = np.maximum(np.sqrt(data), 1)
-            self._data = unumpy.uarray(data, unc)
+            if uncs is None:
+                uncs = np.maximum(np.sqrt(data), 1)
+            self._data = unumpy.uarray(data, uncs)
 
         if bin_edges_kev is None:
             self.bin_edges_kev = None

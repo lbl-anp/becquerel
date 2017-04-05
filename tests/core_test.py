@@ -123,20 +123,44 @@ class TestSpectrumConstructor(object):
 class TestUncertainties(object):
     """Test uncertainties functionality in Spectrum"""
 
-    def test_01(self, spec_data):
+    def test_construct_float_int(self, spec_data):
         """Construct spectrum with non-UFloats (float and int)."""
 
         spec = bq.core.Spectrum(spec_data)
         assert isinstance(spec.data[0], UFloat)
+        spec = bq.core.Spectrum(spec_data.astype(float))
+        assert isinstance(spec.data[0], UFloat)
 
-    def test_02(self, spec_data):
+    def test_construct_ufloat(self, spec_data):
         """Construct spectrum with UFloats"""
 
         udata = unumpy.uarray(spec_data, np.ones_like(spec_data))
         spec = bq.core.Spectrum(udata)
         assert isinstance(spec.data[0], UFloat)
+        assert spec.data[0].std_dev == 1
 
-    def test_03(self, spec_data):
+    def test_construct_float_int_uncs(self, spec_data):
+        """Construct spectrum with non-UFloats and specify uncs."""
+
+        uncs = np.ones_like(spec_data)
+        spec = bq.core.Spectrum(spec_data, uncs=uncs)
+        assert isinstance(spec.data[0], UFloat)
+        uncs2 = np.array([c.std_dev for c in spec.data])
+        assert np.allclose(uncs2, 1)
+
+    def test_construct_errors(self, spec_data):
+        """Construct spectrum with UFloats plus uncs and get an error."""
+
+        uncs = np.ones_like(spec_data)
+        udata = unumpy.uarray(spec_data, uncs)
+        with pytest.raises(bq.core.SpectrumError):
+            bq.core.Spectrum(udata, uncs=uncs)
+
+        udata[0] = 1
+        with pytest.raises(bq.core.SpectrumError):
+            bq.core.Spectrum(udata)
+
+    def test_properties(self, spec_data):
         """Test data_vals and data_uncs."""
 
         spec = bq.core.Spectrum(spec_data)
@@ -150,6 +174,10 @@ class TestUncertainties(object):
         udata = unumpy.uarray(spec_data, uncs)
         spec = bq.core.Spectrum(udata)
         assert np.allclose(spec.data_vals, spec_data)
+        assert np.allclose(spec.data_uncs, uncs)
+
+        uncs = np.ones_like(spec_data)
+        spec = bq.core.Spectrum(spec_data, uncs=uncs)
         assert np.allclose(spec.data_uncs, uncs)
 
 
