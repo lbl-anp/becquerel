@@ -181,39 +181,57 @@ class EnergyCalBase(object):
         """Convert channel(s) to energy value(s).
 
         Args:
-          ch: a scalar or iterable of channel values
+          ch: a scalar, np.array, list or tuple of channel values
 
         Returns:
-          the energy value(s) corresponding to the channel value(s).
+          the energy value(s) corresponding to the channel value(s) [keV].
             a float if input is scalar. an np.array if input is iterable
         """
 
-        ch_array = np.array(ch)
-        kev_array = self._ch2kev(ch_array)
-        if np.isscalar(ch):
-            return float(kev_array)
-        else:
-            return kev_array
+        if isinstance(ch, list) or isinstance(ch, tuple):
+            ch = np.array(ch)
+
+        return self._ch2kev(ch)
 
     @abstractmethod
-    def _ch2kev(self, ch_array):
-        """Convert np.array of channel(s) to energies. Internal method.
+    def _ch2kev(self, ch):
+        """Convert scalar OR np.array of channel(s) to energies.
+
+        Should use numpy ufuncs so that the input dtype doesn't matter.
 
         Args:
-          ch_array: an np.array of channel values
+          ch: an np.array, float, or int of channel values
 
         Returns:
-          an np.array of energy values, the same size as ch_array
+          energy values, the same size/type as ch [keV]
         """
 
         pass
 
-    @abstractmethod
     def kev2ch(self, kev):
         """Convert energy value(s) to channel(s).
 
         Args:
-          kev: a scalar or iterable of energy values [keV]
+          kev: a scalar, np.array, list or tuple of energy values [keV]
+
+        Returns:
+          the channel value(s) corresponding to the input energies.
+            a float if input is scalar. an np.array if input is iterable
+        """
+
+        if isinstance(kev, list) or isinstance(kev, tuple):
+            kev = np.array(kev)
+
+        return self._kev2ch(kev)
+
+    @abstractmethod
+    def _kev2ch(self, kev):
+        """Convert energy value(s) to channel(s).
+
+        Should use numpy ufuncs so that the input dtype doesn't matter.
+
+        Args:
+          kev: an np.array, float, or int of energy values [keV]
 
         Returns:
           the channel value(s) corresponding to the input energies.
@@ -334,23 +352,25 @@ class LinearEnergyCal(EnergyCalBase):
 
         return self._coeffs['c']
 
-    def _ch2kev(self, ch_array):
-        """Convert np.array of channel(s) to energies. Internal method.
+    def _ch2kev(self, ch):
+        """Convert scalar OR np.array of channel(s) to energies.
+
+        Should use numpy ufuncs so that the input dtype doesn't matter.
 
         Args:
-          ch_array: an np.array of channel values
+          ch: an np.array, float, or int of channel values
 
         Returns:
-          an np.array of energy values, the same size as ch_array
+          energy values, the same size/type as ch [keV]
         """
 
-        return self.slope * ch_array + self.offset
+        return self.slope * ch + self.offset
 
-    def kev2ch(self, kev):
+    def _kev2ch(self, kev):
         """Convert energy value(s) to channel(s).
 
         Args:
-          kev: a scalar or iterable of energy values [keV]
+          kev: an np.array, float, or int of energy values [keV]
 
         Returns:
           the channel value(s) corresponding to the input energies.
