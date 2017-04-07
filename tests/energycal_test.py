@@ -57,6 +57,28 @@ def channels(request):
     return request.param
 
 
+@pytest.fixture
+def spec_data():
+    """Build a vector of random counts."""
+
+    floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH)
+    return floatdata.astype(np.int)
+
+
+@pytest.fixture
+def uncal_spec(spec_data):
+    """Generate an uncalibrated spectrum."""
+
+    return bq.core.Spectrum(spec_data)
+
+
+@pytest.fixture
+def cal_spec(spec_data):
+    """Generate a calibrated spectrum."""
+
+    return bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
+
+
 # ----------------------------------------------------
 #        Construction tests
 # ----------------------------------------------------
@@ -237,9 +259,7 @@ def test_linear_fitting(pairlist):
 
 
 def test_linear_bad_fitting():
-    """
-    Test fitting - too few calpoints (EnergyCalBase.update_fit())
-    """
+    """Test fitting - too few calpoints (EnergyCalBase.update_fit())"""
 
     pairlist = ((67, 661.7), (133, 1460.83))
     cal = bq.core.LinearEnergyCal.from_points(pairlist=pairlist)
@@ -253,3 +273,28 @@ def test_linear_bad_fitting():
     cal = bq.core.LinearEnergyCal.from_points(pairlist=pairlist)
     with pytest.raises(bq.core.EnergyCalError):
         cal.update_fit()
+
+
+# ----------------------------------------------------
+#        Spectrum.apply_calibration tests
+# ----------------------------------------------------
+
+def test_apply_calibration(uncal_spec, pairlist):
+    """Apply calibration on an uncalibrated spectrum"""
+
+    cal = bq.core.LinearEnergyCal.from_points(pairlist=pairlist)
+    cal.update_fit()
+    uncal_spec.apply_calibration(cal)
+    assert uncal_spec.is_calibrated
+    assert np.allclose(
+        uncal_spec.energies_kev, cal.ch2kev(uncal_spec.channels))
+
+
+def test_apply_calibration_recal(cal_spec, pairlist):
+    """Apply calibration over an existing calibration"""
+
+    cal = bq.core.LinearEnergyCal.from_points(pairlist=pairlist)
+    cal.update_fit()
+    old_bin_edges = cal_spec.bin_edges_kev
+    cal_spec.apply_calibration(cal)
+    assert not np.any(old_bin_edges == cal_spec.bin_edges_kev)

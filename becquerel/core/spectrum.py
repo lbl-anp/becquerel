@@ -298,6 +298,17 @@ class Spectrum(object):
 
         return self - norm_other
 
+    def apply_calibration(self, cal):
+        """Use an EnergyCal to generate bin edge energies for this spectrum.
+
+        Args:
+          cal: an object derived from EnergyCalBase
+        """
+
+        n_edges = len(self.channels) + 1
+        channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
+        self.bin_edges_kev = cal.ch2kev(channel_edges)
+
 
 def _get_file_object(infilename):
     """
