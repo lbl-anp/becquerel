@@ -5,6 +5,7 @@ import os
 import numpy as np
 from uncertainties import UFloat, unumpy
 import becquerel.parsers as parsers
+from becquerel.core import handle_uncs
 # from ..parsers import SpeFile, SpcFile, CnfFile
 
 
@@ -59,20 +60,8 @@ class Spectrum(object):
 
         if len(data) == 0:
             raise SpectrumError('Empty spectrum data')
-        are_ufloats = [isinstance(d, UFloat) for d in data]
-        if all(are_ufloats):
-            if uncs is None:
-                self._data = np.array(data)
-            else:
-                raise SpectrumError('Specify uncertainties via uncs arg ' +
-                                    'or via UFloats, but not both')
-        elif any(are_ufloats):
-            raise SpectrumError(
-                'Spectrum data should be all UFloats or no UFloats')
-        else:
-            if uncs is None:
-                uncs = np.maximum(np.sqrt(data), 1)
-            self._data = unumpy.uarray(data, uncs)
+        self._data = handle_uncs(
+            data, uncs, lambda x: np.maximum(np.sqrt(x), 1))
 
         if bin_edges_kev is None:
             self.bin_edges_kev = None

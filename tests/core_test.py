@@ -153,11 +153,11 @@ class TestUncertainties(object):
 
         uncs = np.ones_like(spec_data)
         udata = unumpy.uarray(spec_data, uncs)
-        with pytest.raises(bq.core.SpectrumError):
+        with pytest.raises(bq.core.UncertaintiesError):
             bq.core.Spectrum(udata, uncs=uncs)
 
         udata[0] = 1
-        with pytest.raises(bq.core.SpectrumError):
+        with pytest.raises(bq.core.UncertaintiesError):
             bq.core.Spectrum(udata)
 
     def test_properties(self, spec_data):
