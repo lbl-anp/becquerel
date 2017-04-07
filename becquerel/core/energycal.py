@@ -1,7 +1,6 @@
 """"Energy calibration classes"""
 
 from abc import ABCMeta, abstractmethod, abstractproperty
-from collections import Iterable
 from future.utils import viewitems
 from builtins import dict, super, zip  # pylint: disable=redefined-builtin
 import numpy as np
@@ -51,28 +50,42 @@ class EnergyCalBase(object):
         Specify either pairlist, or (chlist and kevlist).
 
         Args:
-          chlist: an iterable of the channel values of calibration points
-          kevlist: an iterable of the corresponding energy values [keV]
-          pairlist: an iterable of paired values, (ch, kev)
+          chlist: list/tuple/array of the channel values of calibration points
+          kevlist: list/tuple/array of the corresponding energy values [keV]
+          pairlist: list/tuple/array of paired values, (ch, kev)
 
         Raises:
           BadInput: for bad pairlist, chlist, and/or kevlist.
         """
 
-        if pairlist and (chlist or kevlist):
+        # np.arrays don't cast to bool like lists and tuples
+        if isinstance(pairlist, np.ndarray):
+            has_pair = bool(len(pairlist))
+        else:
+            has_pair = bool(pairlist)
+        if isinstance(chlist, np.ndarray):
+            has_ch = bool(len(chlist))
+        else:
+            has_ch = bool(chlist)
+        if isinstance(kevlist, np.ndarray):
+            has_kev = bool(len(kevlist))
+        else:
+            has_kev = bool(kevlist)
+
+        if has_pair and (has_ch or has_kev):
             raise BadInput('Redundant calibration inputs')
-        if (chlist and not kevlist) or (kevlist and not chlist):
+        if (has_ch and not has_kev) or (has_kev and not has_ch):
             raise BadInput('Require both chlist and kevlist')
-        if not chlist and not kevlist and not pairlist:
+        if not has_ch and not has_kev and not has_pair:
             raise BadInput('Calibration points are required')
-        if chlist and kevlist:
-            if (not isinstance(chlist, Iterable) or
-                    not isinstance(kevlist, Iterable)):
+        if has_ch and has_kev:
+            if (not isinstance(chlist, (list, tuple, np.ndarray)) or
+                    not isinstance(kevlist, (list, tuple, np.ndarray))):
                 raise BadInput('Inputs should be iterables, not scalars')
             if len(chlist) != len(kevlist):
                 raise BadInput('Channels and energies must be same length')
             pairlist = zip(chlist, kevlist)
-        elif not isinstance(pairlist[0], Iterable):
+        elif not isinstance(pairlist[0], (list, tuple, np.ndarray)):
             raise BadInput('Inputs should be iterables, not scalars')
 
         cal = cls()
@@ -105,7 +118,7 @@ class EnergyCalBase(object):
         """The channel values of calibration points.
 
         Returns:
-          an np.ndarray of channel values (may be float or int)
+          an np.ndarray of channel values (floats)
         """
 
         return np.array(list(self._calpoints.values()), dtype=float)
