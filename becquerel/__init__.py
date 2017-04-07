@@ -7,6 +7,7 @@ from . import tools
 from .core.spectrum import Spectrum, SpectrumError, UncalibratedError
 from .core.energycal import LinearEnergyCal, EnergyCalError, BadInput
 from .core.utils import UncertaintiesError
+from .core.plotting import plot_spectrum
 
 __all__ = ['core', 'parsers', 'tools',
            'Spectrum', 'SpectrumError', 'UncalibratedError',
