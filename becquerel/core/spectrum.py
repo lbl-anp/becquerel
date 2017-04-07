@@ -177,9 +177,13 @@ class Spectrum(object):
 
         spect_file_obj = _get_file_object(infilename)
 
-        spect_obj = cls(spect_file_obj.data,
-                        bin_edges_kev=spect_file_obj.energy_bin_edges,
-                        input_file_object=spect_file_obj)
+        if spect_file_obj.cal_coeff:
+            spect_obj = cls(spect_file_obj.data,
+                            bin_edges_kev=spect_file_obj.energy_bin_edges,
+                            input_file_object=spect_file_obj)
+        else:
+            spect_obj = cls(spect_file_obj.data,
+                            input_file_object=spect_file_obj)
 
         # TODO Get more attributes from self.infileobj
 
