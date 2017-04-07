@@ -1,10 +1,11 @@
 """"Energy calibration classes"""
 
 from abc import ABCMeta, abstractmethod, abstractproperty
-from collections import Iterable
 from future.utils import viewitems
 from builtins import dict, super, zip  # pylint: disable=redefined-builtin
+from uncertainties import unumpy
 import numpy as np
+from becquerel.core import handle_uncs
 
 
 class EnergyCalError(Exception):
@@ -45,15 +46,19 @@ class EnergyCalBase(object):
         # initialize fit constraints?
 
     @classmethod
-    def from_points(cls, chlist=None, kevlist=None, pairlist=None):
+    def from_points(cls, chlist=None, ch_uncs=None, kevlist=None,
+                    pairlist=None):
         """Construct EnergyCal from calibration points.
 
         Specify either pairlist, or (chlist and kevlist).
 
         Args:
-          chlist: an iterable of the channel values of calibration points
-          kevlist: an iterable of the corresponding energy values [keV]
-          pairlist: an iterable of paired values, (ch, kev)
+          chlist: list/tuple/array of the channel values of calibration points.
+            may be specified as UFloats
+          ch_unclist (optional): list/tuple/array of uncertainties of the
+            channel values
+          kevlist: list/tuple/array of the corresponding energy values [keV]
+          pairlist: list/tuple/array of paired values, (ch, kev)
 
         Raises:
           BadInput: for bad pairlist, chlist, and/or kevlist.
@@ -66,13 +71,14 @@ class EnergyCalBase(object):
         if not chlist and not kevlist and not pairlist:
             raise BadInput('Calibration points are required')
         if chlist and kevlist:
-            if (not isinstance(chlist, Iterable) or
-                    not isinstance(kevlist, Iterable)):
+            if (not isinstance(chlist, (list, tuple, np.ndarray)) or
+                    not isinstance(kevlist, (list, tuple, np.ndarray))):
                 raise BadInput('Inputs should be iterables, not scalars')
             if len(chlist) != len(kevlist):
                 raise BadInput('Channels and energies must be same length')
-            pairlist = zip(chlist, kevlist)
-        elif not isinstance(pairlist[0], Iterable):
+            ch_array = handle_uncs(chlist, ch_uncs, lambda x: np.nan)
+            pairlist = zip(ch_array, kevlist)
+        elif not isinstance(pairlist[0], (list, tuple, np.ndarray)):
             raise BadInput('Inputs should be iterables, not scalars')
 
         cal = cls()
@@ -108,7 +114,15 @@ class EnergyCalBase(object):
           an np.ndarray of channel values (may be float or int)
         """
 
-        return np.array(list(self._calpoints.values()), dtype=float)
+        return np.array(list(self._calpoints.values()))
+
+    @property
+    def ch_vals(self):
+        return unumpy.nominal_values(self.channels)
+
+    @property
+    def ch_uncs(self):
+        return unumpy.std_devs(self.channels)
 
     @property
     def energies(self):
@@ -141,7 +155,7 @@ class EnergyCalBase(object):
         # TODO: if there are no coeffs, error?
         return self._coeffs
 
-    def add_calpoint(self, ch, kev):
+    def add_calpoint(self, ch, kev, ch_unc=None):
         """Add a calibration point (ch, kev) pair. May be new or existing.
 
         Args:
@@ -151,7 +165,7 @@ class EnergyCalBase(object):
 
         self._calpoints[float(kev)] = float(ch)
 
-    def new_calpoint(self, ch, kev):
+    def new_calpoint(self, ch, kev, ch_unc=None):
         """Add a new calibration point. Error if energy matches existing point.
 
         Args:
