@@ -68,7 +68,8 @@ class TestSpectrumFromFile(object):
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
         for filename in filenames:
-            bq.core.Spectrum.from_file(filename)
+            spec = bq.core.Spectrum.from_file(filename)
+            assert spec.livetime is not None
 
     def test_spe(self):
         """Test Spectrum.from_file for SPE file........................."""
@@ -118,6 +119,17 @@ class TestSpectrumConstructor(object):
 
         with pytest.raises(bq.core.UncalibratedError):
             uncal_spec.energies_kev
+
+    def test_livetime(self, spec_data):
+        """Test manual livetime input."""
+
+        lt = 86400
+        spec = bq.core.Spectrum(spec_data, livetime=lt)
+        assert spec.livetime == lt
+
+        lt = 300.6
+        spec = bq.core.Spectrum(spec_data, livetime=lt)
+        assert spec.livetime == lt
 
 
 class TestUncertainties(object):
@@ -248,6 +260,18 @@ class TestSpectrumAddSubtract(object):
             uncal_spec + uncal_spec_long
         with pytest.raises(bq.core.SpectrumError):
             uncal_spec - uncal_spec_long
+
+    def test_norm_subtract(self, uncal_spec, uncal_spec_2):
+        """Test Spectrum.norm_subtract method (set livetime manually)"""
+
+        livetime1 = 300.
+        livetime2 = 600.
+        uncal_spec.livetime = livetime1
+        uncal_spec_2.livetime = livetime2
+        spec3 = uncal_spec.norm_subtract(uncal_spec_2)
+        np.testing.assert_allclose(
+            spec3.data_vals, uncal_spec.data_vals -
+            (livetime1 / livetime2) * uncal_spec_2.data_vals)
 
 
 class TestSpectrumMultiplyDivide(object):

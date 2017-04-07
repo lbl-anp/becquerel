@@ -31,6 +31,7 @@ class Spectrum(object):
       data_vals: np.array of floats of counts
       data_uncs: np.array of uncertainties for each bin
       bin_edges_kev: np.array of energy bin edges, if calibrated
+      livetime: int or float of livetime, in seconds
 
     Properties:
       channels: (read-only) np.array of channel index as integers
@@ -39,7 +40,7 @@ class Spectrum(object):
     """
 
     def __init__(self, data, uncs=None, bin_edges_kev=None,
-                 input_file_object=None):
+                 input_file_object=None, livetime=None):
         """Initialize the spectrum.
 
         Args:
@@ -52,6 +53,7 @@ class Spectrum(object):
           bin_edges_kev (optional): an iterable of bin edge energies
             If not none, should have length of (len(data) + 1)
           input_file_object (optional): a parser file object
+          livetime (optional): the livetime of the spectrum [s]
 
         Raises:
           SpectrumError: for bad input arguments
@@ -87,8 +89,11 @@ class Spectrum(object):
         self._infileobject = input_file_object
         if input_file_object is not None:
             self.infilename = input_file_object.filename
+            self.livetime = input_file_object.livetime
         else:
             self.infilename = None
+            self.livetime = livetime
+            # TODO what if livetime and input_file_object are both specified?
 
     @property
     def data(self):
@@ -261,6 +266,33 @@ class Spectrum(object):
         data = self.data * multiplier
         spect_obj = Spectrum(data, bin_edges_kev=self.bin_edges_kev)
         return spect_obj
+
+    def norm_subtract(self, other):
+        """Normalize another spectrum to this one by livetime, and subtract.
+
+        new = self - (self.livetime / other.livetime) * other
+
+        Args:
+          other: the Spectrum object to be normalized and subtracted
+
+        Raises:
+          TypeError: if other is not a Spectrum instance
+          SpectrumError: if the spectra are different lengths
+
+        Returns:
+          a new Spectrum with the normalized and subtracted data
+        """
+
+        if not isinstance(other, Spectrum):
+            raise TypeError(
+                'Spectrum addition/subtraction must involve a Spectrum object')
+        if len(self.data) != len(other.data):
+            raise SpectrumError(
+                'Cannot add/subtract spectra of different lengths')
+
+        norm_other = other * (self.livetime / other.livetime)
+
+        return self - norm_other
 
 
 def _get_file_object(infilename):
