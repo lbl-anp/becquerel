@@ -32,10 +32,24 @@ def pairlist():
     return lst
 
 
-@pytest.fixture
-def chkevlists(pairlist):
-    chlist, kevlist = zip(*pairlist)
-    return chlist, kevlist
+@pytest.fixture(params=[
+    (32, 67, 115),
+    [32, 67, 115],
+    np.array((32, 67, 115)),
+    [31.7, 67.2, 115]
+])
+def chlist(request):
+    return request.param
+
+
+@pytest.fixture(params=[
+    (661.66, 1460.83, 2614.5),
+    [661.66, 1460.83, 2614.5],
+    np.array((661.66, 1460.83, 2614.5)),
+    (662, 1461, 2615)
+])
+def kevlist(request):
+    return request.param
 
 
 @pytest.fixture(params=[
@@ -54,25 +68,23 @@ def test_construction_empty():
     bq.core.LinearEnergyCal()
 
 
-def test_construction_chkevlist(chkevlists):
+def test_construction_chkevlist(chlist, kevlist):
     """Test construction (not fitting) from chlist, kevlist"""
 
-    chlist, kevlist = chkevlists
     cal = bq.core.LinearEnergyCal.from_points(
         chlist=chlist, kevlist=kevlist)
     assert len(cal.channels) == len(chlist)
     assert len(cal.energies) == len(chlist)
     assert len(cal.calpoints) == len(chlist)
     assert len(cal.calpoints[0]) == 2
-    assert np.allclose(cal.ch_vals, np.array(chlist))
+    assert np.allclose(np.sort(cal.ch_vals), np.array(chlist))
     assert np.isnan(cal.ch_uncs).all()
 
 
-def test_construction_chlist_unc(chkevlists):
+def test_construction_chlist_unc(chlist, kevlist):
     """Test construction (not fitting) from chlist, kevlist with uncertainties
     """
 
-    chlist, kevlist = chkevlists
     ch_ufloats = unumpy.uarray(chlist, 5)
     cal = bq.core.LinearEnergyCal.from_points(
         chlist=ch_ufloats, kevlist=kevlist)
@@ -80,7 +92,7 @@ def test_construction_chlist_unc(chkevlists):
     assert len(cal.energies) == len(chlist)
     assert len(cal.calpoints) == len(chlist)
     assert len(cal.calpoints[0]) == 2
-    assert np.all(cal.ch_vals == np.array(chlist))
+    assert np.all(np.sort(cal.ch_vals) == np.array(chlist))
     assert np.all(cal.ch_uncs == 5)
 
     ch_unc = np.ones_like(chlist)
@@ -90,7 +102,7 @@ def test_construction_chlist_unc(chkevlists):
     assert len(cal.energies) == len(chlist)
     assert len(cal.calpoints) == len(chlist)
     assert len(cal.calpoints[0]) == 2
-    assert np.all(cal.ch_vals == np.array(chlist))
+    assert np.all(np.sort(cal.ch_vals) == np.array(chlist))
     assert np.all(cal.ch_uncs == 1)
 
     ch_ufloats[-1] = 42
@@ -127,10 +139,9 @@ def test_construction_bad_coefficients(slope, offset):
         bq.core.LinearEnergyCal.from_coeffs(coeffs)
 
 
-def test_construction_bad_points(chkevlists, pairlist):
+def test_construction_bad_points(chlist, kevlist, pairlist):
     """Test from_points with bad input"""
 
-    chlist, kevlist = chkevlists
     with pytest.raises(bq.core.BadInput) as excinfo:
         bq.core.LinearEnergyCal.from_points(chlist=chlist, pairlist=pairlist)
     excinfo.match('Redundant calibration inputs')
