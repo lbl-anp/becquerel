@@ -3,6 +3,7 @@
 from __future__ import print_function
 import pytest
 import numpy as np
+from uncertainties import unumpy
 
 import becquerel as bq
 
@@ -59,10 +60,43 @@ def test_construction_chkevlist(chkevlists):
     chlist, kevlist = chkevlists
     cal = bq.core.LinearEnergyCal.from_points(
         chlist=chlist, kevlist=kevlist)
-    assert len(cal.channels) == 3
-    assert len(cal.energies) == 3
-    assert len(cal.calpoints) == 3
+    assert len(cal.channels) == len(chlist)
+    assert len(cal.energies) == len(chlist)
+    assert len(cal.calpoints) == len(chlist)
     assert len(cal.calpoints[0]) == 2
+    assert np.all(cal.ch_vals == np.array(chlist))
+    assert np.isnan(cal.ch_uncs).all()
+
+
+def test_construction_chlist_unc(chkevlists):
+    """Test construction (not fitting) from chlist, kevlist with uncertainties
+    """
+
+    chlist, kevlist = chkevlists
+    ch_ufloats = unumpy.uarray(chlist, 5)
+    cal = bq.core.LinearEnergyCal.from_points(
+        chlist=ch_ufloats, kevlist=kevlist)
+    assert len(cal.channels) == len(chlist)
+    assert len(cal.energies) == len(chlist)
+    assert len(cal.calpoints) == len(chlist)
+    assert len(cal.calpoints[0]) == 2
+    assert np.all(cal.ch_vals == np.array(chlist))
+    assert np.all(cal.ch_uncs == 5)
+
+    ch_unc = np.ones_like(chlist)
+    cal = bq.core.LinearEnergyCal.from_points(
+        chlist=chlist, kevlist=kevlist, ch_uncs=ch_unc)
+    assert len(cal.channels) == len(chlist)
+    assert len(cal.energies) == len(chlist)
+    assert len(cal.calpoints) == len(chlist)
+    assert len(cal.calpoints[0]) == 2
+    assert np.all(cal.ch_vals == np.array(chlist))
+    assert np.all(cal.ch_uncs == 1)
+
+    ch_ufloats[-1] = 42
+    with pytest.raises(bq.core.UncertaintiesError):
+        cal = bq.core.LinearEnergyCal.from_points(
+            chlist=ch_ufloats, kevlist=kevlist)
 
 
 def test_construction_pairlist(pairlist):
