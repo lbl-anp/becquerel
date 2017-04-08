@@ -3,7 +3,7 @@
 from __future__ import print_function
 import pytest
 import numpy as np
-from uncertainties import unumpy
+from uncertainties import unumpy, ufloat
 
 import becquerel as bq
 
@@ -64,7 +64,7 @@ def test_construction_chkevlist(chkevlists):
     assert len(cal.energies) == len(chlist)
     assert len(cal.calpoints) == len(chlist)
     assert len(cal.calpoints[0]) == 2
-    assert np.all(cal.ch_vals == np.array(chlist))
+    assert np.allclose(cal.ch_vals, np.array(chlist))
     assert np.isnan(cal.ch_uncs).all()
 
 
@@ -107,6 +107,7 @@ def test_construction_pairlist(pairlist):
     assert len(cal.energies) == len(pairlist)
     assert len(cal.calpoints) == len(pairlist)
     assert len(cal.calpoints[0]) == 2
+    assert np.isnan(cal.ch_uncs).all()
 
 
 def test_construction_coefficients(slope, offset):
@@ -171,6 +172,22 @@ def test_methods_add_calpoint():
     cal.add_calpoint(32, 661.7)
     cal.add_calpoint(67, 1460.83)
     cal.add_calpoint(35, 661.7)
+    assert len(cal.calpoints) == 2
+    assert len(cal.channels) == 2
+    assert len(cal.energies) == 2
+    assert np.isnan(cal.ch_uncs).all()
+
+
+def test_methods_add_calpoint_unc():
+    """Test add_calpoint with uncertainty"""
+
+    cal = bq.core.LinearEnergyCal()
+    cal.add_calpoint(ufloat(32, 3), 661.7)
+    cal.add_calpoint(67, 1460.83, ch_unc=4.5)
+    assert len(cal.calpoints) == 2
+    assert len(cal.channels) == 2
+    assert len(cal.energies) == 2
+    assert not np.isnan(cal.ch_uncs).any()
 
 
 def test_methods_new_calpoint():
@@ -181,6 +198,9 @@ def test_methods_new_calpoint():
     cal.new_calpoint(67, 1460.83)
     with pytest.raises(bq.core.EnergyCalError):
         cal.new_calpoint(35, 661.7)
+    assert len(cal.calpoints) == 2
+    assert len(cal.channels) == 2
+    assert len(cal.energies) == 2
 
 
 def test_methods_rm_calpoint():
@@ -190,6 +210,9 @@ def test_methods_rm_calpoint():
     cal.new_calpoint(32, 661.7)
     cal.rm_calpoint(661.7)
     cal.rm_calpoint(1460.83)
+    assert len(cal.calpoints) == 0
+    assert len(cal.channels) == 0
+    assert len(cal.energies) == 0
 
 
 def test_methods_ch2kev(slope, offset, channels):
