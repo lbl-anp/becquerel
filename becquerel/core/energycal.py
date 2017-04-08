@@ -64,9 +64,19 @@ class EnergyCalBase(object):
           BadInput: for bad pairlist, chlist, and/or kevlist.
         """
 
-        has_pair = pairlist is not None
-        has_ch = chlist is not None
-        has_kev = kevlist is not None
+        # np.arrays don't cast to bool like lists and tuples
+        if isinstance(pairlist, np.ndarray):
+            has_pair = bool(len(pairlist))
+        else:
+            has_pair = bool(pairlist)
+        if isinstance(chlist, np.ndarray):
+            has_ch = bool(len(chlist))
+        else:
+            has_ch = bool(chlist)
+        if isinstance(kevlist, np.ndarray):
+            has_kev = bool(len(kevlist))
+        else:
+            has_kev = bool(kevlist)
 
         if has_pair and (has_ch or has_kev):
             raise BadInput('Redundant calibration inputs')
