@@ -405,15 +405,24 @@ class LinearEnergyCal(EnergyCalBase):
         return (kev - self.offset) / self.slope
 
     def _perform_fit(self):
-        """Do the actual curve fitting."""
+        """Do the actual curve fitting.
+
+        If some points have uncertainty and others don't, the points without
+        are assigned the average uncertainty of the points with.
+        """
 
         # normally channel is the independent variable.
         # but uncertainty is on channel, not energy. so fit the inverse
         x = self.energies
         y = unumpy.nominal_values(self.channels)
-        w = 1 / unumpy.std_devs(self.channels)
+        sig = unumpy.std_devs(self.channels)
+        nan_weights = np.isnan(sig)
+        if nan_weights.all():
+            sig = np.ones_like(nan_weights)
+        if nan_weights.any():
+            sig[nan_weights] = np.nanmean(sig)
         # w = 1/sigma rather than 1/sigma**2, as per np.polyfit docs
-        slope_inverse, offset_inverse = np.polyfit(x, y, 1, w=w)
+        slope_inverse, offset_inverse = np.polyfit(x, y, 1, w=1/sig)
         slope = 1 / slope_inverse
         offset = -offset_inverse / slope_inverse
         self._set_coeff('b', slope)
