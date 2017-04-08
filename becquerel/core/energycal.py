@@ -64,13 +64,17 @@ class EnergyCalBase(object):
           BadInput: for bad pairlist, chlist, and/or kevlist.
         """
 
-        if pairlist and (chlist or kevlist):
+        has_pair = pairlist is not None
+        has_ch = chlist is not None
+        has_kev = kevlist is not None
+
+        if has_pair and (has_ch or has_kev):
             raise BadInput('Redundant calibration inputs')
-        if (chlist and not kevlist) or (kevlist and not chlist):
+        if (has_ch and not has_kev) or (has_kev and not has_ch):
             raise BadInput('Require both chlist and kevlist')
-        if not chlist and not kevlist and not pairlist:
+        if not has_ch and not has_kev and not has_pair:
             raise BadInput('Calibration points are required')
-        if chlist and kevlist:
+        if has_ch and has_kev:
             if (not isinstance(chlist, (list, tuple, np.ndarray)) or
                     not isinstance(kevlist, (list, tuple, np.ndarray))):
                 raise BadInput('Inputs should be iterables, not scalars')
