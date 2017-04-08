@@ -5,7 +5,7 @@ from future.utils import viewitems
 from builtins import dict, super, zip  # pylint: disable=redefined-builtin
 from uncertainties import unumpy
 import numpy as np
-from becquerel.core import handle_uncs
+from becquerel.core import handle_unc, handle_uncs
 
 
 class EnergyCalError(Exception):
@@ -108,20 +108,32 @@ class EnergyCalBase(object):
 
     @property
     def channels(self):
-        """The channel values of calibration points.
+        """The channel values, with uncertainty, of calibration points.
 
         Returns:
-          an np.ndarray of channel values (may be float or int)
+          an np.ndarray of UFloat's
         """
 
         return np.array(list(self._calpoints.values()))
 
     @property
     def ch_vals(self):
+        """The channel values (no uncertainty) of calibration points.
+
+        Returns:
+          an np.ndarray of floats or ints
+        """
+
         return unumpy.nominal_values(self.channels)
 
     @property
     def ch_uncs(self):
+        """The channel uncertainties of calibration points.
+
+        Returns:
+          an np.ndarray of floats
+        """
+
         return unumpy.std_devs(self.channels)
 
     @property
@@ -163,7 +175,8 @@ class EnergyCalBase(object):
           kev: the energy value of the calibration point [keV]
         """
 
-        self._calpoints[float(kev)] = float(ch)
+        ch_ufloat = handle_unc(ch, ch_unc, np.nan)
+        self._calpoints[float(kev)] = ch_ufloat
 
     def new_calpoint(self, ch, kev, ch_unc=None):
         """Add a new calibration point. Error if energy matches existing point.
@@ -178,7 +191,8 @@ class EnergyCalBase(object):
 
         if kev in self._calpoints:
             raise EnergyCalError('Calibration energy already exists')
-        self.add_calpoint(ch, kev)
+        ch_ufloat = handle_unc(ch, ch_unc, np.nan)
+        self.add_calpoint(ch_ufloat, kev)
 
     def rm_calpoint(self, kev):
         """Remove a calibration point, if it exists.
@@ -306,9 +320,6 @@ class EnergyCalBase(object):
         pass
 
 
-# TODO: dummy class for testing?
-
-
 class LinearEnergyCal(EnergyCalBase):
     """
     kev = b*ch + c
@@ -396,6 +407,14 @@ class LinearEnergyCal(EnergyCalBase):
     def _perform_fit(self):
         """Do the actual curve fitting."""
 
-        b, c = np.polyfit(self.channels, self.energies, 1)
-        self._set_coeff('b', b)
-        self._set_coeff('c', c)
+        # normally channel is the independent variable.
+        # but uncertainty is on channel, not energy. so fit the inverse
+        x = self.energies
+        y = unumpy.nominal_values(self.channels)
+        w = 1 / unumpy.std_devs(self.channels)
+        # w = 1/sigma rather than 1/sigma**2, as per np.polyfit docs
+        slope_inverse, offset_inverse = np.polyfit(x, y, 1, w=w)
+        slope = 1 / slope_inverse
+        offset = -offset_inverse / slope_inverse
+        self._set_coeff('b', slope)
+        self._set_coeff('c', offset)
