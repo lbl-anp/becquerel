@@ -27,17 +27,22 @@ class Spectrum(object):
     Initialize a Spectrum directly, or with Spectrum.from_file(filename).
 
     Data Attributes:
-      data: np.array of UFloat objects, of counts in each channel
-      data_vals: np.array of floats of counts
-      data_uncs: np.array of uncertainties for each bin
       bin_edges_kev: np.array of energy bin edges, if calibrated
       livetime: int or float of livetime, in seconds
 
     Properties:
+      data: (read-only) np.array of UFloat objects, of counts in each channel
+      data_vals: (read-only) np.array of floats of counts
+      data_uncs: (read-only) np.array of uncertainties for each bin
       channels: (read-only) np.array of channel index as integers
       is_calibrated: (read-only) bool
       energies_kev: (read-only) np.array of energy bin centers, if calibrated
       bin_widths: (read-only) np.array of energy bin widths, if calibrated
+
+    Methods:
+      apply_calibration: use an EnergyCal object to calibrate this spectrum
+      norm_subtract: livetime-normalize and subtract another Spectrum object
+      combine_bins: make a new Spectrum with data combined into bigger bins.
     """
 
     def __init__(self, data, uncs=None, bin_edges_kev=None,
