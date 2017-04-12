@@ -3,6 +3,7 @@
 from __future__ import print_function
 import pytest
 import numpy as np
+import matplotlib.pyplot as plt
 
 import becquerel as bq
 
@@ -233,3 +234,32 @@ class TestSpectrumMultiplyDivide(object):
             uncal_spec * np.nan
         with pytest.raises(bq.core.SpectrumError):
             uncal_spec / np.nan
+
+
+class TestRebin(object):
+
+    def test_uncal_spectrum_counts(self, uncal_spec):
+        old_edges = np.concatenate([
+            uncal_spec.channels.astype('float') - 0.5,
+            np.array([uncal_spec.channels[-1] + 0.5])])
+        new_edges = old_edges + 0.3
+        new_data = bq.core.rebin(uncal_spec.data, old_edges, new_edges)
+        assert np.isclose(uncal_spec.data.sum(), new_data.sum())
+
+@pytest.mark.plottest
+class TestRebinPlots(object):
+
+    def test_uncal_spectrum_counts(self, uncal_spec):
+        old_edges = np.concatenate([
+            uncal_spec.channels.astype('float') - 0.5,
+            np.array([uncal_spec.channels[-1] + 0.5])])
+        new_edges = old_edges + 0.3
+        new_data = bq.core.rebin(uncal_spec.data, old_edges, new_edges)
+        plt.figure()
+        plt.plot(*bq.core.bin_edges_and_heights_to_steps(old_edges,
+                                                         uncal_spec.data),
+                 color='dodgerblue', label='original')
+        plt.plot(*bq.core.bin_edges_and_heights_to_steps(new_edges,
+                                                         new_data),
+                 color='firebrick', label='rebinned')
+        plt.show()

@@ -7,6 +7,17 @@ import becquerel.parsers as parsers
 # from ..parsers import SpeFile, SpcFile, CnfFile
 
 
+def bin_edges_and_heights_to_steps(bin_edges, heights):
+    assert len(bin_edges) == len(heights) + 1
+    x = np.zeros(len(bin_edges) * 2)
+    y = np.zeros_like(x)
+    x[::2] = bin_edges.astype(float)
+    x[1::2] = bin_edges.astype(float)
+    y[1:-1:2] = heights.astype(float)
+    y[2:-1:2] = heights.astype(float)
+    return x, y
+
+
 class SpectrumError(Exception):
     """Exception raised by Spectrum."""
 
