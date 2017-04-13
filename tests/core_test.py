@@ -375,3 +375,17 @@ def test_combine_bins_padding(uncal_spec):
     assert len(combined.data) == np.ceil(float(TEST_DATA_LENGTH) / f)
     assert combined.data_vals[0] == np.sum(uncal_spec.data_vals[:f])
     assert np.sum(combined.data_vals) == np.sum(uncal_spec.data_vals)
+
+
+# Spectrum.apply_calibration tested in energycal_test.py
+
+# ----------------------------------------------
+#         Test Spectrum.bin_widths
+# ----------------------------------------------
+
+def test_bin_widths(cal_spec):
+    """Test bin_widths"""
+
+    cal_spec.bin_widths
+    assert len(cal_spec.bin_widths) == len(cal_spec.data)
+    assert np.allclose(cal_spec.bin_widths, TEST_GAIN)

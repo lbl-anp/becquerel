@@ -37,6 +37,7 @@ class Spectrum(object):
       channels: (read-only) np.array of channel index as integers
       is_calibrated: (read-only) bool
       energies_kev: (read-only) np.array of energy bin centers, if calibrated
+      bin_widths: (read-only) np.array of energy bin widths, if calibrated
     """
 
     def __init__(self, data, uncs=None, bin_edges_kev=None,
@@ -146,10 +147,26 @@ class Spectrum(object):
           UncalibratedError: if spectrum is not calibrated
         """
 
-        if self.bin_edges_kev is None:
+        if not self.is_calibrated:
             raise UncalibratedError('Spectrum is not calibrated')
         else:
             return self.bin_centers_from_edges(self.bin_edges_kev)
+
+    @property
+    def bin_widths(self):
+        """The width of each bin, in keV.
+
+        Returns:
+          np.array of floats, same length as self.data
+
+        Raises:
+          UncalibratedError: if spectrum is not calibrated
+        """
+
+        if not self.is_calibrated:
+            raise UncalibratedError('Spectrum is not calibrated')
+        else:
+            return np.diff(self.bin_edges_kev)
 
     @property
     def is_calibrated(self):
