@@ -276,7 +276,7 @@ def test_linear_bad_fitting():
 
 
 # ----------------------------------------------------
-#        Spectrum.apply_calibration tests
+#        Spectrum calibration methods tests
 # ----------------------------------------------------
 
 def test_apply_calibration(uncal_spec, pairlist):
@@ -298,3 +298,33 @@ def test_apply_calibration_recal(cal_spec, pairlist):
     old_bin_edges = cal_spec.bin_edges_kev
     cal_spec.apply_calibration(cal)
     assert not np.any(old_bin_edges == cal_spec.bin_edges_kev)
+
+
+def test_rm_calibration(cal_spec):
+    """Remove calibration from a calibrated spectrum"""
+
+    assert cal_spec.is_calibrated
+    cal_spec.rm_calibration()
+    assert not cal_spec.is_calibrated
+
+
+def test_rm_calibration_error(uncal_spec):
+    """Test that rm_calibration does not error on an uncalibrated spectrum"""
+
+    assert not uncal_spec.is_calibrated
+    uncal_spec.rm_calibration()
+    assert not uncal_spec.is_calibrated
+
+
+def test_calibrate_like(uncal_spec, cal_spec):
+    """Test Spectrum.calibrate_like(), including that the bin edges are a copy
+    """
+
+    assert cal_spec.is_calibrated
+    assert not uncal_spec.is_calibrated
+    uncal_spec.calibrate_like(cal_spec)
+    assert uncal_spec.is_calibrated
+
+    assert cal_spec.bin_edges_kev is not uncal_spec.bin_edges_kev
+    cal_spec.rm_calibration()
+    assert uncal_spec.is_calibrated

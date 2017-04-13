@@ -377,7 +377,7 @@ def test_combine_bins_padding(uncal_spec):
     assert np.sum(combined.data_vals) == np.sum(uncal_spec.data_vals)
 
 
-# Spectrum.apply_calibration tested in energycal_test.py
+# calibration methods tested in energycal_test.py
 
 # ----------------------------------------------
 #         Test Spectrum.bin_widths
