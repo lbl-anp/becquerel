@@ -55,7 +55,7 @@ class EnergyCalBase(object):
         Args:
           chlist: list/tuple/array of the channel values of calibration points.
             may be specified as UFloats
-          ch_unclist (optional): list/tuple/array of uncertainties of the
+          ch_uncs (optional): list/tuple/array of uncertainties of the
             channel values
           kevlist: list/tuple/array of the corresponding energy values [keV]
           pairlist: list/tuple/array of paired values, (ch, kev)
@@ -205,8 +205,7 @@ class EnergyCalBase(object):
 
         if kev in self._calpoints:
             raise EnergyCalError('Calibration energy already exists')
-        ch_ufloat = handle_unc(ch, ch_unc, np.nan)
-        self.add_calpoint(ch_ufloat, kev)
+        self.add_calpoint(ch, kev, ch_unc=ch_unc)
 
     def rm_calpoint(self, kev):
         """Remove a calibration point, if it exists.
