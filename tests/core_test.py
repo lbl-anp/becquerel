@@ -351,3 +351,27 @@ class TestSpectrumMultiplyDivide(object):
             uncal_spec * np.nan
         with pytest.raises(bq.core.SpectrumError):
             uncal_spec / np.nan
+
+
+# ----------------------------------------------
+#         Test Spectrum.combine_bins
+# ----------------------------------------------
+
+def test_combine_bins(uncal_spec):
+    """Test combine_bins with no padding."""
+
+    f = 8
+    combined = uncal_spec.combine_bins(f)
+    assert len(combined.data) == TEST_DATA_LENGTH / f
+    assert combined.data_vals[0] == np.sum(uncal_spec.data_vals[:f])
+    assert np.sum(combined.data_vals) == np.sum(uncal_spec.data_vals)
+
+
+def test_combine_bins_padding(uncal_spec):
+    """Test combine_bins with padding (an uneven factor)."""
+
+    f = 10
+    combined = uncal_spec.combine_bins(f)
+    assert len(combined.data) == np.ceil(float(TEST_DATA_LENGTH) / f)
+    assert combined.data_vals[0] == np.sum(uncal_spec.data_vals[:f])
+    assert np.sum(combined.data_vals) == np.sum(uncal_spec.data_vals)

@@ -309,6 +309,44 @@ class Spectrum(object):
         channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
         self.bin_edges_kev = cal.ch2kev(channel_edges)
 
+    def combine_bins(self, f):
+        """Make a new Spectrum with data combined into bigger bins.
+
+        If f is not a factor of the number of channels, the data from the first
+        spectrum will be padded with zeros.
+
+        len(new.data) == np.ceil(float(len(self.data)) / f)
+
+        Args:
+          f: an int representing the number of bins to combine into one
+
+        Returns:
+          a Spectrum object with data from this spectrum, but with
+            fewer bins
+        """
+
+        f = int(f)
+        if len(self.data) % f == 0:
+            padded_data = np.copy(self.data)
+        else:
+            pad_len = f - len(self.data) % f
+            pad_data = unumpy.uarray(np.zeros(pad_len), np.zeros(pad_len))
+            padded_data = np.concatenate((self.data, pad_data))
+        padded_data.resize(len(padded_data) / f, f)
+        combined_data = np.sum(padded_data, axis=1)
+        if self.is_calibrated:
+            combined_bin_edges = self.bin_edges_kev[::f]
+            if combined_bin_edges[-1] != self.bin_edges_kev[-1]:
+                combined_bin_edges = np.append(
+                    combined_bin_edges, self.bin_edges_kev[-1])
+        else:
+            combined_bin_edges = None
+
+        obj = Spectrum(combined_data, bin_edges_kev=combined_bin_edges,
+                       input_file_object=self._infileobject,
+                       livetime=self.livetime)
+        return obj
+
 
 def _get_file_object(infilename):
     """
