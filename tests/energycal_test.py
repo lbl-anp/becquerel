@@ -50,14 +50,14 @@ def channels(request):
 def test_construction_01():
     """Test empty construction"""
 
-    bq.core.LinearEnergyCal()
+    bq.LinearEnergyCal()
 
 
 def test_construction_02(chkevlists):
     """Test construction (not fitting) from chlist, kevlist"""
 
     chlist, kevlist = chkevlists
-    cal = bq.core.LinearEnergyCal.from_points(
+    cal = bq.LinearEnergyCal.from_points(
         chlist=chlist, kevlist=kevlist)
     assert len(cal.channels) == 3
     assert len(cal.energies) == 3
@@ -68,7 +68,7 @@ def test_construction_02(chkevlists):
 def test_construction_03(pairlist):
     """Test construction (not fitting) from pairlist"""
 
-    cal = bq.core.LinearEnergyCal.from_points(pairlist=pairlist)
+    cal = bq.LinearEnergyCal.from_points(pairlist=pairlist)
     assert len(cal.channels) == len(pairlist)
     assert len(cal.energies) == len(pairlist)
     assert len(cal.calpoints) == len(pairlist)
@@ -79,7 +79,7 @@ def test_construction_04(slope, offset):
     """Test construction from coefficients"""
 
     coeffs = {'b': slope, 'c': offset}
-    cal = bq.core.LinearEnergyCal.from_coeffs(coeffs)
+    cal = bq.LinearEnergyCal.from_coeffs(coeffs)
     assert cal.coeffs['b'] == slope
     assert cal.coeffs['c'] == offset
 
@@ -88,41 +88,41 @@ def test_construction_05(slope, offset):
     """Test construction with bad coefficients"""
 
     coeffs = {'a': offset, 'b': slope}
-    with pytest.raises(bq.core.EnergyCalError):
-        bq.core.LinearEnergyCal.from_coeffs(coeffs)
+    with pytest.raises(bq.EnergyCalError):
+        bq.LinearEnergyCal.from_coeffs(coeffs)
 
 
 def test_construction_06(chkevlists, pairlist):
     """Test from_points with bad input"""
 
     chlist, kevlist = chkevlists
-    with pytest.raises(bq.core.BadInput) as excinfo:
-        bq.core.LinearEnergyCal.from_points(chlist=chlist, pairlist=pairlist)
+    with pytest.raises(bq.BadInput) as excinfo:
+        bq.LinearEnergyCal.from_points(chlist=chlist, pairlist=pairlist)
     excinfo.match('Redundant calibration inputs')
 
-    with pytest.raises(bq.core.BadInput) as excinfo:
-        bq.core.LinearEnergyCal.from_points(chlist=chlist)
+    with pytest.raises(bq.BadInput) as excinfo:
+        bq.LinearEnergyCal.from_points(chlist=chlist)
     excinfo.match('Require both chlist and kevlist')
 
-    with pytest.raises(bq.core.BadInput) as excinfo:
-        bq.core.LinearEnergyCal.from_points(
+    with pytest.raises(bq.BadInput) as excinfo:
+        bq.LinearEnergyCal.from_points(
             chlist=chlist, kevlist=kevlist[:-1])
     excinfo.match('Channels and energies must be same length')
 
-    with pytest.raises(bq.core.BadInput) as excinfo:
-        bq.core.LinearEnergyCal.from_points()
+    with pytest.raises(bq.BadInput) as excinfo:
+        bq.LinearEnergyCal.from_points()
     excinfo.match('Calibration points are required')
 
-    with pytest.raises(bq.core.BadInput) as excinfo:
-        bq.core.LinearEnergyCal.from_points(chlist=[], kevlist=[])
+    with pytest.raises(bq.BadInput) as excinfo:
+        bq.LinearEnergyCal.from_points(chlist=[], kevlist=[])
     excinfo.match('Calibration points are required')
 
-    with pytest.raises(bq.core.BadInput) as excinfo:
-        bq.core.LinearEnergyCal.from_points(chlist=32, kevlist=661.7)
+    with pytest.raises(bq.BadInput) as excinfo:
+        bq.LinearEnergyCal.from_points(chlist=32, kevlist=661.7)
     excinfo.match('Inputs should be iterables, not scalars')
 
-    with pytest.raises(bq.core.BadInput) as excinfo:
-        bq.core.LinearEnergyCal.from_points(pairlist=(32, 661.7))
+    with pytest.raises(bq.BadInput) as excinfo:
+        bq.LinearEnergyCal.from_points(pairlist=(32, 661.7))
     excinfo.match('Inputs should be iterables, not scalars')
 
 
@@ -133,7 +133,7 @@ def test_construction_06(chkevlists, pairlist):
 def test_methods_01():
     """Test add_calpoint"""
 
-    cal = bq.core.LinearEnergyCal()
+    cal = bq.LinearEnergyCal()
     cal.add_calpoint(32, 661.7)
     cal.add_calpoint(67, 1460.83)
     cal.add_calpoint(35, 661.7)
@@ -142,17 +142,17 @@ def test_methods_01():
 def test_methods_02():
     """Test new_calpoint"""
 
-    cal = bq.core.LinearEnergyCal()
+    cal = bq.LinearEnergyCal()
     cal.new_calpoint(32, 661.7)
     cal.new_calpoint(67, 1460.83)
-    with pytest.raises(bq.core.EnergyCalError):
+    with pytest.raises(bq.EnergyCalError):
         cal.new_calpoint(35, 661.7)
 
 
 def test_methods_03():
     """Test rm_calpoint"""
 
-    cal = bq.core.LinearEnergyCal()
+    cal = bq.LinearEnergyCal()
     cal.new_calpoint(32, 661.7)
     cal.rm_calpoint(661.7)
     cal.rm_calpoint(1460.83)
@@ -162,7 +162,7 @@ def test_methods_04(slope, offset, channels):
     """Test ch2kev (both scalar and array)"""
 
     coeffs = {'b': slope, 'c': offset}
-    cal = bq.core.LinearEnergyCal.from_coeffs(coeffs)
+    cal = bq.LinearEnergyCal.from_coeffs(coeffs)
 
     if np.isscalar(channels):
         assert cal.ch2kev(channels) == slope * channels + offset
@@ -175,7 +175,7 @@ def test_methods_05(slope, offset, channels):
     """Test kev2ch"""
 
     coeffs = {'b': slope, 'c': offset}
-    cal = bq.core.LinearEnergyCal.from_coeffs(coeffs)
+    cal = bq.LinearEnergyCal.from_coeffs(coeffs)
 
     if np.isscalar(channels):
         assert np.isclose(cal.kev2ch(cal.ch2kev(channels)), channels)
@@ -193,17 +193,17 @@ def test_linear_01(slope, offset):
     """Test alternate construction coefficient names"""
 
     coeffs = {'p0': offset, 'p1': slope}
-    cal = bq.core.LinearEnergyCal.from_coeffs(coeffs)
+    cal = bq.LinearEnergyCal.from_coeffs(coeffs)
     assert cal.slope == slope
     assert cal.offset == offset
 
     coeffs = {'offset': offset, 'slope': slope}
-    cal = bq.core.LinearEnergyCal.from_coeffs(coeffs)
+    cal = bq.LinearEnergyCal.from_coeffs(coeffs)
     assert cal.slope == slope
     assert cal.offset == offset
 
     coeffs = {'b': offset, 'm': slope}
-    cal = bq.core.LinearEnergyCal.from_coeffs(coeffs)
+    cal = bq.LinearEnergyCal.from_coeffs(coeffs)
     assert cal.slope == slope
     assert cal.offset == offset
 
@@ -211,7 +211,7 @@ def test_linear_01(slope, offset):
 def test_linear_02(pairlist):
     """Test fitting"""
 
-    cal = bq.core.LinearEnergyCal.from_points(pairlist=pairlist)
+    cal = bq.LinearEnergyCal.from_points(pairlist=pairlist)
     cal.update_fit()
 
 
@@ -221,14 +221,14 @@ def test_linear_03():
     """
 
     pairlist = ((67, 661.7), (133, 1460.83))
-    cal = bq.core.LinearEnergyCal.from_points(pairlist=pairlist)
+    cal = bq.LinearEnergyCal.from_points(pairlist=pairlist)
     cal.update_fit()
 
-    cal = bq.core.LinearEnergyCal()
-    with pytest.raises(bq.core.EnergyCalError):
+    cal = bq.LinearEnergyCal()
+    with pytest.raises(bq.EnergyCalError):
         cal.update_fit()
 
     pairlist = ((67, 661.7),)
-    cal = bq.core.LinearEnergyCal.from_points(pairlist=pairlist)
-    with pytest.raises(bq.core.EnergyCalError):
+    cal = bq.LinearEnergyCal.from_points(pairlist=pairlist)
+    with pytest.raises(bq.EnergyCalError):
         cal.update_fit()
