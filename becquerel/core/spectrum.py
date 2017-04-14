@@ -331,6 +331,26 @@ class Spectrum(object):
         channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
         self.bin_edges_kev = cal.ch2kev(channel_edges)
 
+    def calibrate_like(self, other):
+        """Apply another Spectrum object's calibration (bin edges vector).
+
+        Bin edges are copied, so the two spectra do not have the same object
+        in memory.
+
+        Args:
+          other: spectrum to copy the calibration from
+        """
+
+        if other.is_calibrated:
+            self.bin_edges_kev = other.bin_edges_kev.copy()
+        else:
+            raise UncalibratedError('Other spectrum is not calibrated')
+
+    def rm_calibration(self):
+        """Remove the calibration (if it exists) from this spectrum."""
+
+        self.bin_edges_kev = None
+
     def combine_bins(self, f):
         """Make a new Spectrum with data combined into bigger bins.
 
