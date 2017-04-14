@@ -112,6 +112,11 @@ class SpectrumPlotter(object):
             self.yscale = 'log'
         else:
             self.yscale = yscale
+        if yscale == 'symlog':
+            # TODO depends on count mode
+            self.yscale_kwargs = {'linthreshy': 1}
+        else:
+            self.yscale_kwargs = {}
 
         if ylim is None and self.yscale == 'linear':
             # TODO round up to the nearest round number or so
@@ -119,6 +124,10 @@ class SpectrumPlotter(object):
         elif ylim is None and self.yscale == 'log':
             # TODO
             self.ylim = (0.1, np.max(self.ydata).nominal_value)
+        elif ylim is None and self.yscale == 'symlog':
+            # TODO
+            self.ylim = (np.min(self.ydata).nominal_value,
+                         np.max(self.ydata).nominal_value)
         else:
             self.ylim = ylim
 
@@ -126,8 +135,6 @@ class SpectrumPlotter(object):
 
     def plot(self):
         """Create actual plot."""
-
-        print('Plotting')
 
         if self.new_axes:
             self.axes = plt.axes()
@@ -142,7 +149,7 @@ class SpectrumPlotter(object):
         self.axes.set_xscale(self.xscale)
         self.axes.set_xlim(self.xlim)
         self.axes.set_ylabel(self.ylabel)
-        self.axes.set_yscale(self.yscale)
+        self.axes.set_yscale(self.yscale, **self.yscale_kwargs)
         self.axes.set_ylim(self.ylim)
 
         plt.show()
