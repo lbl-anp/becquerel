@@ -27,14 +27,14 @@ def spec_data():
 def uncal_spec(spec_data):
     """Generate an uncalibrated spectrum."""
 
-    return bq.core.Spectrum(spec_data)
+    return bq.Spectrum(spec_data)
 
 
 @pytest.fixture
 def uncal_spec_2(spec_data):
     """Generate an uncalibrated spectrum (2nd instance)."""
 
-    return bq.core.Spectrum(spec_data)
+    return bq.Spectrum(spec_data)
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def uncal_spec_long(spec_data):
     """Generate an uncalibrated spectrum, of longer length."""
 
     floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH * 2)
-    uncal = bq.core.Spectrum(floatdata.astype(np.int))
+    uncal = bq.Spectrum(floatdata.astype(np.int))
     return uncal
 
 
@@ -50,14 +50,14 @@ def uncal_spec_long(spec_data):
 def cal_spec(spec_data):
     """Generate a calibrated spectrum."""
 
-    return bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
+    return bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
 
 
 @pytest.fixture
 def cal_spec_2(spec_data):
     """Generate a calibrated spectrum (2nd instance)."""
 
-    return bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
+    return bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
 
 
 class TestSpectrumFromFile(object):
@@ -68,7 +68,7 @@ class TestSpectrumFromFile(object):
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
         for filename in filenames:
-            spec = bq.core.Spectrum.from_file(filename)
+            spec = bq.Spectrum.from_file(filename)
             assert spec.livetime is not None
 
     def test_spe(self):
@@ -104,31 +104,31 @@ class TestSpectrumConstructor(object):
     def test_init_exceptions(self, spec_data):
         """Test errors on initialization."""
 
-        with pytest.raises(bq.core.SpectrumError):
-            bq.core.Spectrum([])
-        with pytest.raises(bq.core.SpectrumError):
-            bq.core.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV[:-1])
+        with pytest.raises(bq.SpectrumError):
+            bq.Spectrum([])
+        with pytest.raises(bq.SpectrumError):
+            bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV[:-1])
 
         bad_edges = TEST_EDGES_KEV.copy()
         bad_edges[12] = bad_edges[9]
-        with pytest.raises(bq.core.SpectrumError):
-            bq.core.Spectrum(spec_data, bin_edges_kev=bad_edges)
+        with pytest.raises(bq.SpectrumError):
+            bq.Spectrum(spec_data, bin_edges_kev=bad_edges)
 
     def test_uncalibrated_exception(self, uncal_spec):
         """Test UncalibratedError."""
 
-        with pytest.raises(bq.core.UncalibratedError):
+        with pytest.raises(bq.UncalibratedError):
             uncal_spec.energies_kev
 
     def test_livetime(self, spec_data):
         """Test manual livetime input."""
 
         lt = 86400
-        spec = bq.core.Spectrum(spec_data, livetime=lt)
+        spec = bq.Spectrum(spec_data, livetime=lt)
         assert spec.livetime == lt
 
         lt = 300.6
-        spec = bq.core.Spectrum(spec_data, livetime=lt)
+        spec = bq.Spectrum(spec_data, livetime=lt)
         assert spec.livetime == lt
 
 
@@ -138,16 +138,16 @@ class TestUncertainties(object):
     def test_construct_float_int(self, spec_data):
         """Construct spectrum with non-UFloats (float and int)."""
 
-        spec = bq.core.Spectrum(spec_data)
+        spec = bq.Spectrum(spec_data)
         assert isinstance(spec.data[0], UFloat)
-        spec = bq.core.Spectrum(spec_data.astype(float))
+        spec = bq.Spectrum(spec_data.astype(float))
         assert isinstance(spec.data[0], UFloat)
 
     def test_construct_ufloat(self, spec_data):
         """Construct spectrum with UFloats"""
 
         udata = unumpy.uarray(spec_data, np.ones_like(spec_data))
-        spec = bq.core.Spectrum(udata)
+        spec = bq.Spectrum(udata)
         assert isinstance(spec.data[0], UFloat)
         assert spec.data[0].std_dev == 1
 
@@ -155,7 +155,7 @@ class TestUncertainties(object):
         """Construct spectrum with non-UFloats and specify uncs."""
 
         uncs = np.ones_like(spec_data)
-        spec = bq.core.Spectrum(spec_data, uncs=uncs)
+        spec = bq.Spectrum(spec_data, uncs=uncs)
         assert isinstance(spec.data[0], UFloat)
         uncs2 = np.array([c.std_dev for c in spec.data])
         assert np.allclose(uncs2, 1)
@@ -165,17 +165,17 @@ class TestUncertainties(object):
 
         uncs = np.ones_like(spec_data)
         udata = unumpy.uarray(spec_data, uncs)
-        with pytest.raises(bq.core.SpectrumError):
-            bq.core.Spectrum(udata, uncs=uncs)
+        with pytest.raises(bq.SpectrumError):
+            bq.Spectrum(udata, uncs=uncs)
 
         udata[0] = 1
-        with pytest.raises(bq.core.SpectrumError):
-            bq.core.Spectrum(udata)
+        with pytest.raises(bq.SpectrumError):
+            bq.Spectrum(udata)
 
     def test_properties(self, spec_data):
         """Test data_vals and data_uncs."""
 
-        spec = bq.core.Spectrum(spec_data)
+        spec = bq.Spectrum(spec_data)
         assert isinstance(spec.data[0], UFloat)
         assert np.allclose(spec.data_vals, spec_data)
         expected_uncs = np.sqrt(spec_data)
@@ -184,12 +184,12 @@ class TestUncertainties(object):
 
         uncs = spec_data
         udata = unumpy.uarray(spec_data, uncs)
-        spec = bq.core.Spectrum(udata)
+        spec = bq.Spectrum(udata)
         assert np.allclose(spec.data_vals, spec_data)
         assert np.allclose(spec.data_uncs, uncs)
 
         uncs = np.ones_like(spec_data)
-        spec = bq.core.Spectrum(spec_data, uncs=uncs)
+        spec = bq.Spectrum(spec_data, uncs=uncs)
         assert np.allclose(spec.data_uncs, uncs)
 
 
@@ -256,9 +256,9 @@ class TestSpectrumAddSubtract(object):
         Adding/subtracting spectra of different lengths gives a SpectrumError.
         """
 
-        with pytest.raises(bq.core.SpectrumError):
+        with pytest.raises(bq.SpectrumError):
             uncal_spec + uncal_spec_long
-        with pytest.raises(bq.core.SpectrumError):
+        with pytest.raises(bq.SpectrumError):
             uncal_spec - uncal_spec_long
 
     def test_norm_subtract(self, uncal_spec, uncal_spec_2):
@@ -339,17 +339,17 @@ class TestSpectrumMultiplyDivide(object):
     def test_mul_div_bad_factor(self, uncal_spec):
         """Multiplication/division with zero/inf/nan gives a SpectrumError."""
 
-        with pytest.raises(bq.core.SpectrumError):
+        with pytest.raises(bq.SpectrumError):
             uncal_spec * 0
-        with pytest.raises(bq.core.SpectrumError):
+        with pytest.raises(bq.SpectrumError):
             uncal_spec / 0
-        with pytest.raises(bq.core.SpectrumError):
+        with pytest.raises(bq.SpectrumError):
             uncal_spec * np.inf
-        with pytest.raises(bq.core.SpectrumError):
+        with pytest.raises(bq.SpectrumError):
             uncal_spec / np.inf
-        with pytest.raises(bq.core.SpectrumError):
+        with pytest.raises(bq.SpectrumError):
             uncal_spec * np.nan
-        with pytest.raises(bq.core.SpectrumError):
+        with pytest.raises(bq.SpectrumError):
             uncal_spec / np.nan
 
 
