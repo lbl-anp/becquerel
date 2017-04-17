@@ -227,6 +227,9 @@ class Spectrum(object):
         centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
         return centers_kev
 
+    def __len__(self):
+        return len(self.data)
+
     def __add__(self, other):
         return self._add_sub(other, sub=False)
 

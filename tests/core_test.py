@@ -443,3 +443,16 @@ def test_downsample_error(cal_spec):
 
     with pytest.raises(bq.SpectrumError):
         cal_spec.downsample(0.5)
+
+
+# ----------------------------------------------
+#         Test Spectrum.__len__
+# ----------------------------------------------
+
+@pytest.mark.parametrize("length", [1, 8, 256, 16384])
+def test_len(length):
+    """Test len(spectrum)"""
+
+    floatdata = np.random.poisson(lam=TEST_COUNTS, size=length)
+    spec = bq.Spectrum(floatdata.astype(int))
+    assert len(spec) == length
