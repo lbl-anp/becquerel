@@ -384,8 +384,62 @@ def test_combine_bins_padding(uncal_spec):
 # ----------------------------------------------
 
 def test_bin_widths(cal_spec):
-    """Test bin_widths"""
+    """Test Spectrum.bin_widths"""
 
     cal_spec.bin_widths
     assert len(cal_spec.bin_widths) == len(cal_spec.data)
     assert np.allclose(cal_spec.bin_widths, TEST_GAIN)
+
+
+# ----------------------------------------------
+#         Test Spectrum.downsample
+# ----------------------------------------------
+
+@pytest.fixture
+def many_counts_data():
+    floatdata = np.random.poisson(lam=1000, size=TEST_DATA_LENGTH)
+    return floatdata.astype(int)
+
+
+@pytest.mark.parametrize('spec, f', [
+    (uncal_spec(many_counts_data()), 2),
+    (cal_spec(many_counts_data()), 2),
+    (uncal_spec(many_counts_data()), 1.5),
+    (cal_spec(many_counts_data()), 1.5),
+    (uncal_spec(many_counts_data()), 999.99),
+    (cal_spec(many_counts_data()), 999.99)
+])
+def test_downsample(spec, f):
+    """Test Spectrum.downsample on uncalibrated and calibrated spectra"""
+
+    s1 = np.sum(spec.data_vals)
+    spec2 = spec.downsample(f)
+    s2 = np.sum(spec2.data_vals)
+    r = float(s2) / s1
+    five_sigma = 5 * np.sqrt(s1 / f) / (s1 / f)
+
+    assert np.isclose(r, 1.0 / f, atol=five_sigma)
+
+
+def test_no_downsample(cal_spec):
+    """Test that downsample(1) doesn't do anything"""
+
+    s1 = np.sum(cal_spec.data_vals)
+    spec2 = cal_spec.downsample(1.0)
+    s2 = np.sum(spec2.data_vals)
+    assert s1 == s2
+
+
+def test_zero_downsample(cal_spec):
+    """Test that downsample(very large number) gives 0"""
+
+    spec2 = cal_spec.downsample(10**10)
+    s2 = np.sum(spec2.data_vals)
+    assert s2 == 0
+
+
+def test_downsample_error(cal_spec):
+    """Test that downsample(<1) raises SpectrumError"""
+
+    with pytest.raises(bq.SpectrumError):
+        cal_spec.downsample(0.5)

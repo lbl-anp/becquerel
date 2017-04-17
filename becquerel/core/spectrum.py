@@ -320,6 +320,29 @@ class Spectrum(object):
 
         return self - norm_other
 
+    def downsample(self, f):
+        """Downsample counts and create a new spectrum.
+
+        Args:
+          f: factor by which to downsample. Must be greater than 1.
+
+        Raises:
+          SpectrumError: if f < 1
+
+        Returns:
+          a new Spectrum instance, downsampled from this spectrum
+        """
+
+        if f < 1:
+            raise SpectrumError('Cannot upsample a spectrum; f must be > 1')
+
+        old_data = self.data_vals.astype(int)
+        new_data = np.zeros_like(old_data)
+        for i in xrange(len(old_data)):
+            new_data[i] = np.sum(np.random.random(size=old_data[i]) < 1. / f)
+
+        return Spectrum(new_data, bin_edges_kev=self.bin_edges_kev)
+
     def apply_calibration(self, cal):
         """Use an EnergyCal to generate bin edge energies for this spectrum.
 
