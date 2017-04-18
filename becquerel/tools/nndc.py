@@ -61,6 +61,12 @@ class NNDCError(Exception):
     pass
 
 
+class NoDataFound(NNDCError):
+    """No datasets were found within the specified search."""
+
+    pass
+
+
 def _parse_float_uncertainty(x, dx):
     """Parse a string and its uncertainty.
 
@@ -186,7 +192,7 @@ class NNDCQuery(object):
                 'No datasets were found within the specified search',
         ]:
             if msg in req.text:
-                raise NNDCError(msg)
+                raise NoDataFound(msg)
         return req.text
 
     @staticmethod
