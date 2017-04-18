@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import os
+from copy import deepcopy
 import numpy as np
 from uncertainties import UFloat, unumpy
 import becquerel.parsers as parsers
@@ -226,6 +227,15 @@ class Spectrum(object):
         edges_kev = np.array(edges_kev)
         centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
         return centers_kev
+
+    def copy(self):
+        """Make a deep copy of this Spectrum object.
+
+        Returns:
+          a Spectrum object identical to this one
+        """
+
+        return deepcopy(self)
 
     def __len__(self):
         return len(self.data)

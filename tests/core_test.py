@@ -456,3 +456,31 @@ def test_len(length):
     floatdata = np.random.poisson(lam=TEST_COUNTS, size=length)
     spec = bq.Spectrum(floatdata.astype(int))
     assert len(spec) == length
+
+
+# ----------------------------------------------
+#         Test Spectrum.copy
+# ----------------------------------------------
+
+def test_copy_uncal(uncal_spec):
+    """Test copy method on uncal spectrum"""
+
+    uncal2 = uncal_spec.copy()
+    assert np.all(uncal2.data_vals == uncal_spec.data_vals)
+    assert np.all(uncal2.data_uncs == uncal_spec.data_uncs)
+    assert uncal2 is not uncal_spec
+    assert uncal2.data is not uncal_spec.data
+    assert uncal2.data[0] is not uncal_spec.data[0]
+
+
+def test_copy_cal(cal_spec):
+    """Test copy method on cal spectrum"""
+
+    cal2 = cal_spec.copy()
+    assert np.all(cal2.data_vals == cal_spec.data_vals)
+    assert np.all(cal2.data_uncs == cal_spec.data_uncs)
+    assert np.all(cal2.bin_edges_kev == cal_spec.bin_edges_kev)
+    assert cal2 is not cal_spec
+    assert cal2.data is not cal_spec.data
+    assert cal2.data[0] is not cal_spec.data[0]
+    assert cal2.bin_edges_kev is not cal_spec.bin_edges_kev
