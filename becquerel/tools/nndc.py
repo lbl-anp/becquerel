@@ -523,10 +523,14 @@ class NuclearWalletCardQuery(NNDCQuery):
 
     def __init__(self, **kwargs):
         """Initialize NNDC Nuclear Wallet Card search."""
+        perform = kwargs.get('perform', True)
+        kwargs['perform'] = False
         super(NuclearWalletCardQuery, self).__init__(**kwargs)
         self._url = NuclearWalletCardQuery._URL
         self._data.update(NuclearWalletCardQuery._DATA)
-        if kwargs.get('perform', True):
+        super(NuclearWalletCardQuery, self).update(**kwargs)
+        self.update(**kwargs)
+        if perform:
             self.perform()
 
     _ALLOWED_KEYWORDS = NNDCQuery._ALLOWED_KEYWORDS
@@ -604,10 +608,14 @@ class DecayRadiationQuery(NNDCQuery):
 
     def __init__(self, **kwargs):
         """Initialize NNDC Decay Radiation search."""
+        perform = kwargs.get('perform', True)
+        kwargs['perform'] = False
         super(DecayRadiationQuery, self).__init__(**kwargs)
         self._url = DecayRadiationQuery._URL
         self._data.update(DecayRadiationQuery._DATA)
-        if kwargs.get('perform', True):
+        super(DecayRadiationQuery, self).update(**kwargs)
+        self.update(**kwargs)
+        if perform:
             self.perform()
 
     _ALLOWED_KEYWORDS = NNDCQuery._ALLOWED_KEYWORDS
