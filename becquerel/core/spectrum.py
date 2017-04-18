@@ -32,9 +32,9 @@ class Spectrum(object):
       livetime: int or float of livetime, in seconds
 
     Properties:
-      data: (read-only) np.array of UFloat objects, of counts in each channel
-      data_vals: (read-only) np.array of floats of counts
-      data_uncs: (read-only) np.array of uncertainties for each bin
+      counts: (read-only) np.array of UFloat objects, of counts in each channel
+      counts_vals: (read-only) np.array of floats of counts
+      counts_uncs: (read-only) np.array of uncertainties for each bin
       channels: (read-only) np.array of channel index as integers
       is_calibrated: (read-only) bool
       energies_kev: (read-only) np.array of energy bin centers, if calibrated
@@ -43,22 +43,22 @@ class Spectrum(object):
     Methods:
       apply_calibration: use an EnergyCal object to calibrate this spectrum
       norm_subtract: livetime-normalize and subtract another Spectrum object
-      combine_bins: make a new Spectrum with data combined into bigger bins.
+      combine_bins: make a new Spectrum with counts combined into bigger bins.
     """
 
-    def __init__(self, data, uncs=None, bin_edges_kev=None,
+    def __init__(self, counts, uncs=None, bin_edges_kev=None,
                  input_file_object=None, livetime=None):
         """Initialize the spectrum.
 
         Args:
-          data: an iterable of counts per channel. may be a np.array of UFloats
+          counts: counts per channel. array-like of ints, floats or UFloats
           uncs (optional): an iterable of uncertainty on the counts for each
             channel.
-            If data is NOT an uncertainties.UFloat type, and uncs is not given,
+            If counts is NOT a UFloat type, and uncs is not given,
             the uncertainties are assumed to be sqrt(N), with a minimum
             uncertainty of 1 (e.g. for 0 counts).
           bin_edges_kev (optional): an iterable of bin edge energies
-            If not none, should have length of (len(data) + 1)
+            If not none, should have length of (len(counts) + 1)
           input_file_object (optional): a parser file object
           livetime (optional): the livetime of the spectrum [s]
 
@@ -66,26 +66,26 @@ class Spectrum(object):
           SpectrumError: for bad input arguments
         """
 
-        if len(data) == 0:
-            raise SpectrumError('Empty spectrum data')
-        are_ufloats = [isinstance(d, UFloat) for d in data]
+        if len(counts) == 0:
+            raise SpectrumError('Empty spectrum counts')
+        are_ufloats = [isinstance(c, UFloat) for c in counts]
         if all(are_ufloats):
             if uncs is None:
-                self._data = np.array(data)
+                self._counts = np.array(counts)
             else:
                 raise SpectrumError('Specify uncertainties via uncs arg ' +
                                     'or via UFloats, but not both')
         elif any(are_ufloats):
             raise SpectrumError(
-                'Spectrum data should be all UFloats or no UFloats')
+                'Spectrum counts should be all UFloats or no UFloats')
         else:
             if uncs is None:
-                uncs = np.maximum(np.sqrt(data), 1)
-            self._data = unumpy.uarray(data, uncs)
+                uncs = np.maximum(np.sqrt(counts), 1)
+            self._counts = unumpy.uarray(counts, uncs)
 
         if bin_edges_kev is None:
             self.bin_edges_kev = None
-        elif len(bin_edges_kev) != len(data) + 1:
+        elif len(bin_edges_kev) != len(counts) + 1:
             raise SpectrumError('Bad length of bin edges vector')
         elif np.any(np.diff(bin_edges_kev) <= 0):
             raise SpectrumError(
@@ -103,51 +103,51 @@ class Spectrum(object):
             # TODO what if livetime and input_file_object are both specified?
 
     @property
-    def data(self):
+    def counts(self):
         """Counts in each channel, with uncertainty.
 
         Returns:
           an np.ndarray of uncertainties.ufloats
         """
 
-        return self._data
+        return self._counts
 
     @property
-    def data_vals(self):
+    def counts_vals(self):
         """Counts in each channel, no uncertainties.
 
         Returns:
           an np.ndarray of floats
         """
 
-        return unumpy.nominal_values(self._data)
+        return unumpy.nominal_values(self._counts)
 
     @property
-    def data_uncs(self):
+    def counts_uncs(self):
         """Uncertainties in each channel.
 
         Returns:
           an np.ndarray of floats
         """
 
-        return unumpy.std_devs(self._data)
+        return unumpy.std_devs(self._counts)
 
     @property
     def channels(self):
         """Channel index.
 
         Returns:
-          np.array of int's from 0 to (len(self.data) - 1)
+          np.array of int's from 0 to (len(self.counts) - 1)
         """
 
-        return np.arange(len(self.data), dtype=int)
+        return np.arange(len(self.counts), dtype=int)
 
     @property
     def energies_kev(self):
         """Convenience function for accessing the energies of bin centers.
 
         Returns:
-          np.array of floats, same length as self.data
+          np.array of floats, same length as self.counts
 
         Raises:
           UncalibratedError: if spectrum is not calibrated
@@ -163,7 +163,7 @@ class Spectrum(object):
         """The width of each bin, in keV.
 
         Returns:
-          np.array of floats, same length as self.data
+          np.array of floats, same length as self.counts
 
         Raises:
           UncalibratedError: if spectrum is not calibrated
@@ -238,7 +238,7 @@ class Spectrum(object):
         return deepcopy(self)
 
     def __len__(self):
-        return len(self.data)
+        return len(self.counts)
 
     def __add__(self, other):
         return self._add_sub(other, sub=False)
@@ -261,7 +261,7 @@ class Spectrum(object):
         if not isinstance(other, Spectrum):
             raise TypeError(
                 'Spectrum addition/subtraction must involve a Spectrum object')
-        if len(self.data) != len(other.data):
+        if len(self.counts) != len(other.counts):
             raise SpectrumError(
                 'Cannot add/subtract spectra of different lengths')
 
@@ -269,10 +269,10 @@ class Spectrum(object):
         #   should one be rebinned to match energy bins?
         if not self.is_calibrated and not other.is_calibrated:
             if sub:
-                data = self.data - other.data
+                counts = self.counts - other.counts
             else:
-                data = self.data + other.data
-            spect_obj = Spectrum(data)
+                counts = self.counts + other.counts
+            spect_obj = Spectrum(counts)
         else:
             raise NotImplementedError(
                 'Addition/subtraction for calibrated spectra not implemented')
@@ -302,8 +302,8 @@ class Spectrum(object):
             multiplier = 1 / scaling_factor
         else:
             multiplier = scaling_factor
-        data = self.data * multiplier
-        spect_obj = Spectrum(data, bin_edges_kev=self.bin_edges_kev)
+        counts = self.counts * multiplier
+        spect_obj = Spectrum(counts, bin_edges_kev=self.bin_edges_kev)
         return spect_obj
 
     def norm_subtract(self, other):
@@ -319,13 +319,13 @@ class Spectrum(object):
           SpectrumError: if the spectra are different lengths
 
         Returns:
-          a new Spectrum with the normalized and subtracted data
+          a new Spectrum with the normalized and subtracted counts
         """
 
         if not isinstance(other, Spectrum):
             raise TypeError(
                 'Spectrum addition/subtraction must involve a Spectrum object')
-        if len(self.data) != len(other.data):
+        if len(self.counts) != len(other.counts):
             raise SpectrumError(
                 'Cannot add/subtract spectra of different lengths')
 
@@ -350,10 +350,10 @@ class Spectrum(object):
             raise SpectrumError('Cannot upsample a spectrum; f must be > 1')
 
         # TODO handle uncertainty?
-        old_data = self.data_vals.astype(int)
-        new_data = np.random.binomial(old_data, 1. / f)
+        old_counts = self.counts_vals.astype(int)
+        new_counts = np.random.binomial(old_counts, 1. / f)
 
-        return Spectrum(new_data, bin_edges_kev=self.bin_edges_kev)
+        return Spectrum(new_counts, bin_edges_kev=self.bin_edges_kev)
 
     def apply_calibration(self, cal):
         """Use an EnergyCal to generate bin edge energies for this spectrum.
@@ -387,30 +387,30 @@ class Spectrum(object):
         self.bin_edges_kev = None
 
     def combine_bins(self, f):
-        """Make a new Spectrum with data combined into bigger bins.
+        """Make a new Spectrum with counts combined into bigger bins.
 
-        If f is not a factor of the number of channels, the data from the first
-        spectrum will be padded with zeros.
+        If f is not a factor of the number of channels, the counts from the
+        first spectrum will be padded with zeros.
 
-        len(new.data) == np.ceil(float(len(self.data)) / f)
+        len(new.counts) == np.ceil(float(len(self.counts)) / f)
 
         Args:
           f: an int representing the number of bins to combine into one
 
         Returns:
-          a Spectrum object with data from this spectrum, but with
+          a Spectrum object with counts from this spectrum, but with
             fewer bins
         """
 
         f = int(f)
-        if len(self.data) % f == 0:
-            padded_data = np.copy(self.data)
+        if len(self.counts) % f == 0:
+            padded_counts = np.copy(self.counts)
         else:
-            pad_len = f - len(self.data) % f
-            pad_data = unumpy.uarray(np.zeros(pad_len), np.zeros(pad_len))
-            padded_data = np.concatenate((self.data, pad_data))
-        padded_data.resize(len(padded_data) / f, f)
-        combined_data = np.sum(padded_data, axis=1)
+            pad_len = f - len(self.counts) % f
+            pad_counts = unumpy.uarray(np.zeros(pad_len), np.zeros(pad_len))
+            padded_counts = np.concatenate((self.counts, pad_counts))
+        padded_counts.resize(len(padded_counts) / f, f)
+        combined_counts = np.sum(padded_counts, axis=1)
         if self.is_calibrated:
             combined_bin_edges = self.bin_edges_kev[::f]
             if combined_bin_edges[-1] != self.bin_edges_kev[-1]:
@@ -419,7 +419,7 @@ class Spectrum(object):
         else:
             combined_bin_edges = None
 
-        obj = Spectrum(combined_data, bin_edges_kev=combined_bin_edges,
+        obj = Spectrum(combined_counts, bin_edges_kev=combined_bin_edges,
                        input_file_object=self._infileobject,
                        livetime=self.livetime)
         return obj

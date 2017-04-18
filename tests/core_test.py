@@ -90,13 +90,13 @@ class TestSpectrumConstructor(object):
     def test_uncal(self, uncal_spec):
         """Test simple uncalibrated construction."""
 
-        assert len(uncal_spec.data) == TEST_DATA_LENGTH
+        assert len(uncal_spec.counts) == TEST_DATA_LENGTH
         assert not uncal_spec.is_calibrated
 
     def test_cal(self, cal_spec):
         """Test simple calibrated construction."""
 
-        assert len(cal_spec.data) == TEST_DATA_LENGTH
+        assert len(cal_spec.counts) == TEST_DATA_LENGTH
         assert len(cal_spec.bin_edges_kev) == TEST_DATA_LENGTH + 1
         assert len(cal_spec.energies_kev) == TEST_DATA_LENGTH
         assert cal_spec.is_calibrated
@@ -139,58 +139,58 @@ class TestUncertainties(object):
         """Construct spectrum with non-UFloats (float and int)."""
 
         spec = bq.Spectrum(spec_data)
-        assert isinstance(spec.data[0], UFloat)
+        assert isinstance(spec.counts[0], UFloat)
         spec = bq.Spectrum(spec_data.astype(float))
-        assert isinstance(spec.data[0], UFloat)
+        assert isinstance(spec.counts[0], UFloat)
 
     def test_construct_ufloat(self, spec_data):
         """Construct spectrum with UFloats"""
 
-        udata = unumpy.uarray(spec_data, np.ones_like(spec_data))
-        spec = bq.Spectrum(udata)
-        assert isinstance(spec.data[0], UFloat)
-        assert spec.data[0].std_dev == 1
+        ucounts = unumpy.uarray(spec_data, np.ones_like(spec_data))
+        spec = bq.Spectrum(ucounts)
+        assert isinstance(spec.counts[0], UFloat)
+        assert spec.counts[0].std_dev == 1
 
     def test_construct_float_int_uncs(self, spec_data):
         """Construct spectrum with non-UFloats and specify uncs."""
 
         uncs = np.ones_like(spec_data)
         spec = bq.Spectrum(spec_data, uncs=uncs)
-        assert isinstance(spec.data[0], UFloat)
-        uncs2 = np.array([c.std_dev for c in spec.data])
+        assert isinstance(spec.counts[0], UFloat)
+        uncs2 = np.array([c.std_dev for c in spec.counts])
         assert np.allclose(uncs2, 1)
 
     def test_construct_errors(self, spec_data):
         """Construct spectrum with UFloats plus uncs and get an error."""
 
         uncs = np.ones_like(spec_data)
-        udata = unumpy.uarray(spec_data, uncs)
+        ucounts = unumpy.uarray(spec_data, uncs)
         with pytest.raises(bq.SpectrumError):
-            bq.Spectrum(udata, uncs=uncs)
+            bq.Spectrum(ucounts, uncs=uncs)
 
-        udata[0] = 1
+        ucounts[0] = 1
         with pytest.raises(bq.SpectrumError):
-            bq.Spectrum(udata)
+            bq.Spectrum(ucounts)
 
     def test_properties(self, spec_data):
-        """Test data_vals and data_uncs."""
+        """Test counts_vals and counts_uncs."""
 
         spec = bq.Spectrum(spec_data)
-        assert isinstance(spec.data[0], UFloat)
-        assert np.allclose(spec.data_vals, spec_data)
+        assert isinstance(spec.counts[0], UFloat)
+        assert np.allclose(spec.counts_vals, spec_data)
         expected_uncs = np.sqrt(spec_data)
         expected_uncs[expected_uncs == 0] = 1
-        assert np.allclose(spec.data_uncs, expected_uncs)
+        assert np.allclose(spec.counts_uncs, expected_uncs)
 
         uncs = spec_data
-        udata = unumpy.uarray(spec_data, uncs)
-        spec = bq.Spectrum(udata)
-        assert np.allclose(spec.data_vals, spec_data)
-        assert np.allclose(spec.data_uncs, uncs)
+        ucounts = unumpy.uarray(spec_data, uncs)
+        spec = bq.Spectrum(ucounts)
+        assert np.allclose(spec.counts_vals, spec_data)
+        assert np.allclose(spec.counts_uncs, uncs)
 
         uncs = np.ones_like(spec_data)
         spec = bq.Spectrum(spec_data, uncs=uncs)
-        assert np.allclose(spec.data_uncs, uncs)
+        assert np.allclose(spec.counts_uncs, uncs)
 
 
 class TestSpectrumAddSubtract(object):
@@ -200,18 +200,16 @@ class TestSpectrumAddSubtract(object):
         """Test basic addition/subtraction of uncalibrated spectra"""
 
         tot = uncal_spec + uncal_spec_2
-        uncs = np.sqrt(uncal_spec.data_uncs**2 + uncal_spec_2.data_uncs**2)
-        assert np.all(
-            tot.data == uncal_spec.data + uncal_spec_2.data)
-        assert np.all(
-            tot.data_vals == uncal_spec.data_vals + uncal_spec_2.data_vals)
-        assert np.allclose(tot.data_uncs, uncs)
+        uncs = np.sqrt(uncal_spec.counts_uncs**2 + uncal_spec_2.counts_uncs**2)
+        assert np.all(tot.counts == uncal_spec.counts + uncal_spec_2.counts)
+        assert np.all(tot.counts_vals ==
+                      uncal_spec.counts_vals + uncal_spec_2.counts_vals)
+        assert np.allclose(tot.counts_uncs, uncs)
         diff = uncal_spec - uncal_spec_2
-        assert np.all(
-            diff.data == uncal_spec.data - uncal_spec_2.data)
-        assert np.all(
-            diff.data_vals == uncal_spec.data_vals - uncal_spec_2.data_vals)
-        assert np.allclose(tot.data_uncs, uncs)
+        assert np.all(diff.counts == uncal_spec.counts - uncal_spec_2.counts)
+        assert np.all(diff.counts_vals ==
+                      uncal_spec.counts_vals - uncal_spec_2.counts_vals)
+        assert np.allclose(tot.counts_uncs, uncs)
 
     def test_cal_uncal_add_sub(self, uncal_spec, cal_spec):
         """Test basic addition of a calibrated with an uncalibrated spectrum.
@@ -270,8 +268,8 @@ class TestSpectrumAddSubtract(object):
         uncal_spec_2.livetime = livetime2
         spec3 = uncal_spec.norm_subtract(uncal_spec_2)
         np.testing.assert_allclose(
-            spec3.data_vals, uncal_spec.data_vals -
-            (livetime1 / livetime2) * uncal_spec_2.data_vals)
+            spec3.counts_vals, uncal_spec.counts_vals -
+            (livetime1 / livetime2) * uncal_spec_2.counts_vals)
 
 
 class TestSpectrumMultiplyDivide(object):
@@ -283,29 +281,29 @@ class TestSpectrumMultiplyDivide(object):
         """
 
         doubled = uncal_spec * 2
-        assert np.all(doubled.data == 2 * uncal_spec.data)
-        assert np.all(doubled.data_vals == 2 * uncal_spec.data_vals)
-        assert np.all(doubled.data_uncs == 2 * uncal_spec.data_uncs)
+        assert np.all(doubled.counts == 2 * uncal_spec.counts)
+        assert np.all(doubled.counts_vals == 2 * uncal_spec.counts_vals)
+        assert np.all(doubled.counts_uncs == 2 * uncal_spec.counts_uncs)
         halved = uncal_spec / 2
-        assert np.all(halved.data == uncal_spec.data / 2.0)
-        assert np.allclose(halved.data_vals, uncal_spec.data_vals / 2.0)
-        assert np.allclose(halved.data_uncs, uncal_spec.data_uncs / 2.0)
+        assert np.all(halved.counts == uncal_spec.counts / 2.0)
+        assert np.allclose(halved.counts_vals, uncal_spec.counts_vals / 2.0)
+        assert np.allclose(halved.counts_uncs, uncal_spec.counts_uncs / 2.0)
 
     def test_cal_mul_div(self, cal_spec):
         """Basic multiplication/division of calibrated spectrum by a scalar."""
 
         doubled = cal_spec * 2
-        assert np.all(doubled.data == 2 * cal_spec.data)
-        assert np.all(doubled.data_vals == 2 * cal_spec.data_vals)
-        assert np.all(doubled.data_uncs == 2 * cal_spec.data_uncs)
+        assert np.all(doubled.counts == 2 * cal_spec.counts)
+        assert np.all(doubled.counts_vals == 2 * cal_spec.counts_vals)
+        assert np.all(doubled.counts_uncs == 2 * cal_spec.counts_uncs)
         halved = cal_spec / 2
-        assert np.all(halved.data == cal_spec.data / 2.0)
-        assert np.allclose(halved.data_vals, cal_spec.data_vals / 2.0)
-        assert np.allclose(halved.data_uncs, cal_spec.data_uncs / 2.0)
+        assert np.all(halved.counts == cal_spec.counts / 2.0)
+        assert np.allclose(halved.counts_vals, cal_spec.counts_vals / 2.0)
+        assert np.allclose(halved.counts_uncs, cal_spec.counts_uncs / 2.0)
         halved_again = cal_spec * 0.5
-        assert np.all(halved_again.data == cal_spec.data * 0.5)
-        assert np.allclose(halved.data_vals, cal_spec.data_vals * 0.5)
-        assert np.allclose(halved.data_uncs, cal_spec.data_uncs * 0.5)
+        assert np.all(halved_again.counts == cal_spec.counts * 0.5)
+        assert np.allclose(halved.counts_vals, cal_spec.counts_vals * 0.5)
+        assert np.allclose(halved.counts_uncs, cal_spec.counts_uncs * 0.5)
 
     def test_uncal_mul_div_uncertainties(self, uncal_spec):
         """
@@ -314,11 +312,11 @@ class TestSpectrumMultiplyDivide(object):
 
         factor = ufloat(2, 0.1)
         doubled = uncal_spec * factor
-        assert np.all(doubled.data_vals == 2 * uncal_spec.data_vals)
-        assert np.all(doubled.data_uncs >= 2 * uncal_spec.data_uncs)
+        assert np.all(doubled.counts_vals == 2 * uncal_spec.counts_vals)
+        assert np.all(doubled.counts_uncs >= 2 * uncal_spec.counts_uncs)
         halved = uncal_spec / factor
-        assert np.allclose(halved.data_vals, uncal_spec.data_vals / 2.0)
-        assert np.all(halved.data_uncs >= uncal_spec.data_uncs / 2.0)
+        assert np.allclose(halved.counts_vals, uncal_spec.counts_vals / 2.0)
+        assert np.all(halved.counts_uncs >= uncal_spec.counts_uncs / 2.0)
 
     def test_mul_div_type_error(self, uncal_spec, spec_data):
         """Multiplication/division with a non-scalar gives a TypeError."""
@@ -362,9 +360,9 @@ def test_combine_bins(uncal_spec):
 
     f = 8
     combined = uncal_spec.combine_bins(f)
-    assert len(combined.data) == TEST_DATA_LENGTH / f
-    assert combined.data_vals[0] == np.sum(uncal_spec.data_vals[:f])
-    assert np.sum(combined.data_vals) == np.sum(uncal_spec.data_vals)
+    assert len(combined.counts) == TEST_DATA_LENGTH / f
+    assert combined.counts_vals[0] == np.sum(uncal_spec.counts_vals[:f])
+    assert np.sum(combined.counts_vals) == np.sum(uncal_spec.counts_vals)
 
 
 def test_combine_bins_padding(uncal_spec):
@@ -372,9 +370,9 @@ def test_combine_bins_padding(uncal_spec):
 
     f = 10
     combined = uncal_spec.combine_bins(f)
-    assert len(combined.data) == np.ceil(float(TEST_DATA_LENGTH) / f)
-    assert combined.data_vals[0] == np.sum(uncal_spec.data_vals[:f])
-    assert np.sum(combined.data_vals) == np.sum(uncal_spec.data_vals)
+    assert len(combined.counts) == np.ceil(float(TEST_DATA_LENGTH) / f)
+    assert combined.counts_vals[0] == np.sum(uncal_spec.counts_vals[:f])
+    assert np.sum(combined.counts_vals) == np.sum(uncal_spec.counts_vals)
 
 
 # calibration methods tested in energycal_test.py
@@ -387,7 +385,7 @@ def test_bin_widths(cal_spec):
     """Test Spectrum.bin_widths"""
 
     cal_spec.bin_widths
-    assert len(cal_spec.bin_widths) == len(cal_spec.data)
+    assert len(cal_spec.bin_widths) == len(cal_spec.counts)
     assert np.allclose(cal_spec.bin_widths, TEST_GAIN)
 
 
@@ -412,9 +410,9 @@ def many_counts_data():
 def test_downsample(spec, f):
     """Test Spectrum.downsample on uncalibrated and calibrated spectra"""
 
-    s1 = np.sum(spec.data_vals)
+    s1 = np.sum(spec.counts_vals)
     spec2 = spec.downsample(f)
-    s2 = np.sum(spec2.data_vals)
+    s2 = np.sum(spec2.counts_vals)
     r = float(s2) / s1
     five_sigma = 5 * np.sqrt(s1 / f) / (s1 / f)
 
@@ -424,9 +422,9 @@ def test_downsample(spec, f):
 def test_no_downsample(cal_spec):
     """Test that downsample(1) doesn't do anything"""
 
-    s1 = np.sum(cal_spec.data_vals)
+    s1 = np.sum(cal_spec.counts_vals)
     spec2 = cal_spec.downsample(1.0)
-    s2 = np.sum(spec2.data_vals)
+    s2 = np.sum(spec2.counts_vals)
     assert s1 == s2
 
 
@@ -434,7 +432,7 @@ def test_zero_downsample(cal_spec):
     """Test that downsample(very large number) gives 0"""
 
     spec2 = cal_spec.downsample(10**10)
-    s2 = np.sum(spec2.data_vals)
+    s2 = np.sum(spec2.counts_vals)
     assert s2 == 0
 
 
@@ -466,21 +464,21 @@ def test_copy_uncal(uncal_spec):
     """Test copy method on uncal spectrum"""
 
     uncal2 = uncal_spec.copy()
-    assert np.all(uncal2.data_vals == uncal_spec.data_vals)
-    assert np.all(uncal2.data_uncs == uncal_spec.data_uncs)
+    assert np.all(uncal2.counts_vals == uncal_spec.counts_vals)
+    assert np.all(uncal2.counts_uncs == uncal_spec.counts_uncs)
     assert uncal2 is not uncal_spec
-    assert uncal2.data is not uncal_spec.data
-    assert uncal2.data[0] is not uncal_spec.data[0]
+    assert uncal2.counts is not uncal_spec.counts
+    assert uncal2.counts[0] is not uncal_spec.counts[0]
 
 
 def test_copy_cal(cal_spec):
     """Test copy method on cal spectrum"""
 
     cal2 = cal_spec.copy()
-    assert np.all(cal2.data_vals == cal_spec.data_vals)
-    assert np.all(cal2.data_uncs == cal_spec.data_uncs)
+    assert np.all(cal2.counts_vals == cal_spec.counts_vals)
+    assert np.all(cal2.counts_uncs == cal_spec.counts_uncs)
     assert np.all(cal2.bin_edges_kev == cal_spec.bin_edges_kev)
     assert cal2 is not cal_spec
-    assert cal2.data is not cal_spec.data
-    assert cal2.data[0] is not cal_spec.data[0]
+    assert cal2.counts is not cal_spec.counts
+    assert cal2.counts[0] is not cal_spec.counts[0]
     assert cal2.bin_edges_kev is not cal_spec.bin_edges_kev
