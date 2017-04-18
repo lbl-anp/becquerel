@@ -339,10 +339,9 @@ class Spectrum(object):
         if f < 1:
             raise SpectrumError('Cannot upsample a spectrum; f must be > 1')
 
+        # TODO handle uncertainty?
         old_data = self.data_vals.astype(int)
-        new_data = np.zeros_like(old_data)
-        for i in xrange(len(old_data)):
-            new_data[i] = np.sum(np.random.random(size=old_data[i]) < 1. / f)
+        new_data = np.random.binomial(old_data, 1. / f)
 
         return Spectrum(new_data, bin_edges_kev=self.bin_edges_kev)
 
