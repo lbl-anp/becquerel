@@ -9,7 +9,6 @@ References:
 
 from __future__ import print_function
 import requests
-import numpy as np
 import pandas as pd
 import uncertainties
 
@@ -97,7 +96,7 @@ def _parse_float_uncertainty(x, dx):
     return uncertainties.ufloat(x2, dx2)
 
 
-class NNDCQuery(object):
+class _NNDCQuery(object):
     """National Nuclear Data Center database query base class.
 
     Search criteria keywords:
@@ -146,40 +145,40 @@ class NNDCQuery(object):
 
     def __init__(self, **kwargs):
         """Initialize query of NNDC data."""
-        self._url = NNDCQuery._URL
-        self._data = dict(NNDCQuery._DATA)
+        self._url = _NNDCQuery._URL
+        self._data = dict(_NNDCQuery._DATA)
         self._text = None
-        self._df = None
+        self.df = None
         self.update(**kwargs)
 
     def __len__(self):
         """Length of any one of the data lists."""
-        if self._df is None:
+        if self.df is None:
             return 0
-        elif len(self._df.keys()) == 0:
+        elif len(self.df.keys()) == 0:
             return 0
         else:
-            return len(self._df[self._df.keys()[0]])
+            return len(self.df[self.df.keys()[0]])
 
     def keys(self):
         """Return the data keys."""
-        return self._df.keys()
+        return self.df.keys()
 
     def __getitem__(self, key):
         """Return the list given by the key."""
-        return self._df[key]
+        return self.df[key]
 
     def __setitem__(self, key, value):
         """Set the list given by the key."""
-        self._df[key] = value
+        self.df[key] = value
 
     def __str__(self):
         """Use str method for DataFrame."""
-        return str(self._df)
+        return str(self.df)
 
     def __format__(self, formatstr):
         """Use format method for DataFrame."""
-        return self._df.__format__(formatstr)
+        return self.df.__format__(formatstr)
 
     @staticmethod
     def _request(url, data):
@@ -256,7 +255,7 @@ class NNDCQuery(object):
                 continue
             if headers is None:
                 headers = tokens
-                headers = NNDCQuery._parse_headers(headers)
+                headers = _NNDCQuery._parse_headers(headers)
                 for header in headers:
                     table[header] = []
             else:
@@ -281,7 +280,7 @@ class NNDCQuery(object):
     def update(self, **kwargs):
         """Update the search criteria."""
         for kwarg in kwargs:
-            if kwarg not in NNDCQuery._ALLOWED_KEYWORDS:
+            if kwarg not in _NNDCQuery._ALLOWED_KEYWORDS:
                 raise NNDCError('Unknown keyword: "{}"'.format(kwarg))
         if 'nuc' in kwargs:
             self._data['spnuc'] = 'name'
@@ -333,13 +332,13 @@ class NNDCQuery(object):
         if self._data['spnuc'] == '':
             raise Exception('Parent nucleus conditions must be set')
         # submit the query
-        self._text = NNDCQuery._request(self._url, self._data)
+        self._text = _NNDCQuery._request(self._url, self._data)
         if len(self._text) == 0:
             raise NNDCError('NNDC returned no text')
         # package the output into a dictionary of arrays
-        data = NNDCQuery._parse_table(self._text)
+        data = _NNDCQuery._parse_table(self._text)
         # create the DataFrame
-        self._df = pd.DataFrame(data)
+        self.df = pd.DataFrame(data)
         if len(self) == 0:
             raise NNDCError('Parsed DataFrame is empty')
         # convert dimensionless integers to ints
@@ -355,12 +354,12 @@ class NNDCQuery(object):
 
     def _add_columns_energy_levels(self):
         """Add nuclear energy level 'M' and 'm' columns using energy levels."""
-        if 'Energy Level (MeV)' not in self._df:
+        if 'Energy Level (MeV)' not in self.df:
             return
         # add column of integer M giving the isomer level (0, 1, 2, ...)
-        self._df['M'] = [0] * len(self)
+        self.df['M'] = [0] * len(self)
         # add string m giving the isomer level name (e.g., '' or 'm' or 'm2')
-        self._df['m'] = [''] * len(self)
+        self.df['m'] = [''] * len(self)
         # loop over each isotope in the dataframe
         A_Z = [(a, z) for a, z in zip(self['A'], self['Z'])]
         A_Z = set(A_Z)
@@ -380,30 +379,30 @@ class NNDCQuery(object):
             for M, e_level in enumerate(e_levels):
                 isomer = isotope & \
                     (abs(self['Energy Level (MeV)'] - e_level) < 1e-10)
-                self._df.loc[isomer, 'M'] = M
+                self.df.loc[isomer, 'M'] = M
                 if M > 0:
                     if len(e_levels) > 2:
-                        self._df.loc[isomer, 'm'] = 'm{}'.format(M)
+                        self.df.loc[isomer, 'm'] = 'm{}'.format(M)
                     else:
-                        self._df.loc[isomer, 'm'] = 'm'
+                        self.df.loc[isomer, 'm'] = 'm'
 
     def _add_units_uncertainties(self):
         """Add units and uncertainties with some columns as applicable."""
         if 'Energy Level' in self.keys():
             self._convert_column('Energy Level', float)
-            self._df.rename(
+            self.df.rename(
                 columns={'Energy Level': 'Energy Level (MeV)'}, inplace=True)
-            self._df['Energy Level (MeV)'] *= 1000.
+            self.df['Energy Level (MeV)'] *= 1000.
 
         if 'Parent Energy Level' in self.keys():
             self._convert_column_uncertainty('Parent Energy Level')
-            self._df.rename(
+            self.df.rename(
                 columns={'Parent Energy Level': 'Parent Energy Level (MeV)'},
                 inplace=True)
 
         if 'Mass Excess' in self.keys():
             self._convert_column_uncertainty('Mass Excess')
-        self._df.rename(
+        self.df.rename(
             columns={'Mass Excess': 'Mass Excess (MeV)'}, inplace=True)
 
         self._convert_column('T1/2 (s)', float)
@@ -418,13 +417,13 @@ class NNDCQuery(object):
 
         if 'Radiation Energy' in self.keys():
             self._convert_column_uncertainty('Radiation Energy')
-            self._df.rename(
+            self.df.rename(
                 columns={'Radiation Energy': 'Radiation Energy (keV)'},
                 inplace=True)
 
         if 'Endpoint Energy' in self.keys():
             self._convert_column_uncertainty('Endpoint Energy')
-            self._df.rename(
+            self.df.rename(
                 columns={'Endpoint Energy': 'Endpoint Energy (keV)'},
                 inplace=True)
 
@@ -433,7 +432,7 @@ class NNDCQuery(object):
 
         if 'Dose' in self.keys():
             self._convert_column_uncertainty('Dose')
-            self._df.rename(
+            self.df.rename(
                 columns={'Dose': 'Dose (MeV / Bq / s)'}, inplace=True)
 
     def _convert_column(self, col, function, null=None):
@@ -446,7 +445,7 @@ class NNDCQuery(object):
                 col_new.append(null)
             else:
                 col_new.append(function(x))
-        self._df[col] = col_new
+        self.df[col] = col_new
 
     def _convert_column_uncertainty(self, col, null=None):
         """Combine column and its uncertainty into one column."""
@@ -461,8 +460,8 @@ class NNDCQuery(object):
             else:
                 x2 = _parse_float_uncertainty(x, dx)
                 col_new.append(x2)
-        self._df[col] = col_new
-        del self._df[col + ' Unc.']
+        self.df[col] = col_new
+        del self.df[col + ' Unc.']
 
     def _sort_columns(self):
         """Sort columns."""
@@ -479,10 +478,10 @@ class NNDCQuery(object):
         for col in self.keys():
             if col not in new_cols:
                 new_cols.append(col)
-        self._df = self._df[new_cols]
+        self.df = self.df[new_cols]
 
 
-class NuclearWalletCardQuery(NNDCQuery):
+class _NuclearWalletCardQuery(_NNDCQuery):
     """NNDC Nuclear Wallet Card data query.
 
     Nuclear Wallet Card Search can be performed at this URL:
@@ -531,22 +530,22 @@ class NuclearWalletCardQuery(NNDCQuery):
         """Initialize NNDC Nuclear Wallet Card search."""
         perform = kwargs.get('perform', True)
         kwargs['perform'] = False
-        super(NuclearWalletCardQuery, self).__init__(**kwargs)
-        self._url = NuclearWalletCardQuery._URL
-        self._data.update(NuclearWalletCardQuery._DATA)
-        super(NuclearWalletCardQuery, self).update(**kwargs)
+        super(_NuclearWalletCardQuery, self).__init__(**kwargs)
+        self._url = _NuclearWalletCardQuery._URL
+        self._data.update(_NuclearWalletCardQuery._DATA)
+        super(_NuclearWalletCardQuery, self).update(**kwargs)
         self.update(**kwargs)
         if perform:
             self.perform()
 
-    _ALLOWED_KEYWORDS = NNDCQuery._ALLOWED_KEYWORDS
+    _ALLOWED_KEYWORDS = _NNDCQuery._ALLOWED_KEYWORDS
     _ALLOWED_KEYWORDS.extend(['decay', 'j', 'parity'])
 
     def update(self, **kwargs):
         """Update the search criteria."""
-        super(NuclearWalletCardQuery, self).update(**kwargs)
+        super(_NuclearWalletCardQuery, self).update(**kwargs)
         for kwarg in kwargs:
-            if kwarg not in NuclearWalletCardQuery._ALLOWED_KEYWORDS:
+            if kwarg not in _NuclearWalletCardQuery._ALLOWED_KEYWORDS:
                 raise NNDCError('Unknown keyword: "{}"'.format(kwarg))
         # handle decay mode
         if 'decay' in kwargs:
@@ -564,7 +563,44 @@ class NuclearWalletCardQuery(NNDCQuery):
             self._data['plv'] = kwargs['parity']
 
 
-class DecayRadiationQuery(NNDCQuery):
+def fetch_wallet_card(**kwargs):
+    """Perform NNDC Nuclear Wallet Card data query and return a DataFrame.
+
+    Nuclear Wallet Card Search can be performed at this URL:
+        http://www.nndc.bnl.gov/nudat2/indx_sigma.jsp
+
+    Help page: http://www.nndc.bnl.gov/nudat2/help/wchelp.jsp
+
+      * Energy: Level energy in MeV.
+      * JPi: Level spin and parity.
+      * Mass Exc: Level Mass Excess in MeV.
+      * T1/2 (txt): Level half-life in the format value+units+uncertainty.
+      * T1/2 (seconds): value of the level half-life in seconds.
+        Levels that are stable are assigned an "infinity" value.
+      * Abund.: Natural abundance.
+      * Dec Mode: Decay Mode name.
+      * Branching (%): Percentual branching ratio for the corresponding
+            decay mode.
+
+    Search criteria keywords:
+        nuc     : (str) : the name of the isotope (e.g., 'Co-60')
+        z, a, n : (int) : Z, A, N of the isotope
+        z_range, etc. : (tuple of int) : range of Z, A, or N
+        z_any, etc. : (bool) : whether any Z, A, or N is considered
+        z_odd, etc. : (bool) : only odd Z, A, or N
+        z_even, etc.: (bool) : only even Z, A, or N
+        t_range : (tuple of float) : range of isotope half-lives
+        elevel_range : (tuple of float) : range of nuc. energy level (MeV)
+        decay : (str) : isotope decay mode from WALLET_DECAY_MODE
+        j :  (str) : nuclear spin
+        parity : (str) : nuclear parity
+
+    """
+    query = _NuclearWalletCardQuery(**kwargs)
+    return query.df
+
+
+class _DecayRadiationQuery(_NNDCQuery):
     """NNDC Decay Radiation data query.
 
     Decay Radiation Search can be performed at this URL:
@@ -616,22 +652,22 @@ class DecayRadiationQuery(NNDCQuery):
         """Initialize NNDC Decay Radiation search."""
         perform = kwargs.get('perform', True)
         kwargs['perform'] = False
-        super(DecayRadiationQuery, self).__init__(**kwargs)
-        self._url = DecayRadiationQuery._URL
-        self._data.update(DecayRadiationQuery._DATA)
-        super(DecayRadiationQuery, self).update(**kwargs)
+        super(_DecayRadiationQuery, self).__init__(**kwargs)
+        self._url = _DecayRadiationQuery._URL
+        self._data.update(_DecayRadiationQuery._DATA)
+        super(_DecayRadiationQuery, self).update(**kwargs)
         self.update(**kwargs)
         if perform:
             self.perform()
 
-    _ALLOWED_KEYWORDS = NNDCQuery._ALLOWED_KEYWORDS
+    _ALLOWED_KEYWORDS = _NNDCQuery._ALLOWED_KEYWORDS
     _ALLOWED_KEYWORDS.extend(['decay', 'type', 'e_range', 'i_range'])
 
     def update(self, **kwargs):
         """Update the search criteria."""
-        super(DecayRadiationQuery, self).update(**kwargs)
+        super(_DecayRadiationQuery, self).update(**kwargs)
         for kwarg in kwargs:
-            if kwarg not in DecayRadiationQuery._ALLOWED_KEYWORDS:
+            if kwarg not in _DecayRadiationQuery._ALLOWED_KEYWORDS:
                 raise NNDCError('Unknown keyword: "{}"'.format(kwarg))
         # handle decay mode
         if 'decay' in kwargs:
@@ -666,3 +702,38 @@ class DecayRadiationQuery(NNDCQuery):
             self._data['ried'] = 'enabled'
             self._data['rimin'] = '{}'.format(kwargs['i_range'][0])
             self._data['rimax'] = '{}'.format(kwargs['i_range'][1])
+
+
+def fetch_decay_radiation(**kwargs):
+    """Perform NNDC Decay Radiation data query and return a DataFrame.
+
+    Decay Radiation Search can be performed at this URL:
+        http://www.nndc.bnl.gov/nudat2/indx_dec.jsp
+
+    Help page: http://www.nndc.bnl.gov/nudat2/help/dehelp.jsp
+
+      * Radiation: Radiation type, i.e. G for gamma, E for electron.
+      * Rad subtype: Further classification of the radiation type.
+      * Rad Ene.: Radiation energy in keV.
+      * EP Ene.: Beta-decay end point energy in keV.
+      * Rad Int.: Radiation absolute intensity.
+      * Dose: Radiation dose in MeV/Bq-s
+      * Unc: Uncertainties
+
+    Search criteria keywords:
+        nuc     : (str) : the name of the isotope (e.g., 'Co-60')
+        z, a, n : (int) : Z, A, N of the isotope
+        z_range, etc. : (tuple of int) : range of Z, A, or N
+        z_any, etc. : (bool) : whether any Z, A, or N is considered
+        z_odd, etc. : (bool) : only odd Z, A, or N
+        z_even, etc.: (bool) : only even Z, A, or N
+        t_range : (tuple of float) : range of isotope half-lives
+        elevel_range : (tuple of float) : range of nuc. energy level (MeV)
+        decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
+        type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
+        e_range : (tuple of float) : radiation energy range (keV)
+        i_range : (tuple of float): intensity range (percent)
+
+    """
+    query = _DecayRadiationQuery(**kwargs)
+    return query.df

@@ -28,17 +28,14 @@ df_series = pd.DataFrame()
 for isotope in series:
     print(isotope)
     try:
+        isotope_id = isotope
         if isotope.endswith('m'):
-            d = nndc.DecayRadiationQuery(
-                nuc=isotope[:-1], type='Gamma', e_range=(EMIN, 1e4),
-                i_range=(IMIN, 1000))
-        else:
-            d = nndc.DecayRadiationQuery(
-                nuc=isotope, type='Gamma', e_range=(EMIN, 1e4),
-                i_range=(IMIN, 1000))
+            isotope_id = isotope[:-1]
+        df = nndc.fetch_decay_radiation(
+            nuc=isotope_id, type='Gamma', e_range=(EMIN, 1e4),
+            i_range=(IMIN, 1000))
     except nndc.NoDataFound:
         continue
-    df = d._df
     df = df.loc[df['Parent Energy Level (MeV)'] == 0.]
     df = df.loc[df['Radiation'] == 'G']
     df = df.loc[df['Radiation Energy (keV)'] > EMIN]

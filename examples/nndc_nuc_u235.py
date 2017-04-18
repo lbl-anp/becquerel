@@ -6,14 +6,14 @@ import pandas as pd
 pd.set_option('display.width', 220)
 
 
-card = nndc.NuclearWalletCardQuery(nuc='U-235')
+card = nndc.fetch_wallet_card(nuc='U-235')
 print('')
 print('Nuclear Wallet Card for U-235')
 print('-----------------------------')
 print('')
 print(card)
 
-rad = nndc.DecayRadiationQuery(nuc='U-235')
+rad = nndc.fetch_decay_radiation(nuc='U-235')
 print('')
 print('Decay Radiation for U-235')
 print('-------------------------')

@@ -6,7 +6,7 @@ import pandas as pd
 pd.set_option('display.width', 220)
 
 
-rad = nndc.DecayRadiationQuery(
+rad = nndc.fetch_decay_radiation(
     a_range=[0, 300], t_range=[1e6, None], e_range=[1460.3, 1461.3])
 print('')
 print('Decay Radiation near 1460.8 keV')

@@ -6,21 +6,21 @@ import pandas as pd
 pd.set_option('display.width', 220)
 
 
-card = nndc.NuclearWalletCardQuery(nuc='Cs-137')
+card = nndc.fetch_wallet_card(nuc='Cs-137')
 print('')
 print('Nuclear Wallet Card for Cs-137')
 print('------------------------------')
 print('')
 print(card)
 
-rad = nndc.DecayRadiationQuery(nuc='Cs-137')
+rad = nndc.fetch_decay_radiation(nuc='Cs-137')
 print('')
 print('Decay Radiation for Cs-137')
 print('--------------------------')
 print('')
 print(rad)
 
-rad = nndc.DecayRadiationQuery(
+rad = nndc.fetch_decay_radiation(
     nuc='Cs-137', elevel_range=(0, 0), type='Gamma', i_range=(1, 1000))
 print('')
 print('Decay Radiation for Cs-137 ground state, gammas only > 1%')

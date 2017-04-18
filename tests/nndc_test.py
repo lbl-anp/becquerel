@@ -88,174 +88,165 @@ class ParseFloatUncertaintyTests(unittest.TestCase):
         self.assertTrue(is_close(answer, 73.92))
 
 
-# pylint: disable=W0212
-NNDC_WALLET_URL_ORIG = nndc.NuclearWalletCardQuery._URL
+NNDC_WALLET_URL_ORIG = nndc._NuclearWalletCardQuery._URL
 
 
 class NuclearWalletCardTests(unittest.TestCase):
     """Test NNDC nuclear_wallet_card query."""
 
-    def test_wallet_perform(self):
-        """Test NuclearWalletCardQuery: perform=False......................"""
-        d = nndc.NuclearWalletCardQuery(nuc='Co-60', perform=False)
-        d.update()
-        d.perform()
-        self.assertTrue(len(d) > 0)
-
     def test_wallet_nuc_Co60(self):
-        """Test NuclearWalletCardQuery: nuc='Co-60'........................"""
-        d = nndc.NuclearWalletCardQuery(nuc='Co-60')
+        """Test fetch_wallet_card: nuc='Co-60'............................."""
+        d = nndc.fetch_wallet_card(nuc='Co-60')
         self.assertTrue(len(d) > 0)
 
     def test_wallet_nuc_He4(self):
-        """Test NuclearWalletCardQuery: nuc='He-4'........................."""
-        d = nndc.NuclearWalletCardQuery(nuc='He-4')
+        """Test fetch_wallet_card: nuc='He-4'.............................."""
+        d = nndc.fetch_wallet_card(nuc='He-4')
         self.assertTrue(len(d) > 0)
 
     def test_wallet_nuc_V50(self):
-        """Test NuclearWalletCardQuery: nuc='V-50'........................."""
-        d = nndc.NuclearWalletCardQuery(nuc='V-50')
+        """Test fetch_wallet_card: nuc='V-50'.............................."""
+        d = nndc.fetch_wallet_card(nuc='V-50')
         self.assertTrue(len(d) > 0)
 
     def test_wallet_nuc_Ge70(self):
-        """Test NuclearWalletCardQuery: nuc='Ge-70'........................"""
-        d = nndc.NuclearWalletCardQuery(nuc='Ge-70')
+        """Test fetch_wallet_card: nuc='Ge-70'............................."""
+        d = nndc.fetch_wallet_card(nuc='Ge-70')
         self.assertTrue(len(d) > 0)
 
     def test_wallet_nuc_U238(self):
-        """Test NuclearWalletCardQuery: nuc='U-238'........................"""
-        d = nndc.NuclearWalletCardQuery(nuc='U-238')
+        """Test fetch_wallet_card: nuc='U-238'............................."""
+        d = nndc.fetch_wallet_card(nuc='U-238')
         self.assertTrue(len(d) > 0)
 
     def test_wallet_nuc_Pa234m(self):
-        """Test NuclearWalletCardQuery: nuc='Pa-234m' raises exception....."""
+        """Test fetch_wallet_card: nuc='Pa-234m' raises exception.........."""
         with self.assertRaises(nndc.NNDCError):
-            nndc.NuclearWalletCardQuery(nuc='Pa-234m')
+            nndc.fetch_wallet_card(nuc='Pa-234m')
 
     def test_wallet_nuc_Pa234(self):
-        """Test NuclearWalletCardQuery: nuc='Pa-234'......................."""
-        d = nndc.NuclearWalletCardQuery(nuc='Pa-234')
+        """Test fetch_wallet_card: nuc='Pa-234'............................"""
+        d = nndc.fetch_wallet_card(nuc='Pa-234')
         self.assertTrue(len(d) > 0)
 
     def test_wallet_z_6(self):
-        """Test NuclearWalletCardQuery: z=6................................"""
-        d = nndc.NuclearWalletCardQuery(z=6)
+        """Test fetch_wallet_card: z=6....................................."""
+        d = nndc.fetch_wallet_card(z=6)
         self.assertTrue(len(d) > 0)
 
     def test_wallet_a_12(self):
-        """Test NuclearWalletCardQuery: a=12..............................."""
-        d = nndc.NuclearWalletCardQuery(a=12)
+        """Test fetch_wallet_card: a=12...................................."""
+        d = nndc.fetch_wallet_card(a=12)
         self.assertTrue(len(d) > 0)
 
     def test_wallet_n_6(self):
-        """Test NuclearWalletCardQuery: n=6................................"""
-        d = nndc.NuclearWalletCardQuery(n=6)
+        """Test fetch_wallet_card: n=6....................................."""
+        d = nndc.fetch_wallet_card(n=6)
         self.assertTrue(len(d) > 0)
 
     def test_wallet_z_6_a_12(self):
-        """Test NuclearWalletCardQuery: z=6, a=12.........................."""
-        d = nndc.NuclearWalletCardQuery(z=6, a=12)
+        """Test fetch_wallet_card: z=6, a=12..............................."""
+        d = nndc.fetch_wallet_card(z=6, a=12)
         self.assertTrue(len(d) > 0)
 
     def test_wallet_n_6_a_12(self):
-        """Test NuclearWalletCardQuery: n=6, a=12.........................."""
-        d = nndc.NuclearWalletCardQuery(n=6, a=12)
+        """Test fetch_wallet_card: n=6, a=12..............................."""
+        d = nndc.fetch_wallet_card(n=6, a=12)
         self.assertTrue(len(d) > 0)
 
     def test_wallet_z_6_a_12_n_6(self):
-        """Test NuclearWalletCardQuery: z=6, a=12, n=6....................."""
-        d = nndc.NuclearWalletCardQuery(z=6, a=12, n=6)
+        """Test fetch_wallet_card: z=6, a=12, n=6.........................."""
+        d = nndc.fetch_wallet_card(z=6, a=12, n=6)
         self.assertTrue(len(d) > 0)
 
     def test_wallet_zrange_1_20(self):
-        """Test NuclearWalletCardQuery: z_range=(1, 20)...................."""
-        d = nndc.NuclearWalletCardQuery(z_range=(1, 20))
+        """Test fetch_wallet_card: z_range=(1, 20)........................."""
+        d = nndc.fetch_wallet_card(z_range=(1, 20))
         self.assertTrue(len(d) > 0)
 
     def test_wallet_zrange_30_50(self):
-        """Test NuclearWalletCardQuery: z_range=(30, 50)..................."""
-        d = nndc.NuclearWalletCardQuery(z_range=(30, 50))
+        """Test fetch_wallet_card: z_range=(30, 50)........................"""
+        d = nndc.fetch_wallet_card(z_range=(30, 50))
         self.assertTrue(len(d) > 0)
 
     def test_wallet_zrange_100_118(self):
-        """Test NuclearWalletCardQuery: z_range=(100, 118)................."""
-        d = nndc.NuclearWalletCardQuery(z_range=(100, 118))
+        """Test fetch_wallet_card: z_range=(100, 118)......................"""
+        d = nndc.fetch_wallet_card(z_range=(100, 118))
         self.assertTrue(len(d) > 0)
 
     def test_wallet_zrange_230_250(self):
-        """Test NuclearWalletCardQuery: z_range=(230, 250) raises except..."""
+        """Test fetch_wallet_card: z_range=(230, 250) raises except........"""
         with self.assertRaises(nndc.NNDCError):
-            nndc.NuclearWalletCardQuery(z_range=(230, 250))
+            nndc.fetch_wallet_card(z_range=(230, 250))
 
     def test_wallet_nuc_Co60_BM(self):
-        """Test NuclearWalletCardQuery: nuc='Co-60', decay='B-'............"""
-        d = nndc.NuclearWalletCardQuery(nuc='Co-60', decay='B-')
+        """Test fetch_wallet_card: nuc='Co-60', decay='B-'................."""
+        d = nndc.fetch_wallet_card(nuc='Co-60', decay='B-')
         self.assertTrue(len(d) > 0)
 
     def test_wallet_nuc_Pu239_SF(self):
-        """Test NuclearWalletCardQuery: nuc='Pu-239', decay='SF'..........."""
-        d = nndc.NuclearWalletCardQuery(nuc='Pu-239', decay='SF')
+        """Test fetch_wallet_card: nuc='Pu-239', decay='SF'................"""
+        d = nndc.fetch_wallet_card(nuc='Pu-239', decay='SF')
         self.assertTrue(len(d) > 0)
 
     def test_wallet_exception_not_found(self):
-        """Test NuclearWalletCardQuery exception if website not found......"""
-        nndc.NuclearWalletCardQuery._URL = 'http://httpbin.org/status/404'
+        """Test fetch_wallet_card exception if website not found..........."""
+        nndc._NuclearWalletCardQuery._URL = 'http://httpbin.org/status/404'
         with self.assertRaises(nndc.NNDCError):
-            nndc.NuclearWalletCardQuery(nuc='Co-60')
-        nndc.NuclearWalletCardQuery._URL = NNDC_WALLET_URL_ORIG
+            nndc.fetch_wallet_card(nuc='Co-60')
+        nndc._NuclearWalletCardQuery._URL = NNDC_WALLET_URL_ORIG
 
     def test_wallet_exception_empty(self):
-        """Test NuclearWalletCardQuery exception if website is empty......."""
-        nndc.NuclearWalletCardQuery._URL = 'http://httpbin.org/post'
+        """Test fetch_wallet_card exception if website is empty............"""
+        nndc._NuclearWalletCardQuery._URL = 'http://httpbin.org/post'
         with self.assertRaises(nndc.NNDCError):
-            nndc.NuclearWalletCardQuery(nuc='Co-60')
-        nndc.NuclearWalletCardQuery._URL = NNDC_WALLET_URL_ORIG
+            nndc.fetch_wallet_card(nuc='Co-60')
+        nndc._NuclearWalletCardQuery._URL = NNDC_WALLET_URL_ORIG
 
 
-# pylint: disable=W0212
-NNDC_DECAYRAD_URL_ORIG = nndc.DecayRadiationQuery._URL
+NNDC_DECAYRAD_URL_ORIG = nndc._DecayRadiationQuery._URL
 
 
 class DecayRadiationQueryTests(unittest.TestCase):
     """Test NNDC decay_radiation."""
 
     def test_decay_nuc_Co60(self):
-        """Test DecayRadiationQuery: nuc='Co-60'..........................."""
-        d = nndc.DecayRadiationQuery(nuc='Co-60')
+        """Test fetch_decay_radiation: nuc='Co-60'........................."""
+        d = nndc.fetch_decay_radiation(nuc='Co-60')
         self.assertTrue(len(d) > 0)
 
     def test_decay_nuc_Co60_BM(self):
-        """Test DecayRadiationQuery: nuc='Co-60', decay='B-'..............."""
-        d = nndc.DecayRadiationQuery(nuc='Co-60', decay='B-')
+        """Test fetch_decay_radiation: nuc='Co-60', decay='B-'............."""
+        d = nndc.fetch_decay_radiation(nuc='Co-60', decay='B-')
         self.assertTrue(len(d) > 0)
 
     def test_decay_nuc_Pu239_ANY(self):
-        """Test DecayRadiationQuery: nuc='Pu-239', decay='ANY'............."""
-        d = nndc.DecayRadiationQuery(nuc='Pu-239', decay='ANY')
+        """Test fetch_decay_radiation: nuc='Pu-239', decay='ANY'..........."""
+        d = nndc.fetch_decay_radiation(nuc='Pu-239', decay='ANY')
         self.assertTrue(len(d) > 0)
 
     def test_decay_nuc_Pu239_ANY_G(self):
-        """Test DecayRadiationQuery: nuc='Pu-239', type='Gamma'............"""
-        d = nndc.DecayRadiationQuery(nuc='Pu-239', type='Gamma')
+        """Test fetch_decay_radiation: nuc='Pu-239', type='Gamma'.........."""
+        d = nndc.fetch_decay_radiation(nuc='Pu-239', type='Gamma')
         self.assertTrue(len(d) > 0)
 
     def test_decay_exception_not_found(self):
-        """Test DecayRadiationQuery raises exception if website not found.."""
-        nndc.DecayRadiationQuery._URL = 'http://httpbin.org/status/404'
+        """Test fetch_decay_radiation raises exception if website not found"""
+        nndc._DecayRadiationQuery._URL = 'http://httpbin.org/status/404'
         with self.assertRaises(nndc.NNDCError):
-            nndc.DecayRadiationQuery(nuc='Co-60')
-        nndc.DecayRadiationQuery._URL = NNDC_DECAYRAD_URL_ORIG
+            nndc.fetch_decay_radiation(nuc='Co-60')
+        nndc._DecayRadiationQuery._URL = NNDC_DECAYRAD_URL_ORIG
 
     def test_decay_exception_empty(self):
-        """Test DecayRadiationQuery raises exception if website is empty..."""
-        nndc.DecayRadiationQuery._URL = 'http://httpbin.org/post'
+        """Test fetch_decay_radiation raises exception if website is empty."""
+        nndc._DecayRadiationQuery._URL = 'http://httpbin.org/post'
         with self.assertRaises(nndc.NNDCError):
-            nndc.DecayRadiationQuery(nuc='Co-60')
-        nndc.DecayRadiationQuery._URL = NNDC_DECAYRAD_URL_ORIG
+            nndc.fetch_decay_radiation(nuc='Co-60')
+        nndc._DecayRadiationQuery._URL = NNDC_DECAYRAD_URL_ORIG
 
     def test_decay_nuc_200_300_ANY_G(self):
-        """Test DecayRadiationQuery: z_range=(200, 300), type='Gamma'......"""
-        d = nndc.DecayRadiationQuery(z_range=(100, 120), type='Gamma')
+        """Test fetch_decay_radiation: z_range=(200, 300), type='Gamma'...."""
+        d = nndc.fetch_decay_radiation(z_range=(100, 120), type='Gamma')
         self.assertTrue(len(d) > 0)
 
 

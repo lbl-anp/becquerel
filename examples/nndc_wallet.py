@@ -7,6 +7,6 @@ from becquerel.tools import nndc
 for iso in ['K-40', 'Tc-99', 'Ar-40']:
     print('')
     print(iso)
-    d = nndc.NuclearWalletCardQuery(nuc=iso)
+    d = nndc.fetch_wallet_card(nuc=iso)
     print('')
     print(d)
