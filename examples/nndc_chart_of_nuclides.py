@@ -8,9 +8,7 @@ from becquerel.tools import nndc
 
 def colorscale_half_life(half_life):
     """Color scale to mimic NNDC's nuclear chart color scale."""
-    if half_life is None:
-        return '#E1E1E1'
-    elif half_life < 1e-15:
+    if half_life < 1e-15:
         return '#FF9473'
     elif half_life < 1e-7:
         return '#F7BDDD'
@@ -46,6 +44,8 @@ def colorscale_half_life(half_life):
         return '#29016B'
     elif half_life > 1e15:
         return 'black'
+    else:
+        return '#E1E1E1'
 
 
 Z_RANGE = (1, 25)
@@ -81,4 +81,5 @@ plt.xlim(N_RANGE[0] - 0.5, N_RANGE[1] + 0.5)
 plt.ylim(Z_RANGE[0] - 0.5, Z_RANGE[1] + 0.5)
 plt.xlabel('N')
 plt.ylabel('Z')
+plt.tight_layout()
 plt.show()
