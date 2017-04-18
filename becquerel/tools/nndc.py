@@ -207,7 +207,7 @@ class NNDCQuery(object):
             if 'Energy' in hd and 'Energy Level' not in hd:
                 hd = hd.replace('Energy', 'Energy Level')
             if 'Par. Elevel' in hd:
-                hd = hd.replace('Par. Elevel', 'Energy Level')
+                hd = hd.replace('Par. Elevel', 'Parent Energy Level')
             if 'Abund.' in hd:
                 hd = hd.replace('Abund.', 'Abundance (%)')
             if 'Ene.' in hd:
@@ -371,6 +371,8 @@ class NNDCQuery(object):
 
     def _add_columns_energy_levels(self):
         """Add nuclear energy level 'M' and 'm' columns using energy levels."""
+        if 'Energy Level (MeV)' not in self._df:
+            return
         # add column of integer M giving the isomer level (0, 1, 2, ...)
         self._df['M'] = [0] * len(self)
         # add string m giving the isomer level name (e.g., '' or 'm' or 'm2')
@@ -403,12 +405,17 @@ class NNDCQuery(object):
 
     def _add_units_uncertainties(self):
         """Add units and uncertainties with some columns as applicable."""
-        if 'Energy Level Unc.' in self.keys():
-            self._convert_column_uncertainty('Energy Level')
-        else:
+        if 'Energy Level' in self.keys():
             self._convert_column('Energy Level', float)
-        self._df.rename(
-            columns={'Energy Level': 'Energy Level (MeV)'}, inplace=True)
+            self._df.rename(
+                columns={'Energy Level': 'Energy Level (MeV)'}, inplace=True)
+            self._df['Energy Level (MeV)'] *= 1000.
+
+        if 'Parent Energy Level' in self.keys():
+            self._convert_column_uncertainty('Parent Energy Level')
+            self._df.rename(
+                columns={'Parent Energy Level': 'Parent Energy Level (MeV)'},
+                inplace=True)
 
         if 'Mass Excess' in self.keys():
             self._convert_column_uncertainty('Mass Excess')
@@ -474,7 +481,7 @@ class NNDCQuery(object):
     def _sort_columns(self):
         """Sort columns."""
         preferred_order = [
-            'Z', 'Element', 'A', 'N', 'M', 'm', 'JPi', 'T1/2',
+            'Z', 'Element', 'A', 'm', 'M', 'N', 'JPi', 'T1/2',
             'Energy Level (MeV)', 'Decay Mode', 'Branching (%)',
             'Radiation', 'Radiation subtype',
             'Radiation Energy (keV)', 'Radiation Intensity (%)',
