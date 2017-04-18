@@ -336,8 +336,6 @@ class NNDCQuery(object):
         self._df = pd.DataFrame(data)
         if len(self) == 0:
             raise NNDCError('Parsed DataFrame is empty')
-        # remove any incomplete data
-        self._remove_incomplete_data()
         # convert dimensionless integers to ints
         for col in ['A', 'Z', 'N', 'M']:
             if col in self.keys():
@@ -348,26 +346,6 @@ class NNDCQuery(object):
         self._add_columns_energy_levels()
         # sort columns
         self._sort_columns()
-
-    def _remove_incomplete_data(self):
-        """Remove any incomplete nuclear data row."""
-        good_rows = np.ones_like(self['Energy Level'], dtype=bool)
-        # remove unknown energy levels
-        column = 'Energy Level'
-        if column in self.keys():
-            for j, x in enumerate(self[column]):
-                try:
-                    float(x)
-                except ValueError:
-                    good_rows[j] = False
-        # remove unknown branching ratios
-        column = 'Branching (%)'
-        if column in self.keys():
-            for j, x in enumerate(self[column]):
-                for bad_str in ['?', '<', '>', '~']:
-                    if bad_str in x:
-                        good_rows[j] = False
-        self._df = self._df[good_rows]
 
     def _add_columns_energy_levels(self):
         """Add nuclear energy level 'M' and 'm' columns using energy levels."""
@@ -458,24 +436,26 @@ class NNDCQuery(object):
         for x in self[col]:
             if x == '':
                 col_new.append(null)
+            elif '****' in x or '<' in x or '>' in x or '~' in x or '?' in x:
+                col_new.append(null)
             else:
                 col_new.append(function(x))
         self._df[col] = col_new
 
-    def _convert_column_uncertainty(self, col):
+    def _convert_column_uncertainty(self, col, null=None):
         """Combine column and its uncertainty into one column."""
-        new_col = []
+        col_new = []
         for x, dx in zip(self[col], self[col + ' Unc.']):
             if '%' in x:
                 x = x.replace('%', '')
             if x == '':
-                new_col.append(None)
-            elif '****' in x:
-                new_col.append(None)
+                col_new.append(null)
+            elif '****' in x or '<' in x or '>' in x or '~' in x or '?' in x:
+                col_new.append(null)
             else:
                 x2 = _parse_float_uncertainty(x, dx)
-                new_col.append(x2)
-        self._df[col] = new_col
+                col_new.append(x2)
+        self._df[col] = col_new
         del self._df[col + ' Unc.']
 
     def _sort_columns(self):
