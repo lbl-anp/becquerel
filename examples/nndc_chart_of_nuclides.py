@@ -51,7 +51,8 @@ def colorscale_half_life(half_life):
 Z_RANGE = (1, 25)
 N_RANGE = (0, 42)
 
-data = nndc.NuclearWalletCardQuery(z_range=Z_RANGE, n_range=N_RANGE)
+data = nndc.NuclearWalletCardQuery(
+    z_range=Z_RANGE, n_range=N_RANGE, elevel_range=(0, 0))
 print(data)
 
 fig1 = plt.figure()
