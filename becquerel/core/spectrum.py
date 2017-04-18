@@ -241,10 +241,93 @@ class Spectrum(object):
         return len(self.counts)
 
     def __add__(self, other):
-        return self._add_sub(other, sub=False)
+        """Add spectra together.
+
+        The livetimes combine (if they exist) and the resulting spectrum
+        is still Poisson-distributed.
+
+        The two spectra may both be uncalibrated, or both be calibrated
+        with the same energy calibration.
+
+        Args:
+          other: another Spectrum object to add counts from
+
+        Raises:
+          TypeError: if other is not a Spectrum
+          SpectrumError: if spectra are different lengths,
+            or if only one is calibrated
+          NotImplementedError: if spectra are calibrated differently
+
+        Returns:
+          a summed Spectrum object
+        """
+
+        self._add_sub_error_checking(other)
+
+        counts = self.counts + other.counts
+        if self.livetime and other.livetime:    # includes np.nan
+            livetime = self.livetime + other.livetime
+        else:
+            livetime = None
+        spect_obj = Spectrum(counts, bin_edges_kev=self.bin_edges_kev,
+                             livetime=livetime)
+        return spect_obj
 
     def __sub__(self, other):
-        return self._add_sub(other, sub=True)
+        """Normalize spectra and subtract.
+
+        The resulting spectrum does not have a meaningful livetime or
+        counts vector, and is NOT Poisson-distributed.
+
+        The two spectra may both be uncalibrated, or both be calibrated
+        with the same energy calibration.
+
+        Args:
+          other: another Spectrum object, to normalize and subtract
+
+        Raises:
+
+        Returns:
+          a subtracted Spectrum object
+        """
+
+        self._add_sub_error_checking(other)
+
+        # TODO based on counts/cps
+
+        return spect_obj
+
+    def _add_sub_error_checking(self, other):
+        """Handle errors for spectra addition or subtraction.
+
+        Args:
+          other: a spectrum
+
+        Raises:
+          TypeError: if other is not a Spectrum
+          SpectrumError: if spectra are different lengths,
+            or if only one is calibrated
+          NotImplementedError: if spectra are calibrated differently
+        """
+
+        if not isinstance(other, Spectrum):
+            raise TypeError(
+                'Spectrum addition/subtraction must involve a Spectrum object')
+        if len(self) != len(other):
+            raise SpectrumError(
+                'Cannot add/subtract spectra of different lengths')
+        if self.is_calibrated ^ other.is_calibrated:
+            raise SpectrumError(
+                'Cannot add/subtract uncalibrated spectrum to/from a ' +
+                'calibrated spectrum. If both have the same calibration, ' +
+                'please use the "calibrate_like" method')
+        if self.is_calibrated and other.is_calibrated:
+            if not np.all(self.bin_edges_kev == other.bin_edges_kev):
+                raise NotImplementedError(
+                    'Addition/subtraction for arbitrary calibrated spectra ' +
+                    'not implemented')
+                # TODO: if both spectra are calibrated but with different
+                #   calibrations, should one be rebinned to match?
 
     def __mul__(self, other):
         return self._mul_div(other, div=False)
@@ -254,29 +337,6 @@ class Spectrum(object):
 
     def __truediv__(self, other):
         return self._mul_div(other, div=True)
-
-    def _add_sub(self, other, sub=False):
-        """Add or subtract two spectra. Handle errors."""
-
-        if not isinstance(other, Spectrum):
-            raise TypeError(
-                'Spectrum addition/subtraction must involve a Spectrum object')
-        if len(self.counts) != len(other.counts):
-            raise SpectrumError(
-                'Cannot add/subtract spectra of different lengths')
-
-        # TODO: if both spectra are calibrated with different calibrations,
-        #   should one be rebinned to match energy bins?
-        if not self.is_calibrated and not other.is_calibrated:
-            if sub:
-                counts = self.counts - other.counts
-            else:
-                counts = self.counts + other.counts
-            spect_obj = Spectrum(counts)
-        else:
-            raise NotImplementedError(
-                'Addition/subtraction for calibrated spectra not implemented')
-        return spect_obj
 
     def _mul_div(self, scaling_factor, div=False):
         """Multiply or divide a spectrum by a scalar. Handle errors."""
