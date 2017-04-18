@@ -74,7 +74,7 @@ class EnergyCalBase(object):
 
         if has_pair and (has_ch or has_kev):
             raise BadInput('Redundant calibration inputs')
-        if (has_ch and not has_kev) or (has_kev and not has_ch):
+        if has_ch ^ has_kev:    # xor
             raise BadInput('Require both chlist and kevlist')
         if not has_ch and not has_kev and not has_pair:
             raise BadInput('Calibration points are required')
