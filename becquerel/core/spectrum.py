@@ -107,7 +107,7 @@ class Spectrum(object):
         """Counts in each channel, with uncertainty.
 
         Returns:
-          an np.ndarray of uncertainties.ufloats
+          an np.array of uncertainties.ufloats
         """
 
         return self._counts
@@ -117,20 +117,62 @@ class Spectrum(object):
         """Counts in each channel, no uncertainties.
 
         Returns:
-          an np.ndarray of floats
+          an np.array of floats
         """
 
         return unumpy.nominal_values(self._counts)
 
     @property
     def counts_uncs(self):
-        """Uncertainties in each channel.
+        """Uncertainties on the counts in each channel.
 
         Returns:
-          an np.ndarray of floats
+          an np.array of floats
         """
 
         return unumpy.std_devs(self._counts)
+
+    @property
+    def cps(self):
+        """Counts per second in each channel, with uncertainty.
+
+        Returns:
+          an np.array of uncertainties.ufloats
+        """
+
+        return self.counts / self.livetime
+
+    @property
+    def cps_vals(self):
+        """Counts per second in each channel, no uncertainties.
+
+        Returns:
+          an np.array of floats
+        """
+
+        return unumpy.nominal_values(self.cps)
+
+    @property
+    def cps_uncs(self):
+        """Uncertainties on the counts per second in each channel.
+
+        Returns:
+          an np.array of floats
+        """
+
+        return unumpy.std_devs(self.cps)
+
+    @property
+    def cpskev(self):
+        return self.counts / self.livetime / self.binwidths
+
+    @property
+    def cpskev_vals(self):
+        return unumpy.nominal_values(self.cpskev)
+
+    @property
+    def cpskev_uncs(self):
+        return unumpy.std_devs(self.cpskev)
 
     @property
     def channels(self):
