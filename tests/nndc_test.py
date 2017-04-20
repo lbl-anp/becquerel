@@ -54,74 +54,80 @@ class TestParseFloatUncertainty(object):
         assert is_close(answer.std_dev, 0.005)
 
     def test_07(self):
+        """Test _parse_float_uncertainty('257.123E+4', '5E-1E-2').........."""
+        answer = nndc._parse_float_uncertainty('257.123E+4', '5E-1E-2')
+        assert is_close(answer.nominal_value, 2571230.)
+        assert is_close(answer.std_dev, 0.005)
+
+    def test_08(self):
         """Test _parse_float_uncertainty('257.123', '')...................."""
         answer = nndc._parse_float_uncertainty('257.123', '')
         assert isinstance(answer, float)
         assert is_close(answer, 257.123)
 
-    def test_08(self):
+    def test_09(self):
         """Test _parse_float_uncertainty('8', '2')........................."""
         answer = nndc._parse_float_uncertainty('8', '2')
         assert is_close(answer.nominal_value, 8.)
         assert is_close(answer.std_dev, 2.)
 
-    def test_09(self):
+    def test_10(self):
         """Test _parse_float_uncertainty('8', '').........................."""
         answer = nndc._parse_float_uncertainty('8', '')
         assert isinstance(answer, float)
         assert is_close(answer, 8.)
 
-    def test_10(self):
+    def test_11(self):
         """Test _parse_float_uncertainty('100.0%', '')...................."""
         answer = nndc._parse_float_uncertainty('100.0%', '')
         assert is_close(answer, 100.)
 
-    def test_11(self):
+    def test_12(self):
         """Test _parse_float_uncertainty('73.92+X', '')...................."""
         answer = nndc._parse_float_uncertainty('73.92+X', '')
         assert is_close(answer, 73.92)
 
-    def test_12(self):
+    def test_13(self):
         """Test _parse_float_uncertainty('73.92+Y', '')...................."""
         answer = nndc._parse_float_uncertainty('73.92+Y', '')
         assert is_close(answer, 73.92)
 
-    def test_13(self):
+    def test_14(self):
         """Test _parse_float_uncertainty('', '')..........................."""
         answer = nndc._parse_float_uncertainty('', '')
         assert answer is None
 
-    def test_14(self):
+    def test_15(self):
         """Test _parse_float_uncertainty('****', '')......................."""
         answer = nndc._parse_float_uncertainty('****', '')
         assert answer is None
 
-    def test_15(self):
+    def test_16(self):
         """Test _parse_float_uncertainty('~7', '1')........................"""
         answer = nndc._parse_float_uncertainty('~7', '1')
         assert answer is None
 
-    def test_16(self):
+    def test_17(self):
         """Test _parse_float_uncertainty('1', '****')......................"""
         answer = nndc._parse_float_uncertainty('1', '****')
         assert answer is None
 
-    def test_17(self):
+    def test_18(self):
         """Test _parse_float_uncertainty('73.92', 'AP')...................."""
         answer = nndc._parse_float_uncertainty('73.92', 'AP')
         assert answer is None
 
-    def test_18(self):
+    def test_19(self):
         """Test _parse_float_uncertainty('73.92', 'CA')...................."""
         answer = nndc._parse_float_uncertainty('73.92', 'CA')
         assert answer is None
 
-    def test_19(self):
+    def test_20(self):
         """Test _parse_float_uncertainty('X', '7') raises NNDCError........"""
         with pytest.raises(nndc.NNDCError):
             nndc._parse_float_uncertainty('X', '7')
 
-    def test_20(self):
+    def test_21(self):
         """Test _parse_float_uncertainty('7', 'X') raises NNDCError........"""
         with pytest.raises(nndc.NNDCError):
             nndc._parse_float_uncertainty('7', 'X')

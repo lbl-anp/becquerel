@@ -76,6 +76,10 @@ def _parse_float_uncertainty(x, dx):
     8.0
 
     """
+    if not isinstance(x, str):
+        raise NNDCError('Value must be a string: {}'.format(x))
+    if not isinstance(dx, str):
+        raise NNDCError('Uncertainty must be a string: {}'.format(dx))
     # replace special characters to ignore
     if '%' in x:
         x = x.replace('%', '')
@@ -105,8 +109,15 @@ def _parse_float_uncertainty(x, dx):
             'Value cannot be parsed as float: "{}"'.format(x))
     if dx == '':
         return x2
+    # handle multiple exponents with some uncertainties, e.g., "7E-4E-5"
+    tokens = dx.split('E')
+    if len(tokens) == 3:
+        dx = 'E'.join(tokens[:2])
+        factor = pow(10., int(tokens[2]))
+    else:
+        factor = 1.
     try:
-        dx2 = float(dx)
+        dx2 = float(dx) * factor
     except ValueError:
         raise NNDCError(
             'Uncertainty cannot be parsed as float: "{}"'.format(dx))
