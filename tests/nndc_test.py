@@ -1,10 +1,12 @@
 """Test NNDC data queries."""
 
 from __future__ import print_function
+import pandas as pd
 from becquerel.tools import nndc
 import pytest
 
 # pylint: disable=protected-access,no-self-use,too-many-public-methods
+# pylint: disable=attribute-defined-outside-init,missing-docstring
 
 
 def is_close(f1, f2, ppm=1.):
@@ -87,166 +89,235 @@ class TestParseFloatUncertainty(object):
         answer = nndc._parse_float_uncertainty('73.92', 'CA')
         assert is_close(answer, 73.92)
 
+    def test_14(self):
+        """Test _parse_float_uncertainty('X', '7') raises NNDCError........"""
+        with pytest.raises(nndc.NNDCError):
+            nndc._parse_float_uncertainty('X', '7')
 
-NNDC_WALLET_URL_ORIG = nndc._NuclearWalletCardQuery._URL
+    def test_15(self):
+        """Test _parse_float_uncertainty('7', 'X') raises NNDCError........"""
+        with pytest.raises(nndc.NNDCError):
+            nndc._parse_float_uncertainty('7', 'X')
+
+
+class NNDCQueryTests(object):
+    """Tests common to NNDCQuery-derived classes."""
+
+    def setup_method(self):
+        self.cls = nndc._NNDCQuery
+
+        def fetch_dummy(**kwargs):  # pylint: disable=unused-argument
+            """Dummy fetch_ function for self.fetch."""
+            return pd.DataFrame()
+
+        self.fetch = fetch_dummy
+
+    def test_query_nuc_Co60(self):
+        """Test NNDCQuery: nuc='Co-60'....................................."""
+        d = self.fetch(nuc='Co-60')
+        assert len(d) > 0
+
+    def test_query_nuc_He4(self):
+        """Test NNDCQuery: nuc='He-4'......................................"""
+        d = self.fetch(nuc='He-4')
+        assert len(d) > 0
+
+    def test_query_nuc_V50(self):
+        """Test NNDCQuery: nuc='V-50'......................................"""
+        d = self.fetch(nuc='V-50')
+        assert len(d) > 0
+
+    def test_query_nuc_Ge70(self):
+        """Test NNDCQuery: nuc='Ge-70'....................................."""
+        d = self.fetch(nuc='Ge-70')
+        assert len(d) > 0
+
+    def test_query_nuc_U238(self):
+        """Test NNDCQuery: nuc='U-238'....................................."""
+        d = self.fetch(nuc='U-238')
+        assert len(d) > 0
+
+    def test_query_nuc_Pa234m(self):
+        """Test NNDCQuery: nuc='Pa-234m' raises exception.................."""
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(nuc='Pa-234m')
+
+    def test_query_nuc_Pa234(self):
+        """Test NNDCQuery: nuc='Pa-234'...................................."""
+        d = self.fetch(nuc='Pa-234')
+        assert len(d) > 0
+
+    def test_query_z_6(self):
+        """Test NNDCQuery: z=6............................................."""
+        d = self.fetch(z=6)
+        assert len(d) > 0
+
+    def test_query_a_12(self):
+        """Test NNDCQuery: a=12............................................"""
+        d = self.fetch(a=12)
+        assert len(d) > 0
+
+    def test_query_n_6(self):
+        """Test NNDCQuery: n=6............................................."""
+        d = self.fetch(n=6)
+        assert len(d) > 0
+
+    def test_query_z_6_a_12(self):
+        """Test NNDCQuery: z=6, a=12......................................."""
+        d = self.fetch(z=6, a=12)
+        assert len(d) > 0
+
+    def test_query_n_6_a_12(self):
+        """Test NNDCQuery: n=6, a=12......................................."""
+        d = self.fetch(n=6, a=12)
+        assert len(d) > 0
+
+    def test_query_z_6_a_12_n_6(self):
+        """Test NNDCQuery: z=6, a=12, n=6.................................."""
+        d = self.fetch(z=6, a=12, n=6)
+        assert len(d) > 0
+
+    def test_query_zrange_1_20(self):
+        """Test NNDCQuery: z_range=(1, 20)................................."""
+        d = self.fetch(z_range=(1, 20))
+        assert len(d) > 0
+
+    def test_query_zrange_1_20_z_any(self):
+        """Test NNDCQuery: z_range=(1, 20), z_any=True....................."""
+        d = self.fetch(z_range=(1, 20), z_any=True)
+        assert len(d) > 0
+
+    def test_query_zrange_1_20_z_even(self):
+        """Test NNDCQuery: z_range=(1, 20), z_even=True...................."""
+        d = self.fetch(z_range=(1, 20), z_even=True)
+        assert len(d) > 0
+
+    def test_query_zrange_1_20_z_odd(self):
+        """Test NNDCQuery: z_range=(1, 20), z_odd=True....................."""
+        d = self.fetch(z_range=(1, 20), z_odd=True)
+        assert len(d) > 0
+
+    def test_query_zrange_30_50(self):
+        """Test NNDCQuery: z_range=(30, 50)................................"""
+        d = self.fetch(z_range=(30, 50))
+        assert len(d) > 0
+
+    def test_query_zrange_100_118(self):
+        """Test NNDCQuery: z_range=(100, 118).............................."""
+        d = self.fetch(z_range=(100, 118))
+        assert len(d) > 0
+
+    def test_query_zrange_230_250(self):
+        """Test NNDCQuery: z_range=(230, 250) raises except................"""
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(z_range=(230, 250))
+
+    def test_query_arange_1_20(self):
+        """Test NNDCQuery: a_range=(1, 20)................................."""
+        d = self.fetch(a_range=(1, 20))
+        assert len(d) > 0
+
+    def test_query_arange_1_20_a_any(self):
+        """Test NNDCQuery: a_range=(1, 20), a_any=True....................."""
+        d = self.fetch(a_range=(1, 20), a_any=True)
+        assert len(d) > 0
+
+    def test_query_arange_1_20_a_even(self):
+        """Test NNDCQuery: a_range=(1, 20), a_even=True...................."""
+        d = self.fetch(a_range=(1, 20), a_even=True)
+        assert len(d) > 0
+
+    def test_query_arange_1_20_a_odd(self):
+        """Test NNDCQuery: a_range=(1, 20), a_odd=True....................."""
+        d = self.fetch(a_range=(1, 20), a_odd=True)
+        assert len(d) > 0
+
+    def test_query_nrange_1_20(self):
+        """Test NNDCQuery: n_range=(1, 20)................................."""
+        d = self.fetch(n_range=(1, 20))
+        assert len(d) > 0
+
+    def test_query_nrange_1_20_n_any(self):
+        """Test NNDCQuery: n_range=(1, 20), n_any=True....................."""
+        d = self.fetch(n_range=(1, 20), n_any=True)
+        assert len(d) > 0
+
+    def test_query_nrange_1_20_n_even(self):
+        """Test NNDCQuery: n_range=(1, 20), n_even=True...................."""
+        d = self.fetch(n_range=(1, 20), n_even=True)
+        assert len(d) > 0
+
+    def test_query_nrange_1_20_n_odd(self):
+        """Test NNDCQuery: n_range=(1, 20), n_odd=True....................."""
+        d = self.fetch(n_range=(1, 20), n_odd=True)
+        assert len(d) > 0
+
+    def test_query_nrange_1_20_z_even_a_even_n_any(self):
+        """Test NNDCQuery: z_range=(1, 20), z_even, a_even, n_any.........."""
+        d = self.fetch(
+            z_range=(1, 20), z_even=True, a_even=True, n_any=True)
+        assert len(d) > 0
+
+    def test_query_exception_not_found(self):
+        """Test NNDCQuery exception if website not found..................."""
+        _URL_ORIG = self.cls._URL
+        self.cls._URL = 'http://httpbin.org/status/404'
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(nuc='Co-60')
+        self.cls._URL = _URL_ORIG
+
+    def test_query_exception_empty(self):
+        """Test NNDCQuery exception if website is empty...................."""
+        _URL_ORIG = self.cls._URL
+        self.cls._URL = 'http://httpbin.org/post'
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(nuc='Co-60')
+        self.cls._URL = _URL_ORIG
 
 
 @pytest.mark.webtest
-class TestNuclearWalletCard(object):
+class TestNuclearWalletCard(NNDCQueryTests):
     """Test NNDC nuclear_wallet_card query."""
 
-    def test_wallet_nuc_Co60(self):
-        """Test fetch_wallet_card: nuc='Co-60'............................."""
-        d = nndc.fetch_wallet_card(nuc='Co-60')
-        assert len(d) > 0
+    def setup_method(self):
+        self.cls = nndc._NuclearWalletCardQuery
+        self.fetch = nndc.fetch_wallet_card
 
-    def test_wallet_nuc_He4(self):
-        """Test fetch_wallet_card: nuc='He-4'.............................."""
-        d = nndc.fetch_wallet_card(nuc='He-4')
-        assert len(d) > 0
-
-    def test_wallet_nuc_V50(self):
-        """Test fetch_wallet_card: nuc='V-50'.............................."""
-        d = nndc.fetch_wallet_card(nuc='V-50')
-        assert len(d) > 0
-
-    def test_wallet_nuc_Ge70(self):
-        """Test fetch_wallet_card: nuc='Ge-70'............................."""
-        d = nndc.fetch_wallet_card(nuc='Ge-70')
-        assert len(d) > 0
-
-    def test_wallet_nuc_U238(self):
-        """Test fetch_wallet_card: nuc='U-238'............................."""
-        d = nndc.fetch_wallet_card(nuc='U-238')
-        assert len(d) > 0
-
-    def test_wallet_nuc_Pa234m(self):
-        """Test fetch_wallet_card: nuc='Pa-234m' raises exception.........."""
-        with pytest.raises(nndc.NNDCError):
-            nndc.fetch_wallet_card(nuc='Pa-234m')
-
-    def test_wallet_nuc_Pa234(self):
-        """Test fetch_wallet_card: nuc='Pa-234'............................"""
-        d = nndc.fetch_wallet_card(nuc='Pa-234')
-        assert len(d) > 0
-
-    def test_wallet_z_6(self):
-        """Test fetch_wallet_card: z=6....................................."""
-        d = nndc.fetch_wallet_card(z=6)
-        assert len(d) > 0
-
-    def test_wallet_a_12(self):
-        """Test fetch_wallet_card: a=12...................................."""
-        d = nndc.fetch_wallet_card(a=12)
-        assert len(d) > 0
-
-    def test_wallet_n_6(self):
-        """Test fetch_wallet_card: n=6....................................."""
-        d = nndc.fetch_wallet_card(n=6)
-        assert len(d) > 0
-
-    def test_wallet_z_6_a_12(self):
-        """Test fetch_wallet_card: z=6, a=12..............................."""
-        d = nndc.fetch_wallet_card(z=6, a=12)
-        assert len(d) > 0
-
-    def test_wallet_n_6_a_12(self):
-        """Test fetch_wallet_card: n=6, a=12..............................."""
-        d = nndc.fetch_wallet_card(n=6, a=12)
-        assert len(d) > 0
-
-    def test_wallet_z_6_a_12_n_6(self):
-        """Test fetch_wallet_card: z=6, a=12, n=6.........................."""
-        d = nndc.fetch_wallet_card(z=6, a=12, n=6)
-        assert len(d) > 0
-
-    def test_wallet_zrange_1_20(self):
-        """Test fetch_wallet_card: z_range=(1, 20)........................."""
-        d = nndc.fetch_wallet_card(z_range=(1, 20))
-        assert len(d) > 0
-
-    def test_wallet_zrange_30_50(self):
-        """Test fetch_wallet_card: z_range=(30, 50)........................"""
-        d = nndc.fetch_wallet_card(z_range=(30, 50))
-        assert len(d) > 0
-
-    def test_wallet_zrange_100_118(self):
-        """Test fetch_wallet_card: z_range=(100, 118)......................"""
-        d = nndc.fetch_wallet_card(z_range=(100, 118))
-        assert len(d) > 0
-
-    def test_wallet_zrange_230_250(self):
-        """Test fetch_wallet_card: z_range=(230, 250) raises except........"""
-        with pytest.raises(nndc.NNDCError):
-            nndc.fetch_wallet_card(z_range=(230, 250))
-
-    def test_wallet_nuc_Co60_BM(self):
+    def test_query_nuc_Co60_BM(self):
         """Test fetch_wallet_card: nuc='Co-60', decay='B-'................."""
-        d = nndc.fetch_wallet_card(nuc='Co-60', decay='B-')
+        d = self.fetch(nuc='Co-60', decay='B-')
         assert len(d) > 0
 
-    def test_wallet_nuc_Pu239_SF(self):
+    def test_query_nuc_Pu239_SF(self):
         """Test fetch_wallet_card: nuc='Pu-239', decay='SF'................"""
-        d = nndc.fetch_wallet_card(nuc='Pu-239', decay='SF')
+        d = self.fetch(nuc='Pu-239', decay='SF')
         assert len(d) > 0
-
-    def test_wallet_exception_not_found(self):
-        """Test fetch_wallet_card exception if website not found..........."""
-        nndc._NuclearWalletCardQuery._URL = 'http://httpbin.org/status/404'
-        with pytest.raises(nndc.NNDCError):
-            nndc.fetch_wallet_card(nuc='Co-60')
-        nndc._NuclearWalletCardQuery._URL = NNDC_WALLET_URL_ORIG
-
-    def test_wallet_exception_empty(self):
-        """Test fetch_wallet_card exception if website is empty............"""
-        nndc._NuclearWalletCardQuery._URL = 'http://httpbin.org/post'
-        with pytest.raises(nndc.NNDCError):
-            nndc.fetch_wallet_card(nuc='Co-60')
-        nndc._NuclearWalletCardQuery._URL = NNDC_WALLET_URL_ORIG
-
-
-NNDC_DECAYRAD_URL_ORIG = nndc._DecayRadiationQuery._URL
 
 
 @pytest.mark.webtest
-class TestDecayRadiationQuery(object):
+class TestDecayRadiationQuery(NNDCQueryTests):
     """Test NNDC decay_radiation."""
 
-    def test_decay_nuc_Co60(self):
-        """Test fetch_decay_radiation: nuc='Co-60'........................."""
-        d = nndc.fetch_decay_radiation(nuc='Co-60')
-        assert len(d) > 0
+    def setup_method(self):
+        self.cls = nndc._DecayRadiationQuery
+        self.fetch = nndc.fetch_decay_radiation
 
     def test_decay_nuc_Co60_BM(self):
         """Test fetch_decay_radiation: nuc='Co-60', decay='B-'............."""
-        d = nndc.fetch_decay_radiation(nuc='Co-60', decay='B-')
+        d = self.fetch(nuc='Co-60', decay='B-')
         assert len(d) > 0
 
     def test_decay_nuc_Pu239_ANY(self):
         """Test fetch_decay_radiation: nuc='Pu-239', decay='ANY'..........."""
-        d = nndc.fetch_decay_radiation(nuc='Pu-239', decay='ANY')
+        d = self.fetch(nuc='Pu-239', decay='ANY')
         assert len(d) > 0
 
     def test_decay_nuc_Pu239_ANY_G(self):
         """Test fetch_decay_radiation: nuc='Pu-239', type='Gamma'.........."""
-        d = nndc.fetch_decay_radiation(nuc='Pu-239', type='Gamma')
+        d = self.fetch(nuc='Pu-239', type='Gamma')
         assert len(d) > 0
-
-    def test_decay_exception_not_found(self):
-        """Test fetch_decay_radiation raises exception if website not found"""
-        nndc._DecayRadiationQuery._URL = 'http://httpbin.org/status/404'
-        with pytest.raises(nndc.NNDCError):
-            nndc.fetch_decay_radiation(nuc='Co-60')
-        nndc._DecayRadiationQuery._URL = NNDC_DECAYRAD_URL_ORIG
-
-    def test_decay_exception_empty(self):
-        """Test fetch_decay_radiation raises exception if website is empty."""
-        nndc._DecayRadiationQuery._URL = 'http://httpbin.org/post'
-        with pytest.raises(nndc.NNDCError):
-            nndc.fetch_decay_radiation(nuc='Co-60')
-        nndc._DecayRadiationQuery._URL = NNDC_DECAYRAD_URL_ORIG
 
     def test_decay_nuc_200_300_ANY_G(self):
         """Test fetch_decay_radiation: z_range=(200, 300), type='Gamma'...."""
-        d = nndc.fetch_decay_radiation(z_range=(100, 120), type='Gamma')
+        d = self.fetch(z_range=(100, 120), type='Gamma')
         assert len(d) > 0
