@@ -30,14 +30,13 @@ series = [
 df_series = pd.DataFrame()
 for isotope in series:
     print(isotope)
-    try:
-        isotope_id = isotope
-        if isotope.endswith('m'):
-            isotope_id = isotope[:-1]
-        df = nndc.fetch_decay_radiation(
-            nuc=isotope_id, type='Gamma', e_range=(EMIN, 1e4),
-            i_range=(IMIN, 1000))
-    except nndc.NoDataFound:
+    isotope_id = isotope
+    if isotope.endswith('m'):
+        isotope_id = isotope[:-1]
+    df = nndc.fetch_decay_radiation(
+        nuc=isotope_id, type='Gamma', e_range=(EMIN, 1e4),
+        i_range=(IMIN, 1000))
+    if len(df) == 0:
         continue
     if isotope.endswith('m'):
         df = df.loc[df['Parent Energy Level (MeV)'] > 0.]

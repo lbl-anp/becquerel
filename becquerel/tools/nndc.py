@@ -142,13 +142,14 @@ class _NNDCQuery(object):
         'unc': 'stdandard',    # standard style uncertainties
         'sub': 'Search',       # search for the data
     }
+    _DUMMY_TEXT = ''
 
     def __init__(self, **kwargs):
         """Initialize query of NNDC data."""
         self._url = _NNDCQuery._URL
         self._data = dict(_NNDCQuery._DATA)
-        self._text = None
-        self.df = None
+        self._text = self._DUMMY_TEXT
+        self.df = pd.DataFrame()
         self.update(**kwargs)
 
     def __len__(self):
@@ -332,15 +333,16 @@ class _NNDCQuery(object):
         if self._data['spnuc'] == '':
             raise Exception('Parent nucleus conditions must be set')
         # submit the query
-        self._text = _NNDCQuery._request(self._url, self._data)
+        try:
+            self._text = _NNDCQuery._request(self._url, self._data)
+        except NoDataFound:
+            self._text = self._DUMMY_TEXT
         if len(self._text) == 0:
             raise NNDCError('NNDC returned no text')
         # package the output into a dictionary of arrays
         data = _NNDCQuery._parse_table(self._text)
         # create the DataFrame
         self.df = pd.DataFrame(data)
-        if len(self) == 0:
-            raise NNDCError('Parsed DataFrame is empty')
         # convert dimensionless integers to ints
         for col in ['A', 'Z', 'N', 'M']:
             if col in self.keys():
@@ -525,14 +527,25 @@ class _NuclearWalletCardQuery(_NNDCQuery):
         'plv': 'ANY',          # parity
         'ord': 'zalt',         # order file by Z, A, E(level), T1/2
     }
+    _DUMMY_TEXT = """
+<html>
+<body>
+
+<pre>
+A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)               	T1/2 (seconds)           	Abund.    	Unc     	Dec Mode	Branching (%)
+
+ To save this output into a local file, clik on "File" in your browser menu and select "Save as"
+
+</pre></body></html>
+"""
 
     def __init__(self, **kwargs):
         """Initialize NNDC Nuclear Wallet Card search."""
         perform = kwargs.get('perform', True)
         kwargs['perform'] = False
         super(_NuclearWalletCardQuery, self).__init__(**kwargs)
-        self._url = _NuclearWalletCardQuery._URL
-        self._data.update(_NuclearWalletCardQuery._DATA)
+        self._url = self._URL
+        self._data.update(self._DATA)
         super(_NuclearWalletCardQuery, self).update(**kwargs)
         self.update(**kwargs)
         if perform:
@@ -647,14 +660,24 @@ class _DecayRadiationQuery(_NNDCQuery):
         'rimax': '100',        # radiation intensity max (%)
         'ord': 'zate',         # order file by Z, A, T1/2, E
     }
+    _DUMMY_TEXT = """
+<html>
+<body>
+<pre>
+A  	Element	Z  	N  	Par. Elevel	Unc. 	JPi       	Dec Mode	T1/2 (txt)    	T1/2 (num)        	Daughter	Radiation	Rad subtype 	Rad Ene.  	Unc       	EP Ene.   	Unc       	Rad Int.  	Unc       	Dose        	Unc
+
+</pre>
+To save this output into a local File, clik on "File" in your browser menu and select "Save as"
+</body></html>
+"""
 
     def __init__(self, **kwargs):
         """Initialize NNDC Decay Radiation search."""
         perform = kwargs.get('perform', True)
         kwargs['perform'] = False
         super(_DecayRadiationQuery, self).__init__(**kwargs)
-        self._url = _DecayRadiationQuery._URL
-        self._data.update(_DecayRadiationQuery._DATA)
+        self._url = self._URL
+        self._data.update(self._DATA)
         super(_DecayRadiationQuery, self).update(**kwargs)
         self.update(**kwargs)
         if perform:

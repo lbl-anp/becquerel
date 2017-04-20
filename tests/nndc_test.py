@@ -112,6 +112,10 @@ class NNDCQueryTests(object):
 
         self.fetch = fetch_dummy
 
+    def stable_isotope_condition(self, df):
+        """What should be true about the dataframe if the isotope is stable."""
+        return len(df) > 0
+
     def test_query_nuc_Co60(self):
         """Test NNDCQuery: nuc='Co-60'....................................."""
         d = self.fetch(nuc='Co-60')
@@ -120,7 +124,7 @@ class NNDCQueryTests(object):
     def test_query_nuc_He4(self):
         """Test NNDCQuery: nuc='He-4'......................................"""
         d = self.fetch(nuc='He-4')
-        assert len(d) > 0
+        assert self.stable_isotope_condition(d)
 
     def test_query_nuc_V50(self):
         """Test NNDCQuery: nuc='V-50'......................................"""
@@ -130,7 +134,7 @@ class NNDCQueryTests(object):
     def test_query_nuc_Ge70(self):
         """Test NNDCQuery: nuc='Ge-70'....................................."""
         d = self.fetch(nuc='Ge-70')
-        assert len(d) > 0
+        assert self.stable_isotope_condition(d)
 
     def test_query_nuc_U238(self):
         """Test NNDCQuery: nuc='U-238'....................................."""
@@ -165,17 +169,17 @@ class NNDCQueryTests(object):
     def test_query_z_6_a_12(self):
         """Test NNDCQuery: z=6, a=12......................................."""
         d = self.fetch(z=6, a=12)
-        assert len(d) > 0
+        assert self.stable_isotope_condition(d)
 
     def test_query_n_6_a_12(self):
         """Test NNDCQuery: n=6, a=12......................................."""
         d = self.fetch(n=6, a=12)
-        assert len(d) > 0
+        assert self.stable_isotope_condition(d)
 
     def test_query_z_6_a_12_n_6(self):
         """Test NNDCQuery: z=6, a=12, n=6.................................."""
         d = self.fetch(z=6, a=12, n=6)
-        assert len(d) > 0
+        assert self.stable_isotope_condition(d)
 
     def test_query_zrange_1_20(self):
         """Test NNDCQuery: z_range=(1, 20)................................."""
@@ -208,9 +212,9 @@ class NNDCQueryTests(object):
         assert len(d) > 0
 
     def test_query_zrange_230_250(self):
-        """Test NNDCQuery: z_range=(230, 250) raises except................"""
-        with pytest.raises(nndc.NNDCError):
-            self.fetch(z_range=(230, 250))
+        """Test NNDCQuery: z_range=(230, 250) returns empty dataframe......"""
+        d = self.fetch(z_range=(230, 250))
+        assert len(d) == 0
 
     def test_query_arange_1_20(self):
         """Test NNDCQuery: a_range=(1, 20)................................."""
@@ -301,6 +305,10 @@ class TestDecayRadiationQuery(NNDCQueryTests):
     def setup_method(self):
         self.cls = nndc._DecayRadiationQuery
         self.fetch = nndc.fetch_decay_radiation
+
+    def stable_isotope_condition(self, df):
+        """What should be true about the dataframe if the isotope is stable."""
+        return len(df) == 0
 
     def test_decay_nuc_Co60_BM(self):
         """Test fetch_decay_radiation: nuc='Co-60', decay='B-'............."""
