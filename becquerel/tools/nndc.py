@@ -76,17 +76,34 @@ def _parse_float_uncertainty(x, dx):
     8.0
 
     """
-    # handle special cases
+    # replace special characters to ignore
+    if '%' in x:
+        x = x.replace('%', '')
     if '+X' in x:
         x = x.replace('+X', '')
     if '+Y' in x:
         x = x.replace('+Y', '')
+    # handle special ENSDF abbreviations, e.g.,
+    # http://www.iaea.org/inis/collection/NCLCollectionStore/_Public/14/785/14785563.pdf
+    # "One of the following expressions:
+    #   LT, GT, LE, GE, AP, CA, SY
+    # for less than, greater than, less than or equal to greater
+    # than or equal to. approximately equal to, calculated, and
+    # from systematics, respectively."
+    if x == '':
+        return None
+    elif '****' in x or '<' in x or '>' in x or '~' in x or '?' in x:
+        return None
+    elif '****' in dx:
+        return None
+    elif dx in ['LT', 'GT', 'LE', 'GE', 'AP', 'CA', 'SY']:
+        return None
     try:
         x2 = float(x)
     except ValueError:
         raise NNDCError(
             'Value cannot be parsed as float: "{}"'.format(x))
-    if dx == '' or dx == '*****' or dx == 'AP' or dx == 'CA':
+    if dx == '':
         return x2
     try:
         dx2 = float(dx)
@@ -437,31 +454,22 @@ class _NNDCQuery(object):
             self.df.rename(
                 columns={'Dose': 'Dose (MeV / Bq / s)'}, inplace=True)
 
-    def _convert_column(self, col, function, null=None):
+    def _convert_column(self, col, function):
         """Convert column from string to another type."""
         col_new = []
         for x in self[col]:
             if x == '':
-                col_new.append(null)
-            elif '****' in x or '<' in x or '>' in x or '~' in x or '?' in x:
-                col_new.append(null)
+                col_new.append(None)
             else:
                 col_new.append(function(x))
         self.df[col] = col_new
 
-    def _convert_column_uncertainty(self, col, null=None):
+    def _convert_column_uncertainty(self, col):
         """Combine column and its uncertainty into one column."""
         col_new = []
         for x, dx in zip(self[col], self[col + ' Unc.']):
-            if '%' in x:
-                x = x.replace('%', '')
-            if x == '':
-                col_new.append(null)
-            elif '****' in x or '<' in x or '>' in x or '~' in x or '?' in x:
-                col_new.append(null)
-            else:
-                x2 = _parse_float_uncertainty(x, dx)
-                col_new.append(x2)
+            x2 = _parse_float_uncertainty(x, dx)
+            col_new.append(x2)
         self.df[col] = col_new
         del self.df[col + ' Unc.']
 
