@@ -45,7 +45,7 @@ for isotope in series:
     elif isotope == 'Tl-208':
         df['Radiation Intensity (%)'] *= 0.3594
     df_series = df_series.append(df)
-df_series.sort('Radiation Energy (keV)')
+df_series.sort_values(by='Radiation Energy (keV)')
 fields = [
     'Z', 'Element', 'A', 'N', 'Decay Mode', 'Radiation', 'Radiation subtype',
     'Radiation Energy (keV)', 'Radiation Intensity (%)',

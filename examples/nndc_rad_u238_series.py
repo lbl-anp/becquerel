@@ -43,7 +43,7 @@ for isotope in series:
     else:
         df = df.loc[df['Parent Energy Level (MeV)'] == 0.]
     df_series = df_series.append(df)
-df_series.sort('Radiation Energy (keV)')
+df_series.sort_values(by='Radiation Energy (keV)')
 fields = [
     'Z', 'Element', 'A', 'N', 'Decay Mode', 'Radiation', 'Radiation subtype',
     'Radiation Energy (keV)', 'Radiation Intensity (%)',
