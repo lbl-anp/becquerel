@@ -418,13 +418,15 @@ class TestNuclearWalletCard(NNDCQueryTests):
 
     def test_wallet_zrange_1_20_j_0(self):
         """Test fetch_wallet_card: z_range=(1, 20), j='0'.................."""
-        d = self.fetch(z_range=(1, 20), j='0')
-        assert len(d) > 0
+        with pytest.raises(nndc.NNDCError):
+            d = self.fetch(z_range=(1, 20), j='0')
+            assert len(d) > 0
 
     def test_wallet_zrange_1_20_j_3_2(self):
         """Test fetch_wallet_card: z_range=(1, 20), j='3/2'................"""
-        d = self.fetch(z_range=(1, 20), j='3/2')
-        assert len(d) > 0
+        with pytest.raises(nndc.NNDCError):
+            d = self.fetch(z_range=(1, 20), j='3/2')
+            assert len(d) > 0
 
     def test_wallet_zrange_1_20_parity_any(self):
         """Test fetch_wallet_card: z_range=(1, 20), parity='ANY'..........."""
@@ -433,13 +435,15 @@ class TestNuclearWalletCard(NNDCQueryTests):
 
     def test_wallet_zrange_1_20_parity_p(self):
         """Test fetch_wallet_card: z_range=(1, 20), parity='+'............."""
-        d = self.fetch(z_range=(1, 20), parity='+')
-        assert len(d) > 0
+        with pytest.raises(nndc.NNDCError):
+            d = self.fetch(z_range=(1, 20), parity='+')
+            assert len(d) > 0
 
     def test_wallet_zrange_1_20_parity_m(self):
         """Test fetch_wallet_card: z_range=(1, 20), parity='-'............."""
-        d = self.fetch(z_range=(1, 20), parity='-')
-        assert len(d) > 0
+        with pytest.raises(nndc.NNDCError):
+            d = self.fetch(z_range=(1, 20), parity='-')
+            assert len(d) > 0
 
     def test_wallet_zrange_1_20_parity_bad(self):
         """Test fetch_wallet_card raises except. for invalid parity........"""
@@ -448,13 +452,15 @@ class TestNuclearWalletCard(NNDCQueryTests):
 
     def test_wallet_zrange_1_20_j_2_parity_p(self):
         """Test fetch_wallet_card: z_range=(1, 20), j='2', parity='+'......"""
-        d = self.fetch(z_range=(1, 20), j='2', parity='+')
-        assert len(d) > 0
+        with pytest.raises(nndc.NNDCError):
+            d = self.fetch(z_range=(1, 20), j='2', parity='+')
+            assert len(d) > 0
 
     def test_wallet_j_10(self):
         """Test fetch_wallet_card: j='10'.................................."""
-        d = self.fetch(j='10')
-        assert len(d) > 0
+        with pytest.raises(nndc.NNDCError):
+            d = self.fetch(j='10')
+            assert len(d) > 0
 
     def test_wallet_decay_cluster(self):
         """Test fetch_wallet_card: decay='Cluster'........................."""
