@@ -79,7 +79,7 @@ class TestParseFloatUncertainty(object):
         assert is_close(answer, 8.)
 
     def test_11(self):
-        """Test _parse_float_uncertainty('100.0%', '')...................."""
+        """Test _parse_float_uncertainty('100.0%', '')....................."""
         answer = nndc._parse_float_uncertainty('100.0%', '')
         assert is_close(answer, 100.)
 
@@ -342,8 +342,13 @@ class NNDCQueryTests(object):
         with pytest.raises(nndc.NNDCError):
             self.fetch(n_range=(0, 10, 100))
 
+    def test_query_exception_unknown_kwarg(self):
+        """Test NNDCQuery exception if an invalid kwarg is given..........."""
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(bad_kwarg=None)
+
     def test_query_trange_1Em6_1Em5(self):
-        """Test NNDCQuery: t_range=(1e-6, 1e-5)..............."""
+        """Test NNDCQuery: t_range=(1e-6, 1e-5)............................"""
         d = self.fetch(t_range=(1e-6, 1e-5))
         assert len(d) > 0
 
@@ -393,9 +398,14 @@ class NNDCQueryTests(object):
         assert len(d) > 0
 
     def test_query_nuc_Na22_decay_ECBP(self):
-        """Test NNDCQuery: nuc='Na-22', decay='EC+B+'......................."""
+        """Test NNDCQuery: nuc='Na-22', decay='EC+B+'......................"""
         d = self.fetch(nuc='Na-22', decay='EC+B+')
         assert len(d) > 0
+
+    def test_query_exception_bad_decay(self):
+        """Test NNDCQuery raises exception for an invalid decay mode......."""
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(nuc='Pu-239', decay='InvalidMode')
 
 
 @pytest.mark.webtest
@@ -431,6 +441,11 @@ class TestNuclearWalletCard(NNDCQueryTests):
         d = self.fetch(z_range=(1, 20), parity='-')
         assert len(d) > 0
 
+    def test_wallet_zrange_1_20_parity_bad(self):
+        """Test fetch_wallet_card raises except. for invalid parity........"""
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(z_range=(1, 20), parity='InvalidParity')
+
     def test_wallet_zrange_1_20_j_2_parity_p(self):
         """Test fetch_wallet_card: z_range=(1, 20), j='2', parity='+'......"""
         d = self.fetch(z_range=(1, 20), j='2', parity='+')
@@ -463,6 +478,11 @@ class TestDecayRadiationQuery(NNDCQueryTests):
         """Test fetch_decay_radiation: nuc='Pu-239', type='Gamma'.........."""
         d = self.fetch(nuc='Pu-239', type='Gamma')
         assert len(d) > 0
+
+    def test_decay_exception_bad_type(self):
+        """Test fetch_decay_radiation raises except. for invalid rad type.."""
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(nuc='Pu-239', type='InvalidType')
 
     def test_decay_zrange_100_120_type_ANY(self):
         """Test fetch_decay_radiation: z_range=(100, 120), type='ANY'......"""
