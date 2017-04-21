@@ -83,13 +83,15 @@ def _parse_float_uncertainty(x, dx):
         raise NNDCError('Value must be a string: {}'.format(x))
     if not isinstance(dx, str):
         raise NNDCError('Uncertainty must be a string: {}'.format(dx))
-    # replace special characters to ignore
+    # ignore percents
     if '%' in x:
         x = x.replace('%', '')
-    if '+X' in x:
-        x = x.replace('+X', '')
-    if '+Y' in x:
-        x = x.replace('+Y', '')
+    # ignore unknown ground state levels (X, Y, Z, W)
+    for sym in ['X', 'Y', 'Z', 'W']:
+        if '+' + sym in x:
+            x = x.replace('+' + sym, '')
+        elif x == sym:
+            x = '0'
     # handle special ENSDF abbreviations, e.g.,
     # http://www.iaea.org/inis/collection/NCLCollectionStore/_Public/14/785/14785563.pdf
     # "One of the following expressions:

@@ -88,9 +88,9 @@ class TestParseFloatUncertainty(object):
         assert is_close(answer, 73.92)
 
     def test_13(self):
-        """Test _parse_float_uncertainty('73.92+Y', '')...................."""
-        answer = nndc._parse_float_uncertainty('73.92+Y', '')
-        assert is_close(answer, 73.92)
+        """Test _parse_float_uncertainty('Y', '').........................."""
+        answer = nndc._parse_float_uncertainty('Y', '')
+        assert answer == 0.
 
     def test_14(self):
         """Test _parse_float_uncertainty('', '')..........................."""
@@ -123,14 +123,14 @@ class TestParseFloatUncertainty(object):
         assert answer is None
 
     def test_20(self):
-        """Test _parse_float_uncertainty('X', '7') raises NNDCError........"""
+        """Test _parse_float_uncertainty('@', '7') raises NNDCError........"""
         with pytest.raises(nndc.NNDCError):
-            nndc._parse_float_uncertainty('X', '7')
+            nndc._parse_float_uncertainty('@', '7')
 
     def test_21(self):
-        """Test _parse_float_uncertainty('7', 'X') raises NNDCError........"""
+        """Test _parse_float_uncertainty('7', '@') raises NNDCError........"""
         with pytest.raises(nndc.NNDCError):
-            nndc._parse_float_uncertainty('7', 'X')
+            nndc._parse_float_uncertainty('7', '@')
 
 
 class NNDCQueryTests(object):
