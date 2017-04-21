@@ -13,6 +13,9 @@ import pandas as pd
 import uncertainties
 
 
+PARITIES = ['+', '-', 'ANY']
+
+
 WALLET_DECAY_MODE = {
     'ANY': 'ANY',
     'IT': 'IT',
@@ -591,6 +594,10 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
             self._data['jled'] = 'enabled'
             self._data['jlv'] = kwargs['j']
         if 'parity' in kwargs:
+            if kwargs['parity'] not in PARITIES:
+                raise NNDCError(
+                    'Parity must be one of {}, not {}'.format(
+                        PARITIES, kwargs['parity']))
             self._data['jled'] = 'enabled'
             self._data['plv'] = kwargs['parity']
 
