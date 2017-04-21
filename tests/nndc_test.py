@@ -322,6 +322,26 @@ class NNDCQueryTests(object):
             self.fetch(nuc='Co-60')
         self.cls._URL = _URL_ORIG
 
+    def test_query_exception_range_None(self):
+        """Test NNDCQuery exception if a range kwarg is not iterable......."""
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(n_range=None)
+
+    def test_query_exception_range_empty(self):
+        """Test NNDCQuery exception if a range kwarg is empty.............."""
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(n_range=())
+
+    def test_query_exception_range_len_1(self):
+        """Test NNDCQuery exception if a range kwarg has length 1.........."""
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(n_range=(0, ))
+
+    def test_query_exception_range_len_3(self):
+        """Test NNDCQuery exception if a range kwarg has length 3.........."""
+        with pytest.raises(nndc.NNDCError):
+            self.fetch(n_range=(0, 10, 100))
+
     def test_query_trange_1Em6_1Em5(self):
         """Test NNDCQuery: t_range=(1e-6, 1e-5)..............."""
         d = self.fetch(t_range=(1e-6, 1e-5))

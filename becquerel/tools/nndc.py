@@ -131,8 +131,15 @@ def _parse_float_uncertainty(x, dx):
 
 
 def _format_range(x_range):
-    """Return two strings for the two range elements, blank if not finite."""
-    x1, x2 = x_range
+    """Return two strings for the two range elements, blank if not finite.
+
+    If x_range is not an iterable of length 2, raise NNDCError.
+    """
+    try:
+        x1, x2 = x_range
+    except (TypeError, ValueError):
+        raise NNDCError(
+            'Range keyword arg must have two elements: "{}"'.format(x_range))
     try:
         if np.isfinite(x1):
             x1 = '{}'.format(x1)
@@ -347,10 +354,6 @@ class _NNDCQuery(object):
                 self._data[x.lower()] = '{}'.format(kwargs[x])
             # handle *_range, *_any, *_odd, *_even
             elif x + '_range' in kwargs:
-                if len(kwargs[x + '_range']) != 2:
-                    raise NNDCError(
-                        '{}_range must have two elements: "{}"'.format(
-                            x, kwargs[x + '_range']))
                 self._data['spnuc'] = 'zanrange'
                 self._data[x.lower() + 'min'], \
                     self._data[x.lower() + 'max'] = \
@@ -363,19 +366,11 @@ class _NNDCQuery(object):
                     self._data['even' + x.lower()] = 'odd'
         # handle energy level condition
         if 'elevel_range' in kwargs:
-            if len(kwargs['elevel_range']) != 2:
-                raise NNDCError(
-                    'elevel_range must have two elements: "{}"'.format(
-                        kwargs['elevel_range']))
             self._data['eled'] = 'enabled'
             self._data['elmin'], self._data['elmax'] = \
                 _format_range(kwargs['elevel_range'])
         # handle half-life range condition
         if 't_range' in kwargs:
-            if len(kwargs['t_range']) != 2:
-                raise NNDCError(
-                    't_range must have two elements: "{}"'.format(
-                        kwargs['t_range']))
             self._data['tled'] = 'enabled'
             self._data['tlmin'], self._data['tlmax'] = \
                 _format_range(kwargs['t_range'])
@@ -757,19 +752,11 @@ To save this output into a local File, clik on "File" in your browser menu and s
             self._data['rtn'] = DECAYRAD_RADIATION_TYPE[kwargs['type']]
         # handle radiation energy range
         if 'e_range' in kwargs:
-            if len(kwargs['e_range']) != 2:
-                raise NNDCError(
-                    'e_range must have two elements: "{}"'.format(
-                        kwargs['e_range']))
             self._data['reed'] = 'enabled'
             self._data['remin'], self._data['remax'] = \
                 _format_range(kwargs['e_range'])
         # handle radiation intensity range
         if 'i_range' in kwargs:
-            if len(kwargs['i_range']) != 2:
-                raise NNDCError(
-                    'i_range must have two elements: "{}"'.format(
-                        kwargs['i_range']))
             self._data['ried'] = 'enabled'
             self._data['rimin'], self._data['rimax'] = \
                 _format_range(kwargs['i_range'])
