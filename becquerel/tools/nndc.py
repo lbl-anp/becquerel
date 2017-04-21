@@ -8,6 +8,7 @@ References:
 """
 
 from __future__ import print_function
+import numpy as np
 import requests
 import pandas as pd
 import uncertainties
@@ -127,6 +128,26 @@ def _parse_float_uncertainty(x, dx):
         raise NNDCError(
             'Uncertainty cannot be parsed as float: "{}"'.format(dx))
     return uncertainties.ufloat(x2, dx2)
+
+
+def _format_range(x_range):
+    """Return two strings for the two range elements, blank if not finite."""
+    x1, x2 = x_range
+    try:
+        if np.isfinite(x1):
+            x1 = '{}'.format(x1)
+        else:
+            x1 = ''
+    except TypeError:
+        x1 = ''
+    try:
+        if np.isfinite(x2):
+            x2 = '{}'.format(x2)
+        else:
+            x2 = ''
+    except TypeError:
+        x2 = ''
+    return x1, x2
 
 
 class _NNDCQuery(object):
@@ -331,10 +352,9 @@ class _NNDCQuery(object):
                         '{}_range must have two elements: "{}"'.format(
                             x, kwargs[x + '_range']))
                 self._data['spnuc'] = 'zanrange'
-                self._data[x.lower() + 'min'] = '{}'.format(
-                    kwargs[x + '_range'][0])
-                self._data[x.lower() + 'max'] = '{}'.format(
-                    kwargs[x + '_range'][1])
+                self._data[x.lower() + 'min'], \
+                    self._data[x.lower() + 'max'] = \
+                    _format_range(kwargs[x + '_range'])
                 if x + '_any' in kwargs:
                     self._data['even' + x.lower()] = 'any'
                 elif x + '_even' in kwargs:
@@ -348,8 +368,8 @@ class _NNDCQuery(object):
                     'elevel_range must have two elements: "{}"'.format(
                         kwargs['elevel_range']))
             self._data['eled'] = 'enabled'
-            self._data['elmin'] = '{}'.format(kwargs['elevel_range'][0])
-            self._data['elmax'] = '{}'.format(kwargs['elevel_range'][1])
+            self._data['elmin'], self._data['elmax'] = \
+                _format_range(kwargs['elevel_range'])
         # handle half-life range condition
         if 't_range' in kwargs:
             if len(kwargs['t_range']) != 2:
@@ -357,8 +377,8 @@ class _NNDCQuery(object):
                     't_range must have two elements: "{}"'.format(
                         kwargs['t_range']))
             self._data['tled'] = 'enabled'
-            self._data['tlmin'] = '{}'.format(kwargs['t_range'][0])
-            self._data['tlmax'] = '{}'.format(kwargs['t_range'][1])
+            self._data['tlmin'], self._data['tlmax'] = \
+                _format_range(kwargs['t_range'])
 
     def perform(self):
         """Perform the query."""
@@ -742,8 +762,8 @@ To save this output into a local File, clik on "File" in your browser menu and s
                     'e_range must have two elements: "{}"'.format(
                         kwargs['e_range']))
             self._data['reed'] = 'enabled'
-            self._data['remin'] = '{}'.format(kwargs['e_range'][0])
-            self._data['remax'] = '{}'.format(kwargs['e_range'][1])
+            self._data['remin'], self._data['remax'] = \
+                _format_range(kwargs['e_range'])
         # handle radiation intensity range
         if 'i_range' in kwargs:
             if len(kwargs['i_range']) != 2:
@@ -751,8 +771,8 @@ To save this output into a local File, clik on "File" in your browser menu and s
                     'i_range must have two elements: "{}"'.format(
                         kwargs['i_range']))
             self._data['ried'] = 'enabled'
-            self._data['rimin'] = '{}'.format(kwargs['i_range'][0])
-            self._data['rimax'] = '{}'.format(kwargs['i_range'][1])
+            self._data['rimin'], self._data['rimax'] = \
+                _format_range(kwargs['i_range'])
 
 
 def fetch_decay_radiation(**kwargs):

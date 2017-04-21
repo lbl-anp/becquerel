@@ -219,6 +219,16 @@ class NNDCQueryTests(object):
         d = self.fetch(z_range=(1, 20))
         assert len(d) > 0
 
+    def test_query_zrange_None_20(self):
+        """Test NNDCQuery: z_range=(None, 20).............................."""
+        d = self.fetch(z_range=(None, 20))
+        assert len(d) > 0
+
+    def test_query_zrange_100_None(self):
+        """Test NNDCQuery: z_range=(100, None)............................."""
+        d = self.fetch(z_range=(100, None))
+        assert len(d) > 0
+
     def test_query_zrange_1_20_z_any(self):
         """Test NNDCQuery: z_range=(1, 20), z_any=True....................."""
         d = self.fetch(z_range=(1, 20), z_any=True)
