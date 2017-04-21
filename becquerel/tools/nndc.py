@@ -384,7 +384,7 @@ class _NNDCQuery(object):
         """Perform the query."""
         # check the conditions
         if self._data['spnuc'] == '':
-            raise Exception('Parent nucleus conditions must be set')
+            self.update(z_range=(None, None))
         # submit the query
         try:
             self._text = _NNDCQuery._request(self._url, self._data)
