@@ -1,6 +1,7 @@
 """Test NNDC data queries."""
 
 from __future__ import print_function
+import numpy as np
 import pandas as pd
 from becquerel.tools import nndc
 import pytest
@@ -321,6 +322,61 @@ class NNDCQueryTests(object):
             self.fetch(nuc='Co-60')
         self.cls._URL = _URL_ORIG
 
+    def test_query_trange_1Em6_1Em5(self):
+        """Test NNDCQuery: t_range=(1e-6, 1e-5)..............."""
+        d = self.fetch(t_range=(1e-6, 1e-5))
+        assert len(d) > 0
+
+    def test_query_zrange_1_20_trange_None_1E4(self):
+        """Test NNDCQuery: z_range=(1, 20), t_range=(None, 1e4)............"""
+        d = self.fetch(z_range=(1, 20), t_range=(None, 1e4))
+        assert len(d) > 0
+
+    def test_query_zrange_1_20_trange_0_1E4(self):
+        """Test NNDCQuery: z_range=(1, 20), t_range=(0, 1e4)..............."""
+        d = self.fetch(z_range=(1, 20), t_range=(0, 1e4))
+        assert len(d) > 0
+
+    def test_query_zrange_1_20_trange_1E4_1E9(self):
+        """Test NNDCQuery: z_range=(1, 20), t_range=(1e4, 1e9)............."""
+        d = self.fetch(z_range=(1, 20), t_range=(1e4, 1e9))
+        assert len(d) > 0
+
+    def test_query_zrange_1_20_trange_1E9_None(self):
+        """Test NNDCQuery: z_range=(1, 20), t_range=(1e9, None)............"""
+        d = self.fetch(z_range=(1, 20), t_range=(1e9, None))
+        assert len(d) > 0
+
+    def test_query_zrange_1_20_trange_1E9_inf(self):
+        """Test NNDCQuery: z_range=(1, 20), t_range=(1e9, np.inf).........."""
+        d = self.fetch(z_range=(1, 20), t_range=(1e9, np.inf))
+        assert len(d) > 0
+
+    def test_query_zrange_1_20_elevelrange_0_01(self):
+        """Test NNDCQuery: z_range=(1, 20), elevel_range=(0, 0.1).........."""
+        d = self.fetch(z_range=(1, 20), elevel_range=(0, 0.1))
+        assert len(d) > 0
+
+    def test_query_zrange_1_20_elevelrange_01_10(self):
+        """Test NNDCQuery: z_range=(1, 20), elevel_range=(0.1, 10)........."""
+        d = self.fetch(z_range=(1, 20), elevel_range=(0.1, 10))
+        assert len(d) > 0
+
+    def test_query_nuc_Pu239_decay_A(self):
+        """Test NNDCQuery: nuc='Pu-239', decay='Alpha'....................."""
+        d = self.fetch(nuc='Pu-239', decay='Alpha')
+        assert len(d) > 0
+
+    def test_query_nuc_Co60_decay_BM(self):
+        """Test NNDCQuery: nuc='Co-60', decay='B-'........................."""
+        d = self.fetch(nuc='Co-60', decay='B-')
+        assert len(d) > 0
+
+    def test_query_nuc_Na22_decay_ECBP(self):
+        """Test NNDCQuery: nuc='Na-22', decay='EC+B+'......................."""
+        d = self.fetch(nuc='Na-22', decay='EC+B+')
+        assert len(d) > 0
+
 
 @pytest.mark.webtest
 class TestNuclearWalletCard(NNDCQueryTests):
@@ -330,14 +386,44 @@ class TestNuclearWalletCard(NNDCQueryTests):
         self.cls = nndc._NuclearWalletCardQuery
         self.fetch = nndc.fetch_wallet_card
 
-    def test_query_nuc_Co60_BM(self):
-        """Test fetch_wallet_card: nuc='Co-60', decay='B-'................."""
-        d = self.fetch(nuc='Co-60', decay='B-')
+    def test_wallet_zrange_1_20_j_0(self):
+        """Test fetch_wallet_card: z_range=(1, 20), j='0'.................."""
+        d = self.fetch(z_range=(1, 20), j='0')
         assert len(d) > 0
 
-    def test_query_nuc_Pu239_SF(self):
-        """Test fetch_wallet_card: nuc='Pu-239', decay='SF'................"""
-        d = self.fetch(nuc='Pu-239', decay='SF')
+    def test_wallet_zrange_1_20_j_3_2(self):
+        """Test fetch_wallet_card: z_range=(1, 20), j='3/2'................"""
+        d = self.fetch(z_range=(1, 20), j='3/2')
+        assert len(d) > 0
+
+    def test_wallet_zrange_1_20_parity_any(self):
+        """Test fetch_wallet_card: z_range=(1, 20), parity='ANY'..........."""
+        d = self.fetch(z_range=(1, 20), parity='ANY')
+        assert len(d) > 0
+
+    def test_wallet_zrange_1_20_parity_p(self):
+        """Test fetch_wallet_card: z_range=(1, 20), parity='+'............."""
+        d = self.fetch(z_range=(1, 20), parity='+')
+        assert len(d) > 0
+
+    def test_wallet_zrange_1_20_parity_m(self):
+        """Test fetch_wallet_card: z_range=(1, 20), parity='-'............."""
+        d = self.fetch(z_range=(1, 20), parity='-')
+        assert len(d) > 0
+
+    def test_wallet_zrange_1_20_j_2_parity_p(self):
+        """Test fetch_wallet_card: z_range=(1, 20), j='2', parity='+'......"""
+        d = self.fetch(z_range=(1, 20), j='2', parity='+')
+        assert len(d) > 0
+
+    def test_wallet_j_10(self):
+        """Test fetch_wallet_card: j='10'.................................."""
+        d = self.fetch(j='10')
+        assert len(d) > 0
+
+    def test_wallet_decay_cluster(self):
+        """Test fetch_wallet_card: decay='Cluster'........................."""
+        d = self.fetch(decay='Cluster')
         assert len(d) > 0
 
 
@@ -353,22 +439,52 @@ class TestDecayRadiationQuery(NNDCQueryTests):
         """What should be true about the dataframe if the isotope is stable."""
         return len(df) == 0
 
-    def test_decay_nuc_Co60_BM(self):
-        """Test fetch_decay_radiation: nuc='Co-60', decay='B-'............."""
-        d = self.fetch(nuc='Co-60', decay='B-')
-        assert len(d) > 0
-
-    def test_decay_nuc_Pu239_ANY(self):
-        """Test fetch_decay_radiation: nuc='Pu-239', decay='ANY'..........."""
-        d = self.fetch(nuc='Pu-239', decay='ANY')
-        assert len(d) > 0
-
-    def test_decay_nuc_Pu239_ANY_G(self):
+    def test_decay_nuc_Pu239_type_G(self):
         """Test fetch_decay_radiation: nuc='Pu-239', type='Gamma'.........."""
         d = self.fetch(nuc='Pu-239', type='Gamma')
         assert len(d) > 0
 
-    def test_decay_nuc_200_300_ANY_G(self):
-        """Test fetch_decay_radiation: z_range=(200, 300), type='Gamma'...."""
+    def test_decay_zrange_100_120_type_ANY(self):
+        """Test fetch_decay_radiation: z_range=(100, 120), type='ANY'......"""
+        d = self.fetch(z_range=(100, 120), type='ANY')
+        assert len(d) > 0
+
+    def test_decay_zrange_100_120_type_G(self):
+        """Test fetch_decay_radiation: z_range=(100, 120), type='Gamma'...."""
         d = self.fetch(z_range=(100, 120), type='Gamma')
+        assert len(d) > 0
+
+    def test_decay_nuc_Ba133_erange_300_400(self):
+        """Test fetch_decay_radiation: nuc='Ba-133', e_range=(300, 400)...."""
+        d = self.fetch(nuc='Ba-133', e_range=(300, 400))
+        assert len(d) > 0
+
+    def test_decay_nuc_Ba133_erange_300_None(self):
+        """Test fetch_decay_radiation: nuc='Ba-133', e_range=(300, None)..."""
+        d = self.fetch(nuc='Ba-133', e_range=(300, None))
+        assert len(d) > 0
+
+    def test_decay_nuc_Ba133_erange_None_400(self):
+        """Test fetch_decay_radiation: nuc='Ba-133', e_range=(None, 400)..."""
+        d = self.fetch(nuc='Ba-133', e_range=(None, 400))
+        assert len(d) > 0
+
+    def test_decay_nuc_Ba133_irange_10_100(self):
+        """Test fetch_decay_radiation: nuc='Ba-133', i_range=(10, 100)....."""
+        d = self.fetch(nuc='Ba-133', i_range=(10, 100))
+        assert len(d) > 0
+
+    def test_decay_nuc_Ba133_irange_40_None(self):
+        """Test fetch_decay_radiation: nuc='Ba-133', i_range=(40, None)...."""
+        d = self.fetch(nuc='Ba-133', i_range=(40, None))
+        assert len(d) > 0
+
+    def test_decay_nuc_Ba133_irange_None_40(self):
+        """Test fetch_decay_radiation: nuc='Ba-133', i_range=(None, 40)...."""
+        d = self.fetch(nuc='Ba-133', i_range=(None, 40))
+        assert len(d) > 0
+
+    def test_decay_erange_661_663(self):
+        """Test fetch_decay_radiation: e_range=(661, 663).................."""
+        d = self.fetch(e_range=(661, 663))
         assert len(d) > 0
