@@ -124,13 +124,13 @@ class TestParseFloatUncertainty(object):
         assert answer is None
 
     def test_20(self):
-        """Test _parse_float_uncertainty('@', '7') raises NNDCError........"""
-        with pytest.raises(nndc.NNDCError):
+        """Test _parse_float_uncertainty('@', '7') raises NNDCRequestError."""
+        with pytest.raises(nndc.NNDCRequestError):
             nndc._parse_float_uncertainty('@', '7')
 
     def test_21(self):
-        """Test _parse_float_uncertainty('7', '@') raises NNDCError........"""
-        with pytest.raises(nndc.NNDCError):
+        """Test _parse_float_uncertainty('7', '@') raises NNDCRequestError."""
+        with pytest.raises(nndc.NNDCRequestError):
             nndc._parse_float_uncertainty('7', '@')
 
 
@@ -177,7 +177,7 @@ class NNDCQueryTests(object):
 
     def test_query_nuc_Pa234m(self):
         """Test NNDCQuery: nuc='Pa-234m' raises exception.................."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCRequestError):
             self.fetch(nuc='Pa-234m')
 
     def test_query_nuc_Pa234(self):
@@ -310,7 +310,7 @@ class NNDCQueryTests(object):
         """Test NNDCQuery exception if website not found..................."""
         _URL_ORIG = self.cls._URL
         self.cls._URL = 'http://httpbin.org/status/404'
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCRequestError):
             self.fetch(nuc='Co-60')
         self.cls._URL = _URL_ORIG
 
@@ -318,33 +318,33 @@ class NNDCQueryTests(object):
         """Test NNDCQuery exception if website is empty...................."""
         _URL_ORIG = self.cls._URL
         self.cls._URL = 'http://httpbin.org/post'
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCRequestError):
             self.fetch(nuc='Co-60')
         self.cls._URL = _URL_ORIG
 
     def test_query_exception_range_None(self):
         """Test NNDCQuery exception if a range kwarg is not iterable......."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCInputError):
             self.fetch(n_range=None)
 
     def test_query_exception_range_empty(self):
         """Test NNDCQuery exception if a range kwarg is empty.............."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCInputError):
             self.fetch(n_range=())
 
     def test_query_exception_range_len_1(self):
         """Test NNDCQuery exception if a range kwarg has length 1.........."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCInputError):
             self.fetch(n_range=(0, ))
 
     def test_query_exception_range_len_3(self):
         """Test NNDCQuery exception if a range kwarg has length 3.........."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCInputError):
             self.fetch(n_range=(0, 10, 100))
 
     def test_query_exception_unknown_kwarg(self):
         """Test NNDCQuery exception if an invalid kwarg is given..........."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCInputError):
             self.fetch(bad_kwarg=None)
 
     def test_query_trange_1Em6_1Em5(self):
@@ -404,7 +404,7 @@ class NNDCQueryTests(object):
 
     def test_query_exception_bad_decay(self):
         """Test NNDCQuery raises exception for an invalid decay mode......."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCInputError):
             self.fetch(nuc='Pu-239', decay='InvalidMode')
 
 
@@ -418,13 +418,13 @@ class TestNuclearWalletCard(NNDCQueryTests):
 
     def test_wallet_zrange_1_20_j_0(self):
         """Test fetch_wallet_card: z_range=(1, 20), j='0'.................."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCRequestError):
             d = self.fetch(z_range=(1, 20), j='0')
             assert len(d) > 0
 
     def test_wallet_zrange_1_20_j_3_2(self):
         """Test fetch_wallet_card: z_range=(1, 20), j='3/2'................"""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCRequestError):
             d = self.fetch(z_range=(1, 20), j='3/2')
             assert len(d) > 0
 
@@ -435,30 +435,30 @@ class TestNuclearWalletCard(NNDCQueryTests):
 
     def test_wallet_zrange_1_20_parity_p(self):
         """Test fetch_wallet_card: z_range=(1, 20), parity='+'............."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCRequestError):
             d = self.fetch(z_range=(1, 20), parity='+')
             assert len(d) > 0
 
     def test_wallet_zrange_1_20_parity_m(self):
         """Test fetch_wallet_card: z_range=(1, 20), parity='-'............."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCRequestError):
             d = self.fetch(z_range=(1, 20), parity='-')
             assert len(d) > 0
 
     def test_wallet_zrange_1_20_parity_bad(self):
         """Test fetch_wallet_card raises except. for invalid parity........"""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCInputError):
             self.fetch(z_range=(1, 20), parity='InvalidParity')
 
     def test_wallet_zrange_1_20_j_2_parity_p(self):
         """Test fetch_wallet_card: z_range=(1, 20), j='2', parity='+'......"""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCRequestError):
             d = self.fetch(z_range=(1, 20), j='2', parity='+')
             assert len(d) > 0
 
     def test_wallet_j_10(self):
         """Test fetch_wallet_card: j='10'.................................."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCRequestError):
             d = self.fetch(j='10')
             assert len(d) > 0
 
@@ -487,7 +487,7 @@ class TestDecayRadiationQuery(NNDCQueryTests):
 
     def test_decay_exception_bad_type(self):
         """Test fetch_decay_radiation raises except. for invalid rad type.."""
-        with pytest.raises(nndc.NNDCError):
+        with pytest.raises(nndc.NNDCInputError):
             self.fetch(nuc='Pu-239', type='InvalidType')
 
     def test_decay_zrange_100_120_type_ANY(self):

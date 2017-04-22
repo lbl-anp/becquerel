@@ -67,6 +67,16 @@ class NNDCError(Exception):
 class NoDataFound(NNDCError):
     """No datasets were found within the specified search."""
 
+
+class NNDCInputError(NNDCError):
+    """Error related to the user input to an NNDC query."""
+
+    pass
+
+
+class NNDCRequestError(NNDCError):
+    """Error related to communicating with NNDC or parsing the result."""
+
     pass
 
 
@@ -81,9 +91,9 @@ def _parse_float_uncertainty(x, dx):
 
     """
     if not isinstance(x, str):
-        raise NNDCError('Value must be a string: {}'.format(x))
+        raise NNDCRequestError('Value must be a string: {}'.format(x))
     if not isinstance(dx, str):
-        raise NNDCError('Uncertainty must be a string: {}'.format(dx))
+        raise NNDCRequestError('Uncertainty must be a string: {}'.format(dx))
     # ignore percents
     if '%' in x:
         x = x.replace('%', '')
@@ -111,7 +121,7 @@ def _parse_float_uncertainty(x, dx):
     try:
         x2 = float(x)
     except ValueError:
-        raise NNDCError(
+        raise NNDCRequestError(
             'Value cannot be parsed as float: "{}"'.format(x))
     if dx == '':
         return x2
@@ -125,7 +135,7 @@ def _parse_float_uncertainty(x, dx):
     try:
         dx2 = float(dx) * factor
     except ValueError:
-        raise NNDCError(
+        raise NNDCRequestError(
             'Uncertainty cannot be parsed as float: "{}"'.format(dx))
     return uncertainties.ufloat(x2, dx2)
 
@@ -133,12 +143,12 @@ def _parse_float_uncertainty(x, dx):
 def _format_range(x_range):
     """Return two strings for the two range elements, blank if not finite.
 
-    If x_range is not an iterable of length 2, raise NNDCError.
+    If x_range is not an iterable of length 2, raise NNDCInputError.
     """
     try:
         x1, x2 = x_range
     except (TypeError, ValueError):
-        raise NNDCError(
+        raise NNDCInputError(
             'Range keyword arg must have two elements: "{}"'.format(x_range))
     try:
         if np.isfinite(x1):
@@ -247,7 +257,7 @@ class _NNDCQuery(object):
         """Request data table from the URL."""
         req = requests.post(url, data=data)
         if not req.ok or req.reason != 'OK' or req.status_code != 200:
-            raise NNDCError('Request failed: ' + req.reason)
+            raise NNDCRequestError('Request failed: ' + req.reason)
         for msg in [
                 'Your search was unsuccessful',
                 'No datasets were found within the specified search',
@@ -291,7 +301,7 @@ class _NNDCQuery(object):
                 hd = hd.replace('Mass Exc', 'Mass Excess')
             headers_new.append(hd)
         if len(set(headers_new)) != len(headers_new):
-            raise NNDCError(
+            raise NNDCRequestError(
                 'Duplicate headers after parsing\n' +
                 '    Original headers: "{}"\n'.format(headers) +
                 '    Parsed headers:   "{}"'.format(headers_new))
@@ -307,7 +317,7 @@ class _NNDCQuery(object):
             text = text.split('To save this output')[0]
             lines = text.split('\n')
         except:
-            raise NNDCError('Unable to parse text:\n' + text)
+            raise NNDCRequestError('Unable to parse text:\n' + text)
         table = {}
         headers = None
         for line in lines:
@@ -322,7 +332,7 @@ class _NNDCQuery(object):
                     table[header] = []
             else:
                 if len(tokens) != len(headers):
-                    raise NNDCError(
+                    raise NNDCRequestError(
                         'Too few data in table row\n' +
                         '    Headers: "{}"\n'.format(headers) +
                         '    Row:     "{}"'.format(tokens))
@@ -343,7 +353,7 @@ class _NNDCQuery(object):
         """Update the search criteria."""
         for kwarg in kwargs:
             if kwarg not in _NNDCQuery._ALLOWED_KEYWORDS:
-                raise NNDCError('Unknown keyword: "{}"'.format(kwarg))
+                raise NNDCInputError('Unknown keyword: "{}"'.format(kwarg))
         if 'nuc' in kwargs:
             self._data['spnuc'] = 'name'
             self._data['nuc'] = kwargs['nuc']
@@ -386,7 +396,7 @@ class _NNDCQuery(object):
         except NoDataFound:
             self._text = self._DUMMY_TEXT
         if len(self._text) == 0:
-            raise NNDCError('NNDC returned no text')
+            raise NNDCRequestError('NNDC returned no text')
         # package the output into a dictionary of arrays
         data = _NNDCQuery._parse_table(self._text)
         # create the DataFrame
@@ -598,12 +608,13 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
         super(_NuclearWalletCardQuery, self).update(**kwargs)
         for kwarg in kwargs:
             if kwarg not in _NuclearWalletCardQuery._ALLOWED_KEYWORDS:
-                raise NNDCError('Unknown keyword: "{}"'.format(kwarg))
+                raise NNDCInputError('Unknown keyword: "{}"'.format(kwarg))
         # handle decay mode
         if 'decay' in kwargs:
             if kwargs['decay'] not in WALLET_DECAY_MODE:
-                raise NNDCError('Decay mode must be one of {}, not {}'.format(
-                    WALLET_DECAY_MODE.keys(), kwargs['decay']))
+                raise NNDCInputError(
+                    'Decay mode must be one of {}, not {}'.format(
+                        WALLET_DECAY_MODE.keys(), kwargs['decay']))
             self._data['dmed'] = 'enabled'
             self._data['dmn'] = WALLET_DECAY_MODE[kwargs['decay']]
         # handle half-life range condition
@@ -612,7 +623,7 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
             self._data['jlv'] = kwargs['j']
         if 'parity' in kwargs:
             if kwargs['parity'] not in PARITIES:
-                raise NNDCError(
+                raise NNDCInputError(
                     'Parity must be one of {}, not {}'.format(
                         PARITIES, kwargs['parity']))
             self._data['jled'] = 'enabled'
@@ -734,18 +745,19 @@ To save this output into a local File, clik on "File" in your browser menu and s
         super(_DecayRadiationQuery, self).update(**kwargs)
         for kwarg in kwargs:
             if kwarg not in _DecayRadiationQuery._ALLOWED_KEYWORDS:
-                raise NNDCError('Unknown keyword: "{}"'.format(kwarg))
+                raise NNDCInputError('Unknown keyword: "{}"'.format(kwarg))
         # handle decay mode
         if 'decay' in kwargs:
             if kwargs['decay'] not in DECAYRAD_DECAY_MODE:
-                raise NNDCError('Decay mode must be one of {}, not {}'.format(
-                    DECAYRAD_DECAY_MODE.keys(), kwargs['decay']))
+                raise NNDCInputError(
+                    'Decay mode must be one of {}, not {}'.format(
+                        DECAYRAD_DECAY_MODE.keys(), kwargs['decay']))
             self._data['dmed'] = 'enabled'
             self._data['dmn'] = DECAYRAD_DECAY_MODE[kwargs['decay']]
         # handle radiation type
         if 'type' in kwargs:
             if kwargs['type'] not in DECAYRAD_RADIATION_TYPE:
-                raise NNDCError(
+                raise NNDCInputError(
                     'Radiation type must be one of {}, not {}'.format(
                         DECAYRAD_RADIATION_TYPE.keys(), kwargs['type']))
             self._data['rted'] = 'enabled'
