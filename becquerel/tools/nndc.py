@@ -11,6 +11,7 @@ from __future__ import print_function
 import numpy as np
 import requests
 import pandas as pd
+from six import string_types
 import uncertainties
 
 
@@ -90,9 +91,9 @@ def _parse_float_uncertainty(x, dx):
     8.0
 
     """
-    if not isinstance(x, str):
+    if not isinstance(x, string_types):
         raise NNDCRequestError('Value must be a string: {}'.format(x))
-    if not isinstance(dx, str):
+    if not isinstance(dx, string_types):
         raise NNDCRequestError('Uncertainty must be a string: {}'.format(dx))
     # ignore percents
     if '%' in x:
