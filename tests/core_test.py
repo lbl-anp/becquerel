@@ -165,11 +165,11 @@ class TestUncertainties(object):
 
         uncs = np.ones_like(spec_data)
         ucounts = unumpy.uarray(spec_data, uncs)
-        with pytest.raises(bq.SpectrumError):
+        with pytest.raises(bq.core.utils.UncertaintiesError):
             bq.Spectrum(ucounts, uncs=uncs)
 
         ucounts[0] = 1
-        with pytest.raises(bq.SpectrumError):
+        with pytest.raises(bq.core.utils.UncertaintiesError):
             bq.Spectrum(ucounts)
 
     def test_properties(self, spec_data):
@@ -196,19 +196,14 @@ class TestUncertainties(object):
 class TestSpectrumAddSubtract(object):
     """Test addition and subtraction of spectra"""
 
-    def test_uncal_add_sub(self, uncal_spec, uncal_spec_2):
-        """Test basic addition/subtraction of uncalibrated spectra"""
+    def test_uncal_add(self, uncal_spec, uncal_spec_2):
+        """Test basic addition of uncalibrated spectra"""
 
         tot = uncal_spec + uncal_spec_2
         uncs = np.sqrt(uncal_spec.counts_uncs**2 + uncal_spec_2.counts_uncs**2)
         assert np.all(tot.counts == uncal_spec.counts + uncal_spec_2.counts)
         assert np.all(tot.counts_vals ==
                       uncal_spec.counts_vals + uncal_spec_2.counts_vals)
-        assert np.allclose(tot.counts_uncs, uncs)
-        diff = uncal_spec - uncal_spec_2
-        assert np.all(diff.counts == uncal_spec.counts - uncal_spec_2.counts)
-        assert np.all(diff.counts_vals ==
-                      uncal_spec.counts_vals - uncal_spec_2.counts_vals)
         assert np.allclose(tot.counts_uncs, uncs)
 
     def test_cal_uncal_add_sub(self, uncal_spec, cal_spec):
@@ -217,21 +212,23 @@ class TestSpectrumAddSubtract(object):
         NOTE: not implemented yet - so check that it errors.
         """
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(bq.SpectrumError):
             uncal_spec + cal_spec
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(bq.SpectrumError):
             uncal_spec - cal_spec
 
-    def test_cal_add_sub(self, cal_spec, cal_spec_2):
+    def test_cal_add(self, cal_spec, cal_spec_2):
         """Test basic addition of calibrated spectra.
 
         NOTE: not implemented yet - so check that it errors.
         """
 
-        with pytest.raises(NotImplementedError):
-            cal_spec + cal_spec_2
-        with pytest.raises(NotImplementedError):
-            cal_spec - cal_spec_2
+        tot = cal_spec + cal_spec_2
+        uncs = np.sqrt(cal_spec.counts_uncs**2 + cal_spec_2.counts_uncs**2)
+        assert np.all(tot.counts == cal_spec.counts + cal_spec_2.counts)
+        assert np.all(tot.counts_vals ==
+                      cal_spec.counts_vals + cal_spec_2.counts_vals)
+        assert np.allclose(tot.counts_uncs, uncs)
 
     def test_add_sub_type_error(self, uncal_spec, spec_data):
         """Check that adding/subtracting a non-Spectrum gives a TypeError."""
@@ -260,16 +257,15 @@ class TestSpectrumAddSubtract(object):
             uncal_spec - uncal_spec_long
 
     def test_norm_subtract(self, uncal_spec, uncal_spec_2):
-        """Test Spectrum.norm_subtract method (set livetime manually)"""
+        """Test Spectrum subtraction (set livetime manually)"""
 
         livetime1 = 300.
         livetime2 = 600.
         uncal_spec.livetime = livetime1
         uncal_spec_2.livetime = livetime2
-        spec3 = uncal_spec.norm_subtract(uncal_spec_2)
+        spec3 = uncal_spec - uncal_spec_2
         np.testing.assert_allclose(
-            spec3.counts_vals, uncal_spec.counts_vals -
-            (livetime1 / livetime2) * uncal_spec_2.counts_vals)
+            spec3.cps_vals, uncal_spec.cps_vals - uncal_spec_2.cps_vals)
 
 
 class TestSpectrumMultiplyDivide(object):
