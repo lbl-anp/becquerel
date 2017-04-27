@@ -38,6 +38,13 @@ def uncal_spec_2(spec_data):
 
 
 @pytest.fixture
+def uncal_spec_cps(spec_data):
+    """Generate an uncalibrated spectrum with cps data."""
+
+    return bq.Spectrum(cps=spec_data)
+
+
+@pytest.fixture
 def uncal_spec_long(spec_data):
     """Generate an uncalibrated spectrum, of longer length."""
 
@@ -65,6 +72,7 @@ class TestSpectrumFromFile(object):
 
     def run_from_file(self, extension):
         """Run the test of from_file() for files with the given extension."""
+
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
         for filename in filenames:
@@ -73,278 +81,491 @@ class TestSpectrumFromFile(object):
 
     def test_spe(self):
         """Test Spectrum.from_file for SPE file........................."""
+
         self.run_from_file('.spe')
 
     def test_spc(self):
         """Test Spectrum.from_file for SPC file........................."""
+
         self.run_from_file('.spc')
 
     def test_cnf(self):
         """Test Spectrum.from_file for CNF file........................."""
+
         self.run_from_file('.cnf')
 
+    def test_error(self):
+        """Test _get_file_object() raises error for bad file type"""
 
-class TestSpectrumConstructor(object):
-    """Test Spectrum.__init__()."""
-
-    def test_uncal(self, uncal_spec):
-        """Test simple uncalibrated construction."""
-
-        assert len(uncal_spec.counts) == TEST_DATA_LENGTH
-        assert not uncal_spec.is_calibrated
-
-    def test_cal(self, cal_spec):
-        """Test simple calibrated construction."""
-
-        assert len(cal_spec.counts) == TEST_DATA_LENGTH
-        assert len(cal_spec.bin_edges_kev) == TEST_DATA_LENGTH + 1
-        assert len(cal_spec.energies_kev) == TEST_DATA_LENGTH
-        assert cal_spec.is_calibrated
-
-    def test_init_exceptions(self, spec_data):
-        """Test errors on initialization."""
-
-        with pytest.raises(bq.SpectrumError):
-            bq.Spectrum([])
-        with pytest.raises(bq.SpectrumError):
-            bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV[:-1])
-
-        bad_edges = TEST_EDGES_KEV.copy()
-        bad_edges[12] = bad_edges[9]
-        with pytest.raises(bq.SpectrumError):
-            bq.Spectrum(spec_data, bin_edges_kev=bad_edges)
-
-    def test_uncalibrated_exception(self, uncal_spec):
-        """Test UncalibratedError."""
-
-        with pytest.raises(bq.UncalibratedError):
-            uncal_spec.energies_kev
-
-    def test_livetime(self, spec_data):
-        """Test manual livetime input."""
-
-        lt = 86400
-        spec = bq.Spectrum(spec_data, livetime=lt)
-        assert spec.livetime == lt
-
-        lt = 300.6
-        spec = bq.Spectrum(spec_data, livetime=lt)
-        assert spec.livetime == lt
+        with pytest.raises(NotImplementedError):
+            bq.Spectrum.from_file('foo.bar')
 
 
-class TestUncertainties(object):
-    """Test uncertainties functionality in Spectrum"""
+# ----------------------------------------------
+#         Test Spectrum.__init__()
+# ----------------------------------------------
 
-    def test_construct_float_int(self, spec_data):
-        """Construct spectrum with non-UFloats (float and int)."""
+def test_uncal(uncal_spec):
+    """Test simple uncalibrated construction."""
 
-        spec = bq.Spectrum(spec_data)
-        assert isinstance(spec.counts[0], UFloat)
-        spec = bq.Spectrum(spec_data.astype(float))
-        assert isinstance(spec.counts[0], UFloat)
-
-    def test_construct_ufloat(self, spec_data):
-        """Construct spectrum with UFloats"""
-
-        ucounts = unumpy.uarray(spec_data, np.ones_like(spec_data))
-        spec = bq.Spectrum(ucounts)
-        assert isinstance(spec.counts[0], UFloat)
-        assert spec.counts[0].std_dev == 1
-
-    def test_construct_float_int_uncs(self, spec_data):
-        """Construct spectrum with non-UFloats and specify uncs."""
-
-        uncs = np.ones_like(spec_data)
-        spec = bq.Spectrum(spec_data, uncs=uncs)
-        assert isinstance(spec.counts[0], UFloat)
-        uncs2 = np.array([c.std_dev for c in spec.counts])
-        assert np.allclose(uncs2, 1)
-
-    def test_construct_errors(self, spec_data):
-        """Construct spectrum with UFloats plus uncs and get an error."""
-
-        uncs = np.ones_like(spec_data)
-        ucounts = unumpy.uarray(spec_data, uncs)
-        with pytest.raises(bq.core.utils.UncertaintiesError):
-            bq.Spectrum(ucounts, uncs=uncs)
-
-        ucounts[0] = 1
-        with pytest.raises(bq.core.utils.UncertaintiesError):
-            bq.Spectrum(ucounts)
-
-    def test_properties(self, spec_data):
-        """Test counts_vals and counts_uncs."""
-
-        spec = bq.Spectrum(spec_data)
-        assert isinstance(spec.counts[0], UFloat)
-        assert np.allclose(spec.counts_vals, spec_data)
-        expected_uncs = np.sqrt(spec_data)
-        expected_uncs[expected_uncs == 0] = 1
-        assert np.allclose(spec.counts_uncs, expected_uncs)
-
-        uncs = spec_data
-        ucounts = unumpy.uarray(spec_data, uncs)
-        spec = bq.Spectrum(ucounts)
-        assert np.allclose(spec.counts_vals, spec_data)
-        assert np.allclose(spec.counts_uncs, uncs)
-
-        uncs = np.ones_like(spec_data)
-        spec = bq.Spectrum(spec_data, uncs=uncs)
-        assert np.allclose(spec.counts_uncs, uncs)
+    assert len(uncal_spec.counts) == TEST_DATA_LENGTH
+    assert not uncal_spec.is_calibrated
 
 
-class TestSpectrumAddSubtract(object):
-    """Test addition and subtraction of spectra"""
+def test_uncal_cps(uncal_spec_cps):
+    """Test simple uncalibrated construction w CPS. More CPS tests later"""
 
-    def test_uncal_add(self, uncal_spec, uncal_spec_2):
-        """Test basic addition of uncalibrated spectra"""
-
-        tot = uncal_spec + uncal_spec_2
-        uncs = np.sqrt(uncal_spec.counts_uncs**2 + uncal_spec_2.counts_uncs**2)
-        assert np.all(tot.counts == uncal_spec.counts + uncal_spec_2.counts)
-        assert np.all(tot.counts_vals ==
-                      uncal_spec.counts_vals + uncal_spec_2.counts_vals)
-        assert np.allclose(tot.counts_uncs, uncs)
-
-    def test_cal_uncal_add_sub(self, uncal_spec, cal_spec):
-        """Test basic addition of a calibrated with an uncalibrated spectrum.
-
-        NOTE: not implemented yet - so check that it errors.
-        """
-
-        with pytest.raises(bq.SpectrumError):
-            uncal_spec + cal_spec
-        with pytest.raises(bq.SpectrumError):
-            uncal_spec - cal_spec
-
-    def test_cal_add(self, cal_spec, cal_spec_2):
-        """Test basic addition of calibrated spectra.
-
-        NOTE: not implemented yet - so check that it errors.
-        """
-
-        tot = cal_spec + cal_spec_2
-        uncs = np.sqrt(cal_spec.counts_uncs**2 + cal_spec_2.counts_uncs**2)
-        assert np.all(tot.counts == cal_spec.counts + cal_spec_2.counts)
-        assert np.all(tot.counts_vals ==
-                      cal_spec.counts_vals + cal_spec_2.counts_vals)
-        assert np.allclose(tot.counts_uncs, uncs)
-
-    def test_add_sub_type_error(self, uncal_spec, spec_data):
-        """Check that adding/subtracting a non-Spectrum gives a TypeError."""
-
-        with pytest.raises(TypeError):
-            uncal_spec + 5
-        with pytest.raises(TypeError):
-            uncal_spec - 5
-        with pytest.raises(TypeError):
-            uncal_spec + 'asdf'
-        with pytest.raises(TypeError):
-            uncal_spec - 'asdf'
-        with pytest.raises(TypeError):
-            uncal_spec + spec_data
-        with pytest.raises(TypeError):
-            uncal_spec - spec_data
-
-    def test_add_sub_wrong_length(self, uncal_spec, uncal_spec_long):
-        """
-        Adding/subtracting spectra of different lengths gives a SpectrumError.
-        """
-
-        with pytest.raises(bq.SpectrumError):
-            uncal_spec + uncal_spec_long
-        with pytest.raises(bq.SpectrumError):
-            uncal_spec - uncal_spec_long
-
-    def test_norm_subtract(self, uncal_spec, uncal_spec_2):
-        """Test Spectrum subtraction (set livetime manually)"""
-
-        livetime1 = 300.
-        livetime2 = 600.
-        uncal_spec.livetime = livetime1
-        uncal_spec_2.livetime = livetime2
-        spec3 = uncal_spec - uncal_spec_2
-        np.testing.assert_allclose(
-            spec3.cps_vals, uncal_spec.cps_vals - uncal_spec_2.cps_vals)
+    assert len(uncal_spec_cps.cps) == TEST_DATA_LENGTH
+    assert not uncal_spec_cps.is_calibrated
 
 
-class TestSpectrumMultiplyDivide(object):
-    """Test multiplication and division of spectra"""
+def test_cal(cal_spec):
+    """Test simple calibrated construction."""
 
-    def test_uncal_mul_div(self, uncal_spec):
-        """
-        Basic multiplication/division of uncalibrated spectrum by a scalar.
-        """
+    assert len(cal_spec.counts) == TEST_DATA_LENGTH
+    assert len(cal_spec.bin_edges_kev) == TEST_DATA_LENGTH + 1
+    assert len(cal_spec.energies_kev) == TEST_DATA_LENGTH
+    assert cal_spec.is_calibrated
 
-        doubled = uncal_spec * 2
-        assert np.all(doubled.counts == 2 * uncal_spec.counts)
-        assert np.all(doubled.counts_vals == 2 * uncal_spec.counts_vals)
-        assert np.all(doubled.counts_uncs == 2 * uncal_spec.counts_uncs)
-        halved = uncal_spec / 2
-        assert np.all(halved.counts == uncal_spec.counts / 2.0)
-        assert np.allclose(halved.counts_vals, uncal_spec.counts_vals / 2.0)
-        assert np.allclose(halved.counts_uncs, uncal_spec.counts_uncs / 2.0)
 
-    def test_cal_mul_div(self, cal_spec):
-        """Basic multiplication/division of calibrated spectrum by a scalar."""
+def test_init_exceptions(spec_data):
+    """Test errors on initialization."""
 
-        doubled = cal_spec * 2
-        assert np.all(doubled.counts == 2 * cal_spec.counts)
-        assert np.all(doubled.counts_vals == 2 * cal_spec.counts_vals)
-        assert np.all(doubled.counts_uncs == 2 * cal_spec.counts_uncs)
-        halved = cal_spec / 2
-        assert np.all(halved.counts == cal_spec.counts / 2.0)
-        assert np.allclose(halved.counts_vals, cal_spec.counts_vals / 2.0)
-        assert np.allclose(halved.counts_uncs, cal_spec.counts_uncs / 2.0)
-        halved_again = cal_spec * 0.5
-        assert np.all(halved_again.counts == cal_spec.counts * 0.5)
-        assert np.allclose(halved.counts_vals, cal_spec.counts_vals * 0.5)
-        assert np.allclose(halved.counts_uncs, cal_spec.counts_uncs * 0.5)
+    with pytest.raises(bq.SpectrumError):
+        bq.Spectrum([])
+    with pytest.raises(bq.SpectrumError):
+        bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV[:-1])
+    with pytest.raises(bq.SpectrumError):
+        bq.Spectrum(spec_data, cps=spec_data)
+    with pytest.raises(bq.SpectrumError):
+        bq.Spectrum(bin_edges_kev=TEST_EDGES_KEV)
 
-    def test_uncal_mul_div_uncertainties(self, uncal_spec):
-        """
-        Multiplication/division of uncal spectrum by a scalar with uncertainty.
-        """
+    bad_edges = TEST_EDGES_KEV.copy()
+    bad_edges[12] = bad_edges[9]
+    with pytest.raises(bq.SpectrumError):
+        bq.Spectrum(spec_data, bin_edges_kev=bad_edges)
 
-        factor = ufloat(2, 0.1)
-        doubled = uncal_spec * factor
-        assert np.all(doubled.counts_vals == 2 * uncal_spec.counts_vals)
-        assert np.all(doubled.counts_uncs >= 2 * uncal_spec.counts_uncs)
-        halved = uncal_spec / factor
-        assert np.allclose(halved.counts_vals, uncal_spec.counts_vals / 2.0)
-        assert np.all(halved.counts_uncs >= uncal_spec.counts_uncs / 2.0)
 
-    def test_mul_div_type_error(self, uncal_spec, spec_data):
-        """Multiplication/division with a non-scalar gives a TypeError."""
+def test_uncalibrated_exception(uncal_spec):
+    """Test UncalibratedError."""
 
-        with pytest.raises(TypeError):
-            uncal_spec * uncal_spec
-        with pytest.raises(TypeError):
-            uncal_spec / uncal_spec
-        with pytest.raises(TypeError):
-            uncal_spec * 'asdf'
-        with pytest.raises(TypeError):
-            uncal_spec / 'asdf'
-        with pytest.raises(TypeError):
-            uncal_spec * spec_data
-        with pytest.raises(TypeError):
-            uncal_spec / spec_data
+    with pytest.raises(bq.UncalibratedError):
+        uncal_spec.energies_kev
 
-    def test_mul_div_bad_factor(self, uncal_spec):
-        """Multiplication/division with zero/inf/nan gives a SpectrumError."""
 
-        with pytest.raises(bq.SpectrumError):
-            uncal_spec * 0
-        with pytest.raises(bq.SpectrumError):
-            uncal_spec / 0
-        with pytest.raises(bq.SpectrumError):
-            uncal_spec * np.inf
-        with pytest.raises(bq.SpectrumError):
-            uncal_spec / np.inf
-        with pytest.raises(bq.SpectrumError):
-            uncal_spec * np.nan
-        with pytest.raises(bq.SpectrumError):
-            uncal_spec / np.nan
+# ----------------------------------------------
+#      Test Spectrum livetime properties
+# ----------------------------------------------
+
+@pytest.fixture(params=[86400, 300.6, 0.88])
+def livetime(request):
+    return request.param
+
+
+def test_livetime_arg(spec_data, livetime):
+    """Test manual livetime input."""
+
+    spec = bq.Spectrum(spec_data, livetime=livetime)
+    assert spec.livetime == livetime
+
+
+def test_livetime_arg_cps(spec_data, livetime):
+    """Test manual livetime input with CPS."""
+
+    cps = spec_data / float(livetime)
+    spec = bq.Spectrum(cps=cps, livetime=livetime)
+    assert spec.livetime == livetime
+
+
+def test_no_livetime(spec_data):
+    """Test livetime property when not specified."""
+
+    spec = bq.Spectrum(spec_data)
+    assert spec.livetime is None
+
+    cps_spec = bq.Spectrum(cps=spec_data / 300.6)
+    assert np.isnan(cps_spec.livetime)
+
+
+# ----------------------------------------------
+#         Test uncertainties in Spectrum
+# ----------------------------------------------
+
+def test_construct_float_int(spec_data):
+    """Construct spectrum with non-UFloats (float and int)."""
+
+    spec = bq.Spectrum(spec_data)
+    assert isinstance(spec.counts[0], UFloat)
+    spec = bq.Spectrum(spec_data.astype(float))
+    assert isinstance(spec.counts[0], UFloat)
+
+
+def test_construct_ufloat(spec_data):
+    """Construct spectrum with UFloats"""
+
+    ucounts = unumpy.uarray(spec_data, np.ones_like(spec_data))
+    spec = bq.Spectrum(ucounts)
+    assert isinstance(spec.counts[0], UFloat)
+    assert spec.counts[0].std_dev == 1
+
+
+def test_construct_float_int_uncs(spec_data):
+    """Construct spectrum with non-UFloats and specify uncs."""
+
+    uncs = np.ones_like(spec_data)
+    spec = bq.Spectrum(spec_data, uncs=uncs)
+    assert isinstance(spec.counts[0], UFloat)
+    uncs2 = np.array([c.std_dev for c in spec.counts])
+    assert np.allclose(uncs2, 1)
+
+
+def test_construct_errors(spec_data):
+    """Construct spectrum with UFloats plus uncs and get an error."""
+
+    uncs = np.ones_like(spec_data)
+    ucounts = unumpy.uarray(spec_data, uncs)
+    with pytest.raises(bq.core.utils.UncertaintiesError):
+        bq.Spectrum(ucounts, uncs=uncs)
+
+    ucounts[0] = 1
+    with pytest.raises(bq.core.utils.UncertaintiesError):
+        bq.Spectrum(ucounts)
+
+
+def test_properties(spec_data):
+    """Test counts_vals and counts_uncs."""
+
+    spec = bq.Spectrum(spec_data)
+    assert isinstance(spec.counts[0], UFloat)
+    assert np.allclose(spec.counts_vals, spec_data)
+    expected_uncs = np.sqrt(spec_data)
+    expected_uncs[expected_uncs == 0] = 1
+    assert np.allclose(spec.counts_uncs, expected_uncs)
+
+    uncs = spec_data
+    ucounts = unumpy.uarray(spec_data, uncs)
+    spec = bq.Spectrum(ucounts)
+    assert np.allclose(spec.counts_vals, spec_data)
+    assert np.allclose(spec.counts_uncs, uncs)
+
+    uncs = np.ones_like(spec_data)
+    spec = bq.Spectrum(spec_data, uncs=uncs)
+    assert np.allclose(spec.counts_uncs, uncs)
+
+
+# ----------------------------------------------
+#         Test Spectrum.bin_widths
+# ----------------------------------------------
+
+def test_bin_widths(cal_spec):
+    """Test Spectrum.bin_widths"""
+
+    cal_spec.bin_widths
+    assert len(cal_spec.bin_widths) == len(cal_spec.counts)
+    assert np.allclose(cal_spec.bin_widths, TEST_GAIN)
+
+
+def test_bin_width_error(uncal_spec):
+    """Test Spectrum.bin_widths error"""
+
+    with pytest.raises(bq.UncalibratedError):
+        uncal_spec.bin_widths
+
+
+# ----------------------------------------------
+#         Test Spectrum CPS and CPS/keV
+# ----------------------------------------------
+
+def test_cps(spec_data, livetime):
+    """Test cps property and uncertainties on uncal spectrum."""
+
+    spec = bq.Spectrum(spec_data, livetime=livetime)
+    spec.cps
+    spec.cps_vals
+    spec.cps_uncs
+    assert np.all(spec.counts_vals == spec_data)
+    assert np.allclose(spec.cps_vals, spec_data / float(livetime))
+    assert np.allclose(spec.cps_uncs, spec.counts_uncs / float(livetime))
+
+
+def test_cps_cal(spec_data, livetime):
+    """Test cps property and uncertainties on cal spectrum."""
+
+    spec = bq.Spectrum(spec_data, livetime=livetime,
+                       bin_edges_kev=TEST_EDGES_KEV)
+    spec.cps
+    spec.cps_vals
+    spec.cps_uncs
+    assert np.allclose(spec.cps_vals, spec_data / float(livetime))
+    assert np.allclose(spec.cps_uncs, spec.counts_uncs / float(livetime))
+
+
+def test_cpskev(spec_data, livetime):
+    """Test cpskev property and uncertainties"""
+
+    spec = bq.Spectrum(spec_data, livetime=livetime,
+                       bin_edges_kev=TEST_EDGES_KEV)
+    spec.cpskev
+    spec.cpskev_vals
+    spec.cpskev_uncs
+    assert np.allclose(
+        spec.cpskev_vals, spec_data / spec.bin_widths / float(livetime))
+    assert np.allclose(
+        spec.cpskev_uncs, spec.counts_uncs / spec.bin_widths / float(livetime))
+
+
+def test_cps_cpsspec(spec_data, livetime):
+    """Test cps property of CPS-style spectrum."""
+
+    spec = bq.Spectrum(cps=spec_data / float(livetime))
+    spec.cps
+    assert np.all(spec.cps_vals == spec_data / float(livetime))
+    assert np.all(np.isnan(spec.cps_uncs))
+
+
+def test_cps_errors(uncal_spec):
+    """Test errors in CPS."""
+
+    with pytest.raises(bq.SpectrumError):
+        uncal_spec.cps
+
+
+def test_cpskev_errors(spec_data):
+    """Test errors in CPS/keV."""
+
+    spec = bq.Spectrum(spec_data, livetime=300.9)
+    with pytest.raises(bq.UncalibratedError):
+        spec.cpskev
+
+
+# ----------------------------------------------
+#   Test addition and subtraction of spectra
+# ----------------------------------------------
+
+def get_spectrum(t, lt=None):
+    """Get spectrum to use in parameterized tests.
+
+    Pytest Note:
+      one might think you could do:
+        @pytest.mark.parametrize('spec1, spec2', [
+            (uncal_spec, uncal_spec),
+            (cal_spec, cal_spec)
+        ])
+        def test_add(spec1, spec2):
+          ...
+
+      but you can't put fixtures inside parametrize().
+    """
+
+    if t == 'uncal':
+        spec = uncal_spec(spec_data())
+    elif t == 'cal':
+        spec = cal_spec(spec_data())
+    elif t == 'uncal_long':
+        spec = uncal_spec_long(spec_data())
+    elif t == 'uncal_cps':
+        spec = uncal_spec_cps(spec_data())
+    elif t == 'data':
+        spec = spec_data()
+    else:
+        return t
+    try:
+        spec.livetime = lt
+    except AttributeError:
+        pass
+    return spec
+
+
+@pytest.mark.parametrize('lt1, lt2', [
+    (300, 600),
+    (12.6, 0.88),
+    (300, 12.6),
+    (12.6, None),
+    (None, None)])
+@pytest.mark.parametrize('type1, type2', [
+    ('uncal', 'uncal'),
+    ('cal', 'cal')])
+def test_add(type1, type2, lt1, lt2):
+    """Test addition of spectra"""
+
+    spec1, spec2 = (get_spectrum(type1, lt=lt1),
+                    get_spectrum(type2, lt=lt2))
+
+    tot = spec1 + spec2
+    assert np.all(tot.counts == spec1.counts + spec2.counts)
+    assert np.all(tot.counts_vals ==
+                  spec1.counts_vals + spec2.counts_vals)
+    if lt1 and lt2:
+        assert tot.livetime == lt1 + lt2
+    else:
+        assert tot.livetime is None
+
+
+@pytest.mark.parametrize('type1, type2, expected_error', [
+    ('uncal', 'cal', bq.SpectrumError),
+    ('uncal', 'uncal_long', bq.SpectrumError),
+    ('uncal', 5, TypeError),
+    (5, 'cal', TypeError),
+    ('cal', 'asdf', TypeError),
+    ('asdf', 'uncal', TypeError),
+    ('uncal', 'data', TypeError)
+])
+def test_add_sub_errors(type1, type2, expected_error):
+    """Test addition and subtraction that causes errors"""
+
+    spec1, spec2 = get_spectrum(type1), get_spectrum(type2)
+    with pytest.raises(expected_error):
+        spec1 + spec2
+    with pytest.raises(expected_error):
+        spec1 - spec2
+
+
+@pytest.mark.parametrize('type1, type2', [
+    ('uncal', 'uncal'),
+    ('cal', 'cal')])
+def test_add_uncs(type1, type2):
+    """Test uncertainties on addition of uncal spectra"""
+
+    spec1, spec2 = get_spectrum(type1), get_spectrum(type2)
+
+    tot = spec1 + spec2
+    uncs = np.sqrt(spec1.counts_uncs**2 + spec2.counts_uncs**2)
+    assert np.allclose(tot.counts_uncs, uncs)
+
+
+@pytest.mark.parametrize('type1, type2, lt1, lt2', [
+    ('uncal_cps', 'uncal_cps', 300, 12.6),
+    ('uncal_cps', 'uncal_cps', None, 12.6),
+    ('uncal_cps', 'uncal_cps', None, None),
+    ('uncal_cps', 'uncal', None, 300)])
+def test_add_sub_cps(type1, type2, lt1, lt2):
+    """Test addition and subtraction of CPS spectra"""
+
+    spec1, spec2 = (get_spectrum(type1, lt=lt1),
+                    get_spectrum(type2, lt=lt2))
+
+    tot = spec1 + spec2
+    assert tot.counts is None
+    assert np.all(tot.cps_vals == spec1.cps_vals + spec2.cps_vals)
+    assert np.isnan(tot.livetime)
+
+    diff = spec1 - spec2
+    assert diff.counts is None
+    assert np.allclose(diff.cps_vals, spec1.cps_vals - spec2.cps_vals)
+
+
+@pytest.mark.parametrize('lt1, lt2', [
+    (300, 600),
+    (12.6, 0.88),
+    (300, 12.6)])
+@pytest.mark.parametrize('type1, type2', [
+    ('uncal', 'uncal'),
+    ('cal', 'cal')])
+def test_subtract(type1, type2, lt1, lt2):
+    """Test Spectrum subtraction"""
+
+    spec1, spec2 = (get_spectrum(type1, lt=lt1),
+                    get_spectrum(type2, lt=lt2))
+    diff = spec1 - spec2
+    assert diff.counts is None
+    assert np.allclose(diff.cps_vals, spec1.cps_vals - spec2.cps_vals)
+    assert np.all(diff.cps_uncs > spec1.cps_uncs)
+    assert np.all(diff.cps_uncs > spec2.cps_uncs)
+
+
+@pytest.mark.parametrize('type1, type2, lt1, lt2', [
+    ('uncal', 'uncal', 300, None),
+    ('cal', 'cal', None, None)])
+def test_subtract_errors(type1, type2, lt1, lt2):
+    """Test errors in Spectrum subtract with no livetime"""
+
+    spec1, spec2 = (get_spectrum(type1, lt=lt1),
+                    get_spectrum(type2, lt=lt2))
+    with pytest.raises(bq.SpectrumError):
+        spec1 - spec2
+
+
+# ----------------------------------------------
+#  Test multiplication and division of spectra
+# ----------------------------------------------
+
+@pytest.mark.parametrize('factor', [0.88, 1, 2, 43.6])
+@pytest.mark.parametrize('spectype', ['uncal', 'cal'])
+def test_basic_mul_div(spectype, factor):
+    """
+    Basic multiplication/division of uncalibrated spectrum by a scalar.
+    """
+
+    spec = get_spectrum(spectype)
+
+    mult = spec * factor
+    assert np.allclose(mult.counts_vals, factor * spec.counts_vals)
+    assert np.allclose(mult.counts_uncs, factor * spec.counts_uncs)
+    assert mult.livetime is None
+    div = spec / factor
+    assert np.allclose(div.counts_vals, spec.counts_vals / factor)
+    assert np.allclose(div.counts_uncs, spec.counts_uncs / factor)
+    assert div.livetime is None
+
+
+@pytest.mark.parametrize('factor', [0.88, 1, 2, 43.6])
+def test_cps_mul_div(uncal_spec_cps, factor):
+    """Multiplication/division of a CPS spectrum."""
+
+    mult = uncal_spec_cps * factor
+    assert np.allclose(mult.cps_vals, factor * uncal_spec_cps.cps_vals)
+    assert np.isnan(mult.livetime)
+    div = uncal_spec_cps / factor
+    assert np.allclose(div.cps_vals, uncal_spec_cps.cps_vals / factor)
+    assert np.isnan(div.livetime)
+
+
+@pytest.mark.parametrize('factor', [
+    ufloat(0.88, 0.01),
+    ufloat(1, 0.1),
+    ufloat(43, 1)])
+@pytest.mark.parametrize('spectype', ['uncal', 'cal'])
+def test_uncal_mul_div_uncertainties(spectype, factor):
+    """
+    Multiplication/division of uncal spectrum by a scalar with uncertainty.
+    """
+
+    spec = get_spectrum(spectype)
+
+    mult = spec * factor
+    assert np.allclose(
+        mult.counts_vals, factor.nominal_value * spec.counts_vals)
+    assert np.all(
+        (mult.counts_uncs > factor.nominal_value * spec.counts_uncs) |
+        (spec.counts_vals == 0))
+    assert mult.livetime is None
+    div = spec / factor
+    assert np.allclose(
+        div.counts_vals, spec.counts_vals / factor.nominal_value)
+    assert np.all(
+        (div.counts_uncs > spec.counts_uncs / factor.nominal_value) |
+        (spec.counts_vals == 0))
+    assert div.livetime is None
+
+
+@pytest.mark.parametrize('type1, type2, error', [
+    ('uncal', 'uncal', TypeError),
+    ('uncal', 'asdf', TypeError),
+    ('uncal', 'data', TypeError),
+    ('uncal', 0, bq.SpectrumError),
+    ('uncal', np.inf, bq.SpectrumError),
+    ('uncal', np.nan, bq.SpectrumError),
+    ('uncal', ufloat(0, 1), bq.SpectrumError),
+    ('uncal', ufloat(np.inf, np.nan), bq.SpectrumError)])
+def test_mul_div_errors(type1, type2, error):
+    """Multiplication/division errors."""
+
+    spec, bad_factor = get_spectrum(type1), get_spectrum(type2)
+
+    with pytest.raises(error):
+        spec * bad_factor
+    with pytest.raises(error):
+        spec / bad_factor
 
 
 # ----------------------------------------------
@@ -372,18 +593,6 @@ def test_combine_bins_padding(uncal_spec):
 
 
 # calibration methods tested in energycal_test.py
-
-# ----------------------------------------------
-#         Test Spectrum.bin_widths
-# ----------------------------------------------
-
-def test_bin_widths(cal_spec):
-    """Test Spectrum.bin_widths"""
-
-    cal_spec.bin_widths
-    assert len(cal_spec.bin_widths) == len(cal_spec.counts)
-    assert np.allclose(cal_spec.bin_widths, TEST_GAIN)
-
 
 # ----------------------------------------------
 #         Test Spectrum.downsample
@@ -439,6 +648,13 @@ def test_downsample_error(cal_spec):
         cal_spec.downsample(0.5)
 
 
+def test_downsample_cps_error(uncal_spec_cps):
+    """Test that downsampling a CPS spectrum gives a SpectrumError"""
+
+    with pytest.raises(bq.SpectrumError):
+        uncal_spec_cps.downsample(12)
+
+
 # ----------------------------------------------
 #         Test Spectrum.__len__
 # ----------------------------------------------
@@ -449,6 +665,15 @@ def test_len(length):
 
     floatdata = np.random.poisson(lam=TEST_COUNTS, size=length)
     spec = bq.Spectrum(floatdata.astype(int))
+    assert len(spec) == length
+
+
+@pytest.mark.parametrize("length", [1, 8, 256, 16384])
+def test_len_cps(length, livetime):
+    """Test len(spectrum) for a CPS-based spectrum"""
+
+    floatdata = np.random.poisson(lam=TEST_COUNTS, size=length)
+    spec = bq.Spectrum(cps=floatdata / livetime)
     assert len(spec) == length
 
 

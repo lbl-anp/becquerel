@@ -82,6 +82,10 @@ class Spectrum(object):
             self._counts = None
             if livetime is None:
                 self.livetime = np.nan
+            else:
+                self.livetime = livetime
+                # TODO should this be allowed?
+                #   all calculations with CPS return livetime=np.nan anyway...
             self._cps = self._input_data_check(cps, uncs, lambda x: np.nan)
             data = cps
 
@@ -180,7 +184,7 @@ class Spectrum(object):
 
     @property
     def cpskev(self):
-        return self.cps / self.binwidths
+        return self.cps / self.bin_widths
 
     @property
     def cpskev_vals(self):
@@ -326,15 +330,13 @@ class Spectrum(object):
         self._add_sub_error_checking(other)
 
         if self.counts is not None and other.counts is not None:
-            data_arg = {'counts': self.counts + other.counts}
+            kwargs = {'counts': self.counts + other.counts}
+            if self.livetime and other.livetime:
+                kwargs['livetime'] = self.livetime + other.livetime
         else:
-            data_arg = {'cps': self.cps + other.cps}
-        if self.livetime and other.livetime:    # includes np.nan
-            livetime = self.livetime + other.livetime
-        else:
-            livetime = None
+            kwargs = {'cps': self.cps + other.cps}
         spect_obj = Spectrum(
-            bin_edges_kev=self.bin_edges_kev, livetime=livetime, **data_arg)
+            bin_edges_kev=self.bin_edges_kev, **kwargs)
         return spect_obj
 
     def __sub__(self, other):
@@ -507,13 +509,18 @@ class Spectrum(object):
         """
 
         f = int(f)
-        if len(self.counts) % f == 0:
-            padded_counts = np.copy(self.counts)
+        if self.counts is None:
+            key = 'cps'
         else:
-            pad_len = f - len(self.counts) % f
+            key = 'counts'
+        data = getattr(self, key)
+        if len(self) % f == 0:
+            padded_counts = np.copy(data)
+        else:
+            pad_len = f - len(self) % f
             pad_counts = unumpy.uarray(np.zeros(pad_len), np.zeros(pad_len))
-            padded_counts = np.concatenate((self.counts, pad_counts))
-        padded_counts.resize(len(padded_counts) / f, f)
+            padded_counts = np.concatenate((data, pad_counts))
+        padded_counts.resize(int(len(padded_counts) / f), f)
         combined_counts = np.sum(padded_counts, axis=1)
         if self.is_calibrated:
             combined_bin_edges = self.bin_edges_kev[::f]
@@ -523,9 +530,11 @@ class Spectrum(object):
         else:
             combined_bin_edges = None
 
-        obj = Spectrum(combined_counts, bin_edges_kev=combined_bin_edges,
-                       input_file_object=self._infileobject,
-                       livetime=self.livetime)
+        kwargs = {key: combined_counts,
+                  'bin_edges_kev': combined_bin_edges,
+                  'input_file_object': self._infileobject,
+                  'livetime': self.livetime}
+        obj = Spectrum(**kwargs)
         return obj
 
 
