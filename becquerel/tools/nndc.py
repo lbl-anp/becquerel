@@ -8,6 +8,7 @@ References:
 """
 
 from __future__ import print_function
+from builtins import super
 import numpy as np
 import requests
 import pandas as pd
@@ -255,6 +256,9 @@ class _NNDCQuery(object):
         t_range : (tuple of float) : range of isotope half-lives
         elevel_range : (tuple of float) : range of nuc. energy level (MeV)
 
+    To prevent query from being immediately performed, instantiate with
+    keyword perform=False.
+
     """
 
     _URL = ''
@@ -288,15 +292,26 @@ class _NNDCQuery(object):
         'unc': 'stdandard',    # standard style uncertainties
         'sub': 'Search',       # search for the data
     }
+    _ALLOWED_KEYWORDS = [
+        'perform', 'nuc', 'z', 'a', 'n',
+        'z_range', 'a_range', 'n_range',
+        'z_any', 'z_even', 'z_odd',
+        'a_any', 'a_even', 'a_odd',
+        'n_any', 'n_even', 'n_odd',
+        'elevel_range', 't_range',
+    ]
     _DUMMY_TEXT = ''
 
     def __init__(self, **kwargs):
         """Initialize query of NNDC data."""
-        self._url = _NNDCQuery._URL
-        self._data = dict(_NNDCQuery._DATA)
+        perform = kwargs.get('perform', True)
+        kwargs['perform'] = False
+        self._data = dict(self._DATA)
         self._text = self._DUMMY_TEXT
         self.df = pd.DataFrame()
         self.update(**kwargs)
+        if perform:
+            self.perform()
 
     def __len__(self):
         """Length of any one of the data lists."""
@@ -340,19 +355,10 @@ class _NNDCQuery(object):
                 raise NoDataFound(msg)
         return req.text
 
-    _ALLOWED_KEYWORDS = [
-        'perform', 'nuc', 'z', 'a', 'n',
-        'z_range', 'a_range', 'n_range',
-        'z_any', 'z_even', 'z_odd',
-        'a_any', 'a_even', 'a_odd',
-        'n_any', 'n_even', 'n_odd',
-        'elevel_range', 't_range',
-    ]
-
     def update(self, **kwargs):
         """Update the search criteria."""
         for kwarg in kwargs:
-            if kwarg not in _NNDCQuery._ALLOWED_KEYWORDS:
+            if kwarg not in self._ALLOWED_KEYWORDS:
                 raise NNDCInputError('Unknown keyword: "{}"'.format(kwarg))
         if 'nuc' in kwargs:
             self._data['spnuc'] = 'name'
@@ -392,13 +398,13 @@ class _NNDCQuery(object):
             self.update(z_range=(None, None))
         # submit the query
         try:
-            self._text = _NNDCQuery._request(self._url, self._data)
+            self._text = self._request()
         except NoDataFound:
             self._text = self._DUMMY_TEXT
         if len(self._text) == 0:
             raise NNDCRequestError('NNDC returned no text')
         # package the output into a dictionary of arrays
-        data = _NNDCQuery._parse_table(self._text)
+        data = _parse_table(self._text)
         # create the DataFrame
         self.df = pd.DataFrame(data)
         # convert dimensionless integers to ints
@@ -570,12 +576,15 @@ class _NuclearWalletCardQuery(_NNDCQuery):
     """
 
     _URL = 'http://www.nndc.bnl.gov/nudat2/sigma_searchi.jsp'
-    _DATA = {
+    _DATA = _NNDCQuery._DATA
+    _DATA.update({
         'jled': 'disabled',    # J_pi(level) condition on/off
         'jlv': '',             # J
         'plv': 'ANY',          # parity
         'ord': 'zalt',         # order file by Z, A, E(level), T1/2
-    }
+    })
+    _ALLOWED_KEYWORDS = _NNDCQuery._ALLOWED_KEYWORDS
+    _ALLOWED_KEYWORDS.extend(['decay', 'j', 'parity'])
     _DUMMY_TEXT = """
 <html>
 <body>
@@ -588,24 +597,9 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
 </pre></body></html>
 """
 
-    def __init__(self, **kwargs):
-        """Initialize NNDC Nuclear Wallet Card search."""
-        perform = kwargs.get('perform', True)
-        kwargs['perform'] = False
-        super(_NuclearWalletCardQuery, self).__init__(**kwargs)
-        self._url = self._URL
-        self._data.update(self._DATA)
-        super(_NuclearWalletCardQuery, self).update(**kwargs)
-        self.update(**kwargs)
-        if perform:
-            self.perform()
-
-    _ALLOWED_KEYWORDS = _NNDCQuery._ALLOWED_KEYWORDS
-    _ALLOWED_KEYWORDS.extend(['decay', 'j', 'parity'])
-
     def update(self, **kwargs):
         """Update the search criteria."""
-        super(_NuclearWalletCardQuery, self).update(**kwargs)
+        super().update(**kwargs)
         for kwarg in kwargs:
             if kwarg not in _NuclearWalletCardQuery._ALLOWED_KEYWORDS:
                 raise NNDCInputError('Unknown keyword: "{}"'.format(kwarg))
@@ -703,7 +697,8 @@ class _DecayRadiationQuery(_NNDCQuery):
     """
 
     _URL = 'http://www.nndc.bnl.gov/nudat2/dec_searchi.jsp'
-    _DATA = {
+    _DATA = _NNDCQuery._DATA
+    _DATA.update({
         'rted': 'enabled',     # radiation type condition on/off
         'rtn': 'ANY',          # radiation type: 'ANY' = any, 'G' = gamma
         'reed': 'disabled',    # radiation energy condition on/off
@@ -713,7 +708,9 @@ class _DecayRadiationQuery(_NNDCQuery):
         'rimin': '0',          # radiation intensity min (%)
         'rimax': '100',        # radiation intensity max (%)
         'ord': 'zate',         # order file by Z, A, T1/2, E
-    }
+    })
+    _ALLOWED_KEYWORDS = _NNDCQuery._ALLOWED_KEYWORDS
+    _ALLOWED_KEYWORDS.extend(['decay', 'type', 'e_range', 'i_range'])
     _DUMMY_TEXT = """
 <html>
 <body>
@@ -725,24 +722,9 @@ To save this output into a local File, clik on "File" in your browser menu and s
 </body></html>
 """
 
-    def __init__(self, **kwargs):
-        """Initialize NNDC Decay Radiation search."""
-        perform = kwargs.get('perform', True)
-        kwargs['perform'] = False
-        super(_DecayRadiationQuery, self).__init__(**kwargs)
-        self._url = self._URL
-        self._data.update(self._DATA)
-        super(_DecayRadiationQuery, self).update(**kwargs)
-        self.update(**kwargs)
-        if perform:
-            self.perform()
-
-    _ALLOWED_KEYWORDS = _NNDCQuery._ALLOWED_KEYWORDS
-    _ALLOWED_KEYWORDS.extend(['decay', 'type', 'e_range', 'i_range'])
-
     def update(self, **kwargs):
         """Update the search criteria."""
-        super(_DecayRadiationQuery, self).update(**kwargs)
+        super().update(**kwargs)
         for kwarg in kwargs:
             if kwarg not in _DecayRadiationQuery._ALLOWED_KEYWORDS:
                 raise NNDCInputError('Unknown keyword: "{}"'.format(kwarg))
