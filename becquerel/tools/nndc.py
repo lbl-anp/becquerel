@@ -81,6 +81,80 @@ class NNDCRequestError(NNDCError):
     pass
 
 
+def _parse_headers(headers):
+    """Parse table headers and ensure they are unique."""
+    headers_new = []
+    # reformat column headers if needed
+    for j, hd in enumerate(headers):
+        # rename so always have T1/2 (s)
+        if hd == 'T1/2 (num)' or hd == 'T1/2 (seconds)':
+            hd = 'T1/2 (s)'
+        # for uncertainties, add previous column header to it
+        if j > 0 and 'Unc' in hd:
+            hd = headers[j - 1] + ' ' + hd
+        if 'Unc' in hd and 'Unc.' not in hd:
+            hd = hd.replace('Unc', 'Unc.')
+        # expand abbreviated headers
+        if 'Energy' in hd and 'Energy Level' not in hd:
+            hd = hd.replace('Energy', 'Energy Level')
+        if 'Par. Elevel' in hd:
+            hd = hd.replace('Par. Elevel', 'Parent Energy Level')
+        if 'Abund.' in hd:
+            hd = hd.replace('Abund.', 'Abundance (%)')
+        if 'Ene.' in hd:
+            hd = hd.replace('Ene.', 'Energy')
+        if 'Int.' in hd:
+            hd = hd.replace('Int.', 'Intensity (%)')
+        if 'Dec' in hd and 'Decay' not in hd:
+            hd = hd.replace('Dec', 'Decay')
+        if 'Rad' in hd and 'Radiation' not in hd:
+            hd = hd.replace('Rad', 'Radiation')
+        if 'EP' in hd:
+            hd = hd.replace('EP', 'Endpoint')
+        if 'Mass Exc' in hd and 'Mass Excess' not in hd:
+            hd = hd.replace('Mass Exc', 'Mass Excess')
+        headers_new.append(hd)
+    if len(set(headers_new)) != len(headers_new):
+        raise NNDCRequestError(
+            'Duplicate headers after parsing\n' +
+            '    Original headers: "{}"\n'.format(headers) +
+            '    Parsed headers:   "{}"'.format(headers_new))
+    return headers_new
+
+
+def _parse_table(text):
+    """Parse table contained in the text into a dictionary."""
+    text = str(text)
+    try:
+        text = text.split('<pre>')[1]
+        text = text.split('</pre>')[0]
+        text = text.split('To save this output')[0]
+        lines = text.split('\n')
+    except:
+        raise NNDCRequestError('Unable to parse text:\n' + text)
+    table = {}
+    headers = None
+    for line in lines:
+        tokens = line.split('\t')
+        tokens = [t.strip() for t in tokens]
+        if len(tokens) <= 1:
+            continue
+        if headers is None:
+            headers = tokens
+            headers = _parse_headers(headers)
+            for header in headers:
+                table[header] = []
+        else:
+            if len(tokens) != len(headers):
+                raise NNDCRequestError(
+                    'Too few data in table row\n' +
+                    '    Headers: "{}"\n'.format(headers) +
+                    '    Row:     "{}"'.format(tokens))
+            for header, token in zip(headers, tokens):
+                table[header].append(token)
+    return table
+
+
 def _parse_float_uncertainty(x, dx):
     """Parse a string and its uncertainty.
 
@@ -253,10 +327,9 @@ class _NNDCQuery(object):
         """Use format method for DataFrame."""
         return self.df.__format__(formatstr)
 
-    @staticmethod
-    def _request(url, data):
+    def _request(self):
         """Request data table from the URL."""
-        req = requests.post(url, data=data)
+        req = requests.post(self._URL, data=self._data)
         if not req.ok or req.reason != 'OK' or req.status_code != 200:
             raise NNDCRequestError('Request failed: ' + req.reason)
         for msg in [
@@ -266,80 +339,6 @@ class _NNDCQuery(object):
             if msg in req.text:
                 raise NoDataFound(msg)
         return req.text
-
-    @staticmethod
-    def _parse_headers(headers):
-        """Parse table headers and ensure they are unique."""
-        headers_new = []
-        # reformat column headers if needed
-        for j, hd in enumerate(headers):
-            # rename so always have T1/2 (s)
-            if hd == 'T1/2 (num)' or hd == 'T1/2 (seconds)':
-                hd = 'T1/2 (s)'
-            # for uncertainties, add previous column header to it
-            if j > 0 and 'Unc' in hd:
-                hd = headers[j - 1] + ' ' + hd
-            if 'Unc' in hd and 'Unc.' not in hd:
-                hd = hd.replace('Unc', 'Unc.')
-            # expand abbreviated headers
-            if 'Energy' in hd and 'Energy Level' not in hd:
-                hd = hd.replace('Energy', 'Energy Level')
-            if 'Par. Elevel' in hd:
-                hd = hd.replace('Par. Elevel', 'Parent Energy Level')
-            if 'Abund.' in hd:
-                hd = hd.replace('Abund.', 'Abundance (%)')
-            if 'Ene.' in hd:
-                hd = hd.replace('Ene.', 'Energy')
-            if 'Int.' in hd:
-                hd = hd.replace('Int.', 'Intensity (%)')
-            if 'Dec' in hd and 'Decay' not in hd:
-                hd = hd.replace('Dec', 'Decay')
-            if 'Rad' in hd and 'Radiation' not in hd:
-                hd = hd.replace('Rad', 'Radiation')
-            if 'EP' in hd:
-                hd = hd.replace('EP', 'Endpoint')
-            if 'Mass Exc' in hd and 'Mass Excess' not in hd:
-                hd = hd.replace('Mass Exc', 'Mass Excess')
-            headers_new.append(hd)
-        if len(set(headers_new)) != len(headers_new):
-            raise NNDCRequestError(
-                'Duplicate headers after parsing\n' +
-                '    Original headers: "{}"\n'.format(headers) +
-                '    Parsed headers:   "{}"'.format(headers_new))
-        return headers_new
-
-    @staticmethod
-    def _parse_table(text):
-        """Parse table contained in the text into a dictionary."""
-        text = str(text)
-        try:
-            text = text.split('<pre>')[1]
-            text = text.split('</pre>')[0]
-            text = text.split('To save this output')[0]
-            lines = text.split('\n')
-        except:
-            raise NNDCRequestError('Unable to parse text:\n' + text)
-        table = {}
-        headers = None
-        for line in lines:
-            tokens = line.split('\t')
-            tokens = [t.strip() for t in tokens]
-            if len(tokens) <= 1:
-                continue
-            if headers is None:
-                headers = tokens
-                headers = _NNDCQuery._parse_headers(headers)
-                for header in headers:
-                    table[header] = []
-            else:
-                if len(tokens) != len(headers):
-                    raise NNDCRequestError(
-                        'Too few data in table row\n' +
-                        '    Headers: "{}"\n'.format(headers) +
-                        '    Row:     "{}"'.format(tokens))
-                for header, token in zip(headers, tokens):
-                    table[header].append(token)
-        return table
 
     _ALLOWED_KEYWORDS = [
         'perform', 'nuc', 'z', 'a', 'n',
