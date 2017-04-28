@@ -30,21 +30,31 @@ class Spectrum(object):
 
     Data Attributes:
       bin_edges_kev: np.array of energy bin edges, if calibrated
-      livetime: int or float of livetime, in seconds
+      livetime: int or float of livetime, in seconds. May be None or np.nan
+      infilename: the filename the spectrum was loaded from, if applicable
 
     Properties:
-      counts: (read-only) np.array of UFloat objects, of counts in each channel
-      counts_vals: (read-only) np.array of floats of counts
-      counts_uncs: (read-only) np.array of uncertainties for each bin
+      counts: (read-only) counts in each channel, with uncertainty
+      counts_vals: (read-only) counts in each channel, no uncertainty
+      counts_uncs: (read-only) uncertainties on counts in each channel
+      cps: (read-only) counts per second in each channel, with uncertainty
+      cps_vals: (read-only) counts per second in each channel, no uncertainty
+      cps_uncs: (read-only) uncertainties on counts per second in each channel
+      cpskev: (read-only) CPS/keV in each channel, with uncertainty
+      cpskev_vals: (read-only) CPS/keV in each channel, no uncertainty
+      cpskev_uncs: (read-only) uncertainties on CPS/keV in each channel
       channels: (read-only) np.array of channel index as integers
-      is_calibrated: (read-only) bool
+      is_calibrated: (read-only) bool indicating calibration status
       energies_kev: (read-only) np.array of energy bin centers, if calibrated
       bin_widths: (read-only) np.array of energy bin widths, if calibrated
 
     Methods:
       apply_calibration: use an EnergyCal object to calibrate this spectrum
-      norm_subtract: livetime-normalize and subtract another Spectrum object
-      combine_bins: make a new Spectrum with counts combined into bigger bins.
+      calibrate_like: copy the calibrated bin edges from another spectrum
+      rm_calibration: remove the calibrated bin edges
+      combine_bins: make a new Spectrum with counts combined into bigger bins
+      downsample: make a new Spectrum, downsampled from this one by a factor
+      copy: return a deep copy of this Spectrum object
     """
 
     def __init__(self, counts=None, cps=None, uncs=None, bin_edges_kev=None,
@@ -58,16 +68,21 @@ class Spectrum(object):
           cps: counts per second per channel. array-like of floats or UFloats
           uncs (optional): an iterable of uncertainty on the counts for each
             channel.
-            If counts is NOT a UFloat type, and uncs is not given,
+            If counts is given, is NOT a UFloat type, and uncs is not given,
             the uncertainties are assumed to be sqrt(N), with a minimum
             uncertainty of 1 (e.g. for 0 counts).
+            If cps is given, uncs defaults to an array of np.nan
           bin_edges_kev (optional): an iterable of bin edge energies
             If not none, should have length of (len(counts) + 1)
           input_file_object (optional): a parser file object
           livetime (optional): the livetime of the spectrum [s]
+            Note that livetime is not preserved through CPS-based operations,
+            such as any subtraction, or addition with a CPS-based spectrum.
 
         Raises:
           SpectrumError: for bad input arguments
+          UncertaintiesError: if uncertainties are overspecified or of mixed
+            types
         """
 
         if not (counts is None) ^ (cps is None):
@@ -77,7 +92,6 @@ class Spectrum(object):
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
             self.livetime = livetime
             self._cps = None
-            data = counts
         else:
             self._counts = None
             if livetime is None:
@@ -87,11 +101,10 @@ class Spectrum(object):
                 # TODO should this be allowed?
                 #   all calculations with CPS return livetime=np.nan anyway...
             self._cps = self._input_data_check(cps, uncs, lambda x: np.nan)
-            data = cps
 
         if bin_edges_kev is None:
             self.bin_edges_kev = None
-        elif len(bin_edges_kev) != len(data) + 1:
+        elif len(bin_edges_kev) != len(self) + 1:
             raise SpectrumError('Bad length of bin edges vector')
         elif np.any(np.diff(bin_edges_kev) <= 0):
             raise SpectrumError(
@@ -108,7 +121,21 @@ class Spectrum(object):
             self.infilename = None
 
     def _input_data_check(self, data, uncs, default_unc_func):
-        """Check counts or cps for basic problems"""
+        """Check counts or cps for basic problems.
+
+        Args:
+          data: the array of counts or cps, whichever is relevant
+          uncs: the uncs input argument
+          default_unc_function: a function for calculating uncertainties from
+            the data values
+
+        Raises:
+          SpectrumError: if data is empty
+          UncertaintiesError: if uncertainties are bad
+
+        Returns:
+          an array of ufloats for counts or cps, as applicable
+        """
 
         if len(data) == 0:
             raise SpectrumError('Empty spectrum counts')
@@ -119,8 +146,11 @@ class Spectrum(object):
     def counts(self):
         """Counts in each channel, with uncertainty.
 
+        Some spectra, including subtraction results, have cps but no counts,
+        in which case counts is None.
+
         Returns:
-          an np.array of uncertainties.ufloats
+          an np.array of uncertainties.ufloats, or None
         """
 
         return self._counts
@@ -130,24 +160,36 @@ class Spectrum(object):
         """Counts in each channel, no uncertainties.
 
         Returns:
-          an np.array of floats
+          an np.array of floats, or None
         """
 
-        return unumpy.nominal_values(self._counts)
+        if self.counts is None:
+            return None
+        else:
+            return unumpy.nominal_values(self._counts)
 
     @property
     def counts_uncs(self):
         """Uncertainties on the counts in each channel.
 
         Returns:
-          an np.array of floats
+          an np.array of floats, or None
         """
 
-        return unumpy.std_devs(self._counts)
+        if self.counts is None:
+            return None
+        else:
+            return unumpy.std_devs(self._counts)
 
     @property
     def cps(self):
         """Counts per second in each channel, with uncertainty.
+
+        If counts is defined, cps is calculated from counts and livetime.
+        Otherwise, it is an independent data property.
+
+        Raises:
+          SpectrumError: if counts is defined, but not livetime
 
         Returns:
           an np.array of uncertainties.ufloats
@@ -184,14 +226,36 @@ class Spectrum(object):
 
     @property
     def cpskev(self):
+        """Counts per second per keV in each channel, with uncertainty.
+
+        Raises:
+          SpectrumError: if cps is not defined due to missing livetime
+          UncalibratedError: if bin edges (and thus bin widths) are not defined
+
+        Returns:
+          an np.array of uncertainties.ufloats
+        """
+
         return self.cps / self.bin_widths
 
     @property
     def cpskev_vals(self):
+        """Counts per second per keV in each channel, no uncertainties.
+
+        Returns:
+          an np.array of floats
+        """
+
         return unumpy.nominal_values(self.cpskev)
 
     @property
     def cpskev_uncs(self):
+        """Uncertainties on the counts per second per keV in each channel.
+
+        Returns:
+          an np.array of floats
+        """
+
         return unumpy.std_devs(self.cpskev)
 
     @property
@@ -284,6 +348,12 @@ class Spectrum(object):
         return deepcopy(self)
 
     def __len__(self):
+        """The number of channels in the spectrum.
+
+        Returns:
+          an int
+        """
+
         if self.counts is not None:
             return len(self.counts)
         else:
@@ -292,7 +362,7 @@ class Spectrum(object):
     def __add__(self, other):
         """Add spectra together.
 
-        The livetimes combine (if they exist) and the resulting spectrum
+        The livetimes sum (if they exist) and the resulting spectrum
         is still Poisson-distributed.
 
         The two spectra may both be uncalibrated, or both be calibrated
@@ -336,6 +406,10 @@ class Spectrum(object):
           other: another Spectrum object, to normalize and subtract
 
         Raises:
+          TypeError: if other is not a Spectrum
+          SpectrumError: if spectra are different lengths,
+            or if only one is calibrated
+          NotImplementedError: if spectra are calibrated differently
 
         Returns:
           a subtracted Spectrum object
@@ -381,16 +455,63 @@ class Spectrum(object):
                 #   calibrations, should one be rebinned to match?
 
     def __mul__(self, other):
+        """Return a new Spectrum object with counts (or CPS) scaled up.
+
+        Args:
+          factor: factor to multiply by. May be a ufloat.
+
+        Raises:
+          TypeError: if factor is not a scalar value
+          SpectrumError: if factor is 0 or infinite
+
+        Returns:
+          a new Spectrum object
+        """
+
         return self._mul_div(other, div=False)
 
     def __div__(self, other):
+        """Return a new Spectrum object with counts (or CPS) scaled down.
+
+        Args:
+          factor: factor to divide by. May be a ufloat.
+
+        Raises:
+          TypeError: if factor is not a scalar value
+          SpectrumError: if factor is 0 or infinite
+
+        Returns:
+          a new Spectrum object
+        """
+
         return self._mul_div(other, div=True)
 
     def __truediv__(self, other):
+        """Return a new Spectrum object with counts (or CPS) scaled down.
+
+        Args:
+          factor: factor to divide by. May be a ufloat.
+
+        Raises:
+          TypeError: if factor is not a scalar value
+          SpectrumError: if factor is 0 or infinite
+
+        Returns:
+          a new Spectrum object
+        """
+
         return self._mul_div(other, div=True)
 
     def _mul_div(self, scaling_factor, div=False):
-        """Multiply or divide a spectrum by a scalar. Handle errors."""
+        """Multiply or divide a spectrum by a scalar. Handle errors.
+
+        Raises:
+          TypeError: if factor is not a scalar value
+          SpectrumError: if factor is 0 or infinite
+
+        Returns:
+          a new Spectrum object
+        """
 
         if not isinstance(scaling_factor, UFloat):
             try:
@@ -464,6 +585,9 @@ class Spectrum(object):
 
         Args:
           other: spectrum to copy the calibration from
+
+        Raises:
+          UncalibratedError: if other Spectrum is not calibrated
         """
 
         if other.is_calibrated:
