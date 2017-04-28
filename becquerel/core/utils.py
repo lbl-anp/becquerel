@@ -68,3 +68,19 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
         return unumpy.uarray(x_array, x_uncs)
     else:
         return unumpy.uarray(x_array, default_unc_func(x_array))
+
+
+def bin_centers_from_edges(edges_kev):
+    """Calculate bin centers from bin edges.
+
+    Args:
+      edges_kev: an iterable representing bin edge values
+
+    Returns:
+      np.array of length (len(edges_kev) - 1), representing bin center
+        values with the same units as the input
+    """
+
+    edges_kev = np.array(edges_kev)
+    centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
+    return centers_kev

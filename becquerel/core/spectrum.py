@@ -218,7 +218,7 @@ class Spectrum(object):
         if not self.is_calibrated:
             raise UncalibratedError('Spectrum is not calibrated')
         else:
-            return self.bin_centers_from_edges(self.bin_edges_kev)
+            return utils.bin_centers_from_edges(self.bin_edges_kev)
 
     @property
     def bin_widths(self):
@@ -273,22 +273,6 @@ class Spectrum(object):
         # TODO Get more attributes from self.infileobj
 
         return spect_obj
-
-    @staticmethod
-    def bin_centers_from_edges(edges_kev):
-        """Calculate bin centers from bin edges.
-
-        Args:
-          edges_kev: an iterable representing bin edge values
-
-        Returns:
-          np.array of length (len(edges_kev) - 1), representing bin center
-            values with the same units as the input
-        """
-
-        edges_kev = np.array(edges_kev)
-        centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
-        return centers_kev
 
     def copy(self):
         """Make a deep copy of this Spectrum object.
