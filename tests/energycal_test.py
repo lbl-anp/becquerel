@@ -314,17 +314,3 @@ def test_rm_calibration_error(uncal_spec):
     assert not uncal_spec.is_calibrated
     uncal_spec.rm_calibration()
     assert not uncal_spec.is_calibrated
-
-
-def test_calibrate_like(uncal_spec, cal_spec):
-    """Test Spectrum.calibrate_like(), including that the bin edges are a copy
-    """
-
-    assert cal_spec.is_calibrated
-    assert not uncal_spec.is_calibrated
-    uncal_spec.calibrate_like(cal_spec)
-    assert uncal_spec.is_calibrated
-
-    assert cal_spec.bin_edges_kev is not uncal_spec.bin_edges_kev
-    cal_spec.rm_calibration()
-    assert uncal_spec.is_calibrated

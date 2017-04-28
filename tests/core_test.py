@@ -361,6 +361,9 @@ def get_spectrum(t, lt=None):
         spec = uncal_spec(spec_data())
     elif t == 'cal':
         spec = cal_spec(spec_data())
+    elif t == 'cal_new':
+        edges = np.arange(TEST_DATA_LENGTH + 1) * 0.67
+        spec = bq.Spectrum(spec_data(), bin_edges_kev=edges)
     elif t == 'uncal_long':
         spec = uncal_spec_long(spec_data())
     elif t == 'uncal_cps':
@@ -408,7 +411,8 @@ def test_add(type1, type2, lt1, lt2):
     (5, 'cal', TypeError),
     ('cal', 'asdf', TypeError),
     ('asdf', 'uncal', TypeError),
-    ('uncal', 'data', TypeError)
+    ('uncal', 'data', TypeError),
+    ('cal', 'cal_new', NotImplementedError)
 ])
 def test_add_sub_errors(type1, type2, expected_error):
     """Test addition and subtraction that causes errors"""
@@ -569,27 +573,81 @@ def test_mul_div_errors(type1, type2, error):
 
 
 # ----------------------------------------------
+#         Test Spectrum.calibrate_like
+# ----------------------------------------------
+
+def test_calibrate_like(uncal_spec, cal_spec):
+    """Test calibrate_like with an uncalibrated spectrum."""
+
+    uncal_spec.calibrate_like(cal_spec)
+    assert uncal_spec.is_calibrated
+    assert np.all(uncal_spec.bin_edges_kev == cal_spec.bin_edges_kev)
+
+
+def test_recalibrate_like(cal_spec):
+    """Test calibrate_like with an already calibrated spectrum."""
+
+    cal_new = get_spectrum('cal_new')
+    edges1 = cal_spec.bin_edges_kev
+    cal_spec.calibrate_like(cal_new)
+    assert cal_spec.is_calibrated
+    assert np.all(cal_spec.bin_edges_kev == cal_new.bin_edges_kev)
+    assert cal_spec.bin_edges_kev[-1] != edges1[-1]
+
+
+def test_calibrate_like_error(uncal_spec, uncal_spec_2):
+    """Test that calibrate_like raises an error if arg is uncalibrated"""
+
+    with pytest.raises(bq.UncalibratedError):
+        uncal_spec.calibrate_like(uncal_spec_2)
+
+
+def test_calibrate_like_copy(uncal_spec, cal_spec):
+    """Test that calibrate_like makes a copy of the bin edges"""
+
+    uncal_spec.calibrate_like(cal_spec)
+    assert uncal_spec.bin_edges_kev is not cal_spec.bin_edges_kev
+    cal_spec.rm_calibration()
+    assert uncal_spec.is_calibrated
+
+
+# ----------------------------------------------
 #         Test Spectrum.combine_bins
 # ----------------------------------------------
 
-def test_combine_bins(uncal_spec):
+@pytest.mark.parametrize('spectype', ['uncal', 'cal', 'uncal_cps'])
+def test_combine_bins(spectype):
     """Test combine_bins with no padding."""
 
+    spec = get_spectrum(spectype)
+
     f = 8
-    combined = uncal_spec.combine_bins(f)
-    assert len(combined.counts) == TEST_DATA_LENGTH / f
-    assert combined.counts_vals[0] == np.sum(uncal_spec.counts_vals[:f])
-    assert np.sum(combined.counts_vals) == np.sum(uncal_spec.counts_vals)
+    combined = spec.combine_bins(f)
+
+    assert len(combined) == TEST_DATA_LENGTH / f
+    if spec.counts is not None:
+        assert combined.counts_vals[0] == np.sum(spec.counts_vals[:f])
+        assert np.sum(combined.counts_vals) == np.sum(spec.counts_vals)
+    else:
+        assert combined.cps_vals[0] == np.sum(spec.cps_vals[:f])
+        assert np.sum(combined.cps_vals) == np.sum(spec.cps_vals)
 
 
-def test_combine_bins_padding(uncal_spec):
+@pytest.mark.parametrize('spectype', ['uncal', 'cal', 'uncal_cps'])
+def test_combine_bins_padding(spectype):
     """Test combine_bins with padding (an uneven factor)."""
 
+    spec = get_spectrum(spectype)
+
     f = 10
-    combined = uncal_spec.combine_bins(f)
-    assert len(combined.counts) == np.ceil(float(TEST_DATA_LENGTH) / f)
-    assert combined.counts_vals[0] == np.sum(uncal_spec.counts_vals[:f])
-    assert np.sum(combined.counts_vals) == np.sum(uncal_spec.counts_vals)
+    combined = spec.combine_bins(f)
+    assert len(combined) == np.ceil(float(TEST_DATA_LENGTH) / f)
+    if spec.counts is not None:
+        assert combined.counts_vals[0] == np.sum(spec.counts_vals[:f])
+        assert np.sum(combined.counts_vals) == np.sum(spec.counts_vals)
+    else:
+        assert combined.cps_vals[0] == np.sum(spec.cps_vals[:f])
+        assert np.sum(combined.cps_vals) == np.sum(spec.cps_vals)
 
 
 # calibration methods tested in energycal_test.py
@@ -659,7 +717,12 @@ def test_downsample_cps_error(uncal_spec_cps):
 #         Test Spectrum.__len__
 # ----------------------------------------------
 
-@pytest.mark.parametrize("length", [1, 8, 256, 16384])
+
+@pytest.fixture(params=[1, 8, 256, 16384])
+def length(request):
+    return request.param
+
+
 def test_len(length):
     """Test len(spectrum)"""
 
@@ -668,7 +731,6 @@ def test_len(length):
     assert len(spec) == length
 
 
-@pytest.mark.parametrize("length", [1, 8, 256, 16384])
 def test_len_cps(length, livetime):
     """Test len(spectrum) for a CPS-based spectrum"""
 
