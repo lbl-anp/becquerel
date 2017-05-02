@@ -377,16 +377,6 @@ class NNDCQueryTests(object):
         d = self.fetch(z_range=(1, 20), t_range=(1e9, np.inf))
         assert len(d) > 0
 
-    def test_query_zrange_1_20_elevelrange_0_01(self):
-        """Test NNDCQuery: z_range=(1, 20), elevel_range=(0, 0.1).........."""
-        d = self.fetch(z_range=(1, 20), elevel_range=(0, 0.1))
-        assert len(d) > 0
-
-    def test_query_zrange_1_20_elevelrange_01_10(self):
-        """Test NNDCQuery: z_range=(1, 20), elevel_range=(0.1, 10)........."""
-        d = self.fetch(z_range=(1, 20), elevel_range=(0.1, 10))
-        assert len(d) > 0
-
     def test_query_nuc_Pu239_decay_A(self):
         """Test NNDCQuery: nuc='Pu-239', decay='Alpha'....................."""
         d = self.fetch(nuc='Pu-239', decay='Alpha')
@@ -415,6 +405,16 @@ class TestNuclearWalletCard(NNDCQueryTests):
     def setup_method(self):
         self.cls = nndc._NuclearWalletCardQuery
         self.fetch = nndc.fetch_wallet_card
+
+    def test_wallet_zrange_1_20_elevelrange_0_01(self):
+        """Test fetch_wallet_card: z_range=(1, 20), elevel_range=(0, 0.1).."""
+        d = self.fetch(z_range=(1, 20), elevel_range=(0, 0.1))
+        assert len(d) > 0
+
+    def test_wallet_zrange_1_20_elevelrange_01_10(self):
+        """Test fetch_wallet_card: z_range=(1, 20), elevel_range=(0.1, 10)."""
+        d = self.fetch(z_range=(1, 20), elevel_range=(0.1, 10))
+        assert len(d) > 0
 
     def test_wallet_zrange_1_20_j_0(self):
         """Test fetch_wallet_card: z_range=(1, 20), j='0'.................."""
@@ -534,3 +534,8 @@ class TestDecayRadiationQuery(NNDCQueryTests):
         """Test fetch_decay_radiation: e_range=(661, 663).................."""
         d = self.fetch(e_range=(661, 663))
         assert len(d) > 0
+
+    def test_decay_elevelrange_exception(self):
+        """Test fetch_decay_radiation exception if elevel_range set........"""
+        with pytest.raises(nndc.NNDCInputError):
+            self.fetch(elevel_range=(0.1, 0.3))
