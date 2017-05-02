@@ -186,14 +186,15 @@ def _parse_float_uncertainty(x, dx):
     # for less than, greater than, less than or equal to greater
     # than or equal to. approximately equal to, calculated, and
     # from systematics, respectively."
+    for sym in ['*', '<', '>', '=', '~', '?']:
+        while sym in x:
+            x = x.replace(sym, '')
     if x == '':
         return None
-    elif '****' in x or '<' in x or '>' in x or '~' in x or '?' in x:
-        return None
-    elif '****' in dx:
-        return None
+    if '****' in dx:
+        dx = ''
     elif dx in ['LT', 'GT', 'LE', 'GE', 'AP', 'CA', 'SY']:
-        return None
+        dx = ''
     try:
         x2 = float(x)
     except ValueError:

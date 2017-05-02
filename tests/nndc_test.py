@@ -106,22 +106,22 @@ class TestParseFloatUncertainty(object):
     def test_16(self):
         """Test _parse_float_uncertainty('~7', '1')........................"""
         answer = nndc._parse_float_uncertainty('~7', '1')
-        assert answer is None
+        assert is_close(answer, 7.)
 
     def test_17(self):
         """Test _parse_float_uncertainty('1', '****')......................"""
         answer = nndc._parse_float_uncertainty('1', '****')
-        assert answer is None
+        assert is_close(answer, 1.)
 
     def test_18(self):
         """Test _parse_float_uncertainty('73.92', 'AP')...................."""
         answer = nndc._parse_float_uncertainty('73.92', 'AP')
-        assert answer is None
+        assert is_close(answer, 73.92)
 
     def test_19(self):
         """Test _parse_float_uncertainty('73.92', 'CA')...................."""
         answer = nndc._parse_float_uncertainty('73.92', 'CA')
-        assert answer is None
+        assert is_close(answer, 73.92)
 
     def test_20(self):
         """Test _parse_float_uncertainty('@', '7') raises NNDCRequestError."""
