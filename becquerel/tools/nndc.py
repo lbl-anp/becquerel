@@ -255,7 +255,6 @@ class _NNDCQuery(object):
         z_odd, etc. : (bool) : only odd Z, A, or N
         z_even, etc.: (bool) : only even Z, A, or N
         t_range : (tuple of float) : range of isotope half-lives
-        elevel_range : (tuple of float) : range of nuc. energy level (MeV)
 
     To prevent query from being immediately performed, instantiate with
     keyword perform=False.
@@ -286,9 +285,6 @@ class _NNDCQuery(object):
         'notlim': 'disabled',  # half-life: no limit
         'dmed': 'disabled',    # decay mode condition on/off
         'dmn': 'ANY',          # decay mode: 'ANY' = any
-        'eled': 'disabled',    # E(level) condition on/off
-        'elmin': '0',          # E(level) min
-        'elmax': '40',         # E(level) max
         'out': 'file',         # output to formatted file
         'unc': 'stdandard',    # standard style uncertainties
         'sub': 'Search',       # search for the data
@@ -299,7 +295,7 @@ class _NNDCQuery(object):
         'z_any', 'z_even', 'z_odd',
         'a_any', 'a_even', 'a_odd',
         'n_any', 'n_even', 'n_odd',
-        'elevel_range', 't_range',
+        't_range',
     ]
     _DUMMY_TEXT = ''
 
@@ -381,11 +377,6 @@ class _NNDCQuery(object):
                     self._data['even' + x.lower()] = 'even'
                 elif x + '_odd' in kwargs:
                     self._data['even' + x.lower()] = 'odd'
-        # handle energy level condition
-        if 'elevel_range' in kwargs:
-            self._data['eled'] = 'enabled'
-            self._data['elmin'], self._data['elmax'] = \
-                _format_range(kwargs['elevel_range'])
         # handle half-life range condition
         if 't_range' in kwargs:
             self._data['tled'] = 'enabled'
@@ -579,13 +570,16 @@ class _NuclearWalletCardQuery(_NNDCQuery):
     _URL = 'http://www.nndc.bnl.gov/nudat2/sigma_searchi.jsp'
     _DATA = _NNDCQuery._DATA
     _DATA.update({
+        'eled': 'disabled',    # E(level) condition on/off
+        'elmin': '0',          # E(level) min
+        'elmax': '40',         # E(level) max
         'jled': 'disabled',    # J_pi(level) condition on/off
         'jlv': '',             # J
         'plv': 'ANY',          # parity
         'ord': 'zalt',         # order file by Z, A, E(level), T1/2
     })
     _ALLOWED_KEYWORDS = _NNDCQuery._ALLOWED_KEYWORDS
-    _ALLOWED_KEYWORDS.extend(['decay', 'j', 'parity'])
+    _ALLOWED_KEYWORDS.extend(['elevel_range', 'decay', 'j', 'parity'])
     _DUMMY_TEXT = """
 <html>
 <body>
@@ -612,7 +606,12 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
                         WALLET_DECAY_MODE.keys(), kwargs['decay']))
             self._data['dmed'] = 'enabled'
             self._data['dmn'] = WALLET_DECAY_MODE[kwargs['decay']]
-        # handle half-life range condition
+        # handle energy level condition
+        if 'elevel_range' in kwargs:
+            self._data['eled'] = 'enabled'
+            self._data['elmin'], self._data['elmax'] = \
+                _format_range(kwargs['elevel_range'])
+        # handle spin and parity
         if 'j' in kwargs:
             self._data['jled'] = 'enabled'
             self._data['jlv'] = kwargs['j']
@@ -686,7 +685,6 @@ class _DecayRadiationQuery(_NNDCQuery):
         z_odd, etc. : (bool) : only odd Z, A, or N
         z_even, etc.: (bool) : only even Z, A, or N
         t_range : (tuple of float) : range of isotope half-lives
-        elevel_range : (tuple of float) : range of nuc. energy level (MeV)
         decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
         type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
         e_range : (tuple of float) : radiation energy range (keV)
@@ -781,7 +779,6 @@ def fetch_decay_radiation(**kwargs):
         z_odd, etc. : (bool) : only odd Z, A, or N
         z_even, etc.: (bool) : only even Z, A, or N
         t_range : (tuple of float) : range of isotope half-lives
-        elevel_range : (tuple of float) : range of nuc. energy level (MeV)
         decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
         type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
         e_range : (tuple of float) : radiation energy range (keV)
