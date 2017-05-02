@@ -568,7 +568,7 @@ class _NuclearWalletCardQuery(_NNDCQuery):
     """
 
     _URL = 'http://www.nndc.bnl.gov/nudat2/sigma_searchi.jsp'
-    _DATA = _NNDCQuery._DATA
+    _DATA = dict(_NNDCQuery._DATA)
     _DATA.update({
         'eled': 'disabled',    # E(level) condition on/off
         'elmin': '0',          # E(level) min
@@ -578,7 +578,7 @@ class _NuclearWalletCardQuery(_NNDCQuery):
         'plv': 'ANY',          # parity
         'ord': 'zalt',         # order file by Z, A, E(level), T1/2
     })
-    _ALLOWED_KEYWORDS = _NNDCQuery._ALLOWED_KEYWORDS
+    _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
     _ALLOWED_KEYWORDS.extend(['elevel_range', 'decay', 'j', 'parity'])
     _DUMMY_TEXT = """
 <html>
@@ -595,9 +595,6 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
     def update(self, **kwargs):
         """Update the search criteria."""
         super().update(**kwargs)
-        for kwarg in kwargs:
-            if kwarg not in _NuclearWalletCardQuery._ALLOWED_KEYWORDS:
-                raise NNDCInputError('Unknown keyword: "{}"'.format(kwarg))
         # handle decay mode
         if 'decay' in kwargs:
             if kwargs['decay'] not in WALLET_DECAY_MODE:
@@ -696,7 +693,7 @@ class _DecayRadiationQuery(_NNDCQuery):
     """
 
     _URL = 'http://www.nndc.bnl.gov/nudat2/dec_searchi.jsp'
-    _DATA = _NNDCQuery._DATA
+    _DATA = dict(_NNDCQuery._DATA)
     _DATA.update({
         'rted': 'enabled',     # radiation type condition on/off
         'rtn': 'ANY',          # radiation type: 'ANY' = any, 'G' = gamma
@@ -708,7 +705,7 @@ class _DecayRadiationQuery(_NNDCQuery):
         'rimax': '100',        # radiation intensity max (%)
         'ord': 'zate',         # order file by Z, A, T1/2, E
     })
-    _ALLOWED_KEYWORDS = _NNDCQuery._ALLOWED_KEYWORDS
+    _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
     _ALLOWED_KEYWORDS.extend(['decay', 'type', 'e_range', 'i_range'])
     _DUMMY_TEXT = """
 <html>
@@ -724,9 +721,6 @@ To save this output into a local File, clik on "File" in your browser menu and s
     def update(self, **kwargs):
         """Update the search criteria."""
         super().update(**kwargs)
-        for kwarg in kwargs:
-            if kwarg not in _DecayRadiationQuery._ALLOWED_KEYWORDS:
-                raise NNDCInputError('Unknown keyword: "{}"'.format(kwarg))
         # handle decay mode
         if 'decay' in kwargs:
             if kwargs['decay'] not in DECAYRAD_DECAY_MODE:
