@@ -101,7 +101,9 @@ class Spectrum(object):
         if not (counts is None) ^ (cps is None):
             raise SpectrumError('Must specify one of counts or CPS')
         if counts is not None:
-            self._counts = self._input_data_check(
+            if len(counts) == 0:
+                raise SpectrumError('Empty spectrum counts')
+            self._counts = utils.handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
             self.livetime = livetime
             self._cps = None
@@ -113,14 +115,16 @@ class Spectrum(object):
                 self.livetime = livetime
                 # TODO should this be allowed?
                 #   all calculations with CPS return livetime=np.nan anyway...
-            self._cps = self._input_data_check(cps, uncs, lambda x: np.nan)
+            if len(cps) == 0:
+                raise SpectrumError('Empty spectrum counts')
+            self._cps = utils.handle_uncs(cps, uncs, lambda x: np.nan)
 
         if bin_edges_kev is None:
             self.bin_edges_kev = None
         elif len(bin_edges_kev) != len(self) + 1:
             raise SpectrumError('Bad length of bin edges vector')
         elif np.any(np.diff(bin_edges_kev) <= 0):
-            raise SpectrumError(
+            raise ValueError(
                 'Bin edge energies must be strictly increasing')
         else:
             self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
@@ -131,7 +135,7 @@ class Spectrum(object):
             self.realtime = float(realtime)
             if self.livetime is not None:
                 if self.livetime > self.realtime:
-                    raise SpectrumError(
+                    raise ValueError(
                         'Livetime ({}) cannot exceed realtime ({})'.format(
                             self.livetime, self.realtime))
 
@@ -146,7 +150,7 @@ class Spectrum(object):
                 'realtime, stop_time, start_time')
         elif self.start_time is not None and self.stop_time is not None:
             if self.start_time > self.stop_time:
-                raise SpectrumError(
+                raise ValueError(
                     'Stop time ({}) must be after start time ({})'.format(
                         self.start_time, self.stop_time))
             self.realtime = (self.stop_time - self.start_time).total_seconds()
@@ -170,28 +174,6 @@ class Spectrum(object):
                 self.stop_time = input_file_object.collection_stop
         else:
             self.infilename = None
-
-    def _input_data_check(self, data, uncs, default_unc_func):
-        """Check counts or cps for basic problems.
-
-        Args:
-          data: the array of counts or cps, whichever is relevant
-          uncs: the uncs input argument
-          default_unc_function: a function for calculating uncertainties from
-            the data values
-
-        Raises:
-          SpectrumError: if data is empty
-          UncertaintiesError: if uncertainties are bad
-
-        Returns:
-          an array of ufloats for counts or cps, as applicable
-        """
-
-        if len(data) == 0:
-            raise SpectrumError('Empty spectrum counts')
-
-        return utils.handle_uncs(data, uncs, default_unc_func)
 
     @property
     def counts(self):
@@ -571,13 +553,13 @@ class Spectrum(object):
             if (scaling_factor == 0 or
                     np.isinf(scaling_factor) or
                     np.isnan(scaling_factor)):
-                raise SpectrumError(
+                raise ValueError(
                     'Scaling factor must be nonzero and finite')
         else:
             if (scaling_factor.nominal_value == 0 or
                     np.isinf(scaling_factor.nominal_value) or
                     np.isnan(scaling_factor.nominal_value)):
-                raise SpectrumError(
+                raise ValueError(
                     'Scaling factor must be nonzero and finite')
         if div:
             multiplier = 1 / scaling_factor
@@ -607,7 +589,7 @@ class Spectrum(object):
         if self.counts is None:
             raise SpectrumError('Cannot downsample from CPS')
         if f < 1:
-            raise SpectrumError('Cannot upsample a spectrum; f must be > 1')
+            raise ValueError('Cannot upsample a spectrum; f must be > 1')
 
         # TODO handle uncertainty?
         old_counts = self.counts_vals.astype(int)

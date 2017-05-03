@@ -143,7 +143,7 @@ def test_init_exceptions(spec_data):
 
     bad_edges = TEST_EDGES_KEV.copy()
     bad_edges[12] = bad_edges[9]
-    with pytest.raises(bq.SpectrumError):
+    with pytest.raises(ValueError):
         bq.Spectrum(spec_data, bin_edges_kev=bad_edges)
 
 
@@ -209,7 +209,7 @@ def test_acqtime_construction(spec_data, start, stop, rt):
 
 @pytest.mark.parametrize('start, stop, rt, expected_err', [
     ('2017-01-19 17:21:00', '2017-01-20 17:21:00', 86400, bq.SpectrumError),
-    ('2017-01-19 17:21:00', '2017-01-18 17:21:00', None, bq.SpectrumError),
+    ('2017-01-19 17:21:00', '2017-01-18 17:21:00', None, ValueError),
 ])
 def test_bad_acqtime_construction(spec_data, start, stop, rt, expected_err):
     """Test bad construction of a spectrum with start, stop, or realtimes."""
@@ -221,7 +221,7 @@ def test_bad_acqtime_construction(spec_data, start, stop, rt, expected_err):
 def test_bad_realtime_livetime(spec_data):
     """Test error of livetime > realtime."""
 
-    with pytest.raises(bq.SpectrumError):
+    with pytest.raises(ValueError):
         bq.Spectrum(spec_data, livetime=300, realtime=290)
 
 
@@ -590,11 +590,11 @@ def test_uncal_mul_div_uncertainties(spectype, factor):
     ('uncal', 'uncal', TypeError),
     ('uncal', 'asdf', TypeError),
     ('uncal', 'data', TypeError),
-    ('uncal', 0, bq.SpectrumError),
-    ('uncal', np.inf, bq.SpectrumError),
-    ('uncal', np.nan, bq.SpectrumError),
-    ('uncal', ufloat(0, 1), bq.SpectrumError),
-    ('uncal', ufloat(np.inf, np.nan), bq.SpectrumError)])
+    ('uncal', 0, ValueError),
+    ('uncal', np.inf, ValueError),
+    ('uncal', np.nan, ValueError),
+    ('uncal', ufloat(0, 1), ValueError),
+    ('uncal', ufloat(np.inf, np.nan), ValueError)])
 def test_mul_div_errors(type1, type2, error):
     """Multiplication/division errors."""
 
@@ -734,9 +734,9 @@ def test_zero_downsample(cal_spec):
 
 
 def test_downsample_error(cal_spec):
-    """Test that downsample(<1) raises SpectrumError"""
+    """Test that downsample(<1) raises ValueError"""
 
-    with pytest.raises(bq.SpectrumError):
+    with pytest.raises(ValueError):
         cal_spec.downsample(0.5)
 
 
