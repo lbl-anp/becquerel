@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import pytest
+import datetime
 import numpy as np
 from uncertainties import ufloat, UFloat, unumpy
 
@@ -188,6 +189,43 @@ def test_no_livetime(spec_data):
 
 
 # ----------------------------------------------
+#     Test start_time, stop_time, realtime
+# ----------------------------------------------
+
+@pytest.mark.parametrize('start, stop', [
+    (datetime.datetime(2017, 1, 1, 17, 0, 3),
+     datetime.datetime(2017, 1, 1, 18, 0, 3)),
+    ('2017-01-19 17:21:00', '2017-01-20 14:19:32'),
+    (datetime.datetime(2017, 1, 1, 0, 30, 0, 385), '2017-01-01 12:44:22')
+])
+@pytest.mark.parametrize('rt', [3600, 2345.6])
+def test_acqtime_construction(spec_data, start, stop, rt):
+    """Test construction with 2 out of 3 of start, stop, and realtime."""
+
+    bq.Spectrum(spec_data, start_time=start, stop_time=stop)
+    bq.Spectrum(spec_data, start_time=start, realtime=rt)
+    bq.Spectrum(spec_data, realtime=rt, stop_time=stop)
+
+
+@pytest.mark.parametrize('start, stop, rt, expected_err', [
+    ('2017-01-19 17:21:00', '2017-01-20 17:21:00', 86400, bq.SpectrumError),
+    ('2017-01-19 17:21:00', '2017-01-18 17:21:00', None, bq.SpectrumError),
+])
+def test_bad_acqtime_construction(spec_data, start, stop, rt, expected_err):
+    """Test bad construction of a spectrum with start, stop, or realtimes."""
+
+    with pytest.raises(expected_err):
+        bq.Spectrum(spec_data, start_time=start, stop_time=stop, realtime=rt)
+
+
+def test_bad_realtime_livetime(spec_data):
+    """Test error of livetime > realtime."""
+
+    with pytest.raises(bq.SpectrumError):
+        bq.Spectrum(spec_data, livetime=300, realtime=290)
+
+
+# ----------------------------------------------
 #         Test uncertainties in Spectrum
 # ----------------------------------------------
 
@@ -276,28 +314,21 @@ def test_bin_width_error(uncal_spec):
 #         Test Spectrum CPS and CPS/keV
 # ----------------------------------------------
 
-def test_cps(spec_data, livetime):
-    """Test cps property and uncertainties on uncal spectrum."""
+@pytest.mark.parametrize('construction_kwargs', [
+    {'livetime': 300.0},
+    {'livetime': 300.0,
+     'bin_edges_kev': TEST_EDGES_KEV},
+])
+def test_cps(spec_data, construction_kwargs):
+    """Test cps property and uncertainties on uncal and cal spectrum."""
 
-    spec = bq.Spectrum(spec_data, livetime=livetime)
+    spec = bq.Spectrum(spec_data, **construction_kwargs)
     spec.cps
     spec.cps_vals
     spec.cps_uncs
     assert np.all(spec.counts_vals == spec_data)
-    assert np.allclose(spec.cps_vals, spec_data / float(livetime))
-    assert np.allclose(spec.cps_uncs, spec.counts_uncs / float(livetime))
-
-
-def test_cps_cal(spec_data, livetime):
-    """Test cps property and uncertainties on cal spectrum."""
-
-    spec = bq.Spectrum(spec_data, livetime=livetime,
-                       bin_edges_kev=TEST_EDGES_KEV)
-    spec.cps
-    spec.cps_vals
-    spec.cps_uncs
-    assert np.allclose(spec.cps_vals, spec_data / float(livetime))
-    assert np.allclose(spec.cps_uncs, spec.counts_uncs / float(livetime))
+    assert np.allclose(spec.cps_vals, spec_data / spec.livetime)
+    assert np.allclose(spec.cps_uncs, spec.counts_uncs / spec.livetime)
 
 
 def test_cpskev(spec_data, livetime):
@@ -321,6 +352,9 @@ def test_cps_cpsspec(spec_data, livetime):
     spec.cps
     assert np.all(spec.cps_vals == spec_data / float(livetime))
     assert np.all(np.isnan(spec.cps_uncs))
+    assert spec.counts is None
+    assert spec.counts_vals is None
+    assert spec.counts_uncs is None
 
 
 def test_cps_errors(uncal_spec):

@@ -3,6 +3,7 @@
 from __future__ import print_function
 import os
 from copy import deepcopy
+import datetime
 import numpy as np
 from uncertainties import UFloat, unumpy
 from becquerel import parsers
@@ -32,6 +33,8 @@ class Spectrum(object):
       bin_edges_kev: np.array of energy bin edges, if calibrated
       livetime: int or float of livetime, in seconds. May be None or np.nan
       infilename: the filename the spectrum was loaded from, if applicable
+      start_time: a datetime.datetime object representing the acquisition start
+      stop_time: a datetime.datetime object representing the acquisition end
 
     Properties:
       counts: (read-only) counts in each channel, with uncertainty
@@ -58,10 +61,14 @@ class Spectrum(object):
     """
 
     def __init__(self, counts=None, cps=None, uncs=None, bin_edges_kev=None,
-                 input_file_object=None, livetime=None):
+                 input_file_object=None, livetime=None, realtime=None,
+                 start_time=None, stop_time=None):
         """Initialize the spectrum.
 
         Either counts or cps must be specified. Other args are optional.
+        If start_time, stop_time, and realtime are being provided, only two of
+        these should be specified as arguments, and the third will be
+        calculated from the other two.
 
         Args:
           counts: counts per channel. array-like of ints, floats or UFloats
@@ -78,11 +85,17 @@ class Spectrum(object):
           livetime (optional): the livetime of the spectrum [s]
             Note that livetime is not preserved through CPS-based operations,
             such as any subtraction, or addition with a CPS-based spectrum.
+          realtime (optional): the duration of the acquisition [s]
+          start_time (optional): datetime or string representing the
+            acquisition start
+          stop_time (optional): datetime or string representing the acquisition
+            end.
 
         Raises:
           SpectrumError: for bad input arguments
           UncertaintiesError: if uncertainties are overspecified or of mixed
             types
+          TypeError: for bad type on input args (start_time, stop_time)
         """
 
         if not (counts is None) ^ (cps is None):
@@ -112,11 +125,49 @@ class Spectrum(object):
         else:
             self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
 
+        if realtime is None:
+            self.realtime = None
+        else:
+            self.realtime = float(realtime)
+            if self.livetime is not None:
+                if self.livetime > self.realtime:
+                    raise SpectrumError(
+                        'Livetime ({}) cannot exceed realtime ({})'.format(
+                            self.livetime, self.realtime))
+
+        self.start_time = utils.handle_datetime(start_time, 'start_time')
+        self.stop_time = utils.handle_datetime(stop_time, 'stop_time')
+
+        if (self.realtime is not None
+                and self.stop_time is not None
+                and self.start_time is not None):
+            raise SpectrumError(
+                'Specify no more than 2 out of 3 args: ' +
+                'realtime, stop_time, start_time')
+        elif self.start_time is not None and self.stop_time is not None:
+            if self.start_time > self.stop_time:
+                raise SpectrumError(
+                    'Stop time ({}) must be after start time ({})'.format(
+                        self.start_time, self.stop_time))
+            self.realtime = (self.stop_time - self.start_time).total_seconds()
+        elif self.start_time is not None and self.realtime is not None:
+            self.stop_time = self.start_time + datetime.timedelta(
+                seconds=self.realtime)
+        elif self.realtime is not None and self.stop_time is not None:
+            self.start_time = self.stop_time - datetime.timedelta(
+                seconds=self.realtime)
+
         self._infileobject = input_file_object
         if input_file_object is not None:
             self.infilename = input_file_object.filename
             if self.livetime is None:
                 self.livetime = input_file_object.livetime
+            if self.realtime is None:
+                self.realtime = input_file_object.realtime
+            if self.start_time is None:
+                self.start_time = input_file_object.collection_start
+            if self.stop_time is None:
+                self.stop_time = input_file_object.collection_stop
         else:
             self.infilename = None
 
@@ -326,17 +377,15 @@ class Spectrum(object):
 
         spect_file_obj = _get_file_object(infilename)
 
+        kwargs = {'counts': spect_file_obj.data,
+                  'input_file_object': spect_file_obj}
+
         if spect_file_obj.cal_coeff:
-            spect_obj = cls(spect_file_obj.data,
-                            bin_edges_kev=spect_file_obj.energy_bin_edges,
-                            input_file_object=spect_file_obj)
-        else:
-            spect_obj = cls(spect_file_obj.data,
-                            input_file_object=spect_file_obj)
+            kwargs['bin_edges_kev'] = spect_file_obj.energy_bin_edges
 
         # TODO Get more attributes from self.infileobj
 
-        return spect_obj
+        return cls(**kwargs)
 
     def copy(self):
         """Make a deep copy of this Spectrum object.

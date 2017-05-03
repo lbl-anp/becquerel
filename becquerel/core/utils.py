@@ -1,6 +1,9 @@
 """General utility functions to be shared among core modules."""
 
 from __future__ import print_function
+import datetime
+from dateutil.parser import parse as dateutil_parse
+from six import string_types
 from uncertainties import UFloat, unumpy
 import numpy as np
 
@@ -68,6 +71,31 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
         return unumpy.uarray(x_array, x_uncs)
     else:
         return unumpy.uarray(x_array, default_unc_func(x_array))
+
+
+def handle_datetime(input_time, argname='datetime arg'):
+    """Parse an argument as a datetime, date+time string, or None.
+
+    Args:
+      input_time: the input argument to be converted to a datetime
+      argname: the name to be displayed if an error is raised.
+        (default: 'datetime arg')
+
+    Raises:
+      TypeError: if input_time is not a string, datetime, or None
+
+    Returns:
+      a datetime.datetime
+    """
+
+    if isinstance(input_time, datetime.datetime):
+        return input_time
+    elif isinstance(input_time, string_types):
+        return dateutil_parse(input_time)
+    elif input_time is None:
+        return None
+    else:
+        raise TypeError('Unknown type for {}}: {}'.format(argname, input_time))
 
 
 def bin_centers_from_edges(edges_kev):
