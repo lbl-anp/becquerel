@@ -10,83 +10,78 @@ import pytest
 # pylint: disable=attribute-defined-outside-init,missing-docstring
 
 
-def is_close(f1, f2, ppm=1.):
-    """True if f1 and f2 are within the given parts per million."""
-    return abs((f1 - f2) / f2) < ppm / 1.e6
-
-
 class TestParseFloatUncertainty(object):
     """Test _parse_float_uncertainty()."""
 
     def test_01(self):
         """Test _parse_float_uncertainty('257.123', '0.005')..............."""
         answer = nndc._parse_float_uncertainty('257.123', '0.005')
-        assert is_close(answer.nominal_value, 257.123)
-        assert is_close(answer.std_dev, 0.005)
+        assert np.isclose(answer.nominal_value, 257.123)
+        assert np.isclose(answer.std_dev, 0.005)
 
     def test_02(self):
         """Test _parse_float_uncertainty('257.123', '0.015')..............."""
         answer = nndc._parse_float_uncertainty('257.123', '0.015')
-        assert is_close(answer.nominal_value, 257.123)
-        assert is_close(answer.std_dev, 0.015)
+        assert np.isclose(answer.nominal_value, 257.123)
+        assert np.isclose(answer.std_dev, 0.015)
 
     def test_03(self):
         """Test _parse_float_uncertainty('257.123E0', '0.005')............."""
         answer = nndc._parse_float_uncertainty('257.123E0', '0.005')
-        assert is_close(answer.nominal_value, 257.123)
-        assert is_close(answer.std_dev, 0.005)
+        assert np.isclose(answer.nominal_value, 257.123)
+        assert np.isclose(answer.std_dev, 0.005)
 
     def test_04(self):
         """Test _parse_float_uncertainty('257.123E+0', '0.005')............"""
         answer = nndc._parse_float_uncertainty('257.123E+0', '0.005')
-        assert is_close(answer.nominal_value, 257.123)
-        assert is_close(answer.std_dev, 0.005)
+        assert np.isclose(answer.nominal_value, 257.123)
+        assert np.isclose(answer.std_dev, 0.005)
 
     def test_05(self):
         """Test _parse_float_uncertainty('257.123E4', '5E3')..............."""
         answer = nndc._parse_float_uncertainty('257.123E4', '5E3')
-        assert is_close(answer.nominal_value, 2571230.)
-        assert is_close(answer.std_dev, 5000.)
+        assert np.isclose(answer.nominal_value, 2571230.)
+        assert np.isclose(answer.std_dev, 5000.)
 
     def test_06(self):
         """Test _parse_float_uncertainty('257.123E+4', '5E-3')............."""
         answer = nndc._parse_float_uncertainty('257.123E+4', '5E-3')
-        assert is_close(answer.nominal_value, 2571230.)
-        assert is_close(answer.std_dev, 0.005)
+        assert np.isclose(answer.nominal_value, 2571230.)
+        assert np.isclose(answer.std_dev, 0.005)
 
     def test_07(self):
         """Test _parse_float_uncertainty('257.123E+4', '5E-1E-2').........."""
         answer = nndc._parse_float_uncertainty('257.123E+4', '5E-1E-2')
-        assert is_close(answer.nominal_value, 2571230.)
-        assert is_close(answer.std_dev, 0.005)
+        assert np.isclose(answer.nominal_value, 2571230.)
+        assert np.isclose(answer.std_dev, 0.005)
 
     def test_08(self):
         """Test _parse_float_uncertainty('257.123', '')...................."""
         answer = nndc._parse_float_uncertainty('257.123', '')
         assert isinstance(answer, float)
-        assert is_close(answer, 257.123)
+        assert np.isclose(answer, 257.123)
 
     def test_09(self):
         """Test _parse_float_uncertainty('8', '2')........................."""
         answer = nndc._parse_float_uncertainty('8', '2')
-        assert is_close(answer.nominal_value, 8.)
-        assert is_close(answer.std_dev, 2.)
+        assert np.isclose(answer.nominal_value, 8.)
+        assert np.isclose(answer.std_dev, 2.)
 
     def test_10(self):
         """Test _parse_float_uncertainty('8', '').........................."""
         answer = nndc._parse_float_uncertainty('8', '')
         assert isinstance(answer, float)
-        assert is_close(answer, 8.)
+        assert np.isclose(answer, 8.)
 
     def test_11(self):
         """Test _parse_float_uncertainty('100.0%', '')....................."""
         answer = nndc._parse_float_uncertainty('100.0%', '')
-        assert is_close(answer, 100.)
+        assert np.isclose(answer, 100.)
 
     def test_12(self):
         """Test _parse_float_uncertainty('73.92+X', '')...................."""
         answer = nndc._parse_float_uncertainty('73.92+X', '')
-        assert is_close(answer, 73.92)
+        assert np.isclose(answer, 73.92)
 
     def test_13(self):
         """Test _parse_float_uncertainty('Y', '').........................."""
@@ -106,22 +101,23 @@ class TestParseFloatUncertainty(object):
     def test_16(self):
         """Test _parse_float_uncertainty('~7', '1')........................"""
         answer = nndc._parse_float_uncertainty('~7', '1')
-        assert is_close(answer, 7.)
+        assert np.isclose(answer.nominal_value, 7.)
+        assert np.isclose(answer.std_dev, 1.)
 
     def test_17(self):
         """Test _parse_float_uncertainty('1', '****')......................"""
         answer = nndc._parse_float_uncertainty('1', '****')
-        assert is_close(answer, 1.)
+        assert np.isclose(answer, 1.)
 
     def test_18(self):
         """Test _parse_float_uncertainty('73.92', 'AP')...................."""
         answer = nndc._parse_float_uncertainty('73.92', 'AP')
-        assert is_close(answer, 73.92)
+        assert np.isclose(answer, 73.92)
 
     def test_19(self):
         """Test _parse_float_uncertainty('73.92', 'CA')...................."""
         answer = nndc._parse_float_uncertainty('73.92', 'CA')
-        assert is_close(answer, 73.92)
+        assert np.isclose(answer, 73.92)
 
     def test_20(self):
         """Test _parse_float_uncertainty('@', '7') raises NNDCRequestError."""
