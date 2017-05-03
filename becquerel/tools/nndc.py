@@ -83,7 +83,19 @@ class NNDCRequestError(NNDCError):
 
 
 def _parse_headers(headers):
-    """Parse table headers and ensure they are unique."""
+    """Parse table headers and ensure they are unique.
+
+    Args:
+      headers: a list of column header strings.
+
+    Returns:
+      a new list of strings where abbreviations have been expanded.
+
+    Raises:
+      NNDCRequestError: if there was a problem parsing the headers.
+
+    """
+
     headers_new = []
     # reformat column headers if needed
     for j, hd in enumerate(headers):
@@ -124,7 +136,19 @@ def _parse_headers(headers):
 
 
 def _parse_table(text):
-    """Parse table contained in the text into a dictionary."""
+    """Parse table contained in the text into a dictionary.
+
+    Args:
+      text: a string containing an HTML table from the NNDC request
+
+    Returns:
+      a dictionary of lists keyed by the column headers.
+
+    Raises:
+      NNDCRequestError: if unable to parse the table.
+
+    """
+
     text = str(text)
     try:
         text = text.split('<pre>')[1]
@@ -157,15 +181,26 @@ def _parse_table(text):
 
 
 def _parse_float_uncertainty(x, dx):
-    """Parse a string and its uncertainty.
+    """Parse a string and its uncertainty into a float or ufloat.
 
     Examples:
-    >>> _parse_float_uncertainty('257.123', '0.005')
-    257.123+/-0.005
-    >>> _parse_float_uncertainty('8', '')
-    8.0
+      >>> _parse_float_uncertainty('257.123', '0.005')
+      257.123+/-0.005
+      >>> _parse_float_uncertainty('8', '')
+      8.0
+
+    Args:
+      x: a string representing the nominal value of the quantity.
+      dx: a string representing the uncertainty of the quantity.
+
+    Returns:
+      a float (if dx == '') or a ufloat.
+
+    Raises:
+      NNDCRequestError: if values cannot be parsed.
 
     """
+
     if not isinstance(x, string_types):
         raise NNDCRequestError('Value must be a string: {}'.format(x))
     if not isinstance(dx, string_types):
@@ -220,8 +255,18 @@ def _parse_float_uncertainty(x, dx):
 def _format_range(x_range):
     """Return two strings for the two range elements, blank if not finite.
 
-    If x_range is not an iterable of length 2, raise NNDCInputError.
+    Args:
+      x_range: an iterable of 2 range limits, which can be numbers
+        or inf/NaN/None.
+
+    Returns:
+      an iterable of 2 strings.
+
+    Raises:
+      NNDCInputError: if x_range is not an iterable of length 2.
+
     """
+
     try:
         x1, x2 = x_range
     except (TypeError, ValueError):
@@ -247,17 +292,19 @@ def _format_range(x_range):
 class _NNDCQuery(object):
     """National Nuclear Data Center database query base class.
 
-    Search criteria keywords:
-        nuc     : (str) : the name of the isotope (e.g., 'Co-60')
-        z, a, n : (int) : Z, A, N of the isotope
-        z_range, etc. : (tuple of int) : range of Z, A, or N
-        z_any, etc. : (bool) : whether any Z, A, or N is considered
-        z_odd, etc. : (bool) : only odd Z, A, or N
-        z_even, etc.: (bool) : only even Z, A, or N
-        t_range : (tuple of float) : range of isotope half-lives
+    Args:
+      perform: a boolean dictating whether to immediately perform the query.
+      nuc     : (str) : the name of the isotope (e.g., 'Co-60')
+      z, a, n : (int) : Z, A, N of the isotope
+      z_range, etc. : (tuple of int) : range of Z, A, or N
+      z_any, etc. : (bool) : whether any Z, A, or N is considered
+      z_odd, etc. : (bool) : only odd Z, A, or N
+      z_even, etc.: (bool) : only even Z, A, or N
+      t_range : (tuple of float) : range of isotope half-lives in seconds
 
-    To prevent query from being immediately performed, instantiate with
-    keyword perform=False.
+    Raises:
+      NNDCInputError: if there is a problem with the input.
+      NNDCRequestError: if there was a problem with the data requested.
 
     """
 
@@ -548,21 +595,23 @@ class _NuclearWalletCardQuery(_NNDCQuery):
       * Branching (%): Percentual branching ratio for the corresponding
             decay mode.
 
-    Search criteria keywords:
-        nuc     : (str) : the name of the isotope (e.g., 'Co-60')
-        z, a, n : (int) : Z, A, N of the isotope
-        z_range, etc. : (tuple of int) : range of Z, A, or N
-        z_any, etc. : (bool) : whether any Z, A, or N is considered
-        z_odd, etc. : (bool) : only odd Z, A, or N
-        z_even, etc.: (bool) : only even Z, A, or N
-        t_range : (tuple of float) : range of isotope half-lives
-        elevel_range : (tuple of float) : range of nuc. energy level (MeV)
-        decay : (str) : isotope decay mode from WALLET_DECAY_MODE
-        j :  (str) : nuclear spin
-        parity : (str) : nuclear parity
+    Args:
+      perform: a boolean dictating whether to immediately perform the query.
+      nuc     : (str) : the name of the isotope (e.g., 'Co-60')
+      z, a, n : (int) : Z, A, N of the isotope
+      z_range, etc. : (tuple of int) : range of Z, A, or N
+      z_any, etc. : (bool) : whether any Z, A, or N is considered
+      z_odd, etc. : (bool) : only odd Z, A, or N
+      z_even, etc.: (bool) : only even Z, A, or N
+      t_range : (tuple of float) : range of isotope half-lives in seconds
+      elevel_range : (tuple of float) : range of nuc. energy level (MeV)
+      decay : (str) : isotope decay mode from WALLET_DECAY_MODE
+      j :  (str) : nuclear spin
+      parity : (str) : nuclear parity
 
-    To prevent query from being immediately performed, instantiate with
-    keyword perform=False.
+    Raises:
+      NNDCInputError: if there is a problem with the input.
+      NNDCRequestError: if there was a problem with the data requested.
 
     """
 
@@ -639,20 +688,28 @@ def fetch_wallet_card(**kwargs):
       * Branching (%): Percentual branching ratio for the corresponding
             decay mode.
 
-    Search criteria keywords:
-        nuc     : (str) : the name of the isotope (e.g., 'Co-60')
-        z, a, n : (int) : Z, A, N of the isotope
-        z_range, etc. : (tuple of int) : range of Z, A, or N
-        z_any, etc. : (bool) : whether any Z, A, or N is considered
-        z_odd, etc. : (bool) : only odd Z, A, or N
-        z_even, etc.: (bool) : only even Z, A, or N
-        t_range : (tuple of float) : range of isotope half-lives
-        elevel_range : (tuple of float) : range of nuc. energy level (MeV)
-        decay : (str) : isotope decay mode from WALLET_DECAY_MODE
-        j :  (str) : nuclear spin
-        parity : (str) : nuclear parity
+    Args:
+      nuc     : (str) : the name of the isotope (e.g., 'Co-60')
+      z, a, n : (int) : Z, A, N of the isotope
+      z_range, etc. : (tuple of int) : range of Z, A, or N
+      z_any, etc. : (bool) : whether any Z, A, or N is considered
+      z_odd, etc. : (bool) : only odd Z, A, or N
+      z_even, etc.: (bool) : only even Z, A, or N
+      t_range : (tuple of float) : range of isotope half-lives in seconds
+      elevel_range : (tuple of float) : range of nuc. energy level (MeV)
+      decay : (str) : isotope decay mode from WALLET_DECAY_MODE
+      j :  (str) : nuclear spin
+      parity : (str) : nuclear parity
+
+    Returns:
+      pandas DataFrame with the requested data.
+
+    Raises:
+      NNDCInputError: if there is a problem with the input.
+      NNDCRequestError: if there was a problem with the data requested.
 
     """
+
     query = _NuclearWalletCardQuery(**kwargs)
     return query.df
 
@@ -673,21 +730,22 @@ class _DecayRadiationQuery(_NNDCQuery):
       * Dose: Radiation dose in MeV/Bq-s
       * Unc: Uncertainties
 
-    Search criteria keywords:
-        nuc     : (str) : the name of the isotope (e.g., 'Co-60')
-        z, a, n : (int) : Z, A, N of the isotope
-        z_range, etc. : (tuple of int) : range of Z, A, or N
-        z_any, etc. : (bool) : whether any Z, A, or N is considered
-        z_odd, etc. : (bool) : only odd Z, A, or N
-        z_even, etc.: (bool) : only even Z, A, or N
-        t_range : (tuple of float) : range of isotope half-lives
-        decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
-        type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
-        e_range : (tuple of float) : radiation energy range (keV)
-        i_range : (tuple of float): intensity range (percent)
+    Args:
+      nuc     : (str) : the name of the isotope (e.g., 'Co-60')
+      z, a, n : (int) : Z, A, N of the isotope
+      z_range, etc. : (tuple of int) : range of Z, A, or N
+      z_any, etc. : (bool) : whether any Z, A, or N is considered
+      z_odd, etc. : (bool) : only odd Z, A, or N
+      z_even, etc.: (bool) : only even Z, A, or N
+      t_range : (tuple of float) : range of isotope half-lives in seconds
+      decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
+      type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
+      e_range : (tuple of float) : radiation energy range (keV)
+      i_range : (tuple of float): intensity range (percent)
 
-    To prevent query from being immediately performed, instantiate with
-    keyword perform=False.
+    Raises:
+      NNDCInputError: if there is a problem with the input.
+      NNDCRequestError: if there was a problem with the data requested.
 
     """
 
@@ -764,19 +822,27 @@ def fetch_decay_radiation(**kwargs):
       * Dose: Radiation dose in MeV/Bq-s
       * Unc: Uncertainties
 
-    Search criteria keywords:
-        nuc     : (str) : the name of the isotope (e.g., 'Co-60')
-        z, a, n : (int) : Z, A, N of the isotope
-        z_range, etc. : (tuple of int) : range of Z, A, or N
-        z_any, etc. : (bool) : whether any Z, A, or N is considered
-        z_odd, etc. : (bool) : only odd Z, A, or N
-        z_even, etc.: (bool) : only even Z, A, or N
-        t_range : (tuple of float) : range of isotope half-lives
-        decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
-        type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
-        e_range : (tuple of float) : radiation energy range (keV)
-        i_range : (tuple of float): intensity range (percent)
+    Args:
+      nuc     : (str) : the name of the isotope (e.g., 'Co-60')
+      z, a, n : (int) : Z, A, N of the isotope
+      z_range, etc. : (tuple of int) : range of Z, A, or N
+      z_any, etc. : (bool) : whether any Z, A, or N is considered
+      z_odd, etc. : (bool) : only odd Z, A, or N
+      z_even, etc.: (bool) : only even Z, A, or N
+      t_range : (tuple of float) : range of isotope half-lives in seconds
+      decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
+      type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
+      e_range : (tuple of float) : radiation energy range (keV)
+      i_range : (tuple of float): intensity range (percent)
+
+    Returns:
+      pandas DataFrame with the requested data.
+
+    Raises:
+      NNDCInputError: if there is a problem with the input.
+      NNDCRequestError: if there was a problem with the data requested.
 
     """
+
     query = _DecayRadiationQuery(**kwargs)
     return query.df
