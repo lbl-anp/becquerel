@@ -368,15 +368,14 @@ class _NNDCQuery(object):
             # handle *_range, *_any, *_odd, *_even
             elif x + '_range' in kwargs:
                 self._data['spnuc'] = 'zanrange'
-                self._data[x.lower() + 'min'], \
-                    self._data[x.lower() + 'max'] = \
+                self._data[x + 'min'], self._data[x + 'max'] = \
                     _format_range(kwargs[x + '_range'])
-                if x + '_any' in kwargs:
-                    self._data['even' + x.lower()] = 'any'
-                elif x + '_even' in kwargs:
-                    self._data['even' + x.lower()] = 'even'
-                elif x + '_odd' in kwargs:
-                    self._data['even' + x.lower()] = 'odd'
+            if x + '_any' in kwargs:
+                self._data['even' + x] = 'any'
+            elif x + '_even' in kwargs:
+                self._data['even' + x] = 'even'
+            elif x + '_odd' in kwargs:
+                self._data['even' + x] = 'odd'
         # handle half-life range condition
         if 't_range' in kwargs:
             self._data['tled'] = 'enabled'
