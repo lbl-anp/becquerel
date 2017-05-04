@@ -300,7 +300,7 @@ class Spectrum(object):
           np.array of int's from 0 to (len(self.counts) - 1)
         """
 
-        return np.arange(len(self.counts), dtype=int)
+        return np.arange(len(self), dtype=int)
 
     @property
     def energies_kev(self):

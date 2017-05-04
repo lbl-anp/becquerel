@@ -8,6 +8,6 @@ from .core.spectrum import Spectrum, SpectrumError, UncalibratedError
 from .core.energycal import LinearEnergyCal, EnergyCalError, BadInput
 from .core.utils import UncertaintiesError
 
-__all__ = ['core', 'parsers', 'tools', 'utils'
+__all__ = ['core', 'parsers', 'tools',
            'Spectrum', 'SpectrumError', 'UncalibratedError',
            'LinearEnergyCal', 'EnergyCalError', 'BadInput']
