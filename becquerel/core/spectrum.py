@@ -32,6 +32,7 @@ class Spectrum(object):
     Data Attributes:
       bin_edges_kev: np.array of energy bin edges, if calibrated
       livetime: int or float of livetime, in seconds. May be None or np.nan
+      realtime: int or float of realtime, in seconds. May be None
       infilename: the filename the spectrum was loaded from, if applicable
       start_time: a datetime.datetime object representing the acquisition start
       stop_time: a datetime.datetime object representing the acquisition end
