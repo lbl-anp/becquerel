@@ -236,30 +236,26 @@ class TestSpectrumMultiplyDivide(object):
             uncal_spec / np.nan
 
 
-@pytest.fixture(params=[
-    np.linspace(0, 3000, 3001),
-    np.linspace(0, 3000, 2230),
-    np.linspace(0, 3000, 7777)],
-                ids=[
-    "1 keV bins",
-    "slightly larger bins",
-    "slightly smaller bins"])
+@pytest.fixture(params=[np.linspace(0, 3000, 3001),
+                        np.linspace(0, 3000, 2230),
+                        np.linspace(0, 3000, 7777)],
+                ids=["1 keV bins",
+                     "slightly larger bins",
+                     "slightly smaller bins"])
 def old_edges(request):
     return request.param
 
 
-@pytest.fixture(params=[
-    np.linspace(0, 3000, 3001),
-    np.linspace(0, 3000, 39000),
-    np.linspace(0, 3000, 17),
-    np.linspace(-6, 3002, 2222),
-    np.linspace(-0.3, 3000, 256)],
-                ids=[
-    "1 keV bins",
-    "small bins",
-    "large bins",
-    "medium bins larger range",
-    "large bins slightly larger range"])
+@pytest.fixture(params=[np.linspace(0, 3000, 3001),
+                        np.linspace(0, 3000, 39000),
+                        np.linspace(0, 3000, 17),
+                        np.linspace(-6, 3002, 2222),
+                        np.linspace(-0.3, 3000, 256)],
+                ids=["1 keV bins",
+                     "small bins",
+                     "large bins",
+                     "medium bins larger range",
+                     "large bins slightly larger range"])
 def new_edges(request):
     return request.param
 
