@@ -22,15 +22,6 @@ def offset(request):
     return request.param
 
 
-@pytest.fixture
-def pairlist():
-    lst = (
-        (32, 661.66),
-        (67, 1460.83),
-        (115, 2614.5))
-    return lst
-
-
 @pytest.fixture(params=[
     (32, 67, 115),
     [32, 67, 115],
@@ -100,16 +91,6 @@ def test_construction_chkevlist(chlist, kevlist):
     assert len(cal.calpoints[0]) == 2
 
 
-def test_construction_pairlist(pairlist):
-    """Test construction (not fitting) from pairlist"""
-
-    cal = bq.LinearEnergyCal.from_points(pairlist=pairlist)
-    assert len(cal.channels) == len(pairlist)
-    assert len(cal.energies) == len(pairlist)
-    assert len(cal.calpoints) == len(pairlist)
-    assert len(cal.calpoints[0]) == 2
-
-
 def test_construction_coefficients(slope, offset):
     """Test construction from coefficients"""
 
@@ -127,16 +108,12 @@ def test_construction_bad_coefficients(slope, offset):
         bq.LinearEnergyCal.from_coeffs(coeffs)
 
 
-def test_construction_bad_points(chlist, kevlist, pairlist):
+def test_construction_bad_points(chlist, kevlist):
     """Test from_points with bad input"""
 
     with pytest.raises(bq.BadInput) as excinfo:
-        bq.LinearEnergyCal.from_points(chlist=chlist, pairlist=pairlist)
-    excinfo.match('Redundant calibration inputs')
-
-    with pytest.raises(bq.BadInput) as excinfo:
         bq.LinearEnergyCal.from_points(chlist=chlist)
-    excinfo.match('Require both chlist and kevlist')
+    excinfo.match('Channel list and energy list are required')
 
     with pytest.raises(bq.BadInput) as excinfo:
         bq.LinearEnergyCal.from_points(
@@ -144,19 +121,7 @@ def test_construction_bad_points(chlist, kevlist, pairlist):
     excinfo.match('Channels and energies must be same length')
 
     with pytest.raises(bq.BadInput) as excinfo:
-        bq.LinearEnergyCal.from_points()
-    excinfo.match('Calibration points are required')
-
-    with pytest.raises(bq.BadInput) as excinfo:
-        bq.LinearEnergyCal.from_points(chlist=[], kevlist=[])
-    excinfo.match('Calibration points are required')
-
-    with pytest.raises(bq.BadInput) as excinfo:
         bq.LinearEnergyCal.from_points(chlist=32, kevlist=661.7)
-    excinfo.match('Inputs should be iterables, not scalars')
-
-    with pytest.raises(bq.BadInput) as excinfo:
-        bq.LinearEnergyCal.from_points(pairlist=(32, 661.7))
     excinfo.match('Inputs should be iterables, not scalars')
 
 
@@ -251,26 +216,27 @@ def test_linear_construction_coefficients(slope, offset):
     assert cal.offset == offset
 
 
-def test_linear_fitting(pairlist):
+def test_linear_fitting(chlist, kevlist):
     """Test fitting"""
 
-    cal = bq.LinearEnergyCal.from_points(pairlist=pairlist)
+    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
     cal.update_fit()
 
 
 def test_linear_bad_fitting():
     """Test fitting - too few calpoints (EnergyCalBase.update_fit())"""
 
-    pairlist = ((67, 661.7), (133, 1460.83))
-    cal = bq.LinearEnergyCal.from_points(pairlist=pairlist)
+    chlist = (67, 133)
+    kevlist = (661.7, 1460.83)
+    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
     cal.update_fit()
 
     cal = bq.LinearEnergyCal()
     with pytest.raises(bq.EnergyCalError):
         cal.update_fit()
 
-    pairlist = ((67, 661.7),)
-    cal = bq.LinearEnergyCal.from_points(pairlist=pairlist)
+    chlist, kevlist = (67,), (661.7,)
+    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
     with pytest.raises(bq.EnergyCalError):
         cal.update_fit()
 
@@ -279,10 +245,10 @@ def test_linear_bad_fitting():
 #        Spectrum calibration methods tests
 # ----------------------------------------------------
 
-def test_apply_calibration(uncal_spec, pairlist):
+def test_apply_calibration(uncal_spec, chlist, kevlist):
     """Apply calibration on an uncalibrated spectrum"""
 
-    cal = bq.LinearEnergyCal.from_points(pairlist=pairlist)
+    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
     cal.update_fit()
     uncal_spec.apply_calibration(cal)
     assert uncal_spec.is_calibrated
@@ -290,10 +256,10 @@ def test_apply_calibration(uncal_spec, pairlist):
         uncal_spec.energies_kev, cal.ch2kev(uncal_spec.channels))
 
 
-def test_apply_calibration_recal(cal_spec, pairlist):
+def test_apply_calibration_recal(cal_spec, chlist, kevlist):
     """Apply calibration over an existing calibration"""
 
-    cal = bq.LinearEnergyCal.from_points(pairlist=pairlist)
+    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
     cal.update_fit()
     old_bin_edges = cal_spec.bin_edges_kev
     cal_spec.apply_calibration(cal)
