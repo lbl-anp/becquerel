@@ -9,7 +9,6 @@ References:
 
 from __future__ import print_function
 from collections import Iterable
-from lxml import etree
 import requests
 import pandas as pd
 from six import string_types
@@ -81,39 +80,22 @@ def fetch_element_data():
 
     """
     req = _get_request(_URL_TABLE1)
+    # remove extra columns in Hydrogen row and extra empty rows
     text = req.text
-    tb = etree.HTML(text).find('body/center/table')
-    rows = iter(tb)
-    headers = ['Z', 'Symbol', 'Element', 'Z_over_A', 'I_eV', 'Density']
-    # skip header rows
-    next(rows)
-    next(rows)
-    # read data into dictionary of lists
-    data = {head: [] for head in headers}
-    for row in rows:
-        values = []
-        for col in row:
-            if col.text is None:
-                continue
-            try:
-                if '\xa0' in col.text:
-                    continue
-            except UnicodeDecodeError:
-                if '\xa0' in col.text.encode('utf-8'):
-                    continue
-            values.append(col.text.strip())
-        if len(values) == len(headers):
-            for head, val in zip(headers, values):
-                if head in ['Z_over_A', 'I_eV', 'Density']:
-                    data[head].append(float(val))
-                else:
-                    data[head].append(val)
-    # convert data to a DataFrame
-    df = pd.DataFrame(data)
-    print(df)
+    text = text.replace('<TD ROWSPAN="92">&nbsp;</TD>', '')
+    text = text.replace('TD>&nbsp;</TD>', '')
+    text = text.replace('</TD></TR><TR>', '</TD></TR>')
+    # read HTML table into pandas DataFrame
+    tables = pd.read_html(text, header=0, skiprows=[1, 2])
+    if len(tables) != 1:
+        raise NISTMaterialsRequestError(
+            '1 HTML table expected, but found {}'.format(len(tables)))
+    df = tables[0]
     if len(df) != 92:
         raise NISTMaterialsRequestError(
-            '92 elements expected, only found {}'.format(len(df)))
+            '92 elements expected, but found {}'.format(len(df)))
+    # set column names
+    df.columns = ['Z', 'Symbol', 'Element', 'Z_over_A', 'I_eV', 'Density']
     return df
 
 
@@ -171,45 +153,27 @@ def fetch_compound_data():
 
     """
     req = _get_request(_URL_TABLE2)
-    tb = etree.HTML(req.text).find('body/center/table')
-    rows = iter(tb)
-    headers = ['Material', 'Z_over_A', 'I_eV', 'Density', 'Composition_Z']
-    # skip header rows
-    next(rows)
-    next(rows)
-    # read data into dictionary of lists
-    data = {head: [] for head in headers}
-    for row in rows:
-        values = []
-        for col in row:
-            if col.text is None:
-                continue
-            try:
-                if '\xa0' in col.text:
-                    continue
-            except UnicodeDecodeError:
-                if '\xa0' in col.text.encode('utf-8'):
-                    continue
-            datum = col.text.strip()
-            for tag in col:
-                if tag.tail is not None:
-                    datum += '\n' + tag.tail.strip()
-            values.append(datum)
-        if len(values) == len(headers):
-            for head, val in zip(headers, values):
-                if head in ['Z_over_A', 'I_eV', 'Density']:
-                    data[head].append(float(val))
-                elif head == 'Composition_Z':
-                    data[head].append(val.split('\n'))
-                else:
-                    data[head].append(val)
-    # create a column of compositions by symbol (for use with fetch_xcom_data)
-    data['Composition_symbol'] = [
-        convert_composition(comp) for comp in data['Composition_Z']]
-    # convert data to a DataFrame
-    df = pd.DataFrame(data)
-    print(df)
+    # remove extra columns and replace <BR> symbols in composition lists
+    text = req.text
+    text = text.replace('<TD ROWSPAN="2">&nbsp;</TD>', '')
+    text = text.replace('<TD ROWSPAN="50"> &nbsp; </TD>', '')
+    text = text.replace('<BR>', ';')
+    # read HTML table into pandas DataFrame
+    tables = pd.read_html(text, header=0, skiprows=[1, 2])
+    if len(tables) != 1:
+        raise NISTMaterialsRequestError(
+            '1 HTML table expected, but found {}'.format(len(tables)))
+    df = tables[0]
     if len(df) != 48:
         raise NISTMaterialsRequestError(
-            '48 compounds expected, only found {}'.format(len(df)))
+            '48 compounds expected, but found {}'.format(len(df)))
+    # set column names
+    df.columns = ['Material', 'Z_over_A', 'I_eV', 'Density', 'Composition_Z']
+    # clean up Z composition
+    df['Composition_Z'] = [
+        [line.strip() for line in comp.split(';')]
+        for comp in df['Composition_Z']]
+    # create a column of compositions by symbol (for use with fetch_xcom_data)
+    df['Composition_symbol'] = [
+        convert_composition(comp) for comp in df['Composition_Z']]
     return df
