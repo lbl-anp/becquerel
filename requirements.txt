@@ -6,4 +6,5 @@ python-dateutil
 requests
 scipy
 setuptools
+six
 uncertainties
