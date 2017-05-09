@@ -184,9 +184,9 @@ def validated_z(z):
     try:
         int(z)
     except ValueError:
-        raise ElementZError('Element Z=\"{}\" invalid'.format(z))
+        raise ElementZError('Element Z="{}" invalid'.format(z))
     if int(z) not in ZS:
-        raise ElementZError('Element Z=\"{}\" not found'.format(z))
+        raise ElementZError('Element Z="{}" not found'.format(z))
     return int(z)
 
 
@@ -195,9 +195,9 @@ def validated_symbol(sym):
     try:
         sym.lower()
     except AttributeError:
-        raise ElementSymbolError('Element symbol \"{}\" invalid'.format(sym))
+        raise ElementSymbolError('Element symbol "{}" invalid'.format(sym))
     if sym.lower() not in SYMBOLS_LOWER:
-        raise ElementSymbolError('Element symbol \"{}\" not found'.format(sym))
+        raise ElementSymbolError('Element symbol "{}" not found'.format(sym))
     return _SYMBOL_FROM_SYMBOL_LOWER[sym.lower()]
 
 
@@ -206,12 +206,12 @@ def validated_name(nm):
     try:
         nm.lower()
     except AttributeError:
-        raise ElementNameError('Element name \"{}\" invalid'.format(nm))
+        raise ElementNameError('Element name "{}" invalid'.format(nm))
     # special case: Alumin[i]um
     if nm.lower() == 'aluminium':
         nm = 'Aluminum'
     if nm.lower() not in NAMES_LOWER:
-        raise ElementNameError('Element name \"{}\" not found'.format(nm))
+        raise ElementNameError('Element name "{}" not found'.format(nm))
     return _NAME_FROM_NAME_LOWER[nm.lower()]
 
 
@@ -295,7 +295,7 @@ class Element(object):
 
     def __str__(self):
         """Define behavior of str() on this class."""
-        return '{:%n(%s) Z=%z}'.format(self)
+        return '{}'.format(self)
 
     def __format__(self, formatstr):
         """Define behavior of string's format method.
