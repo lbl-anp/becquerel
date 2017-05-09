@@ -260,7 +260,7 @@ class Element(object):
         """Instantiate by providing a name, symbol, or Z value."""
         self.symbol = None
         self.name = None
-        self.z = None
+        self.Z = None
         self.atomic_mass = None
         try:
             self._init_sym(arg)
@@ -279,19 +279,19 @@ class Element(object):
         """Initialize with an element symbol."""
         self.symbol = validated_symbol(arg)
         self.name = element_name(self.symbol)
-        self.z = element_z(self.symbol)
+        self.Z = element_z(self.symbol)
 
     def _init_name(self, arg):
         """Initialize with an element name."""
         self.name = validated_name(arg)
         self.symbol = element_symbol(self.name)
-        self.z = element_z(self.name)
+        self.Z = element_z(self.name)
 
     def _init_z(self, arg):
         """Initialize with an element Z."""
-        self.z = validated_z(arg)
-        self.symbol = element_symbol(self.z)
-        self.name = element_name(self.z)
+        self.Z = validated_z(arg)
+        self.symbol = element_symbol(self.Z)
+        self.name = element_name(self.Z)
 
     def __str__(self):
         """Define behavior of str() on this class."""
@@ -310,7 +310,7 @@ class Element(object):
             str0 = '%n(%s) Z=%z'
         str0 = str0.replace('%s', self.symbol)
         str0 = str0.replace('%n', self.name)
-        str0 = str0.replace('%z', '{}'.format(self.z))
+        str0 = str0.replace('%z', '{}'.format(self.Z))
         return str0
 
     def __eq__(self, other):
@@ -318,6 +318,6 @@ class Element(object):
         try:
             return (
                 self.name == other.name and self.symbol == other.symbol and
-                self.z == other.z)
+                self.Z == other.Z)
         except:
             raise ElementError('Cannot determine equality')

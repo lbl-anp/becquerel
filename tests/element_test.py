@@ -113,7 +113,7 @@ class TestElementInit(object):
             print('arg: ', arg)
             elem = element.Element(arg)
             print(elem)
-            assert elem.z == z
+            assert elem.Z == z
             assert elem.symbol == sym
             assert elem.name == name
 
