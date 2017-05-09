@@ -12,24 +12,11 @@ from collections import Iterable
 import requests
 import pandas as pd
 from six import string_types
+from .element import element_symbol
 
 
 _URL_TABLE1 = 'http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html'
 _URL_TABLE2 = 'http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html'
-
-
-ELEMENT_SYMBOLS = [
-    'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg',
-    'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr',
-    'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
-    'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd',
-    'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
-    'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf',
-    'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po',
-    'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U']
-
-ELEMENT_Z_TO_SYMBOL = {
-    z: symbol for z, symbol in enumerate(ELEMENT_SYMBOLS)}
 
 
 class NISTMaterialsError(Exception):
@@ -133,10 +120,10 @@ def convert_composition(comp):
         except ValueError:
             raise NISTMaterialsRequestError(
                 'Unable to convert Z {} to integer: {}'.format(z, line))
-        if z not in ELEMENT_Z_TO_SYMBOL:
+        if z not in range(1, 93):
             raise NISTMaterialsRequestError(
-                'Unable to convert Z {} to symbol: {}'.format(z, line))
-        comp_sym.append(ELEMENT_Z_TO_SYMBOL[z] + ' ' + weight.strip())
+                'Z {} out of range 1..92: {}'.format(z, line))
+        comp_sym.append(element_symbol(z) + ' ' + weight.strip())
     return comp_sym
 
 

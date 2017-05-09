@@ -13,6 +13,7 @@ from __future__ import print_function
 from collections import Iterable, OrderedDict
 import requests
 import pandas as pd
+from . import element
 
 
 # Dry air relative weights taken from:
@@ -100,18 +101,6 @@ COLUMNS_LONG = {
     'total_w_coh': 'Total Attenuation with Coherent Scattering',
     'total_wo_coh': 'Total Attenuation without Coherent Scattering'
 }
-
-
-ELEMENT_SYMBOLS = [
-    'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg',
-    'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr',
-    'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
-    'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd',
-    'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
-    'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf',
-    'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po',
-    'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm',
-    'Bk', 'Cf', 'Es', 'Fm']
 
 
 class XCOMError(Exception):
@@ -220,7 +209,7 @@ class _XCOMQuery(object):
     @staticmethod
     def _argument_type(arg):
         """Determine if argument is a symbol, Z, compound, or mixture."""
-        for sym in ELEMENT_SYMBOLS:
+        for sym in element.SYMBOLS:
             if arg == sym or arg == sym.upper() or arg == sym.lower():
                 return {'symbol': sym}
         try:
