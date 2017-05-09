@@ -73,7 +73,8 @@ def fetch_element_data():
       http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html
 
     Returns:
-      a pandas DataFrame of the material data.
+      A pandas DataFrame of the material data. Colums are 'Z', 'Symbol',
+      'Element', 'Z_over_A', 'I_eV', and 'Density'.
 
     Raises:
       NISTMaterialsRequestError: if there was a problem obtaining the data.
@@ -146,7 +147,8 @@ def fetch_compound_data():
       http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html
 
     Returns:
-      a pandas DataFrame of the material data.
+      A pandas DataFrame of the material data. Columns are 'Material',
+      'Z_over_A', 'I_eV', 'Density', 'Composition_Z', and 'Composition_symbol'.
 
     Raises:
       NISTMaterialsRequestError: if there was a problem obtaining the data.
