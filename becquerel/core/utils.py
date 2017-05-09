@@ -7,6 +7,8 @@ from six import string_types
 from uncertainties import UFloat, unumpy
 import numpy as np
 
+VECTOR_TYPES = (list, tuple, np.ndarray)
+
 
 class UncertaintiesError(Exception):
     """Raised when uncertainties are badly specified in an input."""

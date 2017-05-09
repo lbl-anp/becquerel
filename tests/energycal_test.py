@@ -112,17 +112,13 @@ def test_construction_bad_points(chlist, kevlist):
     """Test from_points with bad input"""
 
     with pytest.raises(bq.BadInput) as excinfo:
-        bq.LinearEnergyCal.from_points(chlist=chlist)
-    excinfo.match('Channel list and energy list are required')
-
-    with pytest.raises(bq.BadInput) as excinfo:
         bq.LinearEnergyCal.from_points(
             chlist=chlist, kevlist=kevlist[:-1])
     excinfo.match('Channels and energies must be same length')
 
     with pytest.raises(bq.BadInput) as excinfo:
         bq.LinearEnergyCal.from_points(chlist=32, kevlist=661.7)
-    excinfo.match('Inputs should be iterables, not scalars')
+    excinfo.match('Inputs should be vector iterables, not scalars')
 
 
 # ----------------------------------------------------

@@ -6,9 +6,8 @@ from copy import deepcopy
 import datetime
 import numpy as np
 from uncertainties import UFloat, unumpy
-from becquerel import parsers
-from becquerel.core import utils
-# from ..parsers import SpeFile, SpcFile, CnfFile
+from .. import parsers
+from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
 
 
 class SpectrumError(Exception):
@@ -104,7 +103,7 @@ class Spectrum(object):
         if counts is not None:
             if len(counts) == 0:
                 raise SpectrumError('Empty spectrum counts')
-            self._counts = utils.handle_uncs(
+            self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
             self.livetime = livetime
             self._cps = None
@@ -118,7 +117,7 @@ class Spectrum(object):
                 #   all calculations with CPS return livetime=np.nan anyway...
             if len(cps) == 0:
                 raise SpectrumError('Empty spectrum counts')
-            self._cps = utils.handle_uncs(cps, uncs, lambda x: np.nan)
+            self._cps = handle_uncs(cps, uncs, lambda x: np.nan)
 
         if bin_edges_kev is None:
             self.bin_edges_kev = None
@@ -140,8 +139,8 @@ class Spectrum(object):
                         'Livetime ({}) cannot exceed realtime ({})'.format(
                             self.livetime, self.realtime))
 
-        self.start_time = utils.handle_datetime(start_time, 'start_time')
-        self.stop_time = utils.handle_datetime(stop_time, 'stop_time')
+        self.start_time = handle_datetime(start_time, 'start_time')
+        self.stop_time = handle_datetime(stop_time, 'stop_time')
 
         if (self.realtime is not None
                 and self.stop_time is not None
@@ -316,7 +315,7 @@ class Spectrum(object):
         if not self.is_calibrated:
             raise UncalibratedError('Spectrum is not calibrated')
         else:
-            return utils.bin_centers_from_edges(self.bin_edges_kev)
+            return bin_centers_from_edges(self.bin_edges_kev)
 
     @property
     def bin_widths(self):

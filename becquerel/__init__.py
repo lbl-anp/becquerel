@@ -10,4 +10,5 @@ from .core.utils import UncertaintiesError
 
 __all__ = ['core', 'parsers', 'tools',
            'Spectrum', 'SpectrumError', 'UncalibratedError',
-           'LinearEnergyCal', 'EnergyCalError', 'BadInput']
+           'LinearEnergyCal', 'EnergyCalError', 'BadInput',
+           'UncertaintiesError']

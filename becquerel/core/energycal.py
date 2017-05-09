@@ -5,7 +5,7 @@ from future.utils import viewitems
 from builtins import dict, super, zip  # pylint: disable=redefined-builtin
 import numpy as np
 
-ITERABLE_TYPES = (list, tuple, np.ndarray)
+from .utils import VECTOR_TYPES
 
 
 class EnergyCalError(Exception):
@@ -46,7 +46,7 @@ class EnergyCalBase(object):
         # initialize fit constraints?
 
     @classmethod
-    def from_points(cls, chlist=None, kevlist=None):
+    def from_points(cls, chlist, kevlist):
         """Construct EnergyCal from calibration points.
 
         Args:
@@ -59,9 +59,9 @@ class EnergyCalBase(object):
 
         if chlist is None or kevlist is None:
             raise BadInput('Channel list and energy list are required')
-        elif (not isinstance(chlist, ITERABLE_TYPES) or
-                not isinstance(kevlist, ITERABLE_TYPES)):
-            raise BadInput('Inputs should be iterables, not scalars')
+        elif (not isinstance(chlist, VECTOR_TYPES) or
+                not isinstance(kevlist, VECTOR_TYPES)):
+            raise BadInput('Inputs should be vector iterables, not scalars')
         elif len(chlist) != len(kevlist):
             raise BadInput('Channels and energies must be same length')
 
