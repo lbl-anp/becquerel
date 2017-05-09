@@ -180,7 +180,18 @@ class ElementNameError(ElementError):
 
 
 def validated_z(z):
-    """Return a valid element Z."""
+    """Convert z into a valid element atomic number.
+
+    Args:
+      z: numeric or string type representing the atomic number Z.
+
+    Returns:
+      Integer z that is a valid atomic number.
+
+    Raises:
+      ElementZError: if z cannot be converted to integer or is out of range.
+    """
+
     try:
         int(z)
     except ValueError:
@@ -191,7 +202,18 @@ def validated_z(z):
 
 
 def validated_symbol(sym):
-    """Return a mixed-case element symbol from the given symbol string."""
+    """Convert symbol into a valid mixed-case element symbol.
+
+    Args:
+      sym: a string type
+
+    Returns:
+      A valid mixed-case element symbol that matches sym.
+
+    Raises:
+      ElementSymbolError: if sym does not match a valid symbol.
+    """
+
     try:
         sym.lower()
     except AttributeError:
@@ -202,7 +224,18 @@ def validated_symbol(sym):
 
 
 def validated_name(nm):
-    """Return a mixed-case element name from the given name string."""
+    """Convert name into a valid mixed-case element name.
+
+    Args:
+      nm: a string type
+
+    Returns:
+      A valid mixed-case element name that matches nm.
+
+    Raises:
+      ElementNameError: if nm does not match a valid name.
+    """
+
     try:
         nm.lower()
     except AttributeError:
@@ -216,7 +249,18 @@ def validated_name(nm):
 
 
 def element_z(sym_or_name):
-    """Return element Z given its symbol or element name."""
+    """Convert element symbol or name into a valid element atomic number Z.
+
+    Args:
+      sym_or_name: string type representing an element symbol or name.
+
+    Returns:
+      Integer z that is a valid atomic number matching the symbol or name.
+
+    Raises:
+      ElementZError: if the symbol or name cannot be converted.
+    """
+
     try:
         return _Z_FROM_SYMBOL[validated_symbol(sym_or_name)]
     except ElementSymbolError:
@@ -228,7 +272,18 @@ def element_z(sym_or_name):
 
 
 def element_symbol(name_or_z):
-    """Return element symbol given its atomic number Z or name."""
+    """Convert element name or Z into a valid mixed-case element symbol.
+
+    Args:
+      name_or_z: string or numeric type representing an element name or Z.
+
+    Returns:
+      A valid mixed-case element symbol that matches the name or Z.
+
+    Raises:
+      ElementSymbolError: if the symbol or name cannot be converted.
+    """
+
     try:
         return _SYMBOL_FROM_Z[validated_z(name_or_z)]
     except ElementZError:
@@ -240,7 +295,18 @@ def element_symbol(name_or_z):
 
 
 def element_name(sym_or_z):
-    """Return element name given its symbol or Z."""
+    """Convert element symbol or Z into a valid mixed-case element name.
+
+    Args:
+      sym_or_z: string or numeric type representing an element symbol or Z.
+
+    Returns:
+      A valid mixed-case element name that matches the symbol or Z.
+
+    Raises:
+      ElementNameError: if the symbol or Z cannot be converted.
+    """
+
     try:
         return _NAME_FROM_SYMBOL[validated_symbol(sym_or_z)]
     except ElementSymbolError:
@@ -252,12 +318,32 @@ def element_name(sym_or_z):
 
 
 class Element(object):
-    """Symbol, name, Z, and mass of an element from the periodic table."""
+    """Basic properties (symbol, name, Z, and mass) of an element.
+
+    Also provides string formatting:
+    >>> elem = Element('Ge')
+    >>> '{:%n(%s) Z=%z}'.format(elem)
+    'Germanium(Ge) Z=32'
+
+    Properties:
+      symbol (read-only): the mixed-case element symbol (e.g., "Ge")
+      name (read-only): the mixed-case element name (e.g., "Germanium")
+      Z (read-only): an integer giving the atomic number (e.g., 32)
+      atomic_mass (read-only): a float giving the atomic mass in amu
+    """
 
     # pylint: disable=too-few-public-methods
 
     def __init__(self, arg):
-        """Instantiate by providing a name, symbol, or Z value."""
+        """Instantiate by providing a name, symbol, or Z value.
+
+        Args:
+          arg: a numeric or string type giving a name, symbol, or Z value.
+
+        Raises:
+          ElementError: if Element could not be instantiated.
+        """
+
         self.symbol = None
         self.name = None
         self.Z = None
@@ -305,6 +391,7 @@ class Element(object):
             '%n': element name
             '%z': element Z
         """
+
         str0 = str(formatstr)
         if len(str0) == 0:
             str0 = '%n(%s) Z=%z'
