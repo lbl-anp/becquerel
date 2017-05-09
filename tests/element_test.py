@@ -95,59 +95,34 @@ class TestElementFunctions(object):
                 element.element_name(name1)
 
 
-class TestElementInit(object):
-    """Test Element class."""
+@pytest.mark.parametrize('z, sym, name', [
+    (1, 'H', 'Hydrogen'),
+    (2, 'He', 'Helium'),
+    (13, 'Al', 'Aluminum'),
+    (19, 'K', 'Potassium'),
+    (32, 'Ge', 'Germanium'),
+    (70, 'Yb', 'Ytterbium'),
+    (92, 'U', 'Uranium'),
+    (118, 'Og', 'Oganesson')])
+def test_element(z, sym, name):
+    """Run instantiation tests for various elements.
 
-    def run_element(self, z, sym, name):
-        """Run tests for the given element.
+    Instantiate for element symbol and name, in mixed case, upper case,
+    and lower case. Also by Z as both integer and string.
+    """
 
-        Run tests for element symbol and name, in mixed case, upper case,
-        and lower case.
-        """
-        args = [name, name.lower(), name.upper()]
-        args.extend([sym, sym.lower(), sym.upper()])
-        args.extend([z, str(z)])
-        print(args)
-        for arg in args:
-            print('')
-            print('arg: ', arg)
-            elem = element.Element(arg)
-            print(elem)
-            assert elem.Z == z
-            assert elem.symbol == sym
-            assert elem.name == name
-
-    def test_h(self):
-        """Test Element init: H............................................"""
-        self.run_element(1, 'H', 'Hydrogen')
-
-    def test_he(self):
-        """Test Element init: He..........................................."""
-        self.run_element(2, 'He', 'Helium')
-
-    def test_al(self):
-        """Test Element init: Al..........................................."""
-        self.run_element(13, 'Al', 'Aluminum')
-
-    def test_k(self):
-        """Test Element init: K............................................"""
-        self.run_element(19, 'K', 'Potassium')
-
-    def test_ge(self):
-        """Test Element init: Ge..........................................."""
-        self.run_element(32, 'Ge', 'Germanium')
-
-    def test_yb(self):
-        """Test Element init: Yb..........................................."""
-        self.run_element(70, 'Yb', 'Ytterbium')
-
-    def test_u(self):
-        """Test Element init: U............................................"""
-        self.run_element(92, 'U', 'Uranium')
-
-    def test_og(self):
-        """Test Element init: Og..........................................."""
-        self.run_element(118, 'Og', 'Oganesson')
+    args = [name, name.lower(), name.upper()]
+    args.extend([sym, sym.lower(), sym.upper()])
+    args.extend([z, str(z)])
+    print(args)
+    for arg in args:
+        print('')
+        print('arg: ', arg)
+        elem = element.Element(arg)
+        print(elem)
+        assert elem.Z == z
+        assert elem.symbol == sym
+        assert elem.name == name
 
 
 class TestElementInitExceptions(object):
