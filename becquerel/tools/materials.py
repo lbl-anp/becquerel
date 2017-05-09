@@ -15,6 +15,10 @@ from six import string_types
 from .element import element_symbol
 
 
+MAX_Z = 92
+N_COMPOUNDS = 48
+
+
 _URL_TABLE1 = 'http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html'
 _URL_TABLE2 = 'http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html'
 
@@ -79,9 +83,9 @@ def fetch_element_data():
         raise NISTMaterialsRequestError(
             '1 HTML table expected, but found {}'.format(len(tables)))
     df = tables[0]
-    if len(df) != 92:
+    if len(df) != MAX_Z:
         raise NISTMaterialsRequestError(
-            '92 elements expected, but found {}'.format(len(df)))
+            '{} elements expected, but found {}'.format(MAX_Z, len(df)))
     # set column names
     df.columns = ['Z', 'Symbol', 'Element', 'Z_over_A', 'I_eV', 'Density']
     return df
@@ -120,9 +124,9 @@ def convert_composition(comp):
         except ValueError:
             raise NISTMaterialsRequestError(
                 'Unable to convert Z {} to integer: {}'.format(z, line))
-        if z not in range(1, 93):
+        if z < 1 or z > MAX_Z:
             raise NISTMaterialsRequestError(
-                'Z {} out of range 1..92: {}'.format(z, line))
+                'Z {} out of range [1, {}]: {}'.format(z, line, MAX_Z))
         comp_sym.append(element_symbol(z) + ' ' + weight.strip())
     return comp_sym
 
@@ -153,9 +157,9 @@ def fetch_compound_data():
         raise NISTMaterialsRequestError(
             '1 HTML table expected, but found {}'.format(len(tables)))
     df = tables[0]
-    if len(df) != 48:
+    if len(df) != N_COMPOUNDS:
         raise NISTMaterialsRequestError(
-            '48 compounds expected, but found {}'.format(len(df)))
+            '{} compounds expected, but found {}'.format(N_COMPOUNDS, len(df)))
     # set column names
     df.columns = ['Material', 'Z_over_A', 'I_eV', 'Density', 'Composition_Z']
     # clean up Z composition
