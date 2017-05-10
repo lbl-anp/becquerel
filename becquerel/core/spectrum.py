@@ -28,28 +28,43 @@ class Spectrum(object):
 
     Initialize a Spectrum directly, or with Spectrum.from_file(filename).
 
+    Note on livetime:
+      A livetime of None is the default for a counts-based spectrum, and
+        indicates a missing or unknown livetime.
+      A livetime of np.nan is the default for a CPS-based spectrum, and
+        indicates that livetime is not a meaningful quantity for this type of
+        spectrum.
+      Either of these types of spectrum may be initialized with a livetime
+        value. However, any operation that produces a CPS-based spectrum
+        (such as a spectrum subtraction) will discard the livetime and set it
+        to np.nan since livetime is then a meaningless quantity.
+      Operations that produce a counts-based spectrum may or may not preserve a
+        livetime value (for example, the sum of two spectra has a livetime
+        equal to the sum of the two livetimes; but a scalar multiplication or
+        division results in a livetime of None).
+
     Data Attributes:
       bin_edges_kev: np.array of energy bin edges, if calibrated
-      livetime: int or float of livetime, in seconds. May be None or np.nan
+      livetime: int or float of livetime, in seconds. See note above
       realtime: int or float of realtime, in seconds. May be None
       infilename: the filename the spectrum was loaded from, if applicable
       start_time: a datetime.datetime object representing the acquisition start
       stop_time: a datetime.datetime object representing the acquisition end
 
-    Properties:
-      counts: (read-only) counts in each channel, with uncertainty
-      counts_vals: (read-only) counts in each channel, no uncertainty
-      counts_uncs: (read-only) uncertainties on counts in each channel
-      cps: (read-only) counts per second in each channel, with uncertainty
-      cps_vals: (read-only) counts per second in each channel, no uncertainty
-      cps_uncs: (read-only) uncertainties on counts per second in each channel
-      cpskev: (read-only) CPS/keV in each channel, with uncertainty
-      cpskev_vals: (read-only) CPS/keV in each channel, no uncertainty
-      cpskev_uncs: (read-only) uncertainties on CPS/keV in each channel
-      channels: (read-only) np.array of channel index as integers
-      is_calibrated: (read-only) bool indicating calibration status
-      energies_kev: (read-only) np.array of energy bin centers, if calibrated
-      bin_widths: (read-only) np.array of energy bin widths, if calibrated
+    Properties (read-only):
+      counts: counts in each channel, with uncertainty
+      counts_vals: counts in each channel, no uncertainty
+      counts_uncs: uncertainties on counts in each channel
+      cps: counts per second in each channel, with uncertainty
+      cps_vals: counts per second in each channel, no uncertainty
+      cps_uncs: uncertainties on counts per second in each channel
+      cpskev: CPS/keV in each channel, with uncertainty
+      cpskev_vals: CPS/keV in each channel, no uncertainty
+      cpskev_uncs: uncertainties on CPS/keV in each channel
+      channels: np.array of channel index as integers
+      is_calibrated: bool indicating calibration status
+      energies_kev: np.array of energy bin centers, if calibrated
+      bin_widths: np.array of energy bin widths, if calibrated
 
     Methods:
       apply_calibration: use an EnergyCal object to calibrate this spectrum
@@ -69,6 +84,12 @@ class Spectrum(object):
         If start_time, stop_time, and realtime are being provided, only two of
         these should be specified as arguments, and the third will be
         calculated from the other two.
+
+        See note on livetime in class docstring. As a reminder:
+          livetime = None indicates a missing or unknown livetime, and may
+            occur in a counts-based spectrum.
+          livetime = np.nan indicates that livetime is not meaningful, and may
+            occur in a CPS-based spectrum.
 
         Args:
           counts: counts per channel. array-like of ints, floats or UFloats
@@ -92,6 +113,8 @@ class Spectrum(object):
             end.
 
         Raises:
+          ValueError: for bin edges not monotonically increasing;
+            livetime > realtime; or start_time > stop_time
           SpectrumError: for bad input arguments
           UncertaintiesError: if uncertainties are overspecified or of mixed
             types
@@ -105,12 +128,12 @@ class Spectrum(object):
                 raise SpectrumError('Empty spectrum counts')
             self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
-            self.livetime = livetime
+            self.livetime = livetime    # this includes default livetime = None
             self._cps = None
         else:
             self._counts = None
             if livetime is None:
-                self.livetime = np.nan
+                self.livetime = np.nan  # default for CPS-based spectra
             else:
                 self.livetime = livetime
                 # TODO should this be allowed?
@@ -538,7 +561,7 @@ class Spectrum(object):
 
         Raises:
           TypeError: if factor is not a scalar value
-          SpectrumError: if factor is 0 or infinite
+          ValueError: if factor is 0 or infinite
 
         Returns:
           a new Spectrum object
