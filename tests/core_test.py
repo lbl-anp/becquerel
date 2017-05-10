@@ -733,6 +733,23 @@ def test_zero_downsample(cal_spec):
     assert s2 == 0
 
 
+def test_downsample_handle_livetime(cal_spec):
+    """Test handle_livetime behavior"""
+
+    f = 2
+    test_livetime = 300.0
+    cal_spec.livetime = test_livetime
+
+    spec2 = cal_spec.downsample(f)
+    assert spec2.livetime is None
+
+    spec3 = cal_spec.downsample(f, handle_livetime='preserve')
+    assert spec3.livetime == cal_spec.livetime
+
+    spec4 = cal_spec.downsample(f, handle_livetime='reduce')
+    assert spec4.livetime == cal_spec.livetime / f
+
+
 def test_downsample_error(cal_spec):
     """Test that downsample(<1) raises ValueError"""
 
@@ -745,6 +762,13 @@ def test_downsample_cps_error(uncal_spec_cps):
 
     with pytest.raises(bq.SpectrumError):
         uncal_spec_cps.downsample(12)
+
+
+def test_downsample_handle_livetime_error(uncal_spec):
+    """Test bad value of handle_livetime"""
+
+    with pytest.raises(ValueError):
+        uncal_spec.downsample(5, handle_livetime='asdf')
 
 
 # ----------------------------------------------

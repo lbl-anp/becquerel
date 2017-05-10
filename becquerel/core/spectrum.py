@@ -128,7 +128,10 @@ class Spectrum(object):
                 raise SpectrumError('Empty spectrum counts')
             self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
-            self.livetime = livetime    # this includes default livetime = None
+            if livetime is None:
+                self.livetime = None
+            else:
+                self.livetime = float(livetime)
             self._cps = None
         else:
             self._counts = None
@@ -596,14 +599,22 @@ class Spectrum(object):
         spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **data_arg)
         return spect_obj
 
-    def downsample(self, f):
+    def downsample(self, f, handle_livetime=None):
         """Downsample counts and create a new spectrum.
+
+        It is not possible to downsample a CPS-based spectrum.
 
         Args:
           f: factor by which to downsample. Must be greater than 1.
+          handle_livetime (optional): Possible values:
+            None (default): the resulting spectrum has livetime = None.
+            'preserve': the resulting spectrum has the same livetime.
+            'reduce': the resulting spectrum has livetime reduced by the
+              downsampling factor.
 
         Raises:
-          SpectrumError: if f < 1
+          SpectrumError: if this spectrum is CPS-based
+          ValueError: if f < 1, or if handle_livetime is an illegal value
 
         Returns:
           a new Spectrum instance, downsampled from this spectrum
@@ -614,11 +625,23 @@ class Spectrum(object):
         if f < 1:
             raise ValueError('Cannot upsample a spectrum; f must be > 1')
 
+        if handle_livetime is None:
+            new_livetime = None
+        elif handle_livetime.lower() == 'preserve':
+            new_livetime = self.livetime
+        elif handle_livetime.lower() == 'reduce':
+            new_livetime = self.livetime / f
+        else:
+            raise ValueError('Illegal value for handle_livetime: {}'.format(
+                handle_livetime))
+
         # TODO handle uncertainty?
         old_counts = self.counts_vals.astype(int)
         new_counts = np.random.binomial(old_counts, 1. / f)
 
-        return Spectrum(counts=new_counts, bin_edges_kev=self.bin_edges_kev)
+        return Spectrum(counts=new_counts,
+                        bin_edges_kev=self.bin_edges_kev,
+                        livetime=new_livetime)
 
     def apply_calibration(self, cal):
         """Use an EnergyCal to generate bin edge energies for this spectrum.
