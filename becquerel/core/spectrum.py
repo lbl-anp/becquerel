@@ -602,7 +602,13 @@ class Spectrum(object):
     def downsample(self, f, handle_livetime=None):
         """Downsample counts and create a new spectrum.
 
-        It is not possible to downsample a CPS-based spectrum.
+        The spectrum is resampled from a binomial distribution. Each count in
+        the spectrum is preserved (with a probability of 1/f) or discarded,
+        resulting in a new spectrum with fewer counts, in which Poisson
+        statistics are preserved (unlike a scalar division operation).
+
+        Note, it is not possible to downsample a CPS-based spectrum because
+        such a spectrum does not have "counts" to downsample.
 
         Args:
           f: factor by which to downsample. Must be greater than 1.
