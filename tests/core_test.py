@@ -269,12 +269,30 @@ def lam(request):
 class TestRebin(object):
     """Tests for core.rebin()"""
 
-    def test_rebin_counts(self, lam, old_edges, new_edges):
+    def test_rebin_counts_float(self, lam, old_edges, new_edges):
         """Check total counts in spectrum data before and after rebin"""
 
-        old_counts = np.random.poisson(lam=lam, size=len(old_edges) - 1)
+        old_counts = np.random.poisson(lam=lam,
+                                       size=len(old_edges) - 1).astype(float)
         new_counts = bq.core.rebin(old_counts, old_edges, new_edges)
         assert np.isclose(old_counts.sum(), new_counts.sum())
+
+    def test_rebin_counts_int(self, lam, old_edges, new_edges):
+        """Check that rebin raises an error for counts as integers"""
+
+        old_counts = np.random.poisson(lam=lam,
+                                       size=len(old_edges) - 1).astype(int)
+        with pytest.raises(AssertionError):
+            bq.core.rebin(old_counts, old_edges, new_edges)
+
+    def test_rebin_array_shape(self, lam, old_edges, new_edges):
+        """Check that rebin raises an error for incorrectly shaped inputs"""
+
+        old_counts = np.random.poisson(lam=lam,
+                                       size=len(old_edges) - 1).astype(float)
+        old_counts = old_counts[np.newaxis, :]
+        with pytest.raises(AssertionError):
+            bq.core.rebin(old_counts, old_edges, new_edges)
 
     @pytest.mark.plottest
     def test_uncal_spectrum_counts(self, uncal_spec):

@@ -2,6 +2,15 @@ import numpy as np
 import numba as nb
 
 
+def _check_ndim_and_dtype(arr, ndim, dtype, arr_name='array'):
+    assert isinstance(arr, np.ndarray), \
+        '{} is not a numpy array: {}'.format(arr_name, arr)
+    assert arr.ndim == ndim, \
+        '{}({}) is not {}D'.format(arr_name, arr.shape, ndim)
+    assert np.issubdtype(arr.dtype, dtype), \
+        '{}({}) is not type: {}'.format(arr_name, arr.dtype, dtype)
+
+
 @nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
 def _linear_offset(slope, cts, low, high):
     """
@@ -99,16 +108,18 @@ def rebin(in_spectrum, in_edges, out_edges, slopes=None):
     Raises:
       SpectrumError: for bad input arguments
     """
-    in_spectrum = in_spectrum.astype(float)
-    # Init output
-    out_spectrum = np.zeros(len(out_edges) - 1)
-    # Check input spectrum
-    assert len(in_spectrum) == len(in_edges) - 1, \
-        "`in_spectrum`({}) is not 1 len shorter than `in_edges`({})".format(
-            len(in_spectrum), len(in_edges))
     # Init slopes
     if slopes is None:
-        slopes = np.zeros(len(in_spectrum))
-    else:
-        assert len(slopes) == len(in_spectrum)
+        slopes = np.zeros_like(in_spectrum, dtype=np.float)
+    # Check for inputs
+    _check_ndim_and_dtype(in_spectrum, 1, np.float, 'in_spectrum')
+    _check_ndim_and_dtype(in_edges, 1, np.float, 'in_edges')
+    _check_ndim_and_dtype(out_edges, 1, np.float, 'out_edges')
+    _check_ndim_and_dtype(slopes, 1, np.float, 'slopes')
+    # Init output
+    out_spectrum = np.zeros(out_edges.shape[0] - 1, dtype=np.float)
+    # Check input spectrum
+    assert in_spectrum.shape[0] == in_edges.shape[0] - 1, \
+        "in_spectrum({}) is not 1 len shorter than in_edges({})".format(
+            in_spectrum.shape, in_edges.shape)
     return _rebin(in_spectrum, in_edges, out_spectrum, out_edges, slopes)
