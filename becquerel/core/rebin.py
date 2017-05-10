@@ -1,18 +1,21 @@
 import numpy as np
+import numba as nb
 
 
+@nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
 def _linear_offset(slope, cts, low, high):
     """
     Calculate the offset of the linear aproximation of slope when splitting
     counts between bins.
     """
-    if np.isclose(slope, 0):
+    if np.abs(slope) < 1e-6:
         offset = cts / (high - low)
     else:
         offset = (cts - slope / 2. * (high**2 - low**2)) / (high - low)
     return offset
 
 
+@nb.jit(nb.f8(nb.f8, nb.f8, nb.f8), nopython=True)
 def _slope_integral(x, m, b):
     '''
     Calculate the integral of our quadratic given some slope and offset.
@@ -20,6 +23,7 @@ def _slope_integral(x, m, b):
     return m * x**2 / 2 + b * x
 
 
+@nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
 def _counts(slope, offset, cts, low, high):
     '''
     Computes the area under a linear approximation of the changing count
@@ -31,37 +35,11 @@ def _counts(slope, offset, cts, low, high):
             _slope_integral(low, slope, offset))
 
 
-def rebin(in_spectrum, in_edges, out_edges, slopes=None):
-    """
-    Spectrum rebining via interpolation.
-
-    Args:
-      in_spectrum (np.ndarray): an array of input spectrum counts
-      in_edges (np.ndarray): an array of the input bin edges
-                             (len(in_spectrum) + 1)
-      out_edges (np.ndarray): an array of the output bin edges
-      slopes (np.ndarray): an array of input bin slopes for quadratic
-                           interpolation
-
-        If not none, should have length of (len(data) + 1)
-      input_file_object: a parser file object (optional)
-
-    Raises:
-      SpectrumError: for bad input arguments
-    """
-
-    in_spectrum = in_spectrum.astype(float)
-    # Check input spectrum
-    assert len(in_spectrum) == len(in_edges) - 1, \
-        "`in_spectrum`({}) is not 1 len shorter than `in_edges`({})".format(
-            len(in_spectrum), len(in_edges))
-    # Init output
-    out_spectrum = np.zeros(len(out_edges) - 1)
-    # Init slopes
-    if slopes is None:
-        slopes = np.zeros(len(in_spectrum))
-    else:
-        assert len(slopes) == len(in_spectrum)
+@nb.jit(nb.f8[:](nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:]),
+        locals={'in_idx': nb.u4, 'out_idx': nb.u4, 'cnts': nb.f8,
+                'slope': nb.f8, 'offset': nb.f8, 'low': nb.f8, 'high': nb.f8},
+        nopython=True)
+def _rebin(in_spectrum, in_edges, out_spectrum, out_edges, slopes):
     # Input bin
     in_idx = 1
     # For each output bin
@@ -101,3 +79,36 @@ def rebin(in_spectrum, in_edges, out_edges, slopes=None):
         if in_idx == 0:
             in_idx = 1
     return out_spectrum
+
+
+def rebin(in_spectrum, in_edges, out_edges, slopes=None):
+    """
+    Spectrum rebining via interpolation.
+
+    Args:
+      in_spectrum (np.ndarray): an array of input spectrum counts
+      in_edges (np.ndarray): an array of the input bin edges
+                             (len(in_spectrum) + 1)
+      out_edges (np.ndarray): an array of the output bin edges
+      slopes (np.ndarray): an array of input bin slopes for quadratic
+                           interpolation
+
+        If not none, should have length of (len(data) + 1)
+      input_file_object: a parser file object (optional)
+
+    Raises:
+      SpectrumError: for bad input arguments
+    """
+    in_spectrum = in_spectrum.astype(float)
+    # Init output
+    out_spectrum = np.zeros(len(out_edges) - 1)
+    # Check input spectrum
+    assert len(in_spectrum) == len(in_edges) - 1, \
+        "`in_spectrum`({}) is not 1 len shorter than `in_edges`({})".format(
+            len(in_spectrum), len(in_edges))
+    # Init slopes
+    if slopes is None:
+        slopes = np.zeros(len(in_spectrum))
+    else:
+        assert len(slopes) == len(in_spectrum)
+    return _rebin(in_spectrum, in_edges, out_spectrum, out_edges, slopes)
