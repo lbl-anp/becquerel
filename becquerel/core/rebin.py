@@ -95,18 +95,18 @@ def rebin(in_spectrum, in_edges, out_edges, slopes=None):
     Spectrum rebining via interpolation.
 
     Args:
-      in_spectrum (np.ndarray): an array of input spectrum counts
-      in_edges (np.ndarray): an array of the input bin edges
-                             (len(in_spectrum) + 1)
-      out_edges (np.ndarray): an array of the output bin edges
-      slopes (np.ndarray): an array of input bin slopes for quadratic
-                           interpolation
-
-        If not none, should have length of (len(data) + 1)
-      input_file_object: a parser file object (optional)
+        in_spectrum (np.ndarray): an array of input spectrum counts
+            [num_channels_in]
+        in_edges (np.ndarray): an array of the input bin edges
+            [num_channels_in + 1]
+        out_edges (np.ndarray): an array of the output bin edges
+            [num_channels_out]
+        slopes (np.ndarray|None): (optional) an array of input bin slopes for
+            quadratic interpolation
+            [num_channels_in + 1]
 
     Raises:
-      SpectrumError: for bad input arguments
+        AssertionError: for bad input arguments
     """
     # Init slopes
     if slopes is None:
@@ -141,21 +141,21 @@ def _rebin2d(in_spectra, in_edges, out_spectra, out_edges, slopes):
 
 def rebin2d(in_spectra, in_edges, out_edges, slopes=None):
     """
-    Spectrum rebining via interpolation.
+    Spectra rebining via interpolation.
 
     Args:
-      in_spectrum (np.ndarray): an array of input spectrum counts
-      in_edges (np.ndarray): an array of the input bin edges
-                             (len(in_spectrum) + 1)
-      out_edges (np.ndarray): an array of the output bin edges
-      slopes (np.ndarray): an array of input bin slopes for quadratic
-                           interpolation
-
-        If not none, should have length of (len(data) + 1)
-      input_file_object: a parser file object (optional)
+        in_spectra (np.ndarray): an array of individual input spectra counts
+            [num_spectra, num_channels_in]
+        in_edges (np.ndarray): an array of individual input bin edges
+            [num_spectra, num_channels_in + 1]
+        out_edges (np.ndarray): an array of the output bin edges
+            [num_channels_out]
+        slopes (np.ndarray|None): (optional) an array of individual input bin
+            slopes for quadratic interpolation
+            [num_spectra, num_channels_in + 1]
 
     Raises:
-      SpectrumError: for bad input arguments
+        AssertionError: for bad input arguments
     """
     # Init slopes
     if slopes is None:
