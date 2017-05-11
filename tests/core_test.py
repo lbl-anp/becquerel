@@ -272,27 +272,37 @@ class TestRebin(object):
     def test_rebin_counts_float(self, lam, old_edges, new_edges):
         """Check total counts in spectrum data before and after rebin"""
 
-        old_counts = np.random.poisson(lam=lam,
-                                       size=len(old_edges) - 1).astype(float)
+        old_counts = np.random.poisson(
+            lam=lam, size=len(old_edges) - 1).astype(float)
         new_counts = bq.core.rebin(old_counts, old_edges, new_edges)
         assert np.isclose(old_counts.sum(), new_counts.sum())
 
     def test_rebin_counts_int(self, lam, old_edges, new_edges):
         """Check that rebin raises an error for counts as integers"""
 
-        old_counts = np.random.poisson(lam=lam,
-                                       size=len(old_edges) - 1).astype(int)
+        old_counts = np.random.poisson(
+            lam=lam, size=len(old_edges) - 1).astype(int)
         with pytest.raises(AssertionError):
             bq.core.rebin(old_counts, old_edges, new_edges)
 
     def test_rebin_array_shape(self, lam, old_edges, new_edges):
         """Check that rebin raises an error for incorrectly shaped inputs"""
 
-        old_counts = np.random.poisson(lam=lam,
-                                       size=len(old_edges) - 1).astype(float)
+        old_counts = np.random.poisson(
+            lam=lam, size=len(old_edges) - 1).astype(float)
         old_counts = old_counts[np.newaxis, :]
         with pytest.raises(AssertionError):
             bq.core.rebin(old_counts, old_edges, new_edges)
+
+    def test_rebin2d_counts_float(self, lam, old_edges, new_edges):
+        """Check total counts in spectra data before and after rebin"""
+
+        nspectra = 20
+        old_counts_2d = np.random.poisson(
+            lam=lam, size=(nspectra, len(old_edges) - 1)).astype(float)
+        old_edges_2d = np.repeat(old_edges[np.newaxis, :], nspectra, axis=0)
+        new_counts_2d = bq.core.rebin2d(old_counts_2d, old_edges_2d, new_edges)
+        assert np.allclose(old_counts_2d.sum(axis=1), new_counts_2d.sum(axis=1))
 
     @pytest.mark.plottest
     def test_uncal_spectrum_counts(self, uncal_spec):

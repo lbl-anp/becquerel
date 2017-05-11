@@ -116,10 +116,71 @@ def rebin(in_spectrum, in_edges, out_edges, slopes=None):
     _check_ndim_and_dtype(in_edges, 1, np.float, 'in_edges')
     _check_ndim_and_dtype(out_edges, 1, np.float, 'out_edges')
     _check_ndim_and_dtype(slopes, 1, np.float, 'slopes')
+    # Check slopes
+    assert slopes.shape == in_spectrum.shape, \
+        "shape of slopes({}) differs from in_spectra({})".format(
+            slopes.shape, in_spectrum.shape)
     # Init output
     out_spectrum = np.zeros(out_edges.shape[0] - 1, dtype=np.float)
     # Check input spectrum
     assert in_spectrum.shape[0] == in_edges.shape[0] - 1, \
-        "in_spectrum({}) is not 1 len shorter than in_edges({})".format(
+        "in_spectrum({}) is not 1 channel shorter than in_edges({})".format(
             in_spectrum.shape, in_edges.shape)
     return _rebin(in_spectrum, in_edges, out_spectrum, out_edges, slopes)
+
+
+@nb.jit(nb.f8[:, :](nb.f8[:, :], nb.f8[:, :], nb.f8[:, :], nb.f8[:],
+                    nb.f8[:, :]),
+        locals={'i': nb.u4}, nopython=True)
+def _rebin2d(in_spectra, in_edges, out_spectra, out_edges, slopes):
+    for i in np.arange(in_spectra.shape[0]):
+        out_spectra[i, :] = _rebin(in_spectra[i, :], in_edges[i, :],
+                                   out_spectra[i, :], out_edges, slopes[i, :])
+    return out_spectra
+
+
+def rebin2d(in_spectra, in_edges, out_edges, slopes=None):
+    """
+    Spectrum rebining via interpolation.
+
+    Args:
+      in_spectrum (np.ndarray): an array of input spectrum counts
+      in_edges (np.ndarray): an array of the input bin edges
+                             (len(in_spectrum) + 1)
+      out_edges (np.ndarray): an array of the output bin edges
+      slopes (np.ndarray): an array of input bin slopes for quadratic
+                           interpolation
+
+        If not none, should have length of (len(data) + 1)
+      input_file_object: a parser file object (optional)
+
+    Raises:
+      SpectrumError: for bad input arguments
+    """
+    # Init slopes
+    if slopes is None:
+        slopes = np.zeros_like(in_spectra, dtype=np.float)
+    # Check for inputs
+    _check_ndim_and_dtype(in_spectra, 2, np.float, 'in_spectrum')
+    _check_ndim_and_dtype(in_edges, 2, np.float, 'in_edges')
+    _check_ndim_and_dtype(out_edges, 1, np.float, 'out_edges')
+    _check_ndim_and_dtype(slopes, 2, np.float, 'slopes')
+    # Check slopes
+    assert slopes.shape == in_spectra.shape, \
+        "shape of slopes({}) differs from in_spectra({})".format(
+            slopes.shape, in_spectra.shape)
+    # Init output
+    out_spectra = np.zeros((in_spectra.shape[0], out_edges.shape[0] - 1),
+                           dtype=np.float)
+    # Check number of spectra
+    assert in_spectra.shape[0] == in_edges.shape[0], \
+        "number of in_spectra({}) differs from number of in_edges({})".format(
+            in_spectra.shape, in_edges.shape)
+    assert in_spectra.shape[0] == in_edges.shape[0], \
+        "number of in_spectra({}) differs from number of in_edges({})".format(
+            in_spectra.shape, in_edges.shape)
+    # Check len of spectra
+    assert in_spectra.shape[1] == in_edges.shape[1] - 1, \
+        "`in_spectra`({}) is not 1 channel shorter than `in_edges`({})".format(
+            in_spectra.shape, in_edges.shape)
+    return _rebin2d(in_spectra, in_edges, out_spectra, out_edges, slopes)
