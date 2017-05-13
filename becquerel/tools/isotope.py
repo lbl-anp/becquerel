@@ -66,10 +66,10 @@ def _split_element_mass(arg):
             else:
                 continue
             try:
-                elem = element.Element(p_element)
+                element.Element(p_element)
             except element.ElementError:
                 continue
-            element_ids.append(elem.symbol)
+            element_ids.append(p_element)
             mass_isomers.append(p_mass)
         if len(element_ids) == 0:
             raise IsotopeError(
@@ -83,7 +83,7 @@ def _split_element_mass(arg):
                 mass_isomer = mass
     # ensure element name or symbol is valid
     try:
-        elem = element.Element(element_id)
+        element.Element(element_id)
     except element.ElementError:
         raise IsotopeError(
             'Element name or symbol is invalid: {}'.format(element_id))
@@ -151,9 +151,7 @@ def parse_isotope(arg):
       IsotopeError: if there was a problem parsing the string.
     """
 
-    # split string into element and mass
     element_id, mass_isomer = _split_element_mass(arg)
-    # determine mass number A and isomer level m
     mass_number, isomer_level = _split_mass_isomer(mass_isomer)
     return (element_id, mass_number, isomer_level)
 
@@ -166,15 +164,15 @@ class Isotope(element.Element):
     >>> '{:%n(%s)-%a%m Z=%z A=%a}'.format(iso)
     'Hafnium(Hf)-178m2 Z=72 A=178'
 
-    Properties:
-      symbol (read-only): the mixed-case element symbol (e.g., "Ge")
-      name (read-only): the mixed-case element name (e.g., "Germanium")
-      Z (read-only): an integer giving the atomic number (e.g., 32)
-      atomic_mass (read-only): a float giving the atomic mass in amu
-      A (read-only): an integer giving the mass number (e.g., 68)
-      N (read-only): an integer giving the neutron number (e.g., 36)
-      M (read-only): an integer giving the isomer level (e.g., 0)
-      m (read-only): string version of M, e.g., '', 'm', or 'm2'
+    Properties (read-only):
+      symbol: the mixed-case element symbol (e.g., "Ge")
+      name: the mixed-case element name (e.g., "Germanium")
+      Z: an integer giving the atomic number (e.g., 32)
+      atomic_mass: a float giving the atomic mass in amu
+      A: an integer giving the mass number (e.g., 68)
+      N: an integer giving the neutron number (e.g., 36)
+      M: an integer giving the isomer level (e.g., 0)
+      m: string version of M, e.g., '', 'm', or 'm2'
     """
 
     # pylint: disable=too-few-public-methods
