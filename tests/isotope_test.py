@@ -1,6 +1,10 @@
 """Test isotope.py classes."""
 
 from __future__ import print_function
+import datetime
+from dateutil.parser import parse as dateutil_parse
+from six import string_types
+import numpy as np
 from becquerel.tools import element
 from becquerel.tools import isotope
 import pytest
@@ -23,6 +27,10 @@ TEST_ISOTOPES = [
     ('Hf-178m3', 'Hf', 178, 3),
 ]
 
+
+# ----------------------------------------------------
+#                   Isotope class
+# ----------------------------------------------------
 
 @pytest.mark.parametrize('iso_str, sym, A, m', TEST_ISOTOPES)
 def test_isotope_init_args(iso_str, sym, A, m):
@@ -194,3 +202,109 @@ def test_isotope_str(iso_str, sym, A, m):
     i = isotope.Isotope(sym, A, m)
     print(str(i), iso_str)
     assert str(i) == iso_str
+
+
+# ----------------------------------------------------
+#               IsotopeQuantity class
+# ----------------------------------------------------
+
+@pytest.mark.parametrize('kwargs', [
+    {'bq': 10.047 * 3.7e4},
+    {'uci': 10.047}
+])
+@pytest.mark.parametrize('date', [
+    datetime.datetime.now(),
+    '2015-01-08 00:00:00',
+    None
+])
+@pytest.mark.parametrize('iso', [
+    isotope.Isotope('Cs-137'),
+    isotope.Isotope('178M2HF'),
+    isotope.Isotope('Strontium', 90)
+])
+def test_isotopequantity_init(iso, date, kwargs):
+    """Test Isotope.__init__()."""
+
+    iq = isotope.IsotopeQuantity(iso, date=date, **kwargs)
+    assert iq.isotope is iso
+    if 'bq' in kwargs:
+        assert iq.ref_activity == kwargs['bq']
+    else:
+        assert iq.ref_activity == kwargs['uci'] * 3.7e4
+    if isinstance(date, datetime.datetime):
+        assert iq.ref_date == date
+    elif isinstance(date, string_types):
+        assert iq.ref_date == dateutil_parse(date)
+    else:
+        assert (datetime.datetime.now() - iq.ref_date).total_seconds() < 5
+
+
+@pytest.mark.parametrize('iso, date, kwargs, error', [
+    ('Cs-137', datetime.datetime.now(), {'uci': 10.047}, TypeError),
+    (isotope.Isotope('Cs-137'), 123, {'bq': 456}, TypeError),
+    (isotope.Isotope('Cs-137'), datetime.datetime.now(), {'asdf': 3},
+     isotope.IsotopeError)
+])
+def test_isotopequantity_bad_init(iso, date, kwargs, error):
+    """Test errors from Isotope.__init__()"""
+
+    with pytest.raises(error):
+        isotope.IsotopeQuantity(iso, date=date, **kwargs)
+
+
+@pytest.fixture(params=[
+    (isotope.Isotope('Cs-137'), datetime.datetime.now(), {'uci': 10.047})
+])
+def iq(request):
+    """An IsotopeQuantity object"""
+
+    iso = request.param[0]
+    date = request.param[1]
+    kwargs = request.param[2]
+    return isotope.IsotopeQuantity(iso, date=date, **kwargs)
+
+
+@pytest.mark.parametrize('halflife', (3.156e7, 3600, 0.11))
+def test_isotopequantity_bq_at(iq, halflife):
+    """Test IsotopeQuantity.bq_at()"""
+
+    # since halflife is not built in to Isotope yet...
+    iq.isotope.halflife = halflife
+
+    assert iq.bq_at(iq.ref_date) == iq.ref_activity
+
+    dt = datetime.timedelta(seconds=halflife)
+    assert iq.bq_at(iq.ref_date + dt) == iq.ref_activity / 2
+    assert iq.bq_at(iq.ref_date - dt) == iq.ref_activity * 2
+
+    dt = datetime.timedelta(seconds=halflife * 50)
+    assert iq.bq_at(iq.ref_date + dt) < 1
+
+    dt = datetime.timedelta(seconds=halflife / 100)
+    assert np.isclose(iq.bq_at(iq.ref_date + dt), iq.ref_activity, rtol=1e-2)
+
+
+@pytest.mark.parametrize('halflife', (3.156e7, 3600, 0.11))
+def test_isotopequantity_uci_at(iq, halflife):
+    """Test IsotopeQuantity.uci_at()"""
+
+    # since halflife is not built in to Isotope yet...
+    iq.isotope.halflife = halflife
+
+    assert iq.uci_at(iq.ref_date) == iq.ref_activity / isotope.BQ_TO_UCI
+
+
+@pytest.mark.parametrize('halflife', (3.156e7, 3600, 0.11))
+def test_isotopequantity_time_when(iq, halflife):
+    """Test IsotopeQuantity.time_when()"""
+
+    # since halflife is not built in to Isotope yet...
+    iq.isotope.halflife = halflife
+
+    assert iq.time_when(bq=iq.ref_activity) == iq.ref_date
+
+    d = iq.ref_date - datetime.timedelta(seconds=halflife)
+    assert iq.time_when(bq=iq.ref_activity * 2) == d
+
+    d = iq.ref_date + datetime.timedelta(seconds=halflife)
+    assert iq.time_when(bq=iq.ref_activity / 2) == d

@@ -7,6 +7,8 @@ import numpy as np
 from . import element
 from ..core import utils
 
+BQ_TO_UCI = 3.7e4
+
 
 class IsotopeError(element.ElementError):
     """Problem with isotope properties."""
@@ -302,7 +304,7 @@ class Isotope(element.Element):
             raise TypeError('Cannot compare to non-isotope')
 
 
-def activity_from_kwargs(**kwargs):
+def activity_from_kwargs(error_name='activity', **kwargs):
     """Parse kwargs and return an activity in Bq"""
 
     # TODO init with mass or #atoms instead of activity
@@ -311,7 +313,9 @@ def activity_from_kwargs(**kwargs):
     if 'bq' in kwargs:
         return float(kwargs['bq'])
     elif 'uci' in kwargs:
-        return float(kwargs['uci']) / 3.7e4
+        return float(kwargs['uci']) * BQ_TO_UCI
+    else:
+        raise IsotopeError('Missing arg for {}'.format(error_name))
 
 
 class IsotopeQuantity(object):
@@ -324,8 +328,9 @@ class IsotopeQuantity(object):
         """
 
         self._init_isotope(isotope)
-        self.ref_activity = activity_from_kwargs(**kwargs)
         self._init_date(date)
+        self.ref_activity = activity_from_kwargs(
+            error_name='isotope activity', **kwargs)
 
     def _init_isotope(self, isotope):
         """Initialize the isotope.
@@ -338,9 +343,6 @@ class IsotopeQuantity(object):
         if not isinstance(isotope, Isotope):
             raise TypeError(
                 'Initialize IsotopeQuantity with an Isotope instance')
-        if not hasattr(isotope, 'halflife'):
-            raise IsotopeError(
-                'IsotopeQuantity needs an Isotope with a halflife')
         self.isotope = isotope
 
     def _init_date(self, date):
@@ -364,11 +366,12 @@ class IsotopeQuantity(object):
     def uci_at(self, date):
         """Calculate the activity [uCi] at a given time"""
 
-        return self.bq_at(date) / 3.7e4
+        return self.bq_at(date) / BQ_TO_UCI
 
     def time_when(self, **kwargs):
         """Calculate the date/time when the activity is a given value"""
 
         target = activity_from_kwargs(**kwargs)
 
-        return -self.isotope.halflife * np.log2(target / self.ref_activity)
+        dt = -self.isotope.halflife * np.log2(target / self.ref_activity)
+        return self.ref_date + datetime.timedelta(seconds=dt)
