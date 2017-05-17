@@ -409,3 +409,30 @@ class IsotopeQuantity(object):
 
         dt = -self.isotope.halflife * np.log2(target / self.ref_activity)
         return self.ref_date + datetime.timedelta(seconds=dt)
+
+
+class NeutronIrradiation(object):
+    """Represents an irradiation period with thermal neutrons."""
+
+    def __init__(self, start_time, stop_time, n_cm2=None, n_cm2_s=None):
+        """Initialize.
+
+        Args:
+          start_time
+          stop_time
+          n_cm2 OR n_cm2_s
+        """
+
+        self.start_time = utils.handle_datetime(
+            start_time, error_name='NeutronIrradiation start_time')
+        self.stop_time = utils.handle_datetime(
+            stop_time, error_name='NeutronIrradiation stop_time')
+        if self.stop_time < self.start_time:
+            raise ValueError('Timestamps out of order: {}, {}'.format(
+                self.start_time, self.stop_time))
+        self.duration = (self.stop_time - self.start_time).total_seconds()
+
+        if n_cm2 is None and n_cm2_s is None:
+            raise ValueError('Must specify either n_cm2 or n_cm2_s')
+        elif n_cm2 is None:
+            self.n_cm2 = n_cm2_s * self.duration
