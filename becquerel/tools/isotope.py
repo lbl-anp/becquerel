@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import datetime
+from collections import OrderedDict
 from builtins import super
 import numpy as np
 from . import element
@@ -410,6 +411,13 @@ class IsotopeQuantity(object):
         dt = -self.isotope.halflife * np.log2(target / self.ref_activity)
         return self.ref_date + datetime.timedelta(seconds=dt)
 
+    def activate(self, irradiation):
+        """Return an IsotopeMixture representing an activation on this isotope.
+        """
+
+        # TODO
+        self.isotope.ng_cs
+
 
 class NeutronIrradiation(object):
     """Represents an irradiation period with thermal neutrons."""
@@ -436,3 +444,23 @@ class NeutronIrradiation(object):
             raise ValueError('Must specify either n_cm2 or n_cm2_s')
         elif n_cm2 is None:
             self.n_cm2 = n_cm2_s * self.duration
+
+
+class IsotopeMixture(OrderedDict):
+    """A combination of multiple IsotopeQuantities.
+
+    Structured as an OrderedDict with keys = str(isotope)
+    and vals = IsotopeQuantity objects."""
+
+    def __init__(self, iq_list):
+        """Initialize from IsotopeQuantities."""
+
+        for iq in iq_list:
+            self[str(iq.isotope)] = iq
+
+    @classmethod
+    def from_natural(cls, g):
+        """Initialize using natural abundances, from a given mass."""
+
+        # TODO
+        pass
