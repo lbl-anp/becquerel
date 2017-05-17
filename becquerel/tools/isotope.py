@@ -349,7 +349,7 @@ class IsotopeQuantity(object):
         """Initialize the reference date/time."""
 
         self.ref_date = utils.handle_datetime(
-            date, error_name='IsotopeQuantity date')
+            date, error_name='IsotopeQuantity date', allow_none=True)
         if self.ref_date is None:
             # assume a long-lived source in the current epoch
             self.ref_date = datetime.datetime.now()
