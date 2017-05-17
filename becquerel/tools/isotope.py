@@ -3,6 +3,7 @@
 from __future__ import print_function
 import datetime
 from builtins import super
+import numpy as np
 from . import element
 from ..core import utils
 
@@ -301,6 +302,18 @@ class Isotope(element.Element):
             raise TypeError('Cannot compare to non-isotope')
 
 
+def activity_from_kwargs(**kwargs):
+    """Parse kwargs and return an activity in Bq"""
+
+    # TODO init with mass or #atoms instead of activity
+    # TODO handle unit prefixes with or without pint
+
+    if 'bq' in kwargs:
+        return float(kwargs['bq'])
+    elif 'uci' in kwargs:
+        return float(kwargs['uci']) / 3.7e4
+
+
 class IsotopeQuantity(object):
     """An amount of an isotope."""
 
@@ -311,7 +324,7 @@ class IsotopeQuantity(object):
         """
 
         self._init_isotope(isotope)
-        self._init_activity(**kwargs)
+        self.ref_activity = activity_from_kwargs(**kwargs)
         self._init_date(date)
 
     def _init_isotope(self, isotope):
@@ -330,17 +343,6 @@ class IsotopeQuantity(object):
                 'IsotopeQuantity needs an Isotope with a halflife')
         self.isotope = isotope
 
-    def _init_activity(self, **kwargs):
-        """Initialize the activity."""
-
-        # TODO init with mass or #atoms instead of activity
-        # TODO handle unit prefixes with or without pint
-
-        if 'bq' in kwargs:
-            self.ref_activity = float(kwargs['bq'])
-        elif 'uci' in kwargs:
-            self.ref_activity = float(kwargs['uci']) / 3.7e4
-
     def _init_date(self, date):
         """Initialize the reference date/time."""
 
@@ -349,3 +351,24 @@ class IsotopeQuantity(object):
         if self.ref_date is None:
             # assume a long-lived source in the current epoch
             self.ref_date = datetime.datetime.now()
+
+    def bq_at(self, date):
+        """Calculate the activity [Bq] at a given time"""
+
+        t1 = utils.handle_datetime(date)
+        if t1 is None:
+            raise ValueError('Cannot calculate activity for time None')
+        dt = (t1 - self.ref_date).total_seconds()
+        return self.ref_activity * 2**(-dt / self.isotope.halflife)
+
+    def uci_at(self, date):
+        """Calculate the activity [uCi] at a given time"""
+
+        return self.bq_at(date) / 3.7e4
+
+    def time_when(self, **kwargs):
+        """Calculate the date/time when the activity is a given value"""
+
+        target = activity_from_kwargs(**kwargs)
+
+        return -self.isotope.halflife * np.log2(target / self.ref_activity)
