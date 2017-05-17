@@ -1,8 +1,10 @@
 """Nuclear isotopes and isomers."""
 
 from __future__ import print_function
+import datetime
 from builtins import super
 from . import element
+from ..core import utils
 
 
 class IsotopeError(element.ElementError):
@@ -297,3 +299,53 @@ class Isotope(element.Element):
                 self.A == other.A and self.Z == other.Z and self.M == other.M)
         else:
             raise TypeError('Cannot compare to non-isotope')
+
+
+class IsotopeQuantity(object):
+    """An amount of an isotope."""
+
+    def __init__(self, isotope, date=None, **kwargs):
+        """Initialize.
+
+        Must provide an isotope (Isotope instance), an activity, and a date.
+        """
+
+        self._init_isotope(isotope)
+        self._init_activity(**kwargs)
+        self._init_date(date)
+
+    def _init_isotope(self, isotope):
+        """Initialize the isotope.
+
+        Right now this just does one error check, but in the future maybe
+        isotope could be a string and it generates the Isotope instance from
+        cached data?
+        """
+
+        if not isinstance(isotope, Isotope):
+            raise TypeError(
+                'Initialize IsotopeQuantity with an Isotope instance')
+        if not hasattr(isotope, 'halflife'):
+            raise IsotopeError(
+                'IsotopeQuantity needs an Isotope with a halflife')
+        self.isotope = isotope
+
+    def _init_activity(self, **kwargs):
+        """Initialize the activity."""
+
+        # TODO init with mass or #atoms instead of activity
+        # TODO handle unit prefixes with or without pint
+
+        if 'bq' in kwargs:
+            self.ref_activity = float(kwargs['bq'])
+        elif 'uci' in kwargs:
+            self.ref_activity = float(kwargs['uci']) / 3.7e4
+
+    def _init_date(self, date):
+        """Initialize the reference date/time."""
+
+        self.ref_date = utils.handle_datetime(
+            date, error_name='IsotopeQuantity date')
+        if self.ref_date is None:
+            # assume a long-lived source in the current epoch
+            self.ref_date = datetime.datetime.now()
