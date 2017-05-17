@@ -368,6 +368,40 @@ class IsotopeQuantity(object):
 
         return self.bq_at(date) / BQ_TO_UCI
 
+    def atoms_at(self, date):
+        """Calculate the number of atoms at a given time"""
+
+        # TODO make decay_const a property in Isotope
+        decay_const = np.log(2) / self.isotope.halflife
+        return self.bq_at(date) / decay_const
+
+    def bq_now(self):
+        """Calculate the activity [Bq] now"""
+
+        return self.bq_at(datetime.datetime.now())
+
+    def uci_now(self):
+        """Calculate the activity [uCi] now"""
+
+        return self.uci_at(datetime.datetime.now())
+
+    def atoms_now(self):
+        """Calculate the number of atoms now"""
+
+        return self.atoms_at(datetime.datetime.now())
+
+    def decays_from(self, start_time, stop_time):
+        """Calculate the expected number of decays from start_time to stop_time
+        """
+
+        return self.atoms_at(start_time) - self.atoms_at(stop_time)
+
+    def decays_during(self, spec):
+        """Calculate the expected number of decays during a measured spectrum.
+        """
+
+        return self.decays_from(spec.start_time, spec.stop_time)
+
     def time_when(self, **kwargs):
         """Calculate the date/time when the activity is a given value"""
 

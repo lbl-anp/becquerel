@@ -308,3 +308,29 @@ def test_isotopequantity_time_when(iq, halflife):
 
     d = iq.ref_date + datetime.timedelta(seconds=halflife)
     assert iq.time_when(bq=iq.ref_activity / 2) == d
+
+
+def test_isotopequantity_activity_now(iq):
+    """Test IsotopeQuantity.bq_now() and uci_now()"""
+
+    # since halflife is not built in to Isotope yet...
+    iq.isotope.halflife = 3600
+
+    assert np.isclose(iq.bq_now(), iq.bq_at(datetime.datetime.now()))
+    assert np.isclose(iq.uci_now(), iq.uci_at(datetime.datetime.now()))
+    assert np.isclose(iq.atoms_now(), iq.atoms_at(datetime.datetime.now()))
+
+
+def test_isotopequantity_decays_from(iq):
+    """Test IsotopeQuantity.decays_from()"""
+
+    t0 = datetime.datetime.now()
+    # since halflife is not built in to Isotope yet...
+    iq.isotope.halflife = 3600
+
+    t1 = t0 + datetime.timedelta(seconds=iq.isotope.halflife)
+    t2 = t1 + datetime.timedelta(seconds=iq.isotope.halflife)
+
+    assert np.isclose(iq.decays_from(t0, t1), iq.atoms_at(t1))
+    assert np.isclose(iq.decays_from(t1, t2), iq.atoms_at(t2))
+    assert np.isclose(iq.decays_from(t0, t2), 3 * iq.atoms_at(t2))
