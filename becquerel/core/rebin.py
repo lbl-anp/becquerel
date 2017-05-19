@@ -11,6 +11,11 @@ def _check_ndim_and_dtype(arr, ndim, dtype, arr_name='array'):
         '{}({}) is not type: {}'.format(arr_name, arr.dtype, dtype)
 
 
+def _check_strictly_increasing(arr, arr_name='array'):
+    assert np.all(np.diff(arr) > 0), \
+        "{} is not strictly incraesing: {}".format(arr_name, arr)
+
+
 @nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
 def _linear_offset(slope, cts, low, high):
     """
@@ -116,6 +121,8 @@ def rebin(in_spectrum, in_edges, out_edges, slopes=None):
     _check_ndim_and_dtype(in_edges, 1, np.float, 'in_edges')
     _check_ndim_and_dtype(out_edges, 1, np.float, 'out_edges')
     _check_ndim_and_dtype(slopes, 1, np.float, 'slopes')
+    _check_strictly_increasing(in_edges, 'in_edges')
+    _check_strictly_increasing(out_edges, 'out_edges')
     # Check slopes
     assert slopes.shape == in_spectrum.shape, \
         "shape of slopes({}) differs from in_spectra({})".format(
@@ -165,6 +172,8 @@ def rebin2d(in_spectra, in_edges, out_edges, slopes=None):
     _check_ndim_and_dtype(in_edges, 2, np.float, 'in_edges')
     _check_ndim_and_dtype(out_edges, 1, np.float, 'out_edges')
     _check_ndim_and_dtype(slopes, 2, np.float, 'slopes')
+    _check_strictly_increasing(in_edges, 'in_edges')
+    _check_strictly_increasing(out_edges, 'out_edges')
     # Check slopes
     assert slopes.shape == in_spectra.shape, \
         "shape of slopes({}) differs from in_spectra({})".format(
