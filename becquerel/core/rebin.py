@@ -49,11 +49,13 @@ def _counts(slope, offset, cts, low, high):
             _slope_integral(low, slope, offset))
 
 
-@nb.jit(nb.f8[:](nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:]),
+@nb.jit(nb.f8[:](nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:]),
         locals={'in_idx': nb.u4, 'out_idx': nb.u4, 'cnts': nb.f8,
                 'slope': nb.f8, 'offset': nb.f8, 'low': nb.f8, 'high': nb.f8},
         nopython=True)
-def _rebin(in_spectrum, in_edges, out_spectrum, out_edges, slopes):
+def _rebin(in_spectrum, in_edges, out_edges, slopes):
+    # Init output
+    out_spectrum = np.zeros(out_edges.shape[0] - 1)
     # Input bin
     in_idx = 1
     # For each output bin
@@ -78,17 +80,12 @@ def _rebin(in_spectrum, in_edges, out_spectrum, out_edges, slopes):
             offset = _linear_offset(slope, cts, in_edges[in_idx],
                                     in_edges[in_idx + 1])
             # High edge for interpolation
-            high = in_edges[in_idx + 1]
-            if out_edges[out_idx + 1] < high:
-                high = out_edges[out_idx + 1]
+            high = min(in_edges[in_idx + 1], out_edges[out_idx + 1])
             # Low edge for interpolation
-            low = in_edges[in_idx]
-            if out_edges[out_idx] > low:
-                low = out_edges[out_idx]
+            low = max(in_edges[in_idx], out_edges[out_idx])
             # Calc counts for this bin
             out_spectrum[out_idx] += _counts(slope, offset, cts, low, high)
             # Increment variables
-            low = high
             in_idx += 1
         if in_idx == 0:
             in_idx = 1
@@ -127,22 +124,21 @@ def rebin(in_spectrum, in_edges, out_edges, slopes=None):
     assert slopes.shape == in_spectrum.shape, \
         "shape of slopes({}) differs from in_spectra({})".format(
             slopes.shape, in_spectrum.shape)
-    # Init output
-    out_spectrum = np.zeros(out_edges.shape[0] - 1, dtype=np.float)
     # Check input spectrum
     assert in_spectrum.shape[0] == in_edges.shape[0] - 1, \
         "in_spectrum({}) is not 1 channel shorter than in_edges({})".format(
             in_spectrum.shape, in_edges.shape)
-    return _rebin(in_spectrum, in_edges, out_spectrum, out_edges, slopes)
+    return _rebin(in_spectrum, in_edges, out_edges, slopes)
 
 
-@nb.jit(nb.f8[:, :](nb.f8[:, :], nb.f8[:, :], nb.f8[:, :], nb.f8[:],
-                    nb.f8[:, :]),
+@nb.jit(nb.f8[:, :](nb.f8[:, :], nb.f8[:, :], nb.f8[:], nb.f8[:, :]),
         locals={'i': nb.u4}, nopython=True)
-def _rebin2d(in_spectra, in_edges, out_spectra, out_edges, slopes):
+def _rebin2d(in_spectra, in_edges, out_edges, slopes):
+    # Init output
+    out_spectra = np.zeros((in_spectra.shape[0], out_edges.shape[0] - 1))
     for i in np.arange(in_spectra.shape[0]):
         out_spectra[i, :] = _rebin(in_spectra[i, :], in_edges[i, :],
-                                   out_spectra[i, :], out_edges, slopes[i, :])
+                                   out_edges, slopes[i, :])
     return out_spectra
 
 
@@ -178,9 +174,6 @@ def rebin2d(in_spectra, in_edges, out_edges, slopes=None):
     assert slopes.shape == in_spectra.shape, \
         "shape of slopes({}) differs from in_spectra({})".format(
             slopes.shape, in_spectra.shape)
-    # Init output
-    out_spectra = np.zeros((in_spectra.shape[0], out_edges.shape[0] - 1),
-                           dtype=np.float)
     # Check number of spectra
     assert in_spectra.shape[0] == in_edges.shape[0], \
         "number of in_spectra({}) differs from number of in_edges({})".format(
@@ -192,4 +185,4 @@ def rebin2d(in_spectra, in_edges, out_edges, slopes=None):
     assert in_spectra.shape[1] == in_edges.shape[1] - 1, \
         "`in_spectra`({}) is not 1 channel shorter than `in_edges`({})".format(
             in_spectra.shape, in_edges.shape)
-    return _rebin2d(in_spectra, in_edges, out_spectra, out_edges, slopes)
+    return _rebin2d(in_spectra, in_edges, out_edges, slopes)
