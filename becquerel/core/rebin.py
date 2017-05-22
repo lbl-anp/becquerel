@@ -2,13 +2,9 @@ import numpy as np
 import numba as nb
 
 
-def _check_ndim_and_dtype(arr, ndim, dtype, arr_name='array'):
-    assert isinstance(arr, np.ndarray), \
-        '{} is not a numpy array: {}'.format(arr_name, arr)
+def _check_ndim(arr, ndim, arr_name='array'):
     assert arr.ndim == ndim, \
         '{}({}) is not {}D'.format(arr_name, arr.shape, ndim)
-    assert np.issubdtype(arr.dtype, dtype), \
-        '{}({}) is not type: {}'.format(arr_name, arr.dtype, dtype)
 
 
 def _check_nonneg_strictly_increasing(arr, arr_name='array'):
@@ -105,7 +101,42 @@ def _rebin(in_spectrum, in_edges, out_edges, slopes):
     return out_spectrum
 
 
-def rebin(in_spectrum, in_edges, out_edges, slopes=None):
+@nb.jit(nb.i8[:](nb.i8[:], nb.f8[:], nb.f8[:], nb.f8[:]),
+        locals={'energies': nb.f8[:], 'in_idx': nb.u4, 'energy_idx': nb.u4},
+        nopython=True)
+def _rebin_listmode(in_spectrum, in_edges, out_edges, slopes):
+    """
+    Stochastic rebinning method: spectrum-histogram to listmode then back
+
+    TODO Assume piecewise constant (ie steps, flat within each bin)
+         distribution for in_spectrum (for now). slopes is unused.
+    """
+    energies = np.zeros(np.sum(in_spectrum))
+    energy_idx_start = 0
+    # loop through input bins:
+    # in_idx = index of in_bin or in_left_edge
+    for in_idx in range(len(in_spectrum)):
+        bin_counts = in_spectrum[in_idx]
+        energy_idx_stop = energy_idx_start + bin_counts
+        in_left_edge = in_edges[in_idx]
+        in_right_edge = in_edges[in_idx + 1]
+        energies[energy_idx_start:energy_idx_stop] = in_left_edge + (
+            in_right_edge - in_left_edge) * np.random.rand(bin_counts)
+    # bin the energies (drops the energies outside of the out-binning-range)
+    out_spectrum = np.histogram(energies, bins=out_edges)[0]
+    # add the under/flow counts back into the out_spectrum
+    out_spectrum[0] += (energies < out_edges[0]).nonzero()[0].size
+    out_spectrum[-1] += (energies > out_edges[-1]).nonzero()[0].size
+    return out_spectrum
+
+
+# Private dict initialized at module load time
+_rebin_method_selectors = {"interpolation": _rebin,
+                           "listmode": _rebin_listmode}
+
+
+def rebin(in_spectrum, in_edges, out_edges, method="interpolation",
+          slopes=None):
     """
     Spectrum rebining via interpolation.
 
@@ -116,23 +147,44 @@ def rebin(in_spectrum, in_edges, out_edges, slopes=None):
             [num_channels_in + 1]
         out_edges (np.ndarray): an array of the output bin edges
             [num_channels_out]
+        method (str): rebinning method
+            "interpolation"
+                Deterministic interpolation
+            "listmode"
+                Stochastic rebinning via conversion to listmode of energies
         slopes (np.ndarray|None): (optional) an array of input bin slopes for
-            quadratic interpolation
+            quadratic interpolation (only applies for "interpolation" method)
             [num_channels_in + 1]
 
     Raises:
         AssertionError: for bad input arguments
     """
+    if method not in _rebin_method_selectors:
+        raise ValueError("{} is not a valid rebinning method".format(method))
+    if method == "listmode":
+        try:
+            in_spectrum = np.asarray(in_spectrum).astype(
+                np.int64, casting="safe", copy=False)
+        except TypeError:
+            raise ValueError(
+                "in_spectrum can only contain ints for method listmode")
+    else:
+        in_spectrum = np.asarray(in_spectrum, np.float)
+    in_edges = np.asarray(in_edges, np.float)
+    out_edges = np.asarray(out_edges, np.float)
+    # Check inputs
+    # TODO check that in_spectrum are all >= 0
+    _check_ndim(in_spectrum, 1, 'in_spectrum')
+    _check_ndim(in_edges, 1, 'in_edges')
+    _check_ndim(out_edges, 1, 'out_edges')
+    _check_nonneg_strictly_increasing(in_edges, 'in_edges')
+    _check_nonneg_strictly_increasing(out_edges, 'out_edges')
     # Init slopes
     if slopes is None:
         slopes = np.zeros_like(in_spectrum, dtype=np.float)
-    # Check for inputs
-    _check_ndim_and_dtype(in_spectrum, 1, np.float, 'in_spectrum')
-    _check_ndim_and_dtype(in_edges, 1, np.float, 'in_edges')
-    _check_ndim_and_dtype(out_edges, 1, np.float, 'out_edges')
-    _check_ndim_and_dtype(slopes, 1, np.float, 'slopes')
-    _check_nonneg_strictly_increasing(in_edges, 'in_edges')
-    _check_nonneg_strictly_increasing(out_edges, 'out_edges')
+    else:
+        slopes = np.asarray(slopes, np.float)
+        _check_ndim(slopes, 1, 'slopes')
     # Check slopes
     assert slopes.shape == in_spectrum.shape, \
         "shape of slopes({}) differs from in_spectra({})".format(
@@ -141,7 +193,8 @@ def rebin(in_spectrum, in_edges, out_edges, slopes=None):
     assert in_spectrum.shape[0] == in_edges.shape[0] - 1, \
         "in_spectrum({}) is not 1 channel shorter than in_edges({})".format(
             in_spectrum.shape, in_edges.shape)
-    return _rebin(in_spectrum, in_edges, out_edges, slopes)
+    return _rebin_method_selectors[method](
+        in_spectrum, in_edges, out_edges, slopes)
 
 
 @nb.jit(nb.f8[:, :](nb.f8[:, :], nb.f8[:, :], nb.f8[:], nb.f8[:, :]),
@@ -173,16 +226,21 @@ def rebin2d(in_spectra, in_edges, out_edges, slopes=None):
     Raises:
         AssertionError: for bad input arguments
     """
+    in_spectra = np.asarray(in_spectra, np.float)
+    in_edges = np.asarray(in_edges, np.float)
+    out_edges = np.asarray(out_edges, np.float)
+    # Check inputs
+    _check_ndim(in_spectra, 2, 'in_spectrum')
+    _check_ndim(in_edges, 2, 'in_edges')
+    _check_ndim(out_edges, 1, 'out_edges')
+    _check_nonneg_strictly_increasing(in_edges, 'in_edges')
+    _check_nonneg_strictly_increasing(out_edges, 'out_edges')
     # Init slopes
     if slopes is None:
         slopes = np.zeros_like(in_spectra, dtype=np.float)
-    # Check for inputs
-    _check_ndim_and_dtype(in_spectra, 2, np.float, 'in_spectrum')
-    _check_ndim_and_dtype(in_edges, 2, np.float, 'in_edges')
-    _check_ndim_and_dtype(out_edges, 1, np.float, 'out_edges')
-    _check_ndim_and_dtype(slopes, 2, np.float, 'slopes')
-    _check_nonneg_strictly_increasing(in_edges, 'in_edges')
-    _check_nonneg_strictly_increasing(out_edges, 'out_edges')
+    else:
+        slopes = np.asarray(slopes, np.float)
+        _check_ndim(slopes, 2, 'slopes')
     # Check slopes
     assert slopes.shape == in_spectra.shape, \
         "shape of slopes({}) differs from in_spectra({})".format(
