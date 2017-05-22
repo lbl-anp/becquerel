@@ -50,45 +50,56 @@ def _counts(slope, offset, cts, low, high):
 
 
 @nb.jit(nb.f8[:](nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:]),
-        locals={'in_idx': nb.u4, 'out_idx': nb.u4, 'cnts': nb.f8,
+        locals={'in_idx': nb.u4, 'out_idx': nb.u4, 'counts': nb.f8,
                 'slope': nb.f8, 'offset': nb.f8, 'low': nb.f8, 'high': nb.f8},
         nopython=True)
 def _rebin(in_spectrum, in_edges, out_edges, slopes):
-    # Init output
-    out_spectrum = np.zeros(out_edges.shape[0] - 1)
-    # Input bin
-    in_idx = 1
-    # For each output bin
-    for out_idx in range(len(out_spectrum)):
-        # Skip output bin if above input edge range
-        if out_edges[out_idx] > in_edges[-1]:
-            continue
-        # If output right edge above last input edge (NOTE needed?)
-        # if out_top > in_edges[-1]:
-        #     out_top = in_edges[-1]
-        # Find index of input edge below or equal to output edge
-        while in_edges[in_idx] < out_edges[out_idx]:
-            in_idx += 1
-        in_idx -= 1
-        # For each input bin overlapping output bin
-        while (in_idx < len(in_spectrum)) and \
-              (in_edges[in_idx] < out_edges[out_idx + 1]):
-            # Input bin data
-            cts = in_spectrum[in_idx]
-            slope = slopes[in_idx]
-            # Linear offset
-            offset = _linear_offset(slope, cts, in_edges[in_idx],
-                                    in_edges[in_idx + 1])
-            # High edge for interpolation
-            high = min(in_edges[in_idx + 1], out_edges[out_idx + 1])
+    """
+
+
+    Keeps a running counter of two loop indices: in_idx & out_idx
+    """
+    out_spectrum = np.zeros(out_edges.shape[0] - 1) # init output
+    # in_idx: input bin or left edge
+    #         init to the first in_bin which overlaps the 0th out_bin
+    in_idx = max(0, np.searchsorted(in_edges, out_edges[0]) - 1)
+    # Under-flow handling: Put all counts from in_bins that are completely to
+    # the left of the 0th out_bin into the 0th out_bin
+    out_spectrum[0] = np.sum(in_spectrum[:in_idx])
+    # out_idx: output bin or left edge
+    #          init to the first out_bin which overlaps the 0th in_bin
+    out_idx = max(0, np.searchsorted(out_edges, in_edges[0]) - 1)
+    # loop through input bins (starting from the above in_idx value):
+    for in_idx in range(in_idx, len(in_spectrum)):
+        # input bin info/data
+        in_left_edge = in_edges[in_idx]
+        in_right_edge = in_edges[in_idx + 1]
+        counts = in_spectrum[in_idx]
+        slope = slopes[in_idx]
+        offset = _linear_offset(slope, counts, in_left_edge, in_right_edge)
+        # loop through output bins that overlap with the current input bin
+        for out_idx in range(out_idx, len(out_spectrum)):
+            out_left_edge = out_edges[out_idx]
+            out_right_edge = out_edges[out_idx + 1]
+            if out_left_edge >= in_right_edge:
+                out_idx -= 1  # rewind back to previous out_bin; not done yet
+                break  # break out of out_bins loop, move on to next in_bin
             # Low edge for interpolation
-            low = max(in_edges[in_idx], out_edges[out_idx])
+            if out_idx == 0:
+                # under-flow handling:
+                # all counts in this in_bin goes into the 0th out_bin
+                low = in_left_edge  # == min(in_left_edge, out_edges[0])
+            else:
+                low = max(in_left_edge, out_left_edge)
+            # High edge for interpolation
+            if out_idx == len(out_spectrum) - 1:
+                # over-flow handling:
+                # all counts in this in_bin goes into this out_bin
+                high = in_right_edge
+            else:
+                high = min(in_right_edge, out_right_edge)
             # Calc counts for this bin
-            out_spectrum[out_idx] += _counts(slope, offset, cts, low, high)
-            # Increment variables
-            in_idx += 1
-        if in_idx == 0:
-            in_idx = 1
+            out_spectrum[out_idx] += _counts(slope, offset, counts, low, high)
     return out_spectrum
 
 
