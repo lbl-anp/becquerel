@@ -2,12 +2,10 @@
 
 from __future__ import print_function
 import datetime
-from collections import OrderedDict
 from builtins import super
 import numpy as np
 from . import element
 from ..core import utils
-from . import nndc
 
 UCI_TO_BQ = 3.7e4
 N_AV = 6.022141e23
@@ -336,9 +334,9 @@ class IsotopeQuantity(object):
         self._init_isotope(isotope)
         self._init_date(date)
         self.creation_date = creation_date
-        self.ref_atoms = self.atoms_from_kwargs(**kwargs)
+        self.ref_atoms = self._atoms_from_kwargs(**kwargs)
 
-    def atoms_from_kwargs(self, **kwargs):
+    def _atoms_from_kwargs(self, **kwargs):
         """Parse kwargs and return a quantity in atoms.
 
         Args (specify one):
@@ -355,15 +353,33 @@ class IsotopeQuantity(object):
         # TODO handle ufloats
 
         if 'atoms' in kwargs:
-            return float(kwargs['atoms'])
+            return self._check_positive_qty(float(kwargs['atoms']))
         elif 'g' in kwargs:
-            return float(kwargs['g']) / self.isotope.A * N_AV
-        elif 'bq' in kwargs:
-            return float(kwargs['bq']) / self.decay_const
-        elif 'uci' in kwargs:
-            return float(kwargs['uci']) * UCI_TO_BQ / self.decay_const
+            return (self._check_positive_qty(float(kwargs['g'])) /
+                    self.isotope.A * N_AV)
+        elif 'bq' in kwargs and self.decay_const > 0:
+            return (self._check_positive_qty(float(kwargs['bq'])) /
+                    self.decay_const)
+        elif 'uci' in kwargs and self.decay_const > 0:
+            return (self._check_positive_qty(float(kwargs['uci'])) *
+                    UCI_TO_BQ / self.decay_const)
+        elif 'bq' in kwargs or 'uci' in kwargs:
+            raise IsotopeError(
+                'Cannot initialize a stable IsotopeQuantity from activity')
         else:
             raise IsotopeError('Missing arg for isotope activity')
+
+    def _check_positive_qty(self, val):
+        """Check that the quantity value is positive.
+
+        Raises:
+          ValueError: if val is negative
+        """
+
+        if val < 0:
+            raise ValueError(
+                'Mass or activity must be a positive quantity: {}'.format(val))
+        return val
 
     def _init_isotope(self, isotope):
         """Initialize the isotope.
@@ -425,7 +441,7 @@ class IsotopeQuantity(object):
                 'The source represented by this IsotopeQuantity was created at'
                 + ' {} and thus did not exist at {}'.format(
                     self.ref_date, date))
-        return self.ref_atoms * 2**(-dt / self.isotope.halflife)
+        return self.ref_atoms * 2**(-dt / self.halflife)
 
     def bq_at(self, date):
         """Calculate the activity [Bq] at a given time.
@@ -580,7 +596,7 @@ class IsotopeQuantity(object):
 
         Returns:
           a datetime.datetime of the moment when the mass/activity equals the
-            specified input
+            specified input, OR None if it is before creation date
 
         Raises:
           IsotopeError: if isotope is stable
@@ -589,8 +605,10 @@ class IsotopeQuantity(object):
         if not np.isfinite(self.halflife):
             raise IsotopeError('Cannot calculate time_when for stable isotope')
 
-        target = self.atoms_from_kwargs(**kwargs)
-        dt = -self.isotope.halflife * np.log2(target / self.ref_atoms)
+        target = self._atoms_from_kwargs(**kwargs)
+        dt = -self.halflife * np.log2(target / self.ref_atoms)
+        if dt < 0 and self.creation_date:
+            return None
         return self.ref_date + datetime.timedelta(seconds=dt)
 
 
@@ -700,53 +718,3 @@ class NeutronIrradiation(object):
                         -activated_iso.decay_const * self.duration))))
             return IsotopeQuantity(initial_iso,
                                    date=self.stop_time, atoms=initial_atoms)
-
-
-class IsotopeMixture(OrderedDict):
-    """A combination of multiple IsotopeQuantities.
-
-    Structured as an OrderedDict with keys = str(isotope)
-    and vals = IsotopeQuantity objects."""
-
-    def __init__(self, iq_list):
-        """Initialize from IsotopeQuantities."""
-
-        for iq in iq_list:
-            self[str(iq.isotope)] = iq
-
-    @classmethod
-    def from_natural(cls, element_obj, g):
-        """One element, natural abundances, with a given mass.
-
-        Args:
-          element_obj: an Element instance
-          g: grams of the mixture
-        """
-
-        # TODO: something different...
-
-        if not isinstance(element_obj, element.Element):
-            raise IsotopeError(
-                'Must specify an Element object: {}'.format(element_obj))
-
-        df = nndc.fetch_wallet_card(z=element_obj.Z, elevel_range=(0, 0))
-
-        a_list = df[df['Abundance (%)'] > 0, 'A']
-        if len(a_list) == 0:
-            raise IsotopeError('Element is not naturally occuring')
-        abund_list = []
-        for a in a_list:
-            abund_list.append(
-                df[df['A'] == a]['Abundance (%)']).iloc[0].nominal_value
-        if not np.isclose(np.sum(abund_list), 100, atol=1):
-            raise IsotopeError('Abundances do not sum to 1')
-
-        atomic_wt = np.sum(np.array(a_list) * np.array(abund_list) / 100)
-        n_atoms = g / atomic_wt
-
-        iq_list = []
-        for i, a in enumerate(a_list):
-            iso = Isotope(Z=element_obj.Z, A=a)
-            iq_list.append(IsotopeQuantity(iso, atoms=n_atoms * abund_list[i]))
-
-        return cls(iq_list)
