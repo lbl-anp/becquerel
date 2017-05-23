@@ -508,16 +508,18 @@ class _NNDCQuery(object):
     def _add_units_uncertainties(self):
         """Add units and uncertainties with some columns as applicable."""
         if 'Energy Level' in self.keys():
-            self._convert_column('Energy Level', float)
+            self._convert_column(
+                'Energy Level',
+                lambda x: _parse_float_uncertainty(x, ''))
             self.df.rename(
                 columns={'Energy Level': 'Energy Level (MeV)'}, inplace=True)
-            self.df['Energy Level (MeV)'] *= 1000.
 
         if 'Parent Energy Level' in self.keys():
             self._convert_column_uncertainty('Parent Energy Level')
             self.df.rename(
                 columns={'Parent Energy Level': 'Parent Energy Level (MeV)'},
                 inplace=True)
+            self.df['Parent Energy Level (MeV)'] *= 0.001
 
         if 'Mass Excess' in self.keys():
             self._convert_column_uncertainty('Mass Excess')
