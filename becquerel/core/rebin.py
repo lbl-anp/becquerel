@@ -208,7 +208,21 @@ def _rebin2d(in_spectra, in_edges, out_edges, slopes):
     return out_spectra
 
 
-def rebin2d(in_spectra, in_edges, out_edges, slopes=None):
+# FIXME figure out multiple dispatch for numba
+@nb.jit(nb.i8[:, :](nb.i8[:, :], nb.f8[:, :], nb.f8[:], nb.f8[:, :]),
+        locals={'i': nb.u4}, nopython=True)
+def _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes):
+    # Init output
+    out_spectra = np.zeros((in_spectra.shape[0], out_edges.shape[0] - 1),
+                           np.int64)
+    for i in np.arange(in_spectra.shape[0]):
+        out_spectra[i, :] = _rebin_listmode(in_spectra[i, :], in_edges[i, :],
+                                            out_edges, slopes[i, :])
+    return out_spectra
+
+
+def rebin2d(in_spectra, in_edges, out_edges,
+            method="interpolation", slopes=None):
     """
     Spectra rebining via interpolation.
 
@@ -219,13 +233,30 @@ def rebin2d(in_spectra, in_edges, out_edges, slopes=None):
             [num_spectra, num_channels_in + 1]
         out_edges (np.ndarray): an array of the output bin edges
             [num_channels_out]
+        method (str): rebinning method
+            "interpolation"
+                Deterministic interpolation
+            "listmode"
+                Stochastic rebinning via conversion to listmode of energies
         slopes (np.ndarray|None): (optional) an array of individual input bin
             slopes for quadratic interpolation
+            (only applies for "interpolation" method)
             [num_spectra, num_channels_in + 1]
 
     Raises:
         AssertionError: for bad input arguments
     """
+    if method not in _rebin_method_selectors:
+        raise ValueError("{} is not a valid rebinning method".format(method))
+    if method == "listmode":
+        try:
+            in_spectra = np.asarray(in_spectra).astype(
+                np.int64, casting="safe", copy=False)
+        except TypeError:
+            raise ValueError(
+                "in_spectrum can only contain ints for method listmode")
+    else:
+        in_spectra = np.asarray(in_spectra, np.float)
     in_spectra = np.asarray(in_spectra, np.float)
     in_edges = np.asarray(in_edges, np.float)
     out_edges = np.asarray(out_edges, np.float)
@@ -256,4 +287,8 @@ def rebin2d(in_spectra, in_edges, out_edges, slopes=None):
     assert in_spectra.shape[1] == in_edges.shape[1] - 1, \
         "`in_spectra`({}) is not 1 channel shorter than `in_edges`({})".format(
             in_spectra.shape, in_edges.shape)
-    return _rebin2d(in_spectra, in_edges, out_edges, slopes)
+    # FIXME figure out multiple dispatch with numba
+    if method == "interpolation":
+        return _rebin2d(in_spectra, in_edges, out_edges, slopes)
+    elif method == "listmode":
+        return _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes)
