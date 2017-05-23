@@ -9,7 +9,8 @@ from . import element
 from ..core import utils
 from . import nndc
 
-BQ_TO_UCI = 3.7e4
+UCI_TO_BQ = 3.7e4
+N_AV = 6.022141e23
 
 
 class IsotopeError(element.ElementError):
@@ -185,7 +186,7 @@ class Isotope(element.Element):
 
       halflife [s]
       ng_cs [barns]
-      activity_coeff [1/s]
+      decay_const [1/s]
     """
 
     # pylint: disable=too-few-public-methods
@@ -310,33 +311,59 @@ class Isotope(element.Element):
             raise TypeError('Cannot compare to non-isotope')
 
 
-def activity_from_kwargs(error_name='activity', **kwargs):
-    """Parse kwargs and return an activity in Bq"""
-
-    # TODO init with mass or #atoms instead of activity
-    # TODO handle unit prefixes with or without pint
-
-    if 'bq' in kwargs:
-        return float(kwargs['bq'])
-    elif 'uci' in kwargs:
-        return float(kwargs['uci']) * BQ_TO_UCI
-    else:
-        raise IsotopeError('Missing arg for {}'.format(error_name))
-
-
 class IsotopeQuantity(object):
     """An amount of an isotope."""
 
-    def __init__(self, isotope, date=None, **kwargs):
+    def __init__(self, isotope, date=None, creation_date=True, **kwargs):
         """Initialize.
 
-        Must provide an isotope (Isotope instance), an activity, and a date.
+        Specify one of bq, uci, atoms, g to define the quantity.
+
+        Args:
+          isotope: an Isotope object, of which this is a quantity
+          date: the reference date for the activity or mass
+          creation_date: True means that dates before the reference date will
+            raise an error (because the source did not exist then)
+          bq: the activity at the reference date [Bq]
+          uci: the activity at the reference date [uCi]
+          atoms: the number of atoms at the reference date
+          g: the mass at the reference date [g]
+
+        Raises:
+          ...
         """
 
         self._init_isotope(isotope)
         self._init_date(date)
-        self.ref_activity = activity_from_kwargs(
-            error_name='isotope activity', **kwargs)
+        self.creation_date = creation_date
+        self.ref_atoms = self.atoms_from_kwargs(**kwargs)
+
+    def atoms_from_kwargs(self, **kwargs):
+        """Parse kwargs and return a quantity in atoms.
+
+        Args (specify one):
+          atoms: the number of atoms
+          bq: the activity [Bq]
+          uci: the activity [uCi]
+          g: the mass [g]
+
+        Raises:
+          IsotopeError: if no valid argument specified
+        """
+
+        # TODO handle unit prefixes with or without pint
+        # TODO handle ufloats
+
+        if 'atoms' in kwargs:
+            return float(kwargs['atoms'])
+        elif 'g' in kwargs:
+            return float(kwargs['g']) / self.isotope.A * N_AV
+        elif 'bq' in kwargs:
+            return float(kwargs['bq']) / self.decay_const
+        elif 'uci' in kwargs:
+            return float(kwargs['uci']) * UCI_TO_BQ / self.decay_const
+        else:
+            raise IsotopeError('Missing arg for isotope activity')
 
     def _init_isotope(self, isotope):
         """Initialize the isotope.
@@ -344,15 +371,28 @@ class IsotopeQuantity(object):
         Right now this just does one error check, but in the future maybe
         isotope could be a string and it generates the Isotope instance from
         cached data?
+
+        Args:
+          isotope: an Isotope object
+
+        Raises:
+          TypeError: if isotope is not an Isotope object
+          AttributeError: if isotope is missing halflife or decay_const
         """
 
         if not isinstance(isotope, Isotope):
             raise TypeError(
                 'Initialize IsotopeQuantity with an Isotope instance')
         self.isotope = isotope
+        self.halflife = isotope.halflife
+        self.decay_const = isotope.decay_const
 
     def _init_date(self, date):
-        """Initialize the reference date/time."""
+        """Initialize the reference date/time.
+
+        Args:
+          date: a date string or datetime.datetime object
+        """
 
         self.ref_date = utils.handle_datetime(
             date, error_name='IsotopeQuantity date', allow_none=True)
@@ -360,60 +400,197 @@ class IsotopeQuantity(object):
             # assume a long-lived source in the current epoch
             self.ref_date = datetime.datetime.now()
 
-    def bq_at(self, date):
-        """Calculate the activity [Bq] at a given time"""
-
-        t1 = utils.handle_datetime(date)
-        if t1 is None:
-            raise ValueError('Cannot calculate activity for time None')
-        dt = (t1 - self.ref_date).total_seconds()
-        return self.ref_activity * 2**(-dt / self.isotope.halflife)
-
-    def uci_at(self, date):
-        """Calculate the activity [uCi] at a given time"""
-
-        return self.bq_at(date) / BQ_TO_UCI
+    # ----------------------------
+    #   *_at()
+    # ----------------------------
 
     def atoms_at(self, date):
-        """Calculate the number of atoms at a given time"""
+        """Calculate the number of atoms at a given time.
 
-        # TODO make decay_const a property in Isotope
-        decay_const = np.log(2) / self.isotope.halflife
-        return self.bq_at(date) / decay_const
+        Args:
+          date: the date to calculate for
+
+        Returns:
+          a float of the number of atoms at date
+
+        Raises:
+          TypeError: if date is not recognized
+          IsotopeError: if date is prior to the creation date
+        """
+
+        t1 = utils.handle_datetime(date)
+        dt = (t1 - self.ref_date).total_seconds()
+        if dt < 0 and self.creation_date:
+            raise IsotopeError(
+                'The source represented by this IsotopeQuantity was created at'
+                + ' {} and thus did not exist at {}'.format(
+                    self.ref_date, date))
+        return self.ref_atoms * 2**(-dt / self.isotope.halflife)
+
+    def bq_at(self, date):
+        """Calculate the activity [Bq] at a given time.
+
+        As atoms_at() except for return value.
+        """
+
+        return self.atoms_at(date) * self.decay_const
+
+    def uci_at(self, date):
+        """Calculate the activity [uCi] at a given time.
+
+        As atoms_at() except for return value.
+        """
+
+        return self.bq_at(date) / UCI_TO_BQ
+
+    def g_at(self, date):
+        """Calculate the mass [g] at a given time.
+
+        As atoms_at() except for return value.
+        """
+
+        return self.atoms_at(date) / N_AV * self.isotope.A
+
+    # ----------------------------
+    #   *_now()
+    # ----------------------------
+
+    def atoms_now(self):
+        """Calculate the number of atoms now.
+
+        Returns:
+          a float of the number of atoms at datetime.datetime.now()
+
+        Raises:
+          IsotopeError: if this quantity's creation date is in the future
+        """
+
+        return self.atoms_at(datetime.datetime.now())
 
     def bq_now(self):
-        """Calculate the activity [Bq] now"""
+        """Calculate the activity [Bq] now.
+
+        As atoms_now() except for return value.
+        """
 
         return self.bq_at(datetime.datetime.now())
 
     def uci_now(self):
-        """Calculate the activity [uCi] now"""
+        """Calculate the activity [uCi] now.
+
+        As atoms_now() except for return value.
+        """
 
         return self.uci_at(datetime.datetime.now())
 
-    def atoms_now(self):
-        """Calculate the number of atoms now"""
+    def g_now(self):
+        """Calculate the mass [g] now.
 
-        return self.atoms_at(datetime.datetime.now())
+        As atoms_now() except for return value.
+        """
+
+        return self.g_at(datetime.datetime.now())
+
+    # ----------------------------
+    #   *_from()
+    # ----------------------------
 
     def decays_from(self, start_time, stop_time):
-        """Calculate the expected number of decays from start_time to stop_time
+        """The expected number of decays from start_time to stop_time.
+
+        Args:
+          start_time: a string or datetime.datetime object
+          stop_time: a string or datetime.datetime object
+
+        Returns:
+          a float of the number of decays in the time interval
+
+        Raises:
+          TypeError: if start_time or stop_time is not recognized
+          IsotopeError: if start_time is prior to the creation date
         """
 
         return self.atoms_at(start_time) - self.atoms_at(stop_time)
 
+    def bq_from(self, start_time, stop_time):
+        """Average activity [Bq] from start_time to stop_time.
+
+        As decays_from() except for return value.
+        """
+
+        return (self.decays_from(start_time, stop_time) /
+                (stop_time - start_time).total_seconds())
+
+    def uci_from(self, start_time, stop_time):
+        """Average activity [uCi] from start_time to stop_time.
+
+        As decays_from() except for return value.
+        """
+
+        return self.bq_from(start_time, stop_time) / UCI_TO_BQ
+
+    # ----------------------------
+    #   *_during()
+    # ----------------------------
+
     def decays_during(self, spec):
         """Calculate the expected number of decays during a measured spectrum.
+
+        Args:
+          spec: a Spectrum object containing start_time and stop_time
+
+        Returns:
+          a float of the number of decays during the acquisition of spec
+
+        Raises:
+          TypeError: if spec does not have start_time or stop_time defined
+          IsotopeError: if the acquisition start was before the creation date
         """
 
         return self.decays_from(spec.start_time, spec.stop_time)
 
+    def bq_during(self, spec):
+        """Average activity [Bq] during the spectrum.
+
+        As decays_during(), except for return value.
+        """
+
+        return self.bq_from(spec.start_time, spec.stop_time)
+
+    def uci_during(self, spec):
+        """Average activity [uCi] during the spectrum.
+
+        As decays_during(), except for return value.
+        """
+
+        return self.uci_from(spec.start_time, spec.stop_time)
+
+    # ----------------------------
+    #   (other)
+    # ----------------------------
+
     def time_when(self, **kwargs):
-        """Calculate the date/time when the activity is a given value"""
+        """Calculate the date/time when the mass/activity is a given value.
 
-        target = activity_from_kwargs(**kwargs)
+        Args (specify one):
+          atoms: number of atoms
+          bq: activity [Bq]
+          uci: activity [uCi]
+          g: mass [g]
 
-        dt = -self.isotope.halflife * np.log2(target / self.ref_activity)
+        Returns:
+          a datetime.datetime of the moment when the mass/activity equals the
+            specified input
+
+        Raises:
+          IsotopeError: if isotope is stable
+        """
+
+        if not np.isfinite(self.halflife):
+            raise IsotopeError('Cannot calculate time_when for stable isotope')
+
+        target = self.atoms_from_kwargs(**kwargs)
+        dt = -self.isotope.halflife * np.log2(target / self.ref_atoms)
         return self.ref_date + datetime.timedelta(seconds=dt)
 
 
@@ -447,45 +624,82 @@ class NeutronIrradiation(object):
             self.n_cm2_s = None
             self.n_cm2 = n_cm2
 
-    def activate(self, initial_isotope_quantity, activated_isotope):
+    def activate(self, barns,
+                 initial_iso_q=None, initial_iso=None,
+                 activated_iso_q=None, activated_iso=None):
         """
-        Return an IsotopeQuantity representing a neutron activation.
+        Calculate an IsotopeQuantity from before or after a neutron activation.
 
-        A1(t_stop) = phi * sigma * N0 * (1 - exp(-lambda * t_irr))
-          for A1 = activated activity [Bq],
-              phi = flux [neutrons/cm2/s],
-              sigma = activation cross-section [cm2],
-              N0 = number of atoms of initial isotope,
-              lambda = activity coefficient of activated isotope [1/s],
-              t_irr = duration of irradiation [s]
+        Specify an IsotopeQuantity from before/after the irradiation,
+        as well as an Isotope from after/before the irradiation to calculate
+        a quantity for.
 
-        A1(t_stop) = n * sigma * N0 * lambda
-          for A1 = activated activity [Bq],
-              n = fluence of zero-duration irradiation [neutrons/cm2],
-              sigma = activation cross-section [cm2],
-              N0 = number of atoms of initial isotope,
-              lambda = activity coefficient of activated isotope [1/s],
+        Args:
+          barns: cross section for activation [barns = 1e-24 cm^2]
+
+        Forward equations:
+          A1 = phi * sigma * N0 * (1 - exp(-lambda * t_irr))
+          A1 = n * sigma * N0 * lambda
+        Backward equations:
+          N0 = A1 / (phi * sigma * (1 - exp(-lambda * t_irr)))
+          N0 = A1 / (n * sigma * lambda)
+
+        in all equations:
+          A1 = activated activity [Bq] at end of irradiation,
+          phi = flux [neutrons/cm2/s],
+          sigma = activation cross-section [cm2],
+          N0 = number of atoms of initial isotope,
+          lambda = activity coefficient of activated isotope [1/s],
+          t_irr = duration of irradiation [s]
+          n = fluence of zero-duration irradiation [neutrons/cm2],
         """
 
-        isotope0 = initial_isotope_quantity.isotope
+        if not ((initial_iso_q is None) ^ (activated_iso_q is None)):
+            raise IsotopeError('Only one IsotopeQuantity should be given')
+        if initial_iso_q is not None and activated_iso is None:
+            raise IsotopeError('Activated isotope must be specified')
+        elif activated_iso_q is not None and initial_iso is None:
+            raise IsotopeError('Initial isotope must be specified')
 
-        if np.isfinite(isotope0.halflife):
+        if initial_iso is None:
+            initial_iso = initial_iso_q.isotope
+        elif activated_iso is None:
+            activated_iso = activated_iso_q.isotope
+
+        if np.isfinite(initial_iso.halflife):
             raise NotImplementedError(
                 'Activation not implemented for a radioactive initial isotope')
 
-        if self.duration == 0:
-            activated_bq = (
-                self.n_cm2 * isotope0.ng_cs *
-                initial_isotope_quantity.atoms_at(self.stop_time) *
-                activated_isotope.activity_coeff)
+        cross_section = barns * 1.0e-24
+
+        if activated_iso_q is None:
+            # forward calculation
+            if self.duration == 0:
+                activated_bq = (
+                    self.n_cm2 * cross_section *
+                    initial_iso_q.atoms_at(self.stop_time) *
+                    activated_iso.decay_const)
+            else:
+                activated_bq = (
+                    self.n_cm2_s * cross_section *
+                    initial_iso_q.atoms_at(self.stop_time) *
+                    (1 - np.exp(-activated_iso.decay_const * self.duration))
+                )
+            return IsotopeQuantity(activated_iso,
+                                   date=self.stop_time, bq=activated_bq)
         else:
-            activated_bq = (
-                self.n_cm2_s * isotope0.ng_cs *
-                initial_isotope_quantity.atoms_at(self.stop_time) *
-                (1 - np.exp(-activated_isotope.activity_coeff * self.duration))
-            )
-        return IsotopeQuantity(activated_isotope,
-                               date=self.stop_time, bq=activated_bq)
+            # backward calculation
+            if self.duration == 0:
+                initial_atoms = (
+                    activated_iso_q.bq_at(self.stop_time) /
+                    (self.n_cm2 * cross_section * activated_iso.decay_coeff))
+            else:
+                initial_atoms = (
+                    activated_iso_q.bq_at(self.stop_time) /
+                    (self.n_cm2_s * cross_section * (1 - np.exp(
+                        -activated_iso.decay_const * self.duration))))
+            return IsotopeQuantity(initial_iso,
+                                   date=self.stop_time, atoms=initial_atoms)
 
 
 class IsotopeMixture(OrderedDict):

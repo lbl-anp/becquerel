@@ -291,7 +291,7 @@ def test_isotopequantity_uci_at(iq, halflife):
     # since halflife is not built in to Isotope yet...
     iq.isotope.halflife = halflife
 
-    assert iq.uci_at(iq.ref_date) == iq.ref_activity / isotope.BQ_TO_UCI
+    assert iq.uci_at(iq.ref_date) == iq.ref_activity / isotope.UCI_TO_BQ
 
 
 @pytest.mark.parametrize('halflife', (3.156e7, 3600, 0.11))
