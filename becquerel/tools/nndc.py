@@ -405,6 +405,7 @@ class _NNDCQuery(object):
             raise NNDCRequestError('Request failed: ' + req.reason)
         for msg in [
                 'Your search was unsuccessful',
+                'There are too many results for your search',
         ]:
             if msg in req.text:
                 raise NNDCRequestError('Request failed: ' + msg)
