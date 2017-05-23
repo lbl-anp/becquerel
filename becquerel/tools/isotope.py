@@ -412,10 +412,10 @@ class IsotopeQuantity(object):
         return self.ref_date + datetime.timedelta(seconds=dt)
 
     def activate(self, irradiation):
-        """Return an IsotopeMixture representing an activation on this isotope.
+        """
+        Return an IsotopeQuantity representing an activation on this isotope.
         """
 
-        # TODO
         self.isotope.ng_cs
 
 
