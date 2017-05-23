@@ -120,11 +120,6 @@ class TestParseFloatUncertainty(object):
         assert np.isclose(answer, 73.92)
 
     def test_20(self):
-        """Test _parse_float_uncertainty('@', '7') raises NNDCRequestError."""
-        with pytest.raises(nndc.NNDCRequestError):
-            nndc._parse_float_uncertainty('@', '7')
-
-    def test_21(self):
         """Test _parse_float_uncertainty('7', '@') raises NNDCRequestError."""
         with pytest.raises(nndc.NNDCRequestError):
             nndc._parse_float_uncertainty('7', '@')
@@ -170,11 +165,6 @@ class NNDCQueryTests(object):
         """Test NNDCQuery: nuc='U-238'....................................."""
         d = self.fetch(nuc='U-238')
         assert len(d) > 0
-
-    def test_query_nuc_Pa234m(self):
-        """Test NNDCQuery: nuc='Pa-234m' raises exception.................."""
-        with pytest.raises(nndc.NNDCRequestError):
-            self.fetch(nuc='Pa-234m')
 
     def test_query_nuc_Pa234(self):
         """Test NNDCQuery: nuc='Pa-234'...................................."""
@@ -250,11 +240,6 @@ class NNDCQueryTests(object):
         """Test NNDCQuery: z_range=(100, 118).............................."""
         d = self.fetch(z_range=(100, 118))
         assert len(d) > 0
-
-    def test_query_zrange_230_250(self):
-        """Test NNDCQuery: z_range=(230, 250) returns empty dataframe......"""
-        d = self.fetch(z_range=(230, 250))
-        assert len(d) == 0
 
     def test_query_arange_1_20(self):
         """Test NNDCQuery: a_range=(1, 20)................................."""
@@ -402,6 +387,16 @@ class TestNuclearWalletCard(NNDCQueryTests):
         self.cls = nndc._NuclearWalletCardQuery
         self.fetch = nndc.fetch_wallet_card
 
+    def test_wallet_nuc_Pa234m(self):
+        """Test fetch_wallet_card: nuc='Pa-234m' raises exception.........."""
+        with pytest.raises(nndc.NNDCRequestError):
+            self.fetch(nuc='Pa-234m')
+
+    def test_wallet_zrange_230_250(self):
+        """Test fetch_wallet_card: z_range=(230, 250) raises exception....."""
+        with pytest.raises(nndc.NNDCRequestError):
+            self.fetch(z_range=(230, 250))
+
     def test_wallet_zrange_1_20_elevelrange_0_01(self):
         """Test fetch_wallet_card: z_range=(1, 20), elevel_range=(0, 0.1).."""
         d = self.fetch(z_range=(1, 20), elevel_range=(0, 0.1))
@@ -475,6 +470,16 @@ class TestDecayRadiationQuery(NNDCQueryTests):
     def stable_isotope_condition(self, df):
         """What should be true about the dataframe if the isotope is stable."""
         return len(df) == 0
+
+    def test_decay_nuc_Pa234m(self):
+        """Test fetch_decay_radiation: no exception for nuc='Pa-234m'......"""
+        d = self.fetch(nuc='Pa-234m')
+        assert len(d) == 0
+
+    def test_decay_zrange_230_250(self):
+        """Test fetch_decay_radiation: z_range=(230, 250) dataframe empty.."""
+        d = self.fetch(z_range=(230, 250))
+        assert len(d) == 0
 
     def test_decay_nuc_Pu239_type_G(self):
         """Test fetch_decay_radiation: nuc='Pu-239', type='Gamma'.........."""
