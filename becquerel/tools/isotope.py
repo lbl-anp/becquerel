@@ -7,6 +7,7 @@ from builtins import super
 import numpy as np
 from . import element
 from ..core import utils
+from . import nndc
 
 BQ_TO_UCI = 3.7e4
 
@@ -181,6 +182,10 @@ class Isotope(element.Element):
       N (read-only): an integer giving the neutron number (e.g., 36)
       M (read-only): an integer giving the isomer level (e.g., 0)
       m (read-only): string version of M, e.g., '', 'm', or 'm2'
+
+      halflife [s]
+      ng_cs [barns]
+      activity_coeff [1/s]
     """
 
     # pylint: disable=too-few-public-methods
@@ -411,13 +416,6 @@ class IsotopeQuantity(object):
         dt = -self.isotope.halflife * np.log2(target / self.ref_activity)
         return self.ref_date + datetime.timedelta(seconds=dt)
 
-    def activate(self, irradiation):
-        """
-        Return an IsotopeQuantity representing an activation on this isotope.
-        """
-
-        self.isotope.ng_cs
-
 
 class NeutronIrradiation(object):
     """Represents an irradiation period with thermal neutrons."""
@@ -440,10 +438,54 @@ class NeutronIrradiation(object):
                 self.start_time, self.stop_time))
         self.duration = (self.stop_time - self.start_time).total_seconds()
 
-        if n_cm2 is None and n_cm2_s is None:
-            raise ValueError('Must specify either n_cm2 or n_cm2_s')
+        if not ((n_cm2 is None) ^ (n_cm2_s is None)):
+            raise ValueError('Must specify either n_cm2 or n_cm2_s, not both')
         elif n_cm2 is None:
+            self.n_cm2_s = n_cm2_s
             self.n_cm2 = n_cm2_s * self.duration
+        else:
+            self.n_cm2_s = None
+            self.n_cm2 = n_cm2
+
+    def activate(self, initial_isotope_quantity, activated_isotope):
+        """
+        Return an IsotopeQuantity representing a neutron activation.
+
+        A1(t_stop) = phi * sigma * N0 * (1 - exp(-lambda * t_irr))
+          for A1 = activated activity [Bq],
+              phi = flux [neutrons/cm2/s],
+              sigma = activation cross-section [cm2],
+              N0 = number of atoms of initial isotope,
+              lambda = activity coefficient of activated isotope [1/s],
+              t_irr = duration of irradiation [s]
+
+        A1(t_stop) = n * sigma * N0 * lambda
+          for A1 = activated activity [Bq],
+              n = fluence of zero-duration irradiation [neutrons/cm2],
+              sigma = activation cross-section [cm2],
+              N0 = number of atoms of initial isotope,
+              lambda = activity coefficient of activated isotope [1/s],
+        """
+
+        isotope0 = initial_isotope_quantity.isotope
+
+        if np.isfinite(isotope0.halflife):
+            raise NotImplementedError(
+                'Activation not implemented for a radioactive initial isotope')
+
+        if self.duration == 0:
+            activated_bq = (
+                self.n_cm2 * isotope0.ng_cs *
+                initial_isotope_quantity.atoms_at(self.stop_time) *
+                activated_isotope.activity_coeff)
+        else:
+            activated_bq = (
+                self.n_cm2_s * isotope0.ng_cs *
+                initial_isotope_quantity.atoms_at(self.stop_time) *
+                (1 - np.exp(-activated_isotope.activity_coeff * self.duration))
+            )
+        return IsotopeQuantity(activated_isotope,
+                               date=self.stop_time, bq=activated_bq)
 
 
 class IsotopeMixture(OrderedDict):
@@ -459,8 +501,38 @@ class IsotopeMixture(OrderedDict):
             self[str(iq.isotope)] = iq
 
     @classmethod
-    def from_natural(cls, g):
-        """Initialize using natural abundances, from a given mass."""
+    def from_natural(cls, element_obj, g):
+        """One element, natural abundances, with a given mass.
 
-        # TODO
-        pass
+        Args:
+          element_obj: an Element instance
+          g: grams of the mixture
+        """
+
+        # TODO: something different...
+
+        if not isinstance(element_obj, element.Element):
+            raise IsotopeError(
+                'Must specify an Element object: {}'.format(element_obj))
+
+        df = nndc.fetch_wallet_card(z=element_obj.Z, elevel_range=(0, 0))
+
+        a_list = df[df['Abundance (%)'] > 0, 'A']
+        if len(a_list) == 0:
+            raise IsotopeError('Element is not naturally occuring')
+        abund_list = []
+        for a in a_list:
+            abund_list.append(
+                df[df['A'] == a]['Abundance (%)']).iloc[0].nominal_value
+        if not np.isclose(np.sum(abund_list), 100, atol=1):
+            raise IsotopeError('Abundances do not sum to 1')
+
+        atomic_wt = np.sum(np.array(a_list) * np.array(abund_list) / 100)
+        n_atoms = g / atomic_wt
+
+        iq_list = []
+        for i, a in enumerate(a_list):
+            iso = Isotope(Z=element_obj.Z, A=a)
+            iq_list.append(IsotopeQuantity(iso, atoms=n_atoms * abund_list[i]))
+
+        return cls(iq_list)
