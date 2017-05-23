@@ -1,6 +1,7 @@
 """Test isotope.py classes."""
 
 from __future__ import print_function
+import numpy as np
 from becquerel.tools import element
 from becquerel.tools import isotope
 import pytest
@@ -194,3 +195,50 @@ def test_isotope_str(iso_str, sym, A, m):
     i = isotope.Isotope(sym, A, m)
     print(str(i), iso_str)
     assert str(i) == iso_str
+
+
+ISOTOPE_PROPERTIES = [
+    ('H-3', (3.888E8, False, None, '1/2+', 0., None, [['B-'], [100.]],)),
+    ('He-4', (np.inf, True, 99.999866, '0+', 0., 2.4249, [[], []])),
+    ('K-40', (3.938E16, False, 0.0117, '4-', 0., -33.53540, [['B-', 'EC'], [89.28, 10.72]])),
+    ('Co-60', (1.663E8, False, None, '5+', 0., -61.6503, [['B-'], [100.]])),
+    ('U-238', (1.41E17, False, 99.2742, '0+', 0., 47.3077, [['A', 'SF'], [100.00, 5.4E-5]])),
+    ('Pu-244', (2.525E15, False, None, '0+', 0., 59.8060, [['A', 'SF'], [99.88, 0.12]])),
+    ('Tc-99m', (21624.12, False, None, '1/2-', 0.1427, -87.1851, [['IT', 'B-'], [100., 3.7E-3]])),
+    ('Pa-234m', (69.54, False, None, '(0-)', 0.0739, 40.413, [['IT', 'B-'], [0.16, 99.84]])),
+    ('Hf-178', (np.inf, True, 27.28, '0+', 0., -52.4352, [[], []])),
+    ('Hf-178m1', (4., False, None, '8-', 1.1474, -51.2878, [['IT'], [100.]])),
+    ('Hf-178m2', (9.783E8, False, None, '16+', 2.4461, -49.9891, [['IT'], [100.]])),
+]
+
+
+@pytest.mark.webtest
+@pytest.mark.parametrize('iso_str, props', ISOTOPE_PROPERTIES)
+def test_isotope_properties(iso_str, props):
+    """Test that isotope properties are correct."""
+    i = isotope.Isotope(iso_str)
+    half_life, is_stable, abundance, j_pi, energy_level, mass_excess, modes = \
+        props
+    if not np.isinf(half_life):
+        assert np.isclose(i.half_life, half_life)
+    else:
+        assert np.isinf(i.half_life)
+    assert i.is_stable == is_stable
+    if abundance is None:
+        assert i.abundance is None
+    else:
+        assert np.isclose(i.abundance.nominal_value, abundance)
+    assert i.j_pi == j_pi
+    assert np.isclose(i.energy_level, energy_level)
+    print('mass excess:', i.mass_excess, type(i.mass_excess))
+    if mass_excess is None:
+        assert i.mass_excess is None
+    else:
+        print('mass excess:', i.mass_excess.nominal_value)
+        print('mass excess:', mass_excess)
+        print(np.isclose(mass_excess, mass_excess))
+        print(np.isclose(mass_excess, i.mass_excess.nominal_value))
+        print(np.isclose(mass_excess, (i.mass_excess).nominal_value))
+        assert np.isclose(i.mass_excess.nominal_value, mass_excess)
+    assert i.decay_modes[0] == modes[0]
+    assert i.decay_modes[1] == modes[1]

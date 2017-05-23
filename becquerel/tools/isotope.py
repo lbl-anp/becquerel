@@ -2,7 +2,80 @@
 
 from __future__ import print_function
 from builtins import super
+import numpy as np
+import pandas as pd
+from six import string_types
+import uncertainties
 from . import element
+from . import nndc
+from . import df_cache
+
+# pylint: disable=no-self-use
+
+
+def convert_float_ufloat(x):
+    """Convert string to a float or a ufloat, including None and NaN.
+
+    Args:
+      x: a string giving the number
+    """
+
+    if isinstance(x, string_types):
+        if '+/-' in x:
+            tokens = x.split('+/-')
+            return uncertainties.ufloat(float(tokens[0]), float(tokens[1]))
+    try:
+        return float(x)
+    except TypeError:
+        return None
+
+
+def format_ufloat(x, fmt='{:.12f}'):
+    """Convert ufloat to a string, including None and NaN.
+
+    Args:
+      x: a ufloat
+    """
+
+    if x is None:
+        return ''
+    try:
+        return fmt.format(x)
+    except TypeError:
+        return str(x)
+
+
+class WalletCardCache(df_cache.DataFrameCache):
+    """A cache of all isotope wallet cards from NNDC."""
+
+    name = 'all_wallet_cards'
+
+    def write_file(self):
+        """Format ufloat columns before writing so they keep precision."""
+
+        for col in ['Abundance (%)', 'Mass Excess (MeV)']:
+            self.df[col] = self.df[col].apply(format_ufloat)
+        super().write_file()
+
+    def read_file(self):
+        """Ensure some columns are properly converted to float/ufloat."""
+
+        super().read_file()
+        for col in ['Abundance (%)', 'Mass Excess (MeV)']:
+            self.df[col] = self.df[col].apply(convert_float_ufloat)
+
+    def fetch(self):
+        """Fetch wallet card data from NNDC for all isotopes."""
+
+        self.df = pd.DataFrame()
+        z_edges = (0, 40, 80, 120)
+        for z0, z1 in zip(z_edges[:-1], z_edges[1:]):
+            df_chunk = nndc.fetch_wallet_card(z_range=(z0, z1 - 1))
+            self.df = self.df.append(df_chunk)
+        self.loaded = True
+
+
+wallet_cache = WalletCardCache()
 
 
 class IsotopeError(element.ElementError):
@@ -173,6 +246,13 @@ class Isotope(element.Element):
       N: an integer giving the neutron number (e.g., 36)
       M: an integer giving the isomer level (e.g., 0)
       m: string version of M, e.g., '', 'm', or 'm2'
+      half_life: half-life of the isotope in seconds
+      is_stable: a boolean of whether the isotope is stable
+      abundance: the natural abundance percent
+      j_pi: a string describing the spin and parity
+      energy_level: the nuclear energy level in MeV
+      mass_excess: the mass excess in MeV
+      decay_modes: the isotope's decay modes and their branching ratios
     """
 
     # pylint: disable=too-few-public-methods
@@ -295,3 +375,123 @@ class Isotope(element.Element):
                 self.A == other.A and self.Z == other.Z and self.M == other.M)
         else:
             raise TypeError('Cannot compare to non-isotope')
+
+    def _wallet_card(self):
+        """Retrieve the wallet card data for this isotope.
+
+        Returns:
+          a DataFrame containing the wallet card data.
+
+        Raises:
+          IsotopeError: if no isotope data can be found.
+        """
+
+        global wallet_cache
+        if not wallet_cache.loaded:
+            wallet_cache.load()
+        this_isotope = \
+            (wallet_cache.df['Z'] == self.Z) & \
+            (wallet_cache.df['A'] == self.A) & \
+            (wallet_cache.df['M'] == self.M)
+        df = wallet_cache.df[this_isotope]
+        if len(df) == 0:
+            raise IsotopeError(
+                'No wallet card data found for isotope {}'.format(self))
+        return df
+
+    @property
+    def half_life(self):
+        """The isotope's half-life in seconds.
+
+        Returns:
+          the half-life in seconds, or np.inf if stable.
+        """
+
+        df = self._wallet_card()
+        data = df['T1/2 (s)'].tolist()
+        assert len(np.unique(data)) == 1
+        return data[0]
+
+    @property
+    def is_stable(self):
+        """Return a boolean of whether the isotope is stable.
+
+        Returns:
+          a boolean.
+        """
+
+        df = self._wallet_card()
+        data = df['T1/2 (txt)'].tolist()
+        assert len(np.unique(data)) == 1
+        return 'STABLE' in data
+
+    @property
+    def abundance(self):
+        """Return the natural abundance percent.
+
+        Returns:
+          the natural abundance (float or ufloat), or None if not stable.
+        """
+
+        df = self._wallet_card()
+        data = df['Abundance (%)'].tolist()
+        if not isinstance(data[0], uncertainties.core.Variable):
+            if np.isnan(data[0]):
+                return None
+        return data[0]
+
+    @property
+    def j_pi(self):
+        """Return the spin and parity of the isotope.
+
+        Returns:
+          a string giving the J and Pi, e.g., '7/2+'.
+        """
+
+        df = self._wallet_card()
+        data = df['JPi'].tolist()
+        assert len(np.unique(data)) == 1
+        return data[0]
+
+    @property
+    def energy_level(self):
+        """Return the nuclear energy level in MeV.
+
+        Returns:
+          the energy level in MeV.
+        """
+
+        df = self._wallet_card()
+        data = df['Energy Level (MeV)'].tolist()
+        assert len(np.unique(data)) == 1
+        return data[0]
+
+    @property
+    def mass_excess(self):
+        """Return the mass excess in MeV.
+
+        Returns:
+          the mass excess in MeV.
+        """
+
+        df = self._wallet_card()
+        data = df['Mass Excess (MeV)'].tolist()
+        if not isinstance(data[0], uncertainties.core.Variable):
+            if np.isnan(data[0]):
+                return None
+        return data[0]
+
+    @property
+    def decay_modes(self):
+        """Return the decay modes and their branching ratios.
+
+        Returns:
+          a list of the decay modes, and a list of the branching percents.
+        """
+
+        df = self._wallet_card()
+        data1 = df['Decay Mode'].tolist()
+        data2 = df['Branching (%)'].tolist()
+        if len(data1) == 1 and np.isnan(data2[0]):
+            return [], []
+        return data1, data2
