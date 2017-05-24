@@ -221,10 +221,22 @@ def _parse_float_uncertainty(x, dx):
     # for less than, greater than, less than or equal to greater
     # than or equal to. approximately equal to, calculated, and
     # from systematics, respectively."
-    for sym in ['*', '<', '>', '=', '~', '?']:
+    for sym in ['*', '<', '>', '=', '~', '?', '@', '&', 'P', 'N']:
         while sym in x:
             x = x.replace(sym, '')
-    if x == '':
+    # correct specific typos in the database
+    if 'E-11 0' in x:
+        x = x.replace('E-11 0', 'E-11')
+    if 'E-12 0' in x:
+        x = x.replace('E-12 0', 'E-12')
+    if '0.0000 1' in x:
+        x = x.replace('0.0000 1', '0.0000')
+    if '2 .8E-7' in x:
+        x = x.replace('2 .8E-7', '2.8E-7')
+    if '8 .0E-E5' in x:
+        x = x.replace('8 .0E-E5', '8.0E-5')
+    # handle blank or missing data
+    if x == '' or x == ' ':
         return None
     if '****' in dx:
         dx = ''
@@ -393,10 +405,13 @@ class _NNDCQuery(object):
             raise NNDCRequestError('Request failed: ' + req.reason)
         for msg in [
                 'Your search was unsuccessful',
-                'No datasets were found within the specified search',
+                'There are too many results for your search',
         ]:
             if msg in req.text:
-                raise NoDataFound(msg)
+                raise NNDCRequestError('Request failed: ' + msg)
+        msg = 'No datasets were found within the specified search'
+        if msg in req.text:
+            raise NoDataFound(msg)
         return req.text
 
     def update(self, **kwargs):
@@ -493,16 +508,18 @@ class _NNDCQuery(object):
     def _add_units_uncertainties(self):
         """Add units and uncertainties with some columns as applicable."""
         if 'Energy Level' in self.keys():
-            self._convert_column('Energy Level', float)
+            self._convert_column(
+                'Energy Level',
+                lambda x: _parse_float_uncertainty(x, ''))
             self.df.rename(
                 columns={'Energy Level': 'Energy Level (MeV)'}, inplace=True)
-            self.df['Energy Level (MeV)'] *= 1000.
 
         if 'Parent Energy Level' in self.keys():
             self._convert_column_uncertainty('Parent Energy Level')
             self.df.rename(
                 columns={'Parent Energy Level': 'Parent Energy Level (MeV)'},
                 inplace=True)
+            self.df['Parent Energy Level (MeV)'] *= 0.001
 
         if 'Mass Excess' in self.keys():
             self._convert_column_uncertainty('Mass Excess')

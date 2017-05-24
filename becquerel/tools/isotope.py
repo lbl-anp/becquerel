@@ -4,11 +4,83 @@ from __future__ import print_function
 import datetime
 from builtins import super
 import numpy as np
+import pandas as pd
+from six import string_types
+import uncertainties
 from . import element
+from . import nndc
+from . import df_cache
 from ..core import utils
 
 UCI_TO_BQ = 3.7e4
 N_AV = 6.022141e23
+
+# pylint: disable=no-self-use
+
+
+def convert_float_ufloat(x):
+    """Convert string to a float or a ufloat, including None and NaN.
+
+    Args:
+      x: a string giving the number
+    """
+
+    if isinstance(x, string_types):
+        if '+/-' in x:
+            tokens = x.split('+/-')
+            return uncertainties.ufloat(float(tokens[0]), float(tokens[1]))
+    try:
+        return float(x)
+    except TypeError:
+        return None
+
+
+def format_ufloat(x, fmt='{:.12f}'):
+    """Convert ufloat to a string, including None and NaN.
+
+    Args:
+      x: a ufloat
+    """
+
+    if x is None:
+        return ''
+    try:
+        return fmt.format(x)
+    except TypeError:
+        return str(x)
+
+
+class WalletCardCache(df_cache.DataFrameCache):
+    """A cache of all isotope wallet cards from NNDC."""
+
+    name = 'all_wallet_cards'
+
+    def write_file(self):
+        """Format ufloat columns before writing so they keep precision."""
+
+        for col in ['Abundance (%)', 'Mass Excess (MeV)']:
+            self.df[col] = self.df[col].apply(format_ufloat)
+        super().write_file()
+
+    def read_file(self):
+        """Ensure some columns are properly converted to float/ufloat."""
+
+        super().read_file()
+        for col in ['Abundance (%)', 'Mass Excess (MeV)']:
+            self.df[col] = self.df[col].apply(convert_float_ufloat)
+
+    def fetch(self):
+        """Fetch wallet card data from NNDC for all isotopes."""
+
+        self.df = pd.DataFrame()
+        z_edges = (0, 40, 80, 120)
+        for z0, z1 in zip(z_edges[:-1], z_edges[1:]):
+            df_chunk = nndc.fetch_wallet_card(z_range=(z0, z1 - 1))
+            self.df = self.df.append(df_chunk)
+        self.loaded = True
+
+
+wallet_cache = WalletCardCache()
 
 
 class IsotopeError(element.ElementError):
@@ -72,10 +144,10 @@ def _split_element_mass(arg):
             else:
                 continue
             try:
-                elem = element.Element(p_element)
+                element.Element(p_element)
             except element.ElementError:
                 continue
-            element_ids.append(elem.symbol)
+            element_ids.append(p_element)
             mass_isomers.append(p_mass)
         if len(element_ids) == 0:
             raise IsotopeError(
@@ -89,7 +161,7 @@ def _split_element_mass(arg):
                 mass_isomer = mass
     # ensure element name or symbol is valid
     try:
-        elem = element.Element(element_id)
+        element.Element(element_id)
     except element.ElementError:
         raise IsotopeError(
             'Element name or symbol is invalid: {}'.format(element_id))
@@ -157,9 +229,7 @@ def parse_isotope(arg):
       IsotopeError: if there was a problem parsing the string.
     """
 
-    # split string into element and mass
     element_id, mass_isomer = _split_element_mass(arg)
-    # determine mass number A and isomer level m
     mass_number, isomer_level = _split_mass_isomer(mass_isomer)
     return (element_id, mass_number, isomer_level)
 
@@ -172,19 +242,22 @@ class Isotope(element.Element):
     >>> '{:%n(%s)-%a%m Z=%z A=%a}'.format(iso)
     'Hafnium(Hf)-178m2 Z=72 A=178'
 
-    Properties:
-      symbol (read-only): the mixed-case element symbol (e.g., "Ge")
-      name (read-only): the mixed-case element name (e.g., "Germanium")
-      Z (read-only): an integer giving the atomic number (e.g., 32)
-      atomic_mass (read-only): a float giving the atomic mass in amu
-      A (read-only): an integer giving the mass number (e.g., 68)
-      N (read-only): an integer giving the neutron number (e.g., 36)
-      M (read-only): an integer giving the isomer level (e.g., 0)
-      m (read-only): string version of M, e.g., '', 'm', or 'm2'
-
-      halflife [s]
-      ng_cs [barns]
-      decay_const [1/s]
+    Properties (read-only):
+      symbol: the mixed-case element symbol (e.g., "Ge")
+      name: the mixed-case element name (e.g., "Germanium")
+      Z: an integer giving the atomic number (e.g., 32)
+      atomic_mass: a float giving the atomic mass in amu
+      A: an integer giving the mass number (e.g., 68)
+      N: an integer giving the neutron number (e.g., 36)
+      M: an integer giving the isomer level (e.g., 0)
+      m: string version of M, e.g., '', 'm', or 'm2'
+      half_life: half-life of the isotope in seconds
+      is_stable: a boolean of whether the isotope is stable
+      abundance: the natural abundance percent
+      j_pi: a string describing the spin and parity
+      energy_level: the nuclear energy level in MeV
+      mass_excess: the mass excess in MeV
+      decay_modes: the isotope's decay modes and their branching ratios
     """
 
     # pylint: disable=too-few-public-methods
@@ -308,6 +381,136 @@ class Isotope(element.Element):
         else:
             raise TypeError('Cannot compare to non-isotope')
 
+    def _wallet_card(self):
+        """Retrieve the wallet card data for this isotope.
+
+        Returns:
+          a DataFrame containing the wallet card data.
+
+        Raises:
+          IsotopeError: if no isotope data can be found.
+        """
+
+        global wallet_cache
+        if not wallet_cache.loaded:
+            wallet_cache.load()
+        this_isotope = \
+            (wallet_cache.df['Z'] == self.Z) & \
+            (wallet_cache.df['A'] == self.A) & \
+            (wallet_cache.df['M'] == self.M)
+        df = wallet_cache.df[this_isotope]
+        if len(df) == 0:
+            raise IsotopeError(
+                'No wallet card data found for isotope {}'.format(self))
+        return df
+
+    @property
+    def half_life(self):
+        """The isotope's half-life in seconds.
+
+        Returns:
+          the half-life in seconds, or np.inf if stable.
+        """
+
+        df = self._wallet_card()
+        data = df['T1/2 (s)'].tolist()
+        assert len(np.unique(data)) == 1
+        return data[0]
+
+    @property
+    def decay_const(self):
+        """The decay constant (lambda), in 1/seconds.
+
+        Returns:
+          the decay constant in 1/seconds, or 0 if stable.
+        """
+
+        return np.log(2) / self.half_life
+
+    @property
+    def is_stable(self):
+        """Return a boolean of whether the isotope is stable.
+
+        Returns:
+          a boolean.
+        """
+
+        df = self._wallet_card()
+        data = df['T1/2 (txt)'].tolist()
+        assert len(np.unique(data)) == 1
+        return 'STABLE' in data
+
+    @property
+    def abundance(self):
+        """Return the natural abundance percent.
+
+        Returns:
+          the natural abundance (float or ufloat), or None if not stable.
+        """
+
+        df = self._wallet_card()
+        data = df['Abundance (%)'].tolist()
+        if not isinstance(data[0], uncertainties.core.Variable):
+            if np.isnan(data[0]):
+                return None
+        return data[0]
+
+    @property
+    def j_pi(self):
+        """Return the spin and parity of the isotope.
+
+        Returns:
+          a string giving the J and Pi, e.g., '7/2+'.
+        """
+
+        df = self._wallet_card()
+        data = df['JPi'].tolist()
+        assert len(np.unique(data)) == 1
+        return data[0]
+
+    @property
+    def energy_level(self):
+        """Return the nuclear energy level in MeV.
+
+        Returns:
+          the energy level in MeV.
+        """
+
+        df = self._wallet_card()
+        data = df['Energy Level (MeV)'].tolist()
+        assert len(np.unique(data)) == 1
+        return data[0]
+
+    @property
+    def mass_excess(self):
+        """Return the mass excess in MeV.
+
+        Returns:
+          the mass excess in MeV.
+        """
+
+        df = self._wallet_card()
+        data = df['Mass Excess (MeV)'].tolist()
+        if not isinstance(data[0], uncertainties.core.Variable):
+            if np.isnan(data[0]):
+                return None
+        return data[0]
+
+    @property
+    def decay_modes(self):
+        """Return the decay modes and their branching ratios.
+
+        Returns:
+          a list of the decay modes, and a list of the branching percents.
+        """
+
+        df = self._wallet_card()
+        data1 = df['Decay Mode'].tolist()
+        data2 = df['Branching (%)'].tolist()
+        if len(data1) == 1 and np.isnan(data2[0]):
+            return [], []
+        return data1, data2
+
 
 class IsotopeQuantity(object):
     """An amount of an isotope."""
@@ -335,6 +538,41 @@ class IsotopeQuantity(object):
         self._init_date(date)
         self.creation_date = creation_date
         self.ref_atoms = self._atoms_from_kwargs(**kwargs)
+
+    def _init_isotope(self, isotope):
+        """Initialize the isotope.
+
+        Right now this just does one error check, but in the future maybe
+        isotope could be a string and it generates the Isotope instance from
+        cached data?
+
+        Args:
+          isotope: an Isotope object
+
+        Raises:
+          TypeError: if isotope is not an Isotope object
+          AttributeError: if isotope is missing half_life or decay_const
+        """
+
+        if not isinstance(isotope, Isotope):
+            raise TypeError(
+                'Initialize IsotopeQuantity with an Isotope instance')
+        self.isotope = isotope
+        self.half_life = isotope.half_life
+        self.decay_const = isotope.decay_const
+
+    def _init_date(self, date):
+        """Initialize the reference date/time.
+
+        Args:
+          date: a date string or datetime.datetime object
+        """
+
+        self.ref_date = utils.handle_datetime(
+            date, error_name='IsotopeQuantity date', allow_none=True)
+        if self.ref_date is None:
+            # assume a long-lived source in the current epoch
+            self.ref_date = datetime.datetime.now()
 
     def _atoms_from_kwargs(self, **kwargs):
         """Parse kwargs and return a quantity in atoms.
@@ -381,41 +619,6 @@ class IsotopeQuantity(object):
                 'Mass or activity must be a positive quantity: {}'.format(val))
         return val
 
-    def _init_isotope(self, isotope):
-        """Initialize the isotope.
-
-        Right now this just does one error check, but in the future maybe
-        isotope could be a string and it generates the Isotope instance from
-        cached data?
-
-        Args:
-          isotope: an Isotope object
-
-        Raises:
-          TypeError: if isotope is not an Isotope object
-          AttributeError: if isotope is missing halflife or decay_const
-        """
-
-        if not isinstance(isotope, Isotope):
-            raise TypeError(
-                'Initialize IsotopeQuantity with an Isotope instance')
-        self.isotope = isotope
-        self.halflife = isotope.halflife
-        self.decay_const = isotope.decay_const
-
-    def _init_date(self, date):
-        """Initialize the reference date/time.
-
-        Args:
-          date: a date string or datetime.datetime object
-        """
-
-        self.ref_date = utils.handle_datetime(
-            date, error_name='IsotopeQuantity date', allow_none=True)
-        if self.ref_date is None:
-            # assume a long-lived source in the current epoch
-            self.ref_date = datetime.datetime.now()
-
     # ----------------------------
     #   *_at()
     # ----------------------------
@@ -441,7 +644,7 @@ class IsotopeQuantity(object):
                 'The source represented by this IsotopeQuantity was created at'
                 + ' {} and thus did not exist at {}'.format(
                     self.ref_date, date))
-        return self.ref_atoms * 2**(-dt / self.halflife)
+        return self.ref_atoms * 2**(-dt / self.half_life)
 
     def bq_at(self, date):
         """Calculate the activity [Bq] at a given time.
@@ -602,11 +805,11 @@ class IsotopeQuantity(object):
           IsotopeError: if isotope is stable
         """
 
-        if not np.isfinite(self.halflife):
+        if not np.isfinite(self.half_life):
             raise IsotopeError('Cannot calculate time_when for stable isotope')
 
         target = self._atoms_from_kwargs(**kwargs)
-        dt = -self.halflife * np.log2(target / self.ref_atoms)
+        dt = -self.half_life * np.log2(target / self.ref_atoms)
         if dt < 0 and self.creation_date:
             return None
         return self.ref_date + datetime.timedelta(seconds=dt)
@@ -684,7 +887,7 @@ class NeutronIrradiation(object):
         elif activated_iso is None:
             activated_iso = activated_iso_q.isotope
 
-        if np.isfinite(initial_iso.halflife):
+        if np.isfinite(initial_iso.half_life):
             raise NotImplementedError(
                 'Activation not implemented for a radioactive initial isotope')
 

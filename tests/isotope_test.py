@@ -10,7 +10,6 @@ from becquerel.tools import isotope
 from becquerel import Spectrum
 import pytest
 
-
 TEST_ISOTOPES = [
     ('H-3', 'H', 3, ''),
     ('He-4', 'He', 4, ''),
@@ -205,24 +204,75 @@ def test_isotope_str(iso_str, sym, A, m):
     assert str(i) == iso_str
 
 
+ISOTOPE_PROPERTIES = [
+    ('H-3', (3.888E8, False, None, '1/2+', 0., None, [['B-'], [100.]],)),
+    ('He-4', (np.inf, True, 99.999866, '0+', 0., 2.4249, [[], []])),
+    ('K-40', (3.938E16, False, 0.0117, '4-', 0., -33.53540, [['B-', 'EC'], [89.28, 10.72]])),
+    ('Co-60', (1.663E8, False, None, '5+', 0., -61.6503, [['B-'], [100.]])),
+    ('U-238', (1.41E17, False, 99.2742, '0+', 0., 47.3077, [['A', 'SF'], [100.00, 5.4E-5]])),
+    ('Pu-244', (2.525E15, False, None, '0+', 0., 59.8060, [['A', 'SF'], [99.88, 0.12]])),
+    ('Tc-99m', (21624.12, False, None, '1/2-', 0.1427, -87.1851, [['IT', 'B-'], [100., 3.7E-3]])),
+    ('Pa-234m', (69.54, False, None, '(0-)', 0.0739, 40.413, [['IT', 'B-'], [0.16, 99.84]])),
+    ('Hf-178', (np.inf, True, 27.28, '0+', 0., -52.4352, [[], []])),
+    ('Hf-178m1', (4., False, None, '8-', 1.1474, -51.2878, [['IT'], [100.]])),
+    ('Hf-178m2', (9.783E8, False, None, '16+', 2.4461, -49.9891, [['IT'], [100.]])),
+]
+
+
+@pytest.mark.webtest
+@pytest.mark.parametrize('iso_str, props', ISOTOPE_PROPERTIES)
+def test_isotope_properties(iso_str, props):
+    """Test that isotope properties are correct."""
+    i = isotope.Isotope(iso_str)
+    half_life, is_stable, abundance, j_pi, energy_level, mass_excess, modes = \
+        props
+    if not np.isinf(half_life):
+        assert np.isclose(i.half_life, half_life)
+    else:
+        assert np.isinf(i.half_life)
+    assert i.is_stable == is_stable
+    if abundance is None:
+        assert i.abundance is None
+    else:
+        assert np.isclose(i.abundance.nominal_value, abundance)
+    assert i.j_pi == j_pi
+    assert np.isclose(i.energy_level, energy_level)
+    print('mass excess:', i.mass_excess, type(i.mass_excess))
+    if mass_excess is None:
+        assert i.mass_excess is None
+    else:
+        print('mass excess:', i.mass_excess.nominal_value)
+        print('mass excess:', mass_excess)
+        print(np.isclose(mass_excess, mass_excess))
+        print(np.isclose(mass_excess, i.mass_excess.nominal_value))
+        print(np.isclose(mass_excess, (i.mass_excess).nominal_value))
+        assert np.isclose(i.mass_excess.nominal_value, mass_excess)
+    assert i.decay_modes[0] == modes[0]
+    assert i.decay_modes[1] == modes[1]
+
+
 # ----------------------------------------------------
 #               IsotopeQuantity class
 # ----------------------------------------------------
 
-@pytest.fixture
-def radioisotope():
-    iso = isotope.Isotope('Cs-137')
-    iso.halflife = 30.07 * 3.156e7
-    iso.decay_const = np.log(2) / iso.halflife
-    return iso
+@pytest.fixture(params=(
+    'Cs-137',
+    'K-40',
+    'Cs-134',
+    'Tc-99m',
+    'Tl-208'
+))
+def radioisotope(request):
+    return isotope.Isotope(request.param)
 
 
-@pytest.fixture
-def stable_isotope():
-    iso = isotope.Isotope('Ca-40')
-    iso.halflife = np.inf
-    iso.decay_const = 0
-    return iso
+@pytest.fixture(params=(
+    'H-2',
+    'Cs-133',
+    'Pb-208'
+))
+def stable_isotope(request):
+    return isotope.Isotope(request.param)
 
 
 @pytest.fixture(params=[
@@ -244,21 +294,27 @@ def iq_date(request):
     return request.param
 
 
-@pytest.mark.parametrize('iso', [
-    radioisotope(),
-    stable_isotope()
-])
-def test_isotopequantity_init(iso, iq_date, iq_kwargs):
-    """Test IsotopeQuantity.__init__()"""
+def test_isotopequantity_init_rad(radioisotope, iq_date, iq_kwargs):
+    """Test IsotopeQuantity.__init__() for radioactive isotopes"""
 
-    if iso.decay_const == 0 and ('bq' in iq_kwargs or 'uci' in iq_kwargs):
+    iq = isotope.IsotopeQuantity(radioisotope, date=iq_date, **iq_kwargs)
+    assert iq.isotope is radioisotope
+    assert iq.half_life == radioisotope.half_life
+    assert iq.decay_const == radioisotope.decay_const
+
+
+def test_isotopequantity_init_stable(stable_isotope, iq_date, iq_kwargs):
+    """Test IsotopeQuantity.__init__() for radioactive isotopes"""
+
+    if 'bq' in iq_kwargs or 'uci' in iq_kwargs:
         with pytest.raises(isotope.IsotopeError):
-            iq = isotope.IsotopeQuantity(iso, date=iq_date, **iq_kwargs)
+            iq = isotope.IsotopeQuantity(
+                stable_isotope, date=iq_date, **iq_kwargs)
         return None
-    iq = isotope.IsotopeQuantity(iso, date=iq_date, **iq_kwargs)
-    assert iq.isotope is iso
-    assert iq.halflife == iso.halflife
-    assert iq.decay_const == iso.decay_const
+    iq = isotope.IsotopeQuantity(stable_isotope, date=iq_date, **iq_kwargs)
+    assert iq.isotope is stable_isotope
+    assert iq.half_life == stable_isotope.half_life
+    assert iq.decay_const == stable_isotope.decay_const
 
 
 def test_isotopequantity_ref_atoms_rad(radioisotope, iq_kwargs):
@@ -289,14 +345,22 @@ def test_isotopequantity_ref_atoms_stable(stable_isotope):
     assert iq.ref_atoms == g / stable_isotope.A * isotope.N_AV
 
 
-@pytest.mark.parametrize('iso', [
-    radioisotope(),
-    stable_isotope()
-])
-def test_isotopequantity_ref_date(iso, iq_date):
-    """Test IsotopeQuantity.ref_date"""
+def test_isotopequantity_ref_date_rad(radioisotope, iq_date):
+    """Test IsotopeQuantity.ref_date for a radioisotope"""
 
-    iq = isotope.IsotopeQuantity(iso, date=iq_date, atoms=1e24)
+    iq = isotope.IsotopeQuantity(radioisotope, date=iq_date, atoms=1e24)
+    if isinstance(iq_date, datetime.datetime):
+        assert iq.ref_date == iq_date
+    elif isinstance(iq_date, string_types):
+        assert iq.ref_date == dateutil_parse(iq_date)
+    else:
+        assert (datetime.datetime.now() - iq.ref_date).total_seconds() < 5
+
+
+def test_isotopequantity_ref_date_stable(stable_isotope, iq_date):
+    """Test IsotopeQuantity.ref_date for a stable isotope"""
+
+    iq = isotope.IsotopeQuantity(stable_isotope, date=iq_date, atoms=1e24)
     if isinstance(iq_date, datetime.datetime):
         assert iq.ref_date == iq_date
     elif isinstance(iq_date, string_types):
@@ -315,59 +379,50 @@ def test_isotopequantity_ref_date(iso, iq_date):
 def test_isotopequantity_bad_init(iso, date, kwargs, error):
     """Test errors from Isotope.__init__()"""
 
-    if isinstance(iso, isotope.Isotope):
-        iso.halflife = 3600
-        iso.decay_const = np.log(2) / iso.halflife
-
     with pytest.raises(error):
         isotope.IsotopeQuantity(iso, date=date, **kwargs)
 
 
 @pytest.fixture
-def iq():
+def iq(radioisotope):
     """An IsotopeQuantity object"""
 
-    iso = isotope.Isotope('Cs-137')
-    iso.halflife = 30.07 * 3.156e7
-    iso.decay_const = np.log(2) / iso.halflife
     date = datetime.datetime.now()
     kwargs = {'uci': 10.047}
-    return isotope.IsotopeQuantity(iso, date=date, **kwargs)
+    return isotope.IsotopeQuantity(radioisotope, date=date, **kwargs)
 
 
-@pytest.mark.parametrize('halflife', (3.156e7, 3600, 0.11))
-def test_isotopequantity_at_methods(iq, halflife):
+def test_isotopequantity_at_methods(iq):
     """Test IsotopeQuantity.*_at()"""
 
-    # since halflife is not built in to Isotope yet...
-    iq.halflife = halflife
-    iq.decay_const = np.log(2) / halflife
+    half_life = iq.half_life
     iq.creation_date = False    # allow pre-refdate queries
 
     assert iq.atoms_at(iq.ref_date) == iq.ref_atoms
-    assert iq.g_at(iq.ref_date) == iq.ref_atoms * iq.isotope.A / isotope.N_AV
-    assert iq.bq_at(iq.ref_date) == iq.ref_atoms * iq.decay_const
-    assert iq.uci_at(iq.ref_date) == (
+    assert np.isclose(
+        iq.g_at(iq.ref_date), iq.ref_atoms * iq.isotope.A / isotope.N_AV)
+    assert np.isclose(
+        iq.bq_at(iq.ref_date), iq.ref_atoms * iq.decay_const)
+    assert np.isclose(
+        iq.uci_at(iq.ref_date),
         iq.ref_atoms * iq.decay_const / isotope.UCI_TO_BQ)
 
-    dt = datetime.timedelta(seconds=halflife)
-    assert iq.atoms_at(iq.ref_date + dt) == iq.ref_atoms / 2
-    assert iq.atoms_at(iq.ref_date - dt) == iq.ref_atoms * 2
+    if iq.half_life < 3.156e7 * 1000:   # OverflowError or year out of range
+        dt1 = iq.ref_date + datetime.timedelta(seconds=half_life)
+        dt2 = iq.ref_date - datetime.timedelta(seconds=half_life)
+        dt3 = iq.ref_date + datetime.timedelta(seconds=half_life * 50)
+        dt4 = iq.ref_date + datetime.timedelta(seconds=half_life / 100)
 
-    dt = datetime.timedelta(seconds=halflife * 50)
-    assert iq.bq_at(iq.ref_date + dt) / iq.bq_at(iq.ref_date) < 1e-12
-
-    dt = datetime.timedelta(seconds=halflife / 100)
-    assert np.isclose(
-        iq.bq_at(iq.ref_date + dt), iq.bq_at(iq.ref_date), rtol=1e-2)
+        assert np.isclose(iq.atoms_at(dt1), iq.ref_atoms / 2)
+        assert np.isclose(iq.atoms_at(dt2), iq.ref_atoms * 2)
+        assert np.isclose(iq.bq_at(dt3) / iq.bq_at(iq.ref_date), 0, atol=1e-12)
+        assert np.isclose(iq.bq_at(dt4), iq.bq_at(iq.ref_date), rtol=1e-2)
 
 
 @pytest.mark.parametrize('kw', ('atoms', 'g', 'bq', 'uci'))
-@pytest.mark.parametrize('halflife', (3.156e7, 3600, 0.11))
-def test_isotopequantity_time_when(iq, kw, halflife):
+def test_isotopequantity_time_when(iq, kw):
     """Test IsotopeQuantity.time_when()"""
 
-    iq.halflife = halflife
     iq.creation_date = False
 
     ref_qty = getattr(iq, kw + '_at')(iq.ref_date)
@@ -375,13 +430,22 @@ def test_isotopequantity_time_when(iq, kw, halflife):
     kwarg = {kw: ref_qty}
     assert iq.time_when(**kwarg) == iq.ref_date
 
-    d = iq.ref_date - datetime.timedelta(seconds=halflife)
-    kwarg = {kw: ref_qty * 2}
-    assert iq.time_when(**kwarg) == d
+    if iq.half_life > 1000 * 3.156e7:
+        # avoid overflow errors in test calculations
+        # just make sure the method doesn't error
+        kwarg = {kw: ref_qty * 0.999999}
+        iq.time_when(**kwarg)
 
-    d = iq.ref_date + datetime.timedelta(seconds=halflife)
-    kwarg = {kw: ref_qty / 2}
-    assert iq.time_when(**kwarg) == d
+        kwarg = {kw: ref_qty * 1.0000001}
+        iq.time_when(**kwarg)
+    else:
+        d = iq.ref_date - datetime.timedelta(seconds=iq.half_life)
+        kwarg = {kw: ref_qty * 2}
+        assert iq.time_when(**kwarg) == d
+
+        d = iq.ref_date + datetime.timedelta(seconds=iq.half_life)
+        kwarg = {kw: ref_qty / 2}
+        assert iq.time_when(**kwarg) == d
 
 
 def test_isotopequantity_time_when_error(stable_isotope):
@@ -399,32 +463,32 @@ def test_isotopequantity_creation_date(radioisotope):
         radioisotope, date='2017-01-01 00:00:00', bq=1, creation_date=True)
     with pytest.raises(isotope.IsotopeError):
         iq.atoms_at('2016-01-01 00:00:00')
-    assert iq.time_when(atoms=iq.ref_atoms + 10) is None
+    assert iq.time_when(atoms=iq.ref_atoms * 1.0001) is None
     iq.atoms_at('2017-01-02 00:00:00')
-    iq.time_when(atoms=iq.ref_atoms - 10)
+    if iq.half_life < 1000 * 3.156e7:
+        iq.time_when(atoms=iq.ref_atoms * 0.9999)
 
     iq = isotope.IsotopeQuantity(
         radioisotope, date='2017-01-01 00:00:00', bq=1, creation_date=False)
     iq.atoms_at('2016-01-01 00:00:00')
-    assert iq.time_when(atoms=iq.ref_atoms + 10) is not None
     iq.atoms_at('2017-01-02 00:00:00')
-    iq.time_when(atoms=iq.ref_atoms - 10)
+    if iq.half_life < 1000 * 3.156e7:
+        assert iq.time_when(atoms=iq.ref_atoms * 1.0001) is not None
+        iq.time_when(atoms=iq.ref_atoms * 0.9999)
 
     # default True
     iq = isotope.IsotopeQuantity(
         radioisotope, date='2017-01-01 00:00:00', bq=1)
     with pytest.raises(isotope.IsotopeError):
         iq.atoms_at('2016-01-01 00:00:00')
-    assert iq.time_when(atoms=iq.ref_atoms + 10) is None
+    assert iq.time_when(atoms=iq.ref_atoms * 1.0001) is None
     iq.atoms_at('2017-01-02 00:00:00')
-    iq.time_when(atoms=iq.ref_atoms - 10)
+    if iq.half_life < 1000 * 3.156e7:
+        iq.time_when(atoms=iq.ref_atoms * 0.9999)
 
 
 def test_isotopequantity_activity_now(iq):
     """Test IsotopeQuantity.*_now()"""
-
-    # since halflife is not built in to Isotope yet...
-    iq.halflife = 3600
 
     assert np.isclose(iq.bq_now(), iq.bq_at(datetime.datetime.now()))
     assert np.isclose(iq.uci_now(), iq.uci_at(datetime.datetime.now()))
@@ -435,37 +499,44 @@ def test_isotopequantity_activity_now(iq):
 def test_isotopequantity_decays_from(iq):
     """Test IsotopeQuantity.*_from()"""
 
-    t0 = datetime.datetime.now()
-    # since halflife is not built in to Isotope yet...
-    th = 3600
-    iq.halflife = th
-    dt = datetime.timedelta(seconds=th)
+    if iq.half_life > 1000 * 3.156e7:
+        # avoid overflow errors in test calculations
+        # just make sure the method doesn't error
+        now = datetime.datetime.now()
+        iq.decays_from(now, now + datetime.timedelta(seconds=3600))
+    else:
+        t0 = datetime.datetime.now()
+        dt = datetime.timedelta(seconds=iq.half_life)
+        t1 = t0 + dt
+        t2 = t1 + dt
 
-    t1 = t0 + dt
-    t2 = t1 + dt
+        assert np.isclose(iq.decays_from(t0, t1), iq.atoms_at(t1))
+        assert np.isclose(iq.decays_from(t1, t2), iq.atoms_at(t2))
+        assert np.isclose(iq.decays_from(t0, t2), 3 * iq.atoms_at(t2))
 
-    assert np.isclose(iq.decays_from(t0, t1), iq.atoms_at(t1))
-    assert np.isclose(iq.decays_from(t1, t2), iq.atoms_at(t2))
-    assert np.isclose(iq.decays_from(t0, t2), 3 * iq.atoms_at(t2))
+        assert np.isclose(iq.bq_from(t0, t1), iq.atoms_at(t1) / iq.half_life)
 
-    assert np.isclose(iq.bq_from(t0, t1), iq.atoms_at(t1) / th)
-
-    assert np.isclose(
-        iq.uci_from(t0, t1), iq.atoms_at(t1) / th / isotope.UCI_TO_BQ)
+        assert np.isclose(
+            iq.uci_from(t0, t1),
+            iq.atoms_at(t1) / iq.half_life / isotope.UCI_TO_BQ)
 
 
 def test_isotopequantity_decays_during(iq):
     """Test IsotopeQuantity.*_during()"""
 
-    dt_s = iq.halflife
-    t0 = datetime.datetime.now()
-    t1 = t0 + datetime.timedelta(seconds=dt_s)
-    spec = Spectrum(np.zeros(256), start_time=t0, stop_time=t1)
+    if iq.half_life > 1000 * 3.156e7:
+        # avoid overflow errors in test calculations
+        pass
+    else:
+        dt_s = iq.half_life
+        t0 = datetime.datetime.now()
+        t1 = t0 + datetime.timedelta(seconds=dt_s)
+        spec = Spectrum(np.zeros(256), start_time=t0, stop_time=t1)
 
-    assert np.isclose(iq.decays_during(spec), iq.atoms_now() / 2)
-    assert np.isclose(iq.bq_during(spec), iq.decays_during(spec) / dt_s)
-    assert np.isclose(iq.uci_during(spec),
-                      iq.bq_during(spec) / isotope.UCI_TO_BQ)
+        assert np.isclose(iq.decays_during(spec), iq.atoms_now() / 2)
+        assert np.isclose(iq.bq_during(spec), iq.decays_during(spec) / dt_s)
+        assert np.isclose(iq.uci_during(spec),
+                          iq.bq_during(spec) / isotope.UCI_TO_BQ)
 
 
 # ----------------------------------------------------
@@ -503,13 +574,9 @@ def test_irradiation_activate_forward_pulse():
     n_cm2 = 1e15
 
     iso0 = isotope.Isotope('Cs-133')
-    iso0.halflife = np.inf
-    iso0.decay_const = 0
     barns = 1
 
     iso1 = isotope.Isotope('Cs-134')
-    iso1.halflife = 2 * 3.156e7
-    iso1.decay_const = np.log(2) / iso1.halflife
 
     iq0 = isotope.IsotopeQuantity(iso0, date=start, atoms=1e24)
 
