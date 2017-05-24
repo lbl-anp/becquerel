@@ -7,6 +7,7 @@ import numpy as np
 from becquerel.tools.isotope import Isotope
 from becquerel.tools.isotope_qty import IsotopeQuantity, NeutronIrradiation
 from becquerel.tools.isotope_qty import IsotopeQuantityError, UCI_TO_BQ, N_AV
+from becquerel.tools.isotope_qty import NeutronIrradiationError
 from becquerel import Spectrum
 import pytest
 
@@ -315,12 +316,12 @@ def test_irradiation_activate_pulse(activation_pair):
     ni = NeutronIrradiation(start, stop, n_cm2=n_cm2)
 
     # forward calculation
-    iq1 = ni.activate(barns, initial_iso_q=iq0, activated_iso=iso1)
+    iq1 = ni.activate(barns, initial=iq0, activated=iso1)
     assert iq1.ref_date == stop
     assert np.isclose(iq1.ref_atoms, expected_atoms)
 
     # backward calculation
-    iq0a = ni.activate(barns, activated_iso_q=iq1, initial_iso=iso0)
+    iq0a = ni.activate(barns, activated=iq1, initial=iso0)
     assert iq0a.ref_date == start
     assert np.isclose(iq0a.ref_atoms, iq0.ref_atoms)
 
@@ -343,12 +344,12 @@ def test_irradiation_activate_extended(activation_pair):
     ni = NeutronIrradiation(start, stop, n_cm2_s=n_cm2_s)
 
     # forward calculation
-    iq1 = ni.activate(barns, initial_iso_q=iq0, activated_iso=iso1)
+    iq1 = ni.activate(barns, initial=iq0, activated=iso1)
     assert iq1.ref_date == stop
     assert np.isclose(iq1.bq_at(iq1.ref_date), expected_atoms)
 
     # backward calculation
-    iq0a = ni.activate(barns, initial_iso=iso0, activated_iso_q=iq1)
+    iq0a = ni.activate(barns, initial=iso0, activated=iq1)
     assert iq0a.ref_date == start
     assert np.isclose(iq0a.ref_atoms, iq0.ref_atoms)
 
@@ -368,14 +369,13 @@ def test_irradiation_activate_errors():
 
     barns = 10
 
-    with pytest.raises(IsotopeQuantityError):
-        ni.activate(
-            barns, initial_iso_q=iq0, activated_iso_q=iq1, initial_iso=iso0)
-    with pytest.raises(IsotopeQuantityError):
-        ni.activate(barns, initial_iso_q=iq0)
-    with pytest.raises(IsotopeQuantityError):
-        ni.activate(barns, activated_iso_q=iq0)
+    with pytest.raises(NeutronIrradiationError):
+        ni.activate(barns, initial=iq0, activated=iq1)
+    with pytest.raises(NeutronIrradiationError):
+        ni.activate(barns, initial=iso0, activated=iso1)
+    with pytest.raises(NeutronIrradiationError):
+        ni.activate(barns, initial=iq0, activated='asdf')
 
     iso2 = Isotope('Na-25')
     with pytest.raises(NotImplementedError):
-        ni.activate(barns, initial_iso_q=iq1, activated_iso=iso2)
+        ni.activate(barns, initial=iq1, activated=iso2)

@@ -317,6 +317,12 @@ class IsotopeQuantity(object):
         return s
 
 
+class NeutronIrradiationError(Exception):
+    """Exception from NeutronIrradiation class."""
+
+    pass
+
+
 class NeutronIrradiation(object):
     """Represents an irradiation period with thermal neutrons."""
 
@@ -359,18 +365,30 @@ class NeutronIrradiation(object):
             return '{} n/cm2/s from {} to {}'.format(
                 self.n_cm2_s, self.start_time, self.stop_time)
 
-    def activate(self, barns,
-                 initial_iso_q=None, initial_iso=None,
-                 activated_iso_q=None, activated_iso=None):
+    def activate(self, barns, initial, activated):
         """
         Calculate an IsotopeQuantity from before or after a neutron activation.
 
-        Specify an IsotopeQuantity from before/after the irradiation,
-        as well as an Isotope from after/before the irradiation to calculate
-        a quantity for.
+        For a forward calculation (known initial quantity, to calculate the
+        activated result), specify an initial IsotopeQuantity and an
+        activated Isotope.
+
+        For a backward calculation (known activation product, to calculate the
+        initial quantity), specify an initial Isotope and an activated
+        IsotopeQuantity.
 
         Args:
           barns: cross section for activation [barns = 1e-24 cm^2]
+          initial: the isotope being activated, an IsotopeQuantity or Isotope.
+            Specify an IsotopeQuantity if the initial quantity is known.
+            Specify an Isotope if the initial quantity is unknown
+          activated: the activated isotope, an IsotopeQuantity or Isotope.
+            Specify an IsotopeQuantity if the activated quantity is known.
+            Specify an Isotope if the activated quantity is unknown
+
+        Returns:
+          an IsotopeQuantity, corresponding to either the initial isotope or
+            the activated isotope, depending on which quantity was input
 
         Forward equations:
           A1 = phi * sigma * N0 * (1 - exp(-lambda * t_irr))
@@ -389,49 +407,55 @@ class NeutronIrradiation(object):
           n = fluence of zero-duration irradiation [neutrons/cm2],
         """
 
-        if not ((initial_iso_q is None) ^ (activated_iso_q is None)):
-            raise IsotopeQuantityError('Only one IsotopeQuantity should be given')
-        if initial_iso_q is not None and activated_iso is None:
-            raise IsotopeQuantityError('Activated isotope must be specified')
-        elif activated_iso_q is not None and initial_iso is None:
-            raise IsotopeQuantityError('Initial isotope must be specified')
+        if (isinstance(initial, IsotopeQuantity) and
+                isinstance(activated, IsotopeQuantity)):
+            raise NeutronIrradiationError(
+                "Two IsotopeQuantity's in args, nothing left to calculate!" +
+                'Args: {}, {}'.format(initial, activated))
+        elif (isinstance(initial, IsotopeQuantity) and
+              isinstance(activated, Isotope)):
+            forward = True
+        elif (isinstance(initial, Isotope) and
+              isinstance(activated, IsotopeQuantity)):
+            forward = False
+        elif isinstance(initial, Isotope) and isinstance(activated, Isotope):
+            raise NeutronIrradiationError(
+                'No IsotopeQuantity specified, not enough data. ' +
+                'Args: {}, {}'.format(initial, activated))
+        else:
+            raise NeutronIrradiationError(
+                'Input args should be Isotope or IsotopeQuantity objects: ' +
+                '{}, {}'.format(initial, activated))
 
-        if initial_iso is None:
-            initial_iso = initial_iso_q.isotope
-        elif activated_iso is None:
-            activated_iso = activated_iso_q.isotope
-
-        if np.isfinite(initial_iso.half_life):
+        if np.isfinite(initial.half_life):
             raise NotImplementedError(
                 'Activation not implemented for a radioactive initial isotope')
 
         cross_section = barns * 1.0e-24
 
-        if activated_iso_q is None:
-            # forward calculation
+        if forward:
             if self.duration == 0:
                 activated_bq = (
                     self.n_cm2 * cross_section *
-                    initial_iso_q.atoms_at(self.stop_time) *
-                    activated_iso.decay_const)
+                    initial.atoms_at(self.stop_time) *
+                    activated.decay_const)
             else:
                 activated_bq = (
                     self.n_cm2_s * cross_section *
-                    initial_iso_q.atoms_at(self.stop_time) *
-                    (1 - np.exp(-activated_iso.decay_const * self.duration))
+                    initial.atoms_at(self.stop_time) *
+                    (1 - np.exp(-activated.decay_const * self.duration))
                 )
-            return IsotopeQuantity(activated_iso,
+            return IsotopeQuantity(activated,
                                    date=self.stop_time, bq=activated_bq)
         else:
-            # backward calculation
             if self.duration == 0:
                 initial_atoms = (
-                    activated_iso_q.bq_at(self.stop_time) /
-                    (self.n_cm2 * cross_section * activated_iso.decay_const))
+                    activated.bq_at(self.stop_time) /
+                    (self.n_cm2 * cross_section * activated.decay_const))
             else:
                 initial_atoms = (
-                    activated_iso_q.bq_at(self.stop_time) /
+                    activated.bq_at(self.stop_time) /
                     (self.n_cm2_s * cross_section * (1 - np.exp(
-                        -activated_iso.decay_const * self.duration))))
-            return IsotopeQuantity(initial_iso,
+                        -activated.decay_const * self.duration))))
+            return IsotopeQuantity(initial,
                                    date=self.start_time, atoms=initial_atoms)
