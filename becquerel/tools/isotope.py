@@ -737,8 +737,10 @@ class IsotopeQuantity(object):
         As decays_from() except for return value.
         """
 
-        return (self.decays_from(start_time, stop_time) /
-                (stop_time - start_time).total_seconds())
+        t0 = utils.handle_datetime(start_time, error_name='start_time')
+        t1 = utils.handle_datetime(stop_time, error_name='stop_time')
+
+        return self.decays_from(t0, t1) / (t1 - t0).total_seconds()
 
     def uci_from(self, start_time, stop_time):
         """Average activity [uCi] from start_time to stop_time.
@@ -913,11 +915,11 @@ class NeutronIrradiation(object):
             if self.duration == 0:
                 initial_atoms = (
                     activated_iso_q.bq_at(self.stop_time) /
-                    (self.n_cm2 * cross_section * activated_iso.decay_coeff))
+                    (self.n_cm2 * cross_section * activated_iso.decay_const))
             else:
                 initial_atoms = (
                     activated_iso_q.bq_at(self.stop_time) /
                     (self.n_cm2_s * cross_section * (1 - np.exp(
                         -activated_iso.decay_const * self.duration))))
             return IsotopeQuantity(initial_iso,
-                                   date=self.stop_time, atoms=initial_atoms)
+                                   date=self.start_time, atoms=initial_atoms)

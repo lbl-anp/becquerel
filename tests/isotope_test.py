@@ -566,21 +566,92 @@ def test_irradiation_bad_init(start, stop, n_cm2, n_cm2_s, error):
         isotope.NeutronIrradiation(start, stop, n_cm2=n_cm2, n_cm2_s=n_cm2_s)
 
 
-def test_irradiation_activate_forward_pulse():
-    """Test NeutronIrradiation.activate() for forward calculation"""
+@pytest.fixture(params=[
+    ('Cs-133', 'Cs-134'),
+    ('Hg-202', 'Hg-203'),
+    ('Na-23', 'Na-24')
+])
+def activation_pair(request):
+    return isotope.Isotope(request.param[0]), isotope.Isotope(request.param[1])
+
+
+def test_irradiation_activate_pulse(activation_pair):
+    """Test NeutronIrradiation.activate() for duration = 0"""
 
     start = datetime.datetime.now()
     stop = start
     n_cm2 = 1e15
 
-    iso0 = isotope.Isotope('Cs-133')
+    iso0, iso1 = activation_pair
     barns = 1
 
-    iso1 = isotope.Isotope('Cs-134')
-
     iq0 = isotope.IsotopeQuantity(iso0, date=start, atoms=1e24)
+    expected_atoms = n_cm2 * barns * 1e-24 * iq0.ref_atoms
 
     ni = isotope.NeutronIrradiation(start, stop, n_cm2=n_cm2)
+
+    # forward calculation
     iq1 = ni.activate(barns, initial_iso_q=iq0, activated_iso=iso1)
     assert iq1.ref_date == stop
-    assert np.isclose(iq1.ref_atoms, n_cm2 * barns * 1e-24 * iq0.ref_atoms)
+    assert np.isclose(iq1.ref_atoms, expected_atoms)
+
+    # backward calculation
+    iq0a = ni.activate(barns, activated_iso_q=iq1, initial_iso=iso0)
+    assert iq0a.ref_date == start
+    assert np.isclose(iq0a.ref_atoms, iq0.ref_atoms)
+
+
+def test_irradiation_activate_extended(activation_pair):
+    """Test NeutronIrradiation.activate() with decay"""
+
+    start = datetime.datetime.now()
+    t_irr = 3600 * 12
+    stop = start + datetime.timedelta(seconds=t_irr)
+    n_cm2_s = 1e11
+
+    iso0, iso1 = activation_pair
+    barns = 1
+
+    iq0 = isotope.IsotopeQuantity(iso0, date=start, atoms=1e24)
+    expected_atoms = n_cm2_s * barns * 1e-24 * iq0.ref_atoms * (
+        1 - np.exp(-iso1.decay_const * t_irr))
+
+    ni = isotope.NeutronIrradiation(start, stop, n_cm2_s=n_cm2_s)
+
+    # forward calculation
+    iq1 = ni.activate(barns, initial_iso_q=iq0, activated_iso=iso1)
+    assert iq1.ref_date == stop
+    assert np.isclose(iq1.bq_at(iq1.ref_date), expected_atoms)
+
+    # backward calculation
+    iq0a = ni.activate(barns, initial_iso=iso0, activated_iso_q=iq1)
+    assert iq0a.ref_date == start
+    assert np.isclose(iq0a.ref_atoms, iq0.ref_atoms)
+
+
+def test_irradiation_activate_errors():
+    """Test NeutronIrradiation.activate() bad args"""
+
+    iso0 = isotope.Isotope('Na-23')
+    iso1 = isotope.Isotope('Na-24')
+    iq0 = isotope.IsotopeQuantity(iso0, atoms=1e24)
+    iq1 = isotope.IsotopeQuantity(iso1, atoms=1e24)
+
+    start = datetime.datetime.now()
+    stop = start
+    n_cm2 = 1e15
+    ni = isotope.NeutronIrradiation(start, stop, n_cm2=n_cm2)
+
+    barns = 10
+
+    with pytest.raises(isotope.IsotopeError):
+        ni.activate(
+            barns, initial_iso_q=iq0, activated_iso_q=iq1, initial_iso=iso0)
+    with pytest.raises(isotope.IsotopeError):
+        ni.activate(barns, initial_iso_q=iq0)
+    with pytest.raises(isotope.IsotopeError):
+        ni.activate(barns, activated_iso_q=iq0)
+
+    iso2 = isotope.Isotope('Na-25')
+    with pytest.raises(NotImplementedError):
+        ni.activate(barns, initial_iso_q=iq1, activated_iso=iso2)
