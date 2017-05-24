@@ -61,7 +61,7 @@ _Z_SYMBOL_NAME_MASS = (
     (52, 'Te', 'Tellurium', 127.60),
     (53, 'I', 'Iodine', 126.90),
     (54, 'Xe', 'Xenon', 131.29),
-    (55, 'Cs', 'Caesium', 132.91),
+    (55, 'Cs', 'Cesium', 132.91),
     (56, 'Ba', 'Barium', 137.33),
     (57, 'La', 'Lanthanum', 138.91),
     (58, 'Ce', 'Cerium', 140.12),
@@ -243,6 +243,9 @@ def validated_name(nm):
     # special case: Alumin[i]um
     if nm.lower() == 'aluminium':
         nm = 'Aluminum'
+    # special case: C[a]esium
+    if nm.lower() == 'caesium':
+        nm = 'Cesium'
     if nm.lower() not in NAMES_LOWER:
         raise ElementNameError('Element name "{}" not found'.format(nm))
     return _NAME_FROM_NAME_LOWER[nm.lower()]
