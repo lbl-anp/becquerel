@@ -542,24 +542,24 @@ class IsotopeQuantity(object):
     def _init_isotope(self, isotope):
         """Initialize the isotope.
 
-        Right now this just does one error check, but in the future maybe
-        isotope could be a string and it generates the Isotope instance from
-        cached data?
-
         Args:
-          isotope: an Isotope object
+          isotope: an Isotope object, or a string that defines an Isotope
 
         Raises:
           TypeError: if isotope is not an Isotope object
           AttributeError: if isotope is missing half_life or decay_const
         """
 
-        if not isinstance(isotope, Isotope):
-            raise TypeError(
-                'Initialize IsotopeQuantity with an Isotope instance')
-        self.isotope = isotope
-        self.half_life = isotope.half_life
-        self.decay_const = isotope.decay_const
+        if isinstance(isotope, Isotope):
+            self.isotope = isotope
+        elif isinstance(isotope, string_types):
+            self.isotope = Isotope(isotope)
+        else:
+            raise TypeError('IsotopeQuantity needs an Isotope instance or ' +
+                            'string, not {}'.format(isotope))
+
+        self.half_life = self.isotope.half_life
+        self.decay_const = self.isotope.decay_const
 
     def _init_date(self, date):
         """Initialize the reference date/time.

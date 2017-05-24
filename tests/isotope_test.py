@@ -302,6 +302,12 @@ def test_isotopequantity_init_rad(radioisotope, iq_date, iq_kwargs):
     assert iq.half_life == radioisotope.half_life
     assert iq.decay_const == radioisotope.decay_const
 
+    # check string input
+    iq = isotope.IsotopeQuantity(str(radioisotope), date=iq_date, **iq_kwargs)
+    assert iq.isotope == radioisotope
+    assert iq.half_life == radioisotope.half_life
+    assert iq.decay_const == radioisotope.decay_const
+
 
 def test_isotopequantity_init_stable(stable_isotope, iq_date, iq_kwargs):
     """Test IsotopeQuantity.__init__() for radioactive isotopes"""
@@ -370,11 +376,10 @@ def test_isotopequantity_ref_date_stable(stable_isotope, iq_date):
 
 
 @pytest.mark.parametrize('iso, date, kwargs, error', [
-    ('Cs-137', datetime.datetime.now(), {'uci': 10.047}, TypeError),
-    (isotope.Isotope('Cs-137'), 123, {'bq': 456}, TypeError),
-    (isotope.Isotope('Cs-137'), datetime.datetime.now(), {'asdf': 3},
-     isotope.IsotopeError),
-    (isotope.Isotope('Cs-137'), None, {'bq': -13.3}, ValueError)
+    (['Cs-137'], None, {'atoms': 1e24}, TypeError),
+    ('Cs-137', 123, {'bq': 456}, TypeError),
+    ('Cs-137', datetime.datetime.now(), {'asdf': 3}, isotope.IsotopeError),
+    ('Cs-137', None, {'bq': -13.3}, ValueError)
 ])
 def test_isotopequantity_bad_init(iso, date, kwargs, error):
     """Test errors from Isotope.__init__()"""
