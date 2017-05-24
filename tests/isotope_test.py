@@ -516,4 +516,4 @@ def test_irradiation_activate_forward_pulse():
     ni = isotope.NeutronIrradiation(start, stop, n_cm2=n_cm2)
     iq1 = ni.activate(barns, initial_iso_q=iq0, activated_iso=iso1)
     assert iq1.ref_date == stop
-    assert np.isclose(iq1.ref_atoms, n_cm2 * barns * 1e-24 * iso0.ref_atoms)
+    assert np.isclose(iq1.ref_atoms, n_cm2 * barns * 1e-24 * iq0.ref_atoms)
