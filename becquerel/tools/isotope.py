@@ -816,6 +816,16 @@ class IsotopeQuantity(object):
             return None
         return self.ref_date + datetime.timedelta(seconds=dt)
 
+    def __str__(self):
+        """Return a string representation"""
+
+        if self.isotope.is_stable:
+            s = '{} g of {}'.format(self.g_at(self.ref_date), self.isotope)
+        else:
+            s = '{} Bq of {} (at {})'.format(
+                self.bq_at(self.ref_date), self.isotope, self.ref_date)
+        return s
+
 
 class NeutronIrradiation(object):
     """Represents an irradiation period with thermal neutrons."""
@@ -843,9 +853,21 @@ class NeutronIrradiation(object):
         elif n_cm2 is None:
             self.n_cm2_s = n_cm2_s
             self.n_cm2 = n_cm2_s * self.duration
+        elif n_cm2_s is None and self.duration > 0:
+            self.n_cm2_s = n_cm2 / self.duration
+            self.n_cm2 = n_cm2
         else:
             self.n_cm2_s = None
             self.n_cm2 = n_cm2
+
+    def __str__(self):
+        """Return a string representation"""
+
+        if self.duration == 0:
+            return '{} neutrons/cm2 at {}'.format(self.n_cm2, self.start_time)
+        else:
+            return '{} n/cm2/s from {} to {}'.format(
+                self.n_cm2_s, self.start_time, self.stop_time)
 
     def activate(self, barns,
                  initial_iso_q=None, initial_iso=None,
