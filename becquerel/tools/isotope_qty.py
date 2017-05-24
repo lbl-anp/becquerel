@@ -11,7 +11,7 @@ UCI_TO_BQ = 3.7e4
 N_AV = 6.022141e23
 
 
-class IsotopeQuantityError(object):
+class IsotopeQuantityError(Exception):
     """Raised by the IsotopeQuantity class"""
 
     pass
@@ -20,7 +20,7 @@ class IsotopeQuantityError(object):
 class IsotopeQuantity(object):
     """An amount of an isotope."""
 
-    def __init__(self, isotope, date=None, creation_date=True, **kwargs):
+    def __init__(self, isotope, date=None, **kwargs):
         """Initialize.
 
         Specify one of bq, uci, atoms, g to define the quantity.
@@ -28,8 +28,6 @@ class IsotopeQuantity(object):
         Args:
           isotope: an Isotope object, of which this is a quantity
           date: the reference date for the activity or mass
-          creation_date: True means that dates before the reference date will
-            raise an error (because the source did not exist then)
           bq: the activity at the reference date [Bq]
           uci: the activity at the reference date [uCi]
           atoms: the number of atoms at the reference date
@@ -41,7 +39,6 @@ class IsotopeQuantity(object):
 
         self._init_isotope(isotope)
         self._init_date(date)
-        self.creation_date = creation_date
         self.ref_atoms = self._atoms_from_kwargs(**kwargs)
 
     def _init_isotope(self, isotope):
@@ -139,16 +136,10 @@ class IsotopeQuantity(object):
 
         Raises:
           TypeError: if date is not recognized
-          IsotopeQuantityError: if date is prior to the creation date
         """
 
         t1 = utils.handle_datetime(date)
         dt = (t1 - self.ref_date).total_seconds()
-        if dt < 0 and self.creation_date:
-            raise IsotopeQuantityError(
-                'The source represented by this IsotopeQuantity was created at'
-                + ' {} and thus did not exist at {}'.format(
-                    self.ref_date, date))
         return self.ref_atoms * 2**(-dt / self.half_life)
 
     def bq_at(self, date):
@@ -184,9 +175,6 @@ class IsotopeQuantity(object):
 
         Returns:
           a float of the number of atoms at datetime.datetime.now()
-
-        Raises:
-          IsotopeQuantityError: if this quantity's creation date is in the future
         """
 
         return self.atoms_at(datetime.datetime.now())
@@ -231,7 +219,6 @@ class IsotopeQuantity(object):
 
         Raises:
           TypeError: if start_time or stop_time is not recognized
-          IsotopeQuantityError: if start_time is prior to the creation date
         """
 
         return self.atoms_at(start_time) - self.atoms_at(stop_time)
@@ -270,7 +257,6 @@ class IsotopeQuantity(object):
 
         Raises:
           TypeError: if spec does not have start_time or stop_time defined
-          IsotopeQuantityError: if the acquisition start was before the creation date
         """
 
         return self.decays_from(spec.start_time, spec.stop_time)
@@ -306,19 +292,18 @@ class IsotopeQuantity(object):
 
         Returns:
           a datetime.datetime of the moment when the mass/activity equals the
-            specified input, OR None if it is before creation date
+            specified input
 
         Raises:
           IsotopeQuantityError: if isotope is stable
         """
 
         if not np.isfinite(self.half_life):
-            raise IsotopeQuantityError('Cannot calculate time_when for stable isotope')
+            raise IsotopeQuantityError(
+                'Cannot calculate time_when for stable isotope')
 
         target = self._atoms_from_kwargs(**kwargs)
         dt = -self.half_life * np.log2(target / self.ref_atoms)
-        if dt < 0 and self.creation_date:
-            return None
         return self.ref_date + datetime.timedelta(seconds=dt)
 
     def __str__(self):
