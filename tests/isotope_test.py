@@ -243,5 +243,5 @@ def test_isotope_properties(iso_str, props):
         print(np.isclose(mass_excess, i.mass_excess.nominal_value))
         print(np.isclose(mass_excess, (i.mass_excess).nominal_value))
         assert np.isclose(i.mass_excess.nominal_value, mass_excess)
-    assert i.decay_modes[0] == modes[0]
-    assert i.decay_modes[1] == modes[1]
+    assert set(i.decay_modes[0]) == set(modes[0])
+    assert set(i.decay_modes[1]) == set(modes[1])
