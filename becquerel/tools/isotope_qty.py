@@ -3,6 +3,7 @@
 from __future__ import print_function
 import datetime
 from six import string_types
+import copy
 import numpy as np
 from .isotope import Isotope
 from ..core import utils
@@ -362,6 +363,46 @@ class IsotopeQuantity(object):
             s = '{} Bq of {} (at {})'.format(
                 self.bq_at(self.ref_date), self.isotope, self.ref_date)
         return s
+
+    def __mul__(self, other):
+        """Multiply the quantity"""
+
+        return self._mul_div(other, div=False)
+
+    def __div__(self, other):
+        """Divide the quantity"""
+
+        return self._mul_div(other, div=True)
+
+    def __truediv__(self, other):
+        """Divide the quantity (python 3)"""
+
+        return self._mul_div(other, div=True)
+
+    def _mul_div(self, other, div=False):
+        """Multiply or divide the quantity.
+
+        Args:
+          other: a scalar to multiply/divide by
+          div: a bool, True if dividing, False if multiplying
+
+        Returns:
+          a new IsotopeQuantity, same reference date, scaled quantity
+        """
+
+        if div:
+            factor = 1 / float(other)
+        else:
+            factor = float(other)
+        return IsotopeQuantity(
+            copy.deepcopy(self.isotope), date=self.ref_date,
+            atoms=self.ref_atoms * factor)
+
+    def __eq__(self, other):
+        """Equality operation"""
+
+        return (self.isotope == other.isotope and
+                np.isclose(self.ref_atoms, other.atoms_at(self.ref_date)))
 
 
 class NeutronIrradiationError(Exception):

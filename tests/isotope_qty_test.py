@@ -3,6 +3,7 @@ from __future__ import print_function
 import datetime
 from dateutil.parser import parse as dateutil_parse
 from six import string_types
+import copy
 import numpy as np
 from becquerel.tools.isotope import Isotope
 from becquerel.tools.isotope_qty import IsotopeQuantity, NeutronIrradiation
@@ -263,6 +264,33 @@ def test_isotopequantity_decays_during(iq):
         assert np.isclose(iq.decays_during(spec), iq.atoms_now() / 2)
         assert np.isclose(iq.bq_during(spec), iq.decays_during(spec) / dt_s)
         assert np.isclose(iq.uci_during(spec), iq.bq_during(spec) / UCI_TO_BQ)
+
+
+def test_isotopequantity_eq(iq):
+    """Test IsotopeQuantity equality magic method"""
+
+    iq2 = copy.deepcopy(iq)
+    assert iq == iq2
+
+    dt_s = min(iq.half_life, 10 * 86400)
+    date = iq.ref_date + datetime.timedelta(seconds=dt_s)
+    iq3 = IsotopeQuantity(iq.isotope, date=date, atoms=iq.atoms_at(date))
+    assert iq == iq3
+
+
+@pytest.mark.parametrize('f', [2, 0.5, 3.14])
+def test_isotopequantity_mul_div(iq, f):
+    """Test IsotopeQuantity multiplication and division magic methods"""
+
+    iq2 = iq * f
+    assert iq2.isotope == iq.isotope
+    assert iq2.ref_date == iq.ref_date
+    assert iq2.ref_atoms == iq.ref_atoms * f
+
+    iq3 = iq / f
+    assert iq3.isotope == iq.isotope
+    assert iq3.ref_date == iq.ref_date
+    assert iq3.ref_atoms == iq.ref_atoms / f
 
 
 def test_isotopequantity_from_decays(iq):
