@@ -311,6 +311,45 @@ def test_isotopequantity_from_decays(iq):
         assert np.isclose(iq.atoms_at(start), iq2.atoms_at(start))
 
 
+def test_isotopequantity_from_comparison(iq):
+    """Test IsotopeQuantity.from_comparison calculation"""
+
+    counts1 = 1e3
+    start = iq.ref_date
+    stop = start + datetime.timedelta(seconds=3600)
+    interval1 = (start, stop)
+    iq2 = IsotopeQuantity.from_comparison(
+        iq, counts1, interval1,
+        counts1, interval1)
+    assert iq2 == iq
+
+    f = 3.1
+    counts2 = counts1 * f
+    iq3 = IsotopeQuantity.from_comparison(
+        iq, counts1, interval1,
+        counts2, interval1)
+    assert iq3 == iq * f
+
+    if iq.half_life < 1000 * 3.156e7:
+        dt = datetime.timedelta(seconds=iq.half_life)
+        interval2 = (start + dt, stop + dt)
+        iq4 = IsotopeQuantity.from_comparison(
+            iq, counts1, interval1,
+            counts1, interval2)
+        assert iq4 == iq * 2
+
+        iq5 = IsotopeQuantity.from_comparison(
+            iq, counts1, interval1,
+            counts2, interval2)
+        assert iq5 == iq * 2 * f
+
+        interval3 = (start - dt, stop - dt)
+        iq6 = IsotopeQuantity.from_comparison(
+            iq, counts1, interval1,
+            counts1, interval3)
+        assert iq6 == iq / 2
+
+
 # ----------------------------------------------------
 #               NeutronIrradiation class
 # ----------------------------------------------------

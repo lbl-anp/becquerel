@@ -169,6 +169,29 @@ class IsotopeQuantity(object):
         obj.ref_atoms = obj._atoms_from_kwargs(atoms=atoms)
         return obj
 
+    @classmethod
+    def from_comparison(cls, isotope_qty1, counts1, interval1,
+                        counts2, interval2):
+        """Calculate an IsotopeQuantity by comparison with a known sample.
+
+        Assumes the samples are in identical geometry with the detector.
+
+        Args:
+          isotope_qty1: an IsotopeQuantity of the known sample
+          counts1: net counts measured in the known sample
+          interval1: (start_time, stop_time) of the known sample measurement
+          counts2: net counts measured in the unknown sample
+          interval2: (start_time, stop_time) of the unknown sample measurement
+
+        Returns:
+          an IsotopeQuantity of the unknown sample
+        """
+
+        norm = decay_normalize(isotope_qty1.isotope, interval1, interval2)
+        ratio = (counts2 * norm) / counts1
+
+        return isotope_qty1 * ratio
+
     # ----------------------------
     #   *_at()
     # ----------------------------
@@ -579,6 +602,8 @@ def decay_normalize(isotope, interval1, interval2):
     elif stop2 < start2:
         raise ValueError('Timestamps in interval2 out of order: {}, {}'.format(
             start2, stop2))
+
+    # TODO base this on countrate, not counts
 
     iq = IsotopeQuantity.from_decays(isotope, 1.0, start2, stop2)
     return iq.decays_from(start1, stop1)
