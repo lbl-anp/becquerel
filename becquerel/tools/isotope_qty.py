@@ -26,7 +26,8 @@ class IsotopeQuantity(object):
         Specify one of bq, uci, atoms, g to define the quantity.
 
         Args:
-          isotope: an Isotope object, of which this is a quantity
+          isotope: an Isotope object, of which this is a quantity,
+            OR a string to instantiate the Isotope
           date: the reference date for the activity or mass
           bq: the activity at the reference date [Bq]
           uci: the activity at the reference date [uCi]
@@ -84,6 +85,8 @@ class IsotopeQuantity(object):
           bq: the activity [Bq]
           uci: the activity [uCi]
           g: the mass [g]
+          _init_empty: (internal use only) set True if the reference quantity
+            will be set later
 
         Raises:
           IsotopeQuantityError: if no valid argument specified
@@ -106,6 +109,8 @@ class IsotopeQuantity(object):
         elif 'bq' in kwargs or 'uci' in kwargs:
             raise IsotopeQuantityError(
                 'Cannot initialize a stable IsotopeQuantity from activity')
+        elif '_init_empty' in kwargs:
+            pass
         else:
             raise IsotopeQuantityError('Missing arg for isotope activity')
 
@@ -120,6 +125,30 @@ class IsotopeQuantity(object):
             raise ValueError(
                 'Mass or activity must be a positive quantity: {}'.format(val))
         return val
+
+    @classmethod
+    def from_decays(cls, isotope, n_decays, start_time, stop_time):
+        """
+        Create an IsotopeQuantity from a known number of decays in an interval.
+
+        Args:
+          isotope: string or Isotope instance
+          n_decays: int or float of the number of decays in the time interval
+          start_time: string or datetime of the beginning of the interval
+          stop_time: string or datetime of the end of the interval
+
+        Returns:
+          an IsotopeQuantity, referenced to start_time
+        """
+
+        obj = cls(isotope, date=start_time, _init_empty=True)
+
+        stop_time = utils.handle_datetime(stop_time)
+        duration = (stop_time - obj.ref_date).total_seconds()
+        atoms = float(n_decays) / (1 - np.exp(-obj.decay_const * duration))
+
+        obj.ref_atoms = obj._atoms_from_kwargs(atoms=atoms)
+        return obj
 
     # ----------------------------
     #   *_at()

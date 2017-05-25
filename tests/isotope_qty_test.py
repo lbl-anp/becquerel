@@ -264,6 +264,24 @@ def test_isotopequantity_decays_during(iq):
         assert np.isclose(iq.uci_during(spec), iq.bq_during(spec) / UCI_TO_BQ)
 
 
+def test_isotopequantity_from_decays(iq):
+    """Test IsotopeQuantity.from_decays instantiation"""
+
+    start = iq.ref_date
+    stop = start + datetime.timedelta(seconds=3600)
+
+    # qualitative
+    IsotopeQuantity.from_decays(
+        iq.isotope, n_decays=1000, start_time=start, stop_time=stop)
+
+    # quantitative
+    if iq.half_life < 1000 * 3.156e7:  # floating point precision #65
+        n = iq.decays_from(start, stop)
+        iq2 = IsotopeQuantity.from_decays(
+            iq.isotope, n_decays=n, start_time=start, stop_time=stop)
+        assert np.isclose(iq.atoms_at(start), iq2.atoms_at(start))
+
+
 # ----------------------------------------------------
 #               NeutronIrradiation class
 # ----------------------------------------------------
