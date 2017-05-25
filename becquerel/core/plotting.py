@@ -20,6 +20,19 @@ def plot_spectrum(spec, fmtstring=None, **kwargs):
     return plotter.axes
 
 
+def bin_edges_and_heights_to_steps(bin_edges, heights):
+    """A robust alternative to matplotlib's drawstyle='steps-*'"""
+
+    assert len(bin_edges) == len(heights) + 1
+    x = np.zeros(len(bin_edges) * 2)
+    y = np.zeros_like(x)
+    x[::2] = bin_edges.astype(float)
+    x[1::2] = bin_edges.astype(float)
+    y[1:-1:2] = heights.astype(float)
+    y[2:-1:2] = heights.astype(float)
+    return x, y
+
+
 class SpectrumPlotter(object):
     """Class for handling spectrum plotting."""
 
