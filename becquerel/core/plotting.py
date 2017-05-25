@@ -51,6 +51,7 @@ class SpectrumPlotter(object):
         self._handle_axes_labels(**kwargs)
         self._handle_axes_data()
         self._handle_axes_limits(**kwargs)
+        self._handle_kwargs(**kwargs)
 
     def _handle_fmt(self, fmtstring=None, **kwargs):
         """Define fmtstring"""
@@ -91,7 +92,7 @@ class SpectrumPlotter(object):
             self.counts_mode = 'cps'
 
     def _handle_axes_scales(self, yscale=None, **kwargs):
-        """Define xscale and yscale. Requires ydata."""
+        """Define xscale and yscale."""
 
         self.xscale = 'linear'
 
@@ -207,6 +208,21 @@ class SpectrumPlotter(object):
 
             self.linthreshy = np.abs(min_delta_y)
 
+    def _handle_kwargs(self, **kwargs):
+        """Get kwargs for plt.plot and plt.yscale."""
+
+        if 'plot_kwargs' in kwargs:
+            self.plot_kwargs = kwargs['plot_kwargs']
+        else:
+            self.plot_kwargs = {}
+        if 'label' in kwargs:
+            self.plot_kwargs['label'] = kwargs['label']
+
+        if 'yscale_kwargs' in kwargs:
+            self.yscale_kwargs = kwargs['yscale_kwargs']
+        else:
+            self.yscale_kwargs = {}
+
     def plot(self):
         """Create actual plot."""
 
@@ -215,9 +231,11 @@ class SpectrumPlotter(object):
         else:
             plt.axes(self.axes)
 
-        plt.plot(self.xdata, unumpy.nominal_values(self.ydata), self.fmtstring,
-                 axes=self.axes, drawstyle='steps-post',
-                 **self.kwargs)
+        self.xcorners, self.ycorners = bin_edges_and_heights_to_steps(
+            self.xedges, unumpy.nominal_values(self.ydata))
+
+        plt.plot(self.xcorners, self.ycorners, self.fmtstring,
+                 axes=self.axes, **self.plot_kwargs)
         self.axes.set_title(self.title)
         self.axes.set_xlabel(self.xlabel)
         self.axes.set_xscale(self.xscale)
