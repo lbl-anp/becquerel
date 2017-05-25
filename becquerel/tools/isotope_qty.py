@@ -17,6 +17,30 @@ class IsotopeQuantityError(Exception):
     pass
 
 
+def handle_isotope(isotope, error_name=None):
+    """Handle string or Isotope input.
+
+    Args:
+      isotope: either a string of an isotope name, or an Isotope object
+
+    Raises:
+      TypeError: if isotope is not a string or Isotope
+      IsotopeError: if string is bad
+
+    Returns:
+      an Isotope object
+    """
+
+    if isinstance(isotope, Isotope):
+        return isotope
+    elif isinstance(isotope, string_types):
+        return Isotope(isotope)
+    else:
+        raise TypeError(
+            '{} needs an Isotope instance or string, not {}'.format(
+                error_name, isotope))
+
+
 class IsotopeQuantity(object):
     """An amount of an isotope."""
 
@@ -53,13 +77,7 @@ class IsotopeQuantity(object):
           AttributeError: if isotope is missing half_life or decay_const
         """
 
-        if isinstance(isotope, Isotope):
-            self.isotope = isotope
-        elif isinstance(isotope, string_types):
-            self.isotope = Isotope(isotope)
-        else:
-            raise TypeError('IsotopeQuantity needs an Isotope instance or ' +
-                            'string, not {}'.format(isotope))
+        self.isotope = handle_isotope(isotope, error_name='IsotopeQuantity')
 
         self.half_life = self.isotope.half_life
         self.decay_const = self.isotope.decay_const
@@ -488,3 +506,56 @@ class NeutronIrradiation(object):
                         -activated.decay_const * self.duration))))
             return IsotopeQuantity(initial,
                                    date=self.start_time, atoms=initial_atoms)
+
+
+def decay_normalize(isotope, interval1, interval2):
+    """Calculate the ratio to normalize decays between time intervals.
+
+    If interval2 averages 1 Bq, what is interval1's average?
+
+    Compare counts1 to counts2 * decay_normalize(...).
+
+    Args:
+      isotope: Isotope object or string of the isotope that is decaying
+      interval1: (start_time, stop_time) in datetimes or strings
+      interval2: (start_time, stop_time) in datetimes or strings
+    """
+
+    isotope = handle_isotope(isotope, error_name='decay_normalize')
+    if len(interval1) != 2:
+        raise IsotopeQuantityError(
+            'interval1 should be length 2: {}'.format(interval1))
+    elif len(interval2) != 2:
+        raise IsotopeQuantityError(
+            'interval2 should be length 2: {}'.format(interval2))
+    start1 = utils.handle_datetime(interval1[0], error_name='decay_normalize')
+    stop1 = utils.handle_datetime(interval1[1], error_name='decay_normalize')
+    start2 = utils.handle_datetime(interval2[0], error_name='decay_normalize')
+    stop2 = utils.handle_datetime(interval2[1], error_name='decay_normalize')
+    if stop1 < start1:
+        raise ValueError('Timestamps in interval1 out of order: {}, {}'.format(
+            start1, stop1))
+    elif stop2 < start2:
+        raise ValueError('Timestamps in interval2 out of order: {}, {}'.format(
+            start2, stop2))
+
+    iq = IsotopeQuantity.from_decays(isotope, 1.0, start2, stop2)
+    return iq.decays_from(start1, stop1)
+
+
+def decay_normalize_spectra(isotope, spec1, spec2):
+    """Calculate the ratio to normalize decays between measurements.
+
+    If spec2 averages 1 Bq, what is spec1's average?
+
+    Compare counts1 to counts2 * decay_normalize_spectra(...).
+
+    Args:
+      isotope: Isotope object or string of the isotope that is decaying
+      spec1: Spectrum object with start_time, stop_time
+      spec2: Spectrum object with start_time, stop_time
+    """
+
+    return decay_normalize(isotope,
+                           (spec1.start_time, spec1.stop_time),
+                           (spec2.start_time, spec2.stop_time))

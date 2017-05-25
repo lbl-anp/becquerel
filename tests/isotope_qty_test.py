@@ -8,6 +8,7 @@ from becquerel.tools.isotope import Isotope
 from becquerel.tools.isotope_qty import IsotopeQuantity, NeutronIrradiation
 from becquerel.tools.isotope_qty import IsotopeQuantityError, UCI_TO_BQ, N_AV
 from becquerel.tools.isotope_qty import NeutronIrradiationError
+from becquerel.tools.isotope_qty import decay_normalize
 from becquerel import Spectrum
 import pytest
 
@@ -397,3 +398,21 @@ def test_irradiation_activate_errors():
     iso2 = Isotope('Na-25')
     with pytest.raises(NotImplementedError):
         ni.activate(barns, initial=iq1, activated=iso2)
+
+
+# ----------------------------------------------------
+#               decay_normalize
+# ----------------------------------------------------
+
+def test_decay_normalize(radioisotope):
+    """Test decay_normalize()"""
+
+    now = datetime.datetime.now()
+    interval1 = (now, now + datetime.timedelta(hours=1))
+    assert np.isclose(decay_normalize(radioisotope, interval1, interval1), 1)
+
+    if radioisotope.half_life < 1000 * 3.156e7:     # see #65
+        interval2 = (now + datetime.timedelta(days=1),
+                     now + datetime.timedelta(days=1, hours=1))
+        assert decay_normalize(radioisotope, interval1, interval2) > 1
+        assert decay_normalize(radioisotope, interval2, interval1) < 1
