@@ -3,7 +3,7 @@
 from __future__ import print_function
 import matplotlib.pyplot as plt
 import numpy as np
-from uncertainties import ufloat, unumpy
+from uncertainties import unumpy
 
 
 class PlottingError(Exception):
@@ -102,6 +102,7 @@ class SpectrumPlotter(object):
             self.yscale = yscale.lower()
         else:
             self.yscale = 'symlog'
+        self.default_linthreshy = 1.5
 
     def _handle_axes_labels(self, xlabel=None, ylabel=None, **kwargs):
         """Define xlabel and ylabel. Requires counts_mode.
@@ -173,30 +174,11 @@ class SpectrumPlotter(object):
                                     'scale; use symlog scale')
             elif self.yscale == 'symlog' and data_min > 0:
                 ymin = 0
-            elif self.yscale == 'log':
-                # dynamic ymin, positive values
-                ceil10 = 10**(np.ceil(np.log10(data_min)))
-                sig_fig = np.floor(data_min / ceil10)
-                ymin = sig_fig * ceil10 / 10   # 0.1 for min of 1
-            elif self.yscale == 'symlog':
-                # dynamic ymin, negative values
-                ceil10 = 10**(np.ceil(np.log10(data_min)))
-                sig_fig = np.floor(data_min / ceil10)
-                if sig_fig < 3:
-                    ymin = ceil10 * 3
-                else:
-                    ymin = ceil10 * 10
-
-            # y max
-            data_max = np.max(self.ydata)
-            floor10 = 10**(np.floor(np.log10(data_max)))
-            sig_fig = np.ceil(data_max / floor10)
-            if self.yscale == 'linear':
-                ymax = floor10 * (sig_fig + 1)
-            elif sig_fig < 3:
-                ymax = floor10 * 3
             else:
-                ymax = floor10 * 10
+                ymin = dynamic_min(data_min)
+
+            data_max = np.max(self.ydata)
+            ymax = dynamic_max(data_max, self.yscale)
 
             self.ylim = (ymin, ymax)
 
@@ -205,6 +187,7 @@ class SpectrumPlotter(object):
             min_delta_y = np.min(np.abs(self.ydata - self.ydata[min_ind]))
             # floor10_abs = 10**(np.floor(np.log10(min_delta_y)))
             # sig_fig_abs = np.ceil(min_delta_y / floor10_abs)
+            # TODO
 
             self.linthreshy = np.abs(min_delta_y)
 
@@ -222,6 +205,8 @@ class SpectrumPlotter(object):
             self.yscale_kwargs = kwargs['yscale_kwargs']
         else:
             self.yscale_kwargs = {}
+        if self.yscale == 'symlog' and 'linthreshy' not in self.yscale_kwargs:
+            self.yscale_kwargs['linthreshy'] = self.default_linthreshy
 
     def plot(self):
         """Create actual plot."""
@@ -245,3 +230,57 @@ class SpectrumPlotter(object):
         self.axes.set_ylim(self.ylim)
 
         plt.show()
+
+
+def dynamic_min(data_min):
+    """Get an axes lower limit (for y) based on data value.
+
+    The lower limit is the next power of 10, or 3 * power of 10, below the min.
+
+    Args:
+      data_min: the minimum of the data (could be integers or floats)
+    """
+
+    if data_min > 0:
+        ceil10 = 10**(np.ceil(np.log10(data_min)))
+        sig_fig = np.floor(10 * data_min / ceil10)
+        if sig_fig <= 3:
+            ymin = ceil10 / 10
+        else:
+            ymin = ceil10 / 10 * 3
+        print('ceil10: {}'.format(ceil10))
+    elif data_min == 0:
+    else:
+        # negative
+        floor10 = 10**(np.floor(np.log10(-data_min)))
+        sig_fig = np.floor(-data_min / floor10)
+        if sig_fig < 3:
+            ymin = -floor10 * 3
+        else:
+            ymin = -floor10 * 10
+        print('floor10: {}'.format(floor10))
+    print('sig_fig: {}'.format(sig_fig))
+
+    return ymin
+
+
+def dynamic_max(data_max, yscale):
+    """Get an axes upper limit (for y) based on data value.
+
+    The upper limit is the next power of 10, or 3 * power of 10, above the max.
+    (For linear, the next N * power of 10.)
+
+    Args:
+      data_max: the maximum of the data (could be integers or floats)
+    """
+
+    floor10 = 10**(np.floor(np.log10(data_max)))
+    sig_fig = np.ceil(data_max / floor10)
+    if yscale == 'linear':
+        ymax = floor10 * (sig_fig + 1)
+    elif sig_fig < 3:
+        ymax = floor10 * 3
+    else:
+        ymax = floor10 * 10
+
+    return np.maximum(ymax, 0)

@@ -44,11 +44,19 @@ def cal_spec(spec_data):
 
 
 @pytest.fixture(params=['uncal', 'cal'])
-def counts_spec(request):
+def counts_spec(request, spec_data):
     if request.param == 'uncal':
-        return uncal_spec(spec_data())
+        return uncal_spec(spec_data)
     elif request.param == 'cal':
-        return cal_spec(spec_data())
+        return cal_spec(spec_data)
+    else:
+        raise RuntimeError
+
+
+@pytest.fixture(params=[1, 10, 100])
+def y_counts_spec(request):
+    floatdata = np.random.poisson(lam=request.param, size=TEST_DATA_LENGTH)
+    return bq.Spectrum(floatdata.astype(np.int))
 
 
 # ----------------------------------------------
@@ -78,7 +86,7 @@ def test_counts_mode(counts_spec):
                      title='0-2. Counts mode')
 
 
-def test_counts_mode(counts_spec):
+def test_cps_mode(counts_spec):
     """Test counts_mode='cps'"""
 
     counts_spec.livetime = 300.0
@@ -86,7 +94,7 @@ def test_counts_mode(counts_spec):
                      title='0-3. CPS mode')
 
 
-def test_counts_mode(cal_spec):
+def test_cpskev_mode(cal_spec):
     """Test counts_mode='cpskev'"""
 
     cal_spec.livetime = 300.0
@@ -115,7 +123,8 @@ def test_plot_cal_counts_labels(cal_spec):
 def test_plot_countrate_label(uncal_spec_cps):
     """Default ylabel for cps spec"""
 
-    bq.plot_spectrum(uncal_spec_cps, title='1-3. Check ylabel is Countrate')
+    bq.plot_spectrum(uncal_spec_cps,
+                     title='1-3. Check ylabel is Countrate counts/s')
 
 
 def test_plot_countrate_density_label(cal_spec):
@@ -123,7 +132,7 @@ def test_plot_countrate_density_label(cal_spec):
 
     cal_spec.livetime = 300.0
     bq.plot_spectrum(cal_spec, counts_mode='cpskev',
-                     title='1-4. Check ylabel is Countrate (/keV)')
+                     title='1-4. Check ylabel is Countrate counts/s/keV)')
 
 
 def test_custom_labels(counts_spec):
@@ -138,30 +147,30 @@ def test_custom_labels(counts_spec):
 #                Check y scale
 # ----------------------------------------------
 
-def test_yscale(counts_spec):
+def test_yscale(y_counts_spec):
     """Default yscale"""
 
-    bq.plot_spectrum(counts_spec, title='2-1. Check default yscale (log)')
+    bq.plot_spectrum(y_counts_spec, title='2-1. Check default yscale (symlog)')
 
 
-def test_yscale_linear(counts_spec):
+def test_yscale_linear(y_counts_spec):
     """Linear yscale"""
 
-    bq.plot_spectrum(counts_spec, yscale='linear',
+    bq.plot_spectrum(y_counts_spec, yscale='linear',
                      title='2-2. Check yscale is linear')
 
 
-def test_yscale_log(counts_spec):
+def test_yscale_log(y_counts_spec):
     """Log yscale"""
 
-    bq.plot_spectrum(counts_spec, yscale='log',
+    bq.plot_spectrum(y_counts_spec, yscale='log',
                      title='2-3. Check yscale is log')
 
 
-def test_yscale_symlog(counts_spec):
+def test_yscale_symlog(y_counts_spec):
     """Symlog yscale"""
 
-    bq.plot_spectrum(counts_spec, yscale='symlog',
+    bq.plot_spectrum(y_counts_spec, yscale='symlog',
                      title='2-4. Check yscale is symlog')
 
 
@@ -169,21 +178,4 @@ def test_yscale_symlog(counts_spec):
 #                Check x scale
 # ----------------------------------------------
 
-def test_xscale_default(counts_spec):
-    """Default xscale (linear)"""
-
-    bq.plot_spectrum(counts_spec, title='3-1. Check default xscale (linear)')
-
-
-def test_xscale_linear(counts_spec):
-    """Linear xscale"""
-
-    bq.plot_spectrum(counts_spec, xscale='linear',
-                     title='3-2. Check xscale is linear')
-
-
-def test_xscale_log(counts_spec):
-    """Log xscale"""
-
-    bq.plot_spectrum(counts_spec, xscale='log',
-                     title='3-2. Check xscale is log')
+pass
