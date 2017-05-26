@@ -317,6 +317,26 @@ class Spectrum(object):
 
         return unumpy.std_devs(self.cpskev)
 
+    def counts_over(self, seconds):
+        """Evaluate CPS over a given time interval, to get counts.
+
+        Args:
+          seconds: number of seconds to evaluate over
+
+        Returns:
+          an np.array of ufloats
+        """
+
+        return self.cps * seconds
+
+    def counts_vals_over(self, seconds):
+        """Evaluate CPS over a given time interval, to get counts."""
+
+        return unumpy.nominal_values(self.counts_over(seconds))
+
+    def counts_uncs_over(self, seconds):
+        return unumpy.std_devs(self.cpskev)
+
     @property
     def channels(self):
         """Channel index.
