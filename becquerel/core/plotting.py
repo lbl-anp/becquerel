@@ -203,8 +203,8 @@ class SpectrumPlotter(object):
             self.yscale_kwargs = kwargs['yscale_kwargs']
         else:
             self.yscale_kwargs = {}
-        if self.yscale == 'symlog' and 'linthreshy' not in self.yscale_kwargs:
-            self.yscale_kwargs['linthreshy'] = self.default_linscaley
+        if self.yscale == 'symlog' and 'linscaley' not in self.yscale_kwargs:
+            self.yscale_kwargs['linscaley'] = self.default_linscaley
 
     def plot(self):
         """Create actual plot."""
