@@ -82,7 +82,10 @@ class SpectrumPlotter(object):
     def _handle_counts_mode(self, counts_mode=None, **kwargs):
         """Define counts_mode"""
 
-        if counts_mode is not None:
+        if 'eval_over' in kwargs:
+            self.eval_time = kwargs['eval_over']
+            self.counts_mode = 'eval_over'
+        elif counts_mode is not None:
             if counts_mode.lower() not in ('counts', 'cps', 'cpskev'):
                 raise ValueError('Bad counts_mode: {}'.format(counts_mode))
             self.counts_mode = counts_mode.lower()
@@ -141,6 +144,8 @@ class SpectrumPlotter(object):
             self.ydata = self.spec.cps_vals
         elif self.counts_mode == 'cpskev':
             self.ydata = self.spec.cpskev_vals
+        elif self.counts_mode == 'eval_over':
+            self.ydata = self.spec.counts_vals_over(self.eval_time)
 
     def get_channel_edges(self):
         """Get a vector of xedges for uncalibrated channels.
