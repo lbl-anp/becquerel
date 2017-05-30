@@ -7,10 +7,10 @@ def _check_ndim(arr, ndim, arr_name='array'):
         '{}({}) is not {}D'.format(arr_name, arr.shape, ndim)
 
 
-def _check_nonneg_strictly_increasing(arr, arr_name='array'):
-    assert np.all(np.diff(arr) > 0), \
-        "{} is not strictly increasing: {}".format(arr_name, arr)
-    assert arr[..., 0] >= 0, \
+def _check_nonneg_monotonic_increasing(arr, arr_name='array'):
+    assert np.all((np.diff(arr) >= 0) | np.isclose(np.diff(arr), 0)), \
+        "{} is not monotonically increasing: {}".format(arr_name, arr)
+    assert np.all((arr[..., 0] >= 0) | np.isclose(arr[..., 0], 0)), \
         "{} has negative values: {}".format(arr_name, arr)
 
 
@@ -122,6 +122,7 @@ def _rebin_listmode(in_spectrum, in_edges, out_edges, slopes):
         in_right_edge = in_edges[in_idx + 1]
         energies[energy_idx_start:energy_idx_stop] = in_left_edge + (
             in_right_edge - in_left_edge) * np.random.rand(bin_counts)
+        energy_idx_start = energy_idx_stop
     # bin the energies (drops the energies outside of the out-binning-range)
     out_spectrum = np.histogram(energies, bins=out_edges)[0]
     # add the under/flow counts back into the out_spectrum
@@ -177,8 +178,8 @@ def rebin(in_spectrum, in_edges, out_edges, method="interpolation",
     _check_ndim(in_spectrum, 1, 'in_spectrum')
     _check_ndim(in_edges, 1, 'in_edges')
     _check_ndim(out_edges, 1, 'out_edges')
-    _check_nonneg_strictly_increasing(in_edges, 'in_edges')
-    _check_nonneg_strictly_increasing(out_edges, 'out_edges')
+    _check_nonneg_monotonic_increasing(in_edges, 'in_edges')
+    _check_nonneg_monotonic_increasing(out_edges, 'out_edges')
     # Init slopes
     if slopes is None:
         slopes = np.zeros_like(in_spectrum, dtype=np.float)
@@ -257,15 +258,16 @@ def rebin2d(in_spectra, in_edges, out_edges,
                 "in_spectrum can only contain ints for method listmode")
     else:
         in_spectra = np.asarray(in_spectra, np.float)
-    in_spectra = np.asarray(in_spectra, np.float)
     in_edges = np.asarray(in_edges, np.float)
     out_edges = np.asarray(out_edges, np.float)
     # Check inputs
-    _check_ndim(in_spectra, 2, 'in_spectrum')
-    _check_ndim(in_edges, 2, 'in_edges')
+    _check_ndim(in_spectra, 2, 'in_spectra')
+    # broadcast in_edges out to 2d if 1d
+    in_edges = np.copy(  # copy req'd: the readonly array doesn't work w/ numba
+        np.broadcast_to(in_edges, (len(in_spectra), in_edges.shape[-1])))
     _check_ndim(out_edges, 1, 'out_edges')
-    _check_nonneg_strictly_increasing(in_edges, 'in_edges')
-    _check_nonneg_strictly_increasing(out_edges, 'out_edges')
+    _check_nonneg_monotonic_increasing(in_edges, 'in_edges')
+    _check_nonneg_monotonic_increasing(out_edges, 'out_edges')
     # Init slopes
     if slopes is None:
         slopes = np.zeros_like(in_spectra, dtype=np.float)
