@@ -8,9 +8,12 @@ def _check_ndim(arr, ndim, arr_name='array'):
 
 
 def _check_nonneg_monotonic_increasing(arr, arr_name='array'):
-    assert np.all((np.diff(arr) >= 0) | np.isclose(np.diff(arr), 0)), \
+    # Check that elements along the last axis are increasing or
+    # neighboring elements are equal
+    assert np.all((np.diff(arr) > 0) | np.isclose(np.diff(arr), 0)), \
         "{} is not monotonically increasing: {}".format(arr_name, arr)
-    assert np.all((arr[..., 0] >= 0) | np.isclose(arr[..., 0], 0)), \
+    # Check that first bin is nonnegative
+    assert np.all((arr[..., 0] > 0) | np.isclose(arr[..., 0], 0)), \
         "{} has negative values: {}".format(arr_name, arr)
 
 
