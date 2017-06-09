@@ -5,6 +5,7 @@ from dateutil.parser import parse as dateutil_parse
 from six import string_types
 import copy
 import numpy as np
+from uncertainties import ufloat
 from becquerel.tools.isotope import Isotope
 from becquerel.tools.isotope_qty import IsotopeQuantity, NeutronIrradiation
 from becquerel.tools.isotope_qty import IsotopeQuantityError, UCI_TO_BQ, N_AV
@@ -45,6 +46,7 @@ def stable_isotope(request):
 @pytest.fixture(params=[
     {'bq': 10.047 * UCI_TO_BQ},
     {'uci': 10.047},
+    {'uci': ufloat(10.047, 0.025)},
     {'atoms': 1e24},
     {'g': 1e-5}
 ])

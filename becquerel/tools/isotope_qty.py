@@ -118,18 +118,16 @@ class IsotopeQuantity(object):
           IsotopeQuantityError: if no valid argument specified
         """
 
-        # TODO handle ufloats
-
         if 'atoms' in kwargs:
-            return self._check_positive_qty(float(kwargs['atoms']))
+            return self._check_positive_qty(kwargs['atoms'])
         elif 'g' in kwargs:
-            return (self._check_positive_qty(float(kwargs['g'])) /
+            return (self._check_positive_qty(kwargs['g']) /
                     self.isotope.A * N_AV)
         elif 'bq' in kwargs and not self.is_stable:
-            return (self._check_positive_qty(float(kwargs['bq'])) /
+            return (self._check_positive_qty(kwargs['bq']) /
                     self.decay_const)
         elif 'uci' in kwargs and not self.is_stable:
-            return (self._check_positive_qty(float(kwargs['uci'])) *
+            return (self._check_positive_qty(kwargs['uci']) *
                     UCI_TO_BQ / self.decay_const)
         elif 'bq' in kwargs or 'uci' in kwargs:
             raise IsotopeQuantityError(
@@ -140,12 +138,13 @@ class IsotopeQuantity(object):
             raise IsotopeQuantityError('Missing arg for isotope activity')
 
     def _check_positive_qty(self, val):
-        """Check that the quantity value is positive.
+        """Check that the quantity value is a positive float.
 
         Raises:
           ValueError: if val is negative
         """
 
+        val *= 1.
         if val < 0:
             raise ValueError(
                 'Mass or activity must be a positive quantity: {}'.format(val))
