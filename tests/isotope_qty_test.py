@@ -23,7 +23,8 @@ import pytest
     'K-40',
     'Cs-134',
     'Tc-99m',
-    'Tl-208'
+    'Tl-208',
+    'Th-232',
 ))
 def radioisotope(request):
     return Isotope(request.param)
@@ -32,7 +33,10 @@ def radioisotope(request):
 @pytest.fixture(params=(
     'H-2',
     'Cs-133',
-    'Pb-208'
+    'Pb-208',
+    'La-138',
+    'Eu-151',
+    'Ge-76',
 ))
 def stable_isotope(request):
     return Isotope(request.param)
@@ -193,10 +197,10 @@ def test_isotopequantity_time_when(iq, kw):
     if iq.half_life > 1000 * 3.156e7:
         # avoid overflow errors in test calculations
         # just make sure the method doesn't error
-        kwarg = {kw: ref_qty * 0.999999}
+        kwarg = {kw: ref_qty * (1 - 1e-9)}
         iq.time_when(**kwarg)
 
-        kwarg = {kw: ref_qty * 1.0000001}
+        kwarg = {kw: ref_qty * (1 + 1e-9)}
         iq.time_when(**kwarg)
     else:
         d = iq.ref_date - datetime.timedelta(seconds=iq.half_life)

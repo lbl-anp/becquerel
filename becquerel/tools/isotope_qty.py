@@ -45,7 +45,7 @@ def handle_isotope(isotope, error_name=None):
 class IsotopeQuantity(object):
     """An amount of an isotope."""
 
-    def __init__(self, isotope, date=None, **kwargs):
+    def __init__(self, isotope, date=None, stability=1e18, **kwargs):
         """Initialize.
 
         Specify one of bq, uci, atoms, g to define the quantity.
@@ -54,24 +54,30 @@ class IsotopeQuantity(object):
           isotope: an Isotope object, of which this is a quantity,
             OR a string to instantiate the Isotope
           date: the reference date for the activity or mass
+          stability: the half-life above which an isotope is considered
+            stable [s]
           bq: the activity at the reference date [Bq]
           uci: the activity at the reference date [uCi]
           atoms: the number of atoms at the reference date
           g: the mass at the reference date [g]
 
         Raises:
-          ...
+          TypeError: if isotope is not an Isotope object
+          AttributeError: if isotope is missing half_life or decay_const
+          IsotopeQuantityError: if no valid quantity kwarg specified
         """
 
-        self._init_isotope(isotope)
+        self._init_isotope(isotope, stability)
         self._init_date(date)
         self.ref_atoms = self._atoms_from_kwargs(**kwargs)
 
-    def _init_isotope(self, isotope):
+    def _init_isotope(self, isotope, stability):
         """Initialize the isotope.
 
         Args:
           isotope: an Isotope object, or a string that defines an Isotope
+          stability: the half-life above which an isotope is considered
+            stable [s]
 
         Raises:
           TypeError: if isotope is not an Isotope object
@@ -82,6 +88,7 @@ class IsotopeQuantity(object):
 
         self.half_life = self.isotope.half_life
         self.decay_const = self.isotope.decay_const
+        self.is_stable = self.half_life > stability
 
     def _init_date(self, date):
         """Initialize the reference date/time.
@@ -111,7 +118,6 @@ class IsotopeQuantity(object):
           IsotopeQuantityError: if no valid argument specified
         """
 
-        # TODO handle unit prefixes with or without pint
         # TODO handle ufloats
 
         if 'atoms' in kwargs:
@@ -119,10 +125,10 @@ class IsotopeQuantity(object):
         elif 'g' in kwargs:
             return (self._check_positive_qty(float(kwargs['g'])) /
                     self.isotope.A * N_AV)
-        elif 'bq' in kwargs and self.decay_const > 0:
+        elif 'bq' in kwargs and not self.is_stable:
             return (self._check_positive_qty(float(kwargs['bq'])) /
                     self.decay_const)
-        elif 'uci' in kwargs and self.decay_const > 0:
+        elif 'uci' in kwargs and not self.is_stable:
             return (self._check_positive_qty(float(kwargs['uci'])) *
                     UCI_TO_BQ / self.decay_const)
         elif 'bq' in kwargs or 'uci' in kwargs:
@@ -369,7 +375,7 @@ class IsotopeQuantity(object):
           IsotopeQuantityError: if isotope is stable
         """
 
-        if not np.isfinite(self.half_life):
+        if self.is_stable:
             raise IsotopeQuantityError(
                 'Cannot calculate time_when for stable isotope')
 
@@ -538,7 +544,7 @@ class NeutronIrradiation(object):
                 'Input args should be Isotope or IsotopeQuantity objects: ' +
                 '{}, {}'.format(initial, activated))
 
-        if np.isfinite(initial.half_life):
+        if not initial.is_stable:
             raise NotImplementedError(
                 'Activation not implemented for a radioactive initial isotope')
 
