@@ -11,6 +11,7 @@ from becquerel.tools.isotope_qty import IsotopeQuantity, NeutronIrradiation
 from becquerel.tools.isotope_qty import IsotopeQuantityError, UCI_TO_BQ, N_AV
 from becquerel.tools.isotope_qty import NeutronIrradiationError
 from becquerel.tools.isotope_qty import decay_normalize
+from becquerel.tools.isotope_qty import decay_normalize_spectra
 from becquerel import Spectrum
 import pytest
 
@@ -473,6 +474,18 @@ def test_irradiation_activate_errors():
         ni.activate(barns, initial=iq1, activated=iso2)
 
 
+@pytest.mark.parametrize('start, stop, n_cm2, n_cm2_s', [
+    ('2017-01-01 00:00:00', '2017-01-01 12:00:00', None, 1e12),
+    ('2017-01-01 00:00:00', '2017-01-01 12:00:00', 1e15, None),
+    ('2017-01-01 00:00:00', '2017-01-01 00:00:00', 1e15, None)
+])
+def test_irradiation_str(start, stop, n_cm2, n_cm2_s):
+    """Test NeutronIrradiation string representation"""
+
+    ni = NeutronIrradiation(start, stop, n_cm2=n_cm2, n_cm2_s=n_cm2_s)
+    print(str(ni))
+
+
 # ----------------------------------------------------
 #               decay_normalize
 # ----------------------------------------------------
@@ -489,3 +502,39 @@ def test_decay_normalize(radioisotope):
                      now + datetime.timedelta(days=1, hours=1))
         assert decay_normalize(radioisotope, interval1, interval2) > 1
         assert decay_normalize(radioisotope, interval2, interval1) < 1
+
+
+def test_decay_normalize_errors(radioisotope):
+    """Test errors in decay_normalize()"""
+
+    now = datetime.datetime.now()
+    interval1 = (now, now + datetime.timedelta(hours=1))
+    interval2 = (now + datetime.timedelta(days=1),
+                 now + datetime.timedelta(days=1, hours=1))
+    with pytest.raises(IsotopeQuantityError):
+        decay_normalize(radioisotope, [now], interval2)
+    with pytest.raises(IsotopeQuantityError):
+        decay_normalize(radioisotope, interval1, [now, now, now])
+    with pytest.raises(ValueError):
+        decay_normalize(radioisotope, (interval1[1], interval1[0]), interval2)
+    with pytest.raises(ValueError):
+        decay_normalize(radioisotope, interval1, (interval2[1], interval2[0]))
+
+
+def test_decay_normalize_spectra(radioisotope):
+    """Test decay_normalize_spectra()"""
+
+    t0 = datetime.datetime.now()
+    t1 = t0 + datetime.timedelta(hours=1)
+    spec1 = Spectrum(np.zeros(256), start_time=t0, stop_time=t1)
+    assert np.isclose(decay_normalize_spectra(radioisotope, spec1, spec1), 1)
+
+    if radioisotope.half_life > 1000 * 3.156e7:
+        # avoid overflow errors in test calculations
+        pass
+    else:
+        t2 = t0 + datetime.timedelta(days=1)
+        t3 = t1 + datetime.timedelta(days=1)
+        spec2 = Spectrum(np.zeros(256), start_time=t2, stop_time=t3)
+        assert decay_normalize_spectra(radioisotope, spec1, spec2) > 1
+        assert decay_normalize_spectra(radioisotope, spec2, spec1) < 1
