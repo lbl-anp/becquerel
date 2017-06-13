@@ -43,7 +43,38 @@ def handle_isotope(isotope, error_name=None):
 
 
 class IsotopeQuantity(object):
-    """An amount of an isotope."""
+    """An amount of an isotope.
+
+    Can be multiplied or divided by a scalar, to produce a copy with the same
+    isotope and reference date but a scaled reference quantity.
+
+    Two IsotopeQuantity instances are equal iff they are the same isotope
+    and the quantities are np.isclose for any given datetime.
+
+    Construction class methods:
+      from_decays: activity based on number of decays in a given time interval
+      from_comparison: activity by comparing to a measured known sample
+
+    Data Attributes:
+      isotope: an Isotope object, the isotope of this material
+      half_life: the half life of the isotope, in seconds
+      decay_const: the decay constant of the isotope, in 1/seconds
+      is_stable: bool representing whether the isotope is considered stable
+      ref_date: a datetime object representing the reference date/time
+      ref_atoms: the number of atoms of the isotope, at the reference time.
+
+    Methods:
+      atoms_at: number of atoms at given time
+      bq_at: activity in Bq at given time
+      uci_at: activity in uCi at given time
+      g_at: mass in grams at given time
+      atoms_now, bq_now, uci_now, g_now: quantity at current time
+      decays_from: number of decays during a time interval
+      bq_from, uci_from: average activity during a time interval
+      decays_during: number of decays during a Spectrum measurement
+      bq_during, uci_during: average activity during a Spectrum measurement
+      time_when: time at which activity or mass equals a given value
+    """
 
     def __init__(self, isotope, date=None, stability=1e18, **kwargs):
         """Initialize.
@@ -54,8 +85,7 @@ class IsotopeQuantity(object):
           isotope: an Isotope object, of which this is a quantity,
             OR a string to instantiate the Isotope
           date: the reference date for the activity or mass
-          stability: the half-life above which an isotope is considered
-            stable [s]
+          stability: half-life above which an isotope is considered stable [s]
           bq: the activity at the reference date [Bq]
           uci: the activity at the reference date [uCi]
           atoms: the number of atoms at the reference date
@@ -138,13 +168,13 @@ class IsotopeQuantity(object):
             raise IsotopeQuantityError('Missing arg for isotope activity')
 
     def _check_positive_qty(self, val):
-        """Check that the quantity value is a positive float.
+        """Check that the quantity value is a nonnegative float or ufloat.
 
         Raises:
           ValueError: if val is negative
         """
 
-        val *= 1.
+        val *= 1.   # convert to float, or preserve ufloat, as appropriate
         if val < 0:
             raise ValueError(
                 'Mass or activity must be a positive quantity: {}'.format(val))
@@ -163,12 +193,20 @@ class IsotopeQuantity(object):
 
         Returns:
           an IsotopeQuantity, referenced to start_time
+
+        Raises:
+          TypeError: if start_time or stop_time is not a datetime or string
+          ValueError: if timestamps are out of order
         """
 
         obj = cls(isotope, date=start_time, _init_empty=True)
 
         stop_time = utils.handle_datetime(stop_time)
         duration = (stop_time - obj.ref_date).total_seconds()
+        if duration < 0:
+            raise ValueError(
+                'Start time must precede stop time: {}, {}'.format(
+                    start_time, stop_time))
         atoms = float(n_decays) / (1 - np.exp(-obj.decay_const * duration))
 
         obj.ref_atoms = obj._atoms_from_kwargs(atoms=atoms)
@@ -190,6 +228,11 @@ class IsotopeQuantity(object):
 
         Returns:
           an IsotopeQuantity of the unknown sample
+
+        Raises:
+          IsotopeQuantityError: if intervals are not length 2
+          TypeError: if interval elements are not datetimes or date strings
+          ValueError: if timestamps are out of order
         """
 
         norm = decay_normalize(isotope_qty1.isotope, interval1, interval2)
@@ -383,7 +426,10 @@ class IsotopeQuantity(object):
         return self.ref_date + datetime.timedelta(seconds=dt)
 
     def __str__(self):
-        """Return a string representation"""
+        """Return a string representation.
+
+        Shows grams if isotope is stable, otherwise Bq.
+        """
 
         if self.isotope.is_stable:
             s = '{} g of {}'.format(self.g_at(self.ref_date), self.isotope)
@@ -429,8 +475,11 @@ class IsotopeQuantity(object):
     def __eq__(self, other):
         """Equality operation"""
 
-        return (self.isotope == other.isotope and
-                np.isclose(self.ref_atoms, other.atoms_at(self.ref_date)))
+        if not isinstance(other, IsotopeQuantity):
+            return False
+        else:
+            return (self.isotope == other.isotope and
+                    np.isclose(self.ref_atoms, other.atoms_at(self.ref_date)))
 
 
 class NeutronIrradiationError(Exception):
@@ -440,15 +489,35 @@ class NeutronIrradiationError(Exception):
 
 
 class NeutronIrradiation(object):
-    """Represents an irradiation period with thermal neutrons."""
+    """Represents an irradiation period with thermal neutrons.
+
+    Data attributes:
+      start_time: beginning of irradiation
+      stop_time: end of irradiation
+      duration: number of seconds of irradiation
+      n_cm2_s: neutron flux (if duration is nonzero)
+      n_cm2: neutron fluence
+
+    Methods:
+      activate: Calculate an IsotopeQuantity from before or after irradiation
+    """
 
     def __init__(self, start_time, stop_time, n_cm2=None, n_cm2_s=None):
         """Initialize.
 
+        Either n_cm2 or n_cm2_s is a required input.
+
         Args:
-          start_time
-          stop_time
-          n_cm2 OR n_cm2_s
+          start_time: datetime or date string representing start of irradiation
+          stop_time: datetime or date string representing end of irradiation
+          n_cm2: the total fluence of neutrons over the irradiation.
+          n_cm2_s: the flux of neutrons during the irradiation.
+
+        Raises:
+          TypeError: if timestamps are not parseable
+          ValueError: if timestamps are out of order,
+            or if flux/fluence not specified,
+            or if flux and fluence both specified
         """
 
         self.start_time = utils.handle_datetime(
@@ -473,7 +542,10 @@ class NeutronIrradiation(object):
             self.n_cm2 = n_cm2
 
     def __str__(self):
-        """Return a string representation"""
+        """Return a string representation.
+
+        Shows flux if duration is nonzero, otherwise shows fluence.
+        """
 
         if self.duration == 0:
             return '{} neutrons/cm2 at {}'.format(self.n_cm2, self.start_time)
@@ -493,19 +565,6 @@ class NeutronIrradiation(object):
         initial quantity), specify an initial Isotope and an activated
         IsotopeQuantity.
 
-        Args:
-          barns: cross section for activation [barns = 1e-24 cm^2]
-          initial: the isotope being activated, an IsotopeQuantity or Isotope.
-            Specify an IsotopeQuantity if the initial quantity is known.
-            Specify an Isotope if the initial quantity is unknown
-          activated: the activated isotope, an IsotopeQuantity or Isotope.
-            Specify an IsotopeQuantity if the activated quantity is known.
-            Specify an Isotope if the activated quantity is unknown
-
-        Returns:
-          an IsotopeQuantity, corresponding to either the initial isotope or
-            the activated isotope, depending on which quantity was input
-
         Forward equations:
           A1 = phi * sigma * N0 * (1 - exp(-lambda * t_irr))
           A1 = n * sigma * N0 * lambda
@@ -521,6 +580,25 @@ class NeutronIrradiation(object):
           lambda = activity coefficient of activated isotope [1/s],
           t_irr = duration of irradiation [s]
           n = fluence of zero-duration irradiation [neutrons/cm2],
+
+        Args:
+          barns: cross section for activation [barns = 1e-24 cm^2]
+          initial: the isotope being activated, an IsotopeQuantity or Isotope.
+            Specify an IsotopeQuantity if the initial quantity is known.
+            Specify an Isotope if the initial quantity is unknown
+          activated: the activated isotope, an IsotopeQuantity or Isotope.
+            Specify an IsotopeQuantity if the activated quantity is known.
+            Specify an Isotope if the activated quantity is unknown
+
+        Returns:
+          an IsotopeQuantity, corresponding to either the initial isotope or
+            the activated isotope, depending on which quantity was input
+
+        Raises:
+          NeutronIrradiationError: if initial and activated are overspecified
+            or underspecified
+          TypeError: if initial and activated are not Isotope or
+            IsotopeQuantity objects
         """
 
         if (isinstance(initial, IsotopeQuantity) and
@@ -539,7 +617,7 @@ class NeutronIrradiation(object):
                 'No IsotopeQuantity specified, not enough data. ' +
                 'Args: {}, {}'.format(initial, activated))
         else:
-            raise NeutronIrradiationError(
+            raise TypeError(
                 'Input args should be Isotope or IsotopeQuantity objects: ' +
                 '{}, {}'.format(initial, activated))
 
@@ -582,12 +660,20 @@ def decay_normalize(isotope, interval1, interval2):
 
     If interval2 averages 1 Bq, what is interval1's average?
 
-    Compare counts1 to counts2 * decay_normalize(...).
-
     Args:
       isotope: Isotope object or string of the isotope that is decaying
       interval1: (start_time, stop_time) in datetimes or strings
       interval2: (start_time, stop_time) in datetimes or strings
+
+    Returns:
+      ratio of (expected decays in interval1) / (expected decays in interval2).
+        In other words, multiply measured counts in interval2 by this ratio
+        to get the expected counts in interval1.
+
+    Raises:
+      IsotopeQuantityError: if intervals are not of length 2
+      ValueError: if timestamps are out of order
+      TypeError: if timestamps are not parseable, or isotope is not an Isotope
     """
 
     isotope = handle_isotope(isotope, error_name='decay_normalize')
@@ -619,12 +705,19 @@ def decay_normalize_spectra(isotope, spec1, spec2):
 
     If spec2 averages 1 Bq, what is spec1's average?
 
-    Compare counts1 to counts2 * decay_normalize_spectra(...).
-
     Args:
       isotope: Isotope object or string of the isotope that is decaying
       spec1: Spectrum object with start_time, stop_time
       spec2: Spectrum object with start_time, stop_time
+
+    Returns:
+      ratio of (expected decays during spec1) / (expected decays during spec2).
+        In other words, multiply measured counts in spec2 by this ratio
+        to get the expected counts in spec1.
+
+    Raises:
+      TypeError: if isotope is not an Isotope instance
+      AttributeError: if spec1 or spec2 do not have start_time and stop_time
     """
 
     return decay_normalize(isotope,

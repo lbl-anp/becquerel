@@ -465,7 +465,7 @@ def test_irradiation_activate_errors():
         ni.activate(barns, initial=iq0, activated=iq1)
     with pytest.raises(NeutronIrradiationError):
         ni.activate(barns, initial=iso0, activated=iso1)
-    with pytest.raises(NeutronIrradiationError):
+    with pytest.raises(TypeError):
         ni.activate(barns, initial=iq0, activated='asdf')
 
     iso2 = Isotope('Na-25')
