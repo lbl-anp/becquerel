@@ -1,4 +1,5 @@
 future
+html5lib
 matplotlib
 numpy
 pandas
