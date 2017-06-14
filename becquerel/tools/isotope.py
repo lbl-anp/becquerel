@@ -7,6 +7,7 @@ import uncertainties
 from . import element
 from .wallet_cache import wallet_cache
 
+
 # pylint: disable=no-self-use
 
 
@@ -342,6 +343,16 @@ class Isotope(element.Element):
         data = df['T1/2 (s)'].tolist()
         assert len(np.unique(data)) == 1
         return data[0]
+
+    @property
+    def decay_const(self):
+        """The decay constant (lambda), in 1/seconds.
+
+        Returns:
+          the decay constant in 1/seconds, or 0 if stable.
+        """
+
+        return np.log(2) / self.half_life
 
     @property
     def is_stable(self):

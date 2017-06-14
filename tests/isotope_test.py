@@ -6,7 +6,6 @@ from becquerel.tools import element
 from becquerel.tools import isotope
 import pytest
 
-
 TEST_ISOTOPES = [
     ('H-3', 'H', 3, ''),
     ('He-4', 'He', 4, ''),
@@ -24,6 +23,10 @@ TEST_ISOTOPES = [
     ('Hf-178m3', 'Hf', 178, 3),
 ]
 
+
+# ----------------------------------------------------
+#                   Isotope class
+# ----------------------------------------------------
 
 @pytest.mark.parametrize('iso_str, sym, A, m', TEST_ISOTOPES)
 def test_isotope_init_args(iso_str, sym, A, m):
