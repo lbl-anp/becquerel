@@ -432,6 +432,10 @@ class _NNDCQuery(object):
                 self._data['spnuc'] = 'zanrange'
                 self._data[x + 'min'], self._data[x + 'max'] = \
                     _format_range(kwargs[x + '_range'])
+                if self._data[x + 'min'] == '':
+                    self._data[x + 'min'] = '0'
+                if self._data[x + 'max'] == '':
+                    self._data[x + 'max'] = '300'
             if x + '_any' in kwargs:
                 self._data['even' + x] = 'any'
             elif x + '_even' in kwargs:
