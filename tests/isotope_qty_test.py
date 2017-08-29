@@ -264,11 +264,11 @@ def test_isotopequantity_decays_during(iq):
         pass
     else:
         dt_s = iq.half_life
-        t0 = datetime.datetime.now()
+        t0 = iq.ref_date
         t1 = t0 + datetime.timedelta(seconds=dt_s)
         spec = Spectrum(np.zeros(256), start_time=t0, stop_time=t1)
 
-        assert np.isclose(iq.decays_during(spec), iq.atoms_now() / 2)
+        assert np.isclose(iq.decays_during(spec), iq.atoms_at(t0) / 2)
         assert np.isclose(iq.bq_during(spec), iq.decays_during(spec) / dt_s)
         assert np.isclose(iq.uci_during(spec), iq.bq_during(spec) / UCI_TO_BQ)
 
