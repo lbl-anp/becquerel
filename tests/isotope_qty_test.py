@@ -500,7 +500,7 @@ def test_decay_normalize(radioisotope):
     interval1 = (now, now + datetime.timedelta(hours=1))
     assert np.isclose(decay_normalize(radioisotope, interval1, interval1), 1)
 
-    if radioisotope.half_life < 1000 * 3.156e7:     # see #65
+    if 90 < radioisotope.half_life < 1000 * 3.156e7:     # see #65
         interval2 = (now + datetime.timedelta(days=1),
                      now + datetime.timedelta(days=1, hours=1))
         assert decay_normalize(radioisotope, interval1, interval2) > 1
@@ -532,8 +532,8 @@ def test_decay_normalize_spectra(radioisotope):
     spec1 = Spectrum(np.zeros(256), start_time=t0, stop_time=t1)
     assert np.isclose(decay_normalize_spectra(radioisotope, spec1, spec1), 1)
 
-    if radioisotope.half_life > 1000 * 3.156e7:
-        # avoid overflow errors in test calculations
+    if radioisotope.half_life < 90 or radioisotope.half_life > 1000 * 3.156e7:
+        # avoid overflow and underflow errors in test calculations
         pass
     else:
         t2 = t0 + datetime.timedelta(days=1)
