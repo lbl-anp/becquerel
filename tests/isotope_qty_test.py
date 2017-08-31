@@ -21,9 +21,12 @@ import pytest
 # ----------------------------------------------------
 
 @pytest.fixture(params=(
+    'Bi-212',
     'Cs-137',
     'K-40',
     'Cs-134',
+    'N-13',
+    'Rn-220',
     'Tc-99m',
     'Tl-208',
     'Th-232',
@@ -264,11 +267,11 @@ def test_isotopequantity_decays_during(iq):
         pass
     else:
         dt_s = iq.half_life
-        t0 = datetime.datetime.now()
+        t0 = iq.ref_date
         t1 = t0 + datetime.timedelta(seconds=dt_s)
         spec = Spectrum(np.zeros(256), start_time=t0, stop_time=t1)
 
-        assert np.isclose(iq.decays_during(spec), iq.atoms_now() / 2)
+        assert np.isclose(iq.decays_during(spec), iq.atoms_at(t0) / 2)
         assert np.isclose(iq.bq_during(spec), iq.decays_during(spec) / dt_s)
         assert np.isclose(iq.uci_during(spec), iq.bq_during(spec) / UCI_TO_BQ)
 
@@ -497,7 +500,10 @@ def test_decay_normalize(radioisotope):
     interval1 = (now, now + datetime.timedelta(hours=1))
     assert np.isclose(decay_normalize(radioisotope, interval1, interval1), 1)
 
-    if radioisotope.half_life < 1000 * 3.156e7:     # see #65
+    # avoid numerical issues with large half-lives (#65)
+    # and underflow with small half-lives
+    # note: 2^(-(1 day) / (85 seconds)) ~ sys.float_info.min
+    if 90 < radioisotope.half_life < 1000 * 3.156e7:
         interval2 = (now + datetime.timedelta(days=1),
                      now + datetime.timedelta(days=1, hours=1))
         assert decay_normalize(radioisotope, interval1, interval2) > 1
@@ -529,8 +535,10 @@ def test_decay_normalize_spectra(radioisotope):
     spec1 = Spectrum(np.zeros(256), start_time=t0, stop_time=t1)
     assert np.isclose(decay_normalize_spectra(radioisotope, spec1, spec1), 1)
 
-    if radioisotope.half_life > 1000 * 3.156e7:
-        # avoid overflow errors in test calculations
+    # avoid numerical issues with large half-lives (#65)
+    # and underflow with small half-lives
+    # note: 2^(-(1 day) / (85 seconds)) ~ sys.float_info.min
+    if radioisotope.half_life < 90 or radioisotope.half_life > 1000 * 3.156e7:
         pass
     else:
         t2 = t0 + datetime.timedelta(days=1)
