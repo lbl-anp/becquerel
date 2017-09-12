@@ -1,10 +1,11 @@
 """"Energy calibration classes"""
 
 from abc import ABCMeta, abstractmethod, abstractproperty
-from collections import Iterable
 from future.utils import viewitems
 from builtins import dict, super, zip  # pylint: disable=redefined-builtin
 import numpy as np
+
+from .utils import VECTOR_TYPES
 
 
 class EnergyCalError(Exception):
@@ -45,41 +46,28 @@ class EnergyCalBase(object):
         # initialize fit constraints?
 
     @classmethod
-    def from_points(cls, chlist=None, kevlist=None, pairlist=None):
+    def from_points(cls, chlist, kevlist):
         """Construct EnergyCal from calibration points.
 
-        Specify either pairlist, or (chlist and kevlist).
-
         Args:
-          chlist: an iterable of the channel values of calibration points
-          kevlist: an iterable of the corresponding energy values [keV]
-          pairlist: an iterable of paired values, (ch, kev)
+          chlist: list/tuple/array of the channel values of calibration points
+          kevlist: list/tuple/array of the corresponding energy values [keV]
 
         Raises:
-          BadInput: for bad pairlist, chlist, and/or kevlist.
+          BadInput: for bad chlist and/or kevlist.
         """
 
-        if pairlist and (chlist or kevlist):
-            raise BadInput('Redundant calibration inputs')
-        if (chlist and not kevlist) or (kevlist and not chlist):
-            raise BadInput('Require both chlist and kevlist')
-        if not chlist and not kevlist and not pairlist:
-            raise BadInput('Calibration points are required')
-        if chlist and kevlist:
-            if (not isinstance(chlist, Iterable) or
-                    not isinstance(kevlist, Iterable)):
-                raise BadInput('Inputs should be iterables, not scalars')
-            if len(chlist) != len(kevlist):
-                raise BadInput('Channels and energies must be same length')
-            pairlist = zip(chlist, kevlist)
-        elif not isinstance(pairlist[0], Iterable):
-            raise BadInput('Inputs should be iterables, not scalars')
+        if chlist is None or kevlist is None:
+            raise BadInput('Channel list and energy list are required')
+        elif (not isinstance(chlist, VECTOR_TYPES) or
+                not isinstance(kevlist, VECTOR_TYPES)):
+            raise BadInput('Inputs should be vector iterables, not scalars')
+        elif len(chlist) != len(kevlist):
+            raise BadInput('Channels and energies must be same length')
 
         cal = cls()
-
-        for ch, kev in pairlist:
+        for ch, kev in zip(chlist, kevlist):
             cal.new_calpoint(ch, kev)
-
         return cal
 
     @classmethod
@@ -105,7 +93,7 @@ class EnergyCalBase(object):
         """The channel values of calibration points.
 
         Returns:
-          an np.ndarray of channel values (may be float or int)
+          an np.ndarray of channel values (floats)
         """
 
         return np.array(list(self._calpoints.values()), dtype=float)

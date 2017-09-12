@@ -1,4 +1,7 @@
+beautifulsoup4
 future
+html5lib
+lxml
 matplotlib
 numpy
 pandas
@@ -6,3 +9,5 @@ python-dateutil
 requests
 scipy
 setuptools
+six
+uncertainties

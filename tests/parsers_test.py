@@ -21,9 +21,41 @@ for extension in ['.spe', '.spc', '.cnf']:
     SAMPLES[extension] = filenames_filtered
 
 
-@pytest.mark.plottest
 class TestSpectrumFile(object):
     """Test spectrum file parsers."""
+
+    def run_parser(self, cls, extension, write=False):
+        """Run the test for the given class and file extension."""
+        filenames = SAMPLES.get(extension, [])
+        assert len(filenames) >= 1
+        for filename in filenames:
+            fname, ext = os.path.splitext(filename)
+            path, fname = os.path.split(fname)
+            print('')
+            print(filename)
+            spec = cls(filename)
+            print(spec)
+            if write:
+                writename = os.path.join('.', fname + '_copy' + ext)
+                spec.write(writename)
+                os.remove(writename)
+
+    def test_spe(self):
+        """Test parsers.SpeFile............................................"""
+        self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
+
+    def test_spc(self):
+        """Test parsers.SpcFile............................................"""
+        self.run_parser(bq.parsers.SpcFile, '.spc', write=False)
+
+    def test_cnf(self):
+        """Test parsers.CnfFile............................................"""
+        self.run_parser(bq.parsers.CnfFile, '.cnf', write=False)
+
+
+@pytest.mark.plottest
+class TestSpectrumFilePlot(object):
+    """Test spectrum file parsers and plot the spectra."""
 
     def run_parser(self, cls, extension, write=False):
         """Run the test for the given class and file extension."""

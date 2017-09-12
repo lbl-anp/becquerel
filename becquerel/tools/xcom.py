@@ -10,9 +10,10 @@ References:
 """
 
 from __future__ import print_function
-from collections import Iterable, OrderedDict
+from collections import Iterable
 import requests
 import pandas as pd
+from . import element
 
 
 # Dry air relative weights taken from:
@@ -50,27 +51,19 @@ MIXTURE_PORTLAND_CEMENT = [
 ]
 
 
-# URL at NIST where data are posted
-_URL = 'http://physics.nist.gov/cgi-bin/Xcom/data.pl'
+# base URL for three scripts on NIST where data can be queried
+_URL = 'https://physics.nist.gov/cgi-bin/Xcom/xcom3_'
 
 
 # Dictionary of data that will be posted to URL
 _DATA = {
-    'Method': '',           # '1' = element, '2' = compound, '3' = mixture
     'NumAdd': '1',          # always '1'?
     'Energies': '',         # additional energies separated by ; (MeV)
     'WindowXmin': '0.001',  # lower limit of energy grid (MeV)
     'WindowXmax': '100',    # upper limit of energy grid (MeV)
     'Output': '',           # 'on' for standard energy grid
-    'photoelectric': 'on',  # return photoelectric cross section
-    'coherent': 'on',       # return coherent scattering cross section
-    'incoherent': 'on',     # return incoherent scattering cross section
-    'nuclear': 'on',        # return nuclear pair production cross section
-    'electron': 'on',       # return electron pair production cross section
-    'with': 'on',           # return total cross section with coherent scat.
-    'without': 'on',        # return total cross section w/o coherent scat.
     'OutOpt': 'PIC',        # return cross sections in cm^2/g
-    'character': 'bar',     # data delimiter
+    'ResizeFlag': 'on',     # seems to determine whether Xmin and Xmax are used
 }
 
 # abbreviated names for the table columns (these are used in the dataframe)
@@ -100,18 +93,6 @@ COLUMNS_LONG = {
     'total_w_coh': 'Total Attenuation with Coherent Scattering',
     'total_wo_coh': 'Total Attenuation without Coherent Scattering'
 }
-
-
-ELEMENT_SYMBOLS = [
-    'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg',
-    'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr',
-    'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
-    'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd',
-    'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
-    'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf',
-    'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po',
-    'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm',
-    'Bk', 'Cf', 'Es', 'Fm']
 
 
 class XCOMError(Exception):
@@ -186,6 +167,7 @@ class _XCOMQuery(object):
         self._text = None
         self.df = None
         self._data = dict(_DATA)
+        self._method = ''
         # determine which kind of argument 'arg' is (symbol, Z, compound, mix)
         kwargs.update(_XCOMQuery._argument_type(arg))
         self.update(**kwargs)
@@ -220,7 +202,7 @@ class _XCOMQuery(object):
     @staticmethod
     def _argument_type(arg):
         """Determine if argument is a symbol, Z, compound, or mixture."""
-        for sym in ELEMENT_SYMBOLS:
+        for sym in element.SYMBOLS:
             if arg == sym or arg == sym.upper() or arg == sym.lower():
                 return {'symbol': sym}
         try:
@@ -309,21 +291,21 @@ class _XCOMQuery(object):
 
         # determine the search method (element, compound, or mixture)
         if 'symbol' in kwargs:
-            self._data['Method'] = '1'
+            self._method = '1'
             sym = kwargs['symbol']
             self._data['ZSym'] = sym
         elif 'z' in kwargs:
-            self._data['Method'] = '1'
+            self._method = '1'
             znum = kwargs['z']
             _XCOMQuery._check_z(znum)
             self._data['ZNum'] = '{:d}'.format(int(znum))
         elif 'compound' in kwargs:
-            self._data['Method'] = '2'
+            self._method = '2'
             formula = kwargs['compound']
             _XCOMQuery._check_compound(formula)
             self._data['Formula'] = formula
         elif 'mixture' in kwargs:
-            self._data['Method'] = '3'
+            self._method = '3'
             formulae = kwargs['mixture']
             _XCOMQuery._check_mixture(formulae)
             formulae = '\r\n'.join(formulae)
@@ -374,7 +356,7 @@ class _XCOMQuery(object):
 
     def _request(self):
         """Request data table from the URL."""
-        self._req = requests.post(self._url, data=self._data)
+        self._req = requests.post(self._url + self._method, data=self._data)
         if not self._req.ok or self._req.reason != 'OK' or \
                 self._req.status_code != 200:
             raise XCOMRequestError(
@@ -389,16 +371,17 @@ class _XCOMQuery(object):
         self._text = str(self._req.text)
         if len(self._text) == 0:
             raise XCOMRequestError('XCOM returned no text')
-        lines = [line for line in self._text.split('\n')]
-        table = OrderedDict()
-        for key in COLUMNS_SHORT:
-            table[key] = []
-        for line in lines[3:]:
-            tokens = line.split('|')
-            if len(tokens) == 9:
-                for column, token in zip(COLUMNS_SHORT, tokens):
-                    table[column].append(float(token))
-        self.df = pd.DataFrame(table)
+        tables = pd.read_html(self._text, header=0, skiprows=[1, 2])
+        if len(tables) != 1:
+            raise XCOMRequestError('More than one HTML table found')
+        self.df = tables[0]
+        if len(self.df.keys()) != 1 + len(COLUMNS_SHORT):
+            raise XCOMRequestError(
+                'Found {} columns but expected {}'.format(
+                    len(self.df.keys()), 1 + len(COLUMNS_SHORT)))
+        # remove 'edge' column
+        self.df = self.df[self.df.keys()[1:]]
+        self.df.columns = COLUMNS_SHORT
         if len(self) == 0:
             raise XCOMRequestError('Parsed DataFrame is empty')
 
@@ -414,7 +397,7 @@ class _XCOMQuery(object):
             a problem parsing the data.
 
         """
-        if self._data['Method'] not in ['1', '2', '3']:
+        if self._method not in ['1', '2', '3']:
             raise XCOMInputError(
                 'XCOM search method not set. Need to call update() method.')
         if self._data['Energies'] == '' and self._data['Output'] == '':
