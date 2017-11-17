@@ -35,7 +35,7 @@ GE_GRID_ENERGIES_PLUS_3 = [
 class TestFetchXCOMData(object):
     """Test fetch_xcom_data function."""
 
-    def test_sym_enrgy(self):
+    def test_sym_energy(self):
         """Test fetch_xcom_data with symbol and one energy."""
         energies = [1460.]
         xd = xcom.fetch_xcom_data('Ge', energies_kev=energies)
@@ -72,9 +72,15 @@ class TestFetchXCOMData(object):
         assert len(xd) == len(ENERGIES_3)
         assert np.allclose(xd.energy, ENERGIES_3)
 
-    def test_compound(self):
+    def test_compound1(self):
         """Test fetch_xcom_data with compound (H2O) and three energies."""
         xd = xcom.fetch_xcom_data('H2O', energies_kev=ENERGIES_3)
+        assert len(xd) == len(ENERGIES_3)
+        assert np.allclose(xd.energy, ENERGIES_3)
+
+    def test_compound2(self):
+        """Test fetch_xcom_data with compound (NaCl) and three energies."""
+        xd = xcom.fetch_xcom_data('NaCl', energies_kev=ENERGIES_3)
         assert len(xd) == len(ENERGIES_3)
         assert np.allclose(xd.energy, ENERGIES_3)
 
@@ -112,6 +118,12 @@ class TestFetchXCOMData(object):
         with pytest.raises(xcom.XCOMInputError):
             xcom.fetch_xcom_data(130, energies_kev=ENERGIES_3)
 
+    def test_except_bad_compound(self):
+        """Test fetch_xcom_data raises except for bad compound formula."""
+        with pytest.raises(xcom.XCOMInputError):
+            xcom.fetch_xcom_data(
+                'H2O++', energies_kev=ENERGIES_3)
+
     def test_except_bad_mixture1(self):
         """Test fetch_xcom_data raises except for badly formed mixture (1)."""
         with pytest.raises(xcom.XCOMInputError):
@@ -123,6 +135,24 @@ class TestFetchXCOMData(object):
         with pytest.raises(xcom.XCOMInputError):
             xcom.fetch_xcom_data(
                 ['H2O 1 1', 'NaCl 1'], energies_kev=ENERGIES_3)
+
+    def test_except_bad_mixture3(self):
+        """Test fetch_xcom_data raises except for badly formed mixture (3)."""
+        with pytest.raises(xcom.XCOMInputError):
+            xcom.fetch_xcom_data(
+                {'H2O': '1', 'NaCl': '1'}, energies_kev=ENERGIES_3)
+
+    def test_except_bad_mixture4(self):
+        """Test fetch_xcom_data raises except for badly formed mixture (4)."""
+        with pytest.raises(xcom.XCOMInputError):
+            xcom.fetch_xcom_data(
+                ['H2O 0.9', ['NaCl', '0.1']], energies_kev=ENERGIES_3)
+
+    def test_except_bad_mixture5(self):
+        """Test fetch_xcom_data raises except for badly formed mixture (5)."""
+        with pytest.raises(xcom.XCOMInputError):
+            xcom.fetch_xcom_data(
+                ['H2O 0.9', 'NaCl $0.1'], energies_kev=ENERGIES_3)
 
     def test_except_bad_arg(self):
         """Test fetch_xcom_data raises exception if given bad argument."""
