@@ -9,6 +9,10 @@ import pytest
 XCOM_URL_ORIG = xcom._URL
 
 
+# energies to query using energies keyword
+ENERGIES_3 = [60., 662., 1460.]
+
+
 # standard grid energies for Germanium from 1 keV to 10 MeV
 GE_GRID_ENERGIES = [
     1, 1.103, 1.217, 1.217, 1.232, 1.248, 1.248, 1.328, 1.414, 1.414, 1.500,
@@ -40,53 +44,46 @@ class TestFetchXCOMData(object):
 
     def test_sym_energies(self):
         """Test fetch_xcom_data with symbol and three energies."""
-        energies = [60., 662., 1460.]
-        xd = xcom.fetch_xcom_data('Ge', energies_kev=energies)
-        assert len(xd) == len(energies)
-        assert np.allclose(xd.energy, energies)
+        xd = xcom.fetch_xcom_data('Ge', energies_kev=ENERGIES_3)
+        assert len(xd) == len(ENERGIES_3)
+        assert np.allclose(xd.energy, ENERGIES_3)
 
     def test_sym_upper(self):
         """Test fetch_xcom_data with uppercase symbol and three energies."""
-        energies = [60., 662., 1460.]
-        xd = xcom.fetch_xcom_data('GE', energies_kev=energies)
-        assert len(xd) == len(energies)
-        assert np.allclose(xd.energy, energies)
+        xd = xcom.fetch_xcom_data('GE', energies_kev=ENERGIES_3)
+        assert len(xd) == len(ENERGIES_3)
+        assert np.allclose(xd.energy, ENERGIES_3)
 
     def test_sym_lower(self):
         """Test fetch_xcom_data with lowercase symbol and three energies."""
-        energies = [60., 662., 1460.]
-        xd = xcom.fetch_xcom_data('ge', energies_kev=energies)
-        assert len(xd) == len(energies)
-        assert np.allclose(xd.energy, energies)
+        xd = xcom.fetch_xcom_data('ge', energies_kev=ENERGIES_3)
+        assert len(xd) == len(ENERGIES_3)
+        assert np.allclose(xd.energy, ENERGIES_3)
 
     def test_z_int(self):
         """Test fetch_xcom_data with z (integer) and three energies."""
-        energies = [60., 662., 1460.]
-        xd = xcom.fetch_xcom_data(32, energies_kev=energies)
-        assert len(xd) == len(energies)
-        assert np.allclose(xd.energy, energies)
+        xd = xcom.fetch_xcom_data(32, energies_kev=ENERGIES_3)
+        assert len(xd) == len(ENERGIES_3)
+        assert np.allclose(xd.energy, ENERGIES_3)
 
     def test_z_str(self):
         """Test fetch_xcom_data with z (string) and three energies."""
-        energies = [60., 662., 1460.]
-        xd = xcom.fetch_xcom_data('32', energies_kev=energies)
-        assert len(xd) == len(energies)
-        assert np.allclose(xd.energy, energies)
+        xd = xcom.fetch_xcom_data('32', energies_kev=ENERGIES_3)
+        assert len(xd) == len(ENERGIES_3)
+        assert np.allclose(xd.energy, ENERGIES_3)
 
     def test_compound(self):
         """Test fetch_xcom_data with compound (H2O) and three energies."""
-        energies = [60., 662., 1460.]
-        xd = xcom.fetch_xcom_data('H2O', energies_kev=energies)
-        assert len(xd) == len(energies)
-        assert np.allclose(xd.energy, energies)
+        xd = xcom.fetch_xcom_data('H2O', energies_kev=ENERGIES_3)
+        assert len(xd) == len(ENERGIES_3)
+        assert np.allclose(xd.energy, ENERGIES_3)
 
     def test_mixture(self):
         """Test fetch_xcom_data with mixture and three energies."""
-        energies = [60., 662., 1460.]
         xd = xcom.fetch_xcom_data(
-            ['H2O 0.9', 'NaCl 0.1'], energies_kev=energies)
-        assert len(xd) == len(energies)
-        assert np.allclose(xd.energy, energies)
+            ['H2O 0.9', 'NaCl 0.1'], energies_kev=ENERGIES_3)
+        assert len(xd) == len(ENERGIES_3)
+        assert np.allclose(xd.energy, ENERGIES_3)
 
     def test_standard_grid(self):
         """Test fetch_xcom_data with standard grid."""
@@ -96,43 +93,41 @@ class TestFetchXCOMData(object):
 
     def test_standard_grid_energies(self):
         """Test fetch_xcom_data with three energies and standard grid."""
-        energies = [60., 662., 1460.]
         xd = xcom.fetch_xcom_data(
-            'Ge', energies_kev=energies, e_range_kev=[1., 10000.])
+            'Ge', energies_kev=ENERGIES_3, e_range_kev=[1., 10000.])
         assert len(xd) == len(GE_GRID_ENERGIES_PLUS_3)
         assert np.allclose(xd.energy, GE_GRID_ENERGIES_PLUS_3)
 
     def test_mixtures_predefined(self):
         """Test fetch_xcom_data for predefined mixtures."""
-        energies = [60., 662., 1460.]
         mixtures = [key for key in dir(xcom) if key.startswith('MIXTURE')]
         for mixture in mixtures:
             xd = xcom.fetch_xcom_data(
-                getattr(xcom, mixture), energies_kev=energies)
-            assert len(xd) == len(energies)
-            assert np.allclose(xd.energy, energies)
+                getattr(xcom, mixture), energies_kev=ENERGIES_3)
+            assert len(xd) == len(ENERGIES_3)
+            assert np.allclose(xd.energy, ENERGIES_3)
 
     def test_except_z_range(self):
         """Test fetch_xcom_data raises exception if z is out of range."""
         with pytest.raises(xcom.XCOMInputError):
-            xcom.fetch_xcom_data(130, energies_kev=[60., 662., 1460.])
+            xcom.fetch_xcom_data(130, energies_kev=ENERGIES_3)
 
     def test_except_bad_mixture1(self):
         """Test fetch_xcom_data raises except for badly formed mixture (1)."""
         with pytest.raises(xcom.XCOMInputError):
             xcom.fetch_xcom_data(
-                ['H2O 0.9', 'NaCl'], energies_kev=[60., 662., 1460.])
+                ['H2O 0.9', 'NaCl'], energies_kev=ENERGIES_3)
 
     def test_except_bad_mixture2(self):
         """Test fetch_xcom_data raises except for badly formed mixture (2)."""
         with pytest.raises(xcom.XCOMInputError):
             xcom.fetch_xcom_data(
-                ['H2O 1 1', 'NaCl 1'], energies_kev=[60., 662., 1460.])
+                ['H2O 1 1', 'NaCl 1'], energies_kev=ENERGIES_3)
 
     def test_except_bad_arg(self):
         """Test fetch_xcom_data raises exception if given bad argument."""
         with pytest.raises(xcom.XCOMInputError):
-            xcom.fetch_xcom_data(None, energies_kev=[60., 662., 1460.])
+            xcom.fetch_xcom_data(None, energies_kev=ENERGIES_3)
 
     def test_except_no_energies(self):
         """Test fetch_xcom_data raises except if no energies are requested."""
@@ -143,14 +138,14 @@ class TestFetchXCOMData(object):
         """Test fetch_xcom_data raises exception if website not found."""
         xcom._URL = 'http://httpbin.org/status/404'
         with pytest.raises(xcom.XCOMRequestError):
-            xcom.fetch_xcom_data('Ge', energies_kev=[60., 662., 1460.])
+            xcom.fetch_xcom_data('Ge', energies_kev=ENERGIES_3)
         xcom._URL = XCOM_URL_ORIG
 
     def test_except_website_empty(self):
         """Test fetch_xcom_data raises except if data from website is empty."""
         xcom._URL = 'http://httpbin.org/post'
         with pytest.raises(xcom.XCOMRequestError):
-            xcom.fetch_xcom_data('Ge', energies_kev=[60., 662., 1460.])
+            xcom.fetch_xcom_data('Ge', energies_kev=ENERGIES_3)
         xcom._URL = XCOM_URL_ORIG
 
     def test_except_energies_kev_float(self):
