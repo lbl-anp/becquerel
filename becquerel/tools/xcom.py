@@ -300,10 +300,17 @@ class _XCOMQuery(object):
             _XCOMQuery._check_z(znum)
             self._data['ZNum'] = '{:d}'.format(int(znum))
         elif 'compound' in kwargs:
-            self._method = '2'
+            # convert compound to mixture to avoid occasional problem
+            # with XCOM compound queries (see issue #76)
+            # self._method = '2'
+            self._method = '3'
             formula = kwargs['compound']
             _XCOMQuery._check_compound(formula)
-            self._data['Formula'] = formula
+            formulae = [formula + ' 1']
+            _XCOMQuery._check_mixture(formulae)
+            formulae = '\r\n'.join(formulae)
+            # self._data['Formula'] = formula
+            self._data['Formulae'] = formulae
         elif 'mixture' in kwargs:
             self._method = '3'
             formulae = kwargs['mixture']
