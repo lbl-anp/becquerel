@@ -1,11 +1,30 @@
 """Test XCOM data queries."""
 
 from __future__ import print_function
+import numpy as np
 from becquerel.tools import xcom
 import pytest
 
 # pylint: disable=protected-access,too-many-public-methods
 XCOM_URL_ORIG = xcom._URL
+
+
+# standard grid energies for Germanium from 1 keV to 10 MeV
+GE_GRID_ENERGIES = [
+    1, 1.103, 1.217, 1.217, 1.232, 1.248, 1.248, 1.328, 1.414, 1.414, 1.500,
+    2, 3, 4, 5, 6, 8, 10, 11.100, 11.100, 15, 20, 30, 40, 50, 60, 80, 100,
+    150, 200, 300, 400, 500, 600, 800, 1000, 1022, 1250, 1500, 2000, 2044,
+    3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
+]
+
+
+# standard grid energies for Germanium, plus 60, 662, and 1460
+GE_GRID_ENERGIES_PLUS_3 = [
+    1, 1.103, 1.217, 1.217, 1.232, 1.248, 1.248, 1.328, 1.414, 1.414, 1.500,
+    2, 3, 4, 5, 6, 8, 10, 11.100, 11.100, 15, 20, 30, 40, 50, 60, 80, 100,
+    150, 200, 300, 400, 500, 600, 662, 800, 1000, 1022, 1250, 1460, 1500,
+    2000, 2044, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
+]
 
 
 @pytest.mark.webtest
@@ -17,42 +36,49 @@ class TestFetchXCOMData(object):
         energies = [1460.]
         xd = xcom.fetch_xcom_data('Ge', energies_kev=energies)
         assert len(xd) == len(energies)
+        assert np.allclose(xd.energy, energies)
 
     def test_sym_energies(self):
         """Test fetch_xcom_data with symbol and three energies."""
         energies = [60., 662., 1460.]
         xd = xcom.fetch_xcom_data('Ge', energies_kev=energies)
         assert len(xd) == len(energies)
+        assert np.allclose(xd.energy, energies)
 
     def test_sym_upper(self):
         """Test fetch_xcom_data with uppercase symbol and three energies."""
         energies = [60., 662., 1460.]
         xd = xcom.fetch_xcom_data('GE', energies_kev=energies)
         assert len(xd) == len(energies)
+        assert np.allclose(xd.energy, energies)
 
     def test_sym_lower(self):
         """Test fetch_xcom_data with lowercase symbol and three energies."""
         energies = [60., 662., 1460.]
         xd = xcom.fetch_xcom_data('ge', energies_kev=energies)
         assert len(xd) == len(energies)
+        assert np.allclose(xd.energy, energies)
 
     def test_z_int(self):
         """Test fetch_xcom_data with z (integer) and three energies."""
         energies = [60., 662., 1460.]
         xd = xcom.fetch_xcom_data(32, energies_kev=energies)
         assert len(xd) == len(energies)
+        assert np.allclose(xd.energy, energies)
 
     def test_z_str(self):
         """Test fetch_xcom_data with z (string) and three energies."""
         energies = [60., 662., 1460.]
         xd = xcom.fetch_xcom_data('32', energies_kev=energies)
         assert len(xd) == len(energies)
+        assert np.allclose(xd.energy, energies)
 
     def test_compound(self):
         """Test fetch_xcom_data with compound (H2O) and three energies."""
         energies = [60., 662., 1460.]
         xd = xcom.fetch_xcom_data('H2O', energies_kev=energies)
         assert len(xd) == len(energies)
+        assert np.allclose(xd.energy, energies)
 
     def test_mixture(self):
         """Test fetch_xcom_data with mixture and three energies."""
@@ -60,13 +86,21 @@ class TestFetchXCOMData(object):
         xd = xcom.fetch_xcom_data(
             ['H2O 0.9', 'NaCl 0.1'], energies_kev=energies)
         assert len(xd) == len(energies)
+        assert np.allclose(xd.energy, energies)
 
     def test_standard_grid(self):
+        """Test fetch_xcom_data with standard grid."""
+        xd = xcom.fetch_xcom_data('Ge', e_range_kev=[1., 10000.])
+        assert len(xd) == len(GE_GRID_ENERGIES)
+        assert np.allclose(xd.energy, GE_GRID_ENERGIES)
+
+    def test_standard_grid_energies(self):
         """Test fetch_xcom_data with three energies and standard grid."""
         energies = [60., 662., 1460.]
         xd = xcom.fetch_xcom_data(
             'Ge', energies_kev=energies, e_range_kev=[1., 10000.])
-        assert len(xd) > len(energies)
+        assert len(xd) == len(GE_GRID_ENERGIES_PLUS_3)
+        assert np.allclose(xd.energy, GE_GRID_ENERGIES_PLUS_3)
 
     def test_mixtures_predefined(self):
         """Test fetch_xcom_data for predefined mixtures."""
@@ -76,6 +110,7 @@ class TestFetchXCOMData(object):
             xd = xcom.fetch_xcom_data(
                 getattr(xcom, mixture), energies_kev=energies)
             assert len(xd) == len(energies)
+            assert np.allclose(xd.energy, energies)
 
     def test_except_z_range(self):
         """Test fetch_xcom_data raises exception if z is out of range."""
