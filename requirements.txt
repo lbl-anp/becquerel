@@ -3,6 +3,7 @@ future
 html5lib
 lxml
 matplotlib
+numba
 numpy
 pandas
 python-dateutil
