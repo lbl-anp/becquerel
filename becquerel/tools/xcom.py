@@ -13,6 +13,7 @@ from __future__ import print_function
 from collections import Iterable
 import requests
 import pandas as pd
+from six import string_types
 from . import element
 
 
@@ -202,18 +203,16 @@ class _XCOMQuery(object):
     @staticmethod
     def _argument_type(arg):
         """Determine if argument is a symbol, Z, compound, or mixture."""
-        for sym in element.SYMBOLS:
-            if arg == sym or arg == sym.upper() or arg == sym.lower():
-                return {'symbol': sym}
-        try:
-            int(arg)
-        except (ValueError, TypeError):
-            pass
-        else:
+        if isinstance(arg, string_types):
+            if arg.isdigit():
+                return {'z': arg}
+            elif arg.lower() in [s.lower() for s in element.SYMBOLS]:
+                return {'symbol': arg}
+            else:
+                return {'compound': arg}
+        elif isinstance(arg, int):
             return {'z': arg}
-        if isinstance(arg, str):
-            return {'compound': arg}
-        if isinstance(arg, Iterable):
+        elif isinstance(arg, Iterable):
             return {'mixture': arg}
         raise XCOMInputError(
             'Cannot determine if argument {}'.format(arg) +
