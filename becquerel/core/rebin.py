@@ -61,7 +61,7 @@ def _rebin_interpolation(in_spectrum, in_edges, out_edges, slopes):
 
     Keeps a running counter of two loop indices: in_idx & out_idx
     """
-    out_spectrum = np.zeros(out_edges.shape[0] - 1) # init output
+    out_spectrum = np.zeros(out_edges.shape[0] - 1)  # init output
     # in_idx: input bin or left edge
     #         init to the first in_bin which overlaps the 0th out_bin
     in_idx = max(0, np.searchsorted(in_edges, out_edges[0]) - 1)
