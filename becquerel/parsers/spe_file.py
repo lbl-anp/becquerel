@@ -61,10 +61,8 @@ class SpeFile(SpectrumFile):
         self.data = np.array([], dtype=np.float)
         self.cal_coeff = []
         with open(self.filename, 'r') as f:
-            lines = f.readlines()
-            # remove newlines from end of each line
-            for i, line in enumerate(lines):
-                lines[i] = line.strip()
+            # read & remove newlines from end of each line
+            lines = [line.strip() for line in f.readlines()]
             i = 0
             while i < len(lines):
                 # check whether we have reached a keyword and parse accordingly
@@ -143,7 +141,7 @@ class SpeFile(SpectrumFile):
                     if verbose:
                         print(self.shape_cal)
                 else:
-                    print('Unknown line: ', lines[i])
+                    print('Line {} unknown: '.format(i + 1), lines[i])
                 i += 1
         if self.realtime <= 0.0:
             raise SpeFileParsingError(
