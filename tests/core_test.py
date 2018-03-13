@@ -5,6 +5,7 @@ import pytest
 import datetime
 import numpy as np
 from uncertainties import ufloat, UFloat, unumpy
+import matplotlib.pyplot as plt
 
 import becquerel as bq
 
@@ -770,6 +771,99 @@ def test_downsample_handle_livetime_error(uncal_spec):
     with pytest.raises(ValueError):
         uncal_spec.downsample(5, handle_livetime='asdf')
 
+
+# ----------------------------------------------
+#         Test Rebinning
+# ----------------------------------------------
+
+@pytest.fixture(params=[np.linspace(0, 3000, 3001),
+                        np.linspace(0, 3000, 2230),
+                        np.linspace(0, 3000, 7777)],
+                ids=["1 keV bins",
+                     "slightly larger bins",
+                     "slightly smaller bins"])
+def old_edges(request):
+    return request.param
+
+
+@pytest.fixture(params=[np.linspace(0, 3000, 3001),
+                        np.linspace(0, 3000, 39000),
+                        np.linspace(0, 3000, 17),
+                        np.linspace(-6, 3002, 2222),
+                        np.linspace(-0.3, 3000, 256)],
+                ids=["1 keV bins",
+                     "small bins",
+                     "large bins",
+                     "medium bins larger range",
+                     "large bins slightly larger range"])
+def new_edges(request):
+    return request.param
+
+
+@pytest.fixture(params=[1, 50, 12555],
+                ids=["sparse counts", "medium counts", "high counts"])
+def lam(request):
+    return request.param
+
+
+class TestRebin(object):
+    """Tests for core.rebin()"""
+
+    def test_rebin_counts_float(self, lam, old_edges, new_edges):
+        """Check total counts in spectrum data before and after rebin"""
+
+        old_counts = np.random.poisson(
+            lam=lam, size=len(old_edges) - 1).astype(float)
+        new_counts = bq.core.rebin.rebin(old_counts, old_edges, new_edges)
+        assert np.isclose(old_counts.sum(), new_counts.sum())
+
+    def test_rebin_counts_int(self, lam, old_edges, new_edges):
+        """Check that rebin raises an error for counts as integers"""
+
+        old_counts = np.random.poisson(
+            lam=lam, size=len(old_edges) - 1).astype(int)
+        with pytest.raises(AssertionError):
+            bq.core.rebin.rebin(old_counts, old_edges, new_edges)
+
+    def test_rebin_array_shape(self, lam, old_edges, new_edges):
+        """Check that rebin raises an error for incorrectly shaped inputs"""
+
+        old_counts = np.random.poisson(
+            lam=lam, size=len(old_edges) - 1).astype(float)
+        old_counts = old_counts[np.newaxis, :]
+        with pytest.raises(AssertionError):
+            bq.core.rebin.rebin(old_counts, old_edges, new_edges)
+
+    def test_rebin2d_counts_float(self, lam, old_edges, new_edges):
+        """Check total counts in spectra data before and after rebin"""
+
+        nspectra = 20
+        old_counts_2d = np.random.poisson(
+            lam=lam, size=(nspectra, len(old_edges) - 1)).astype(float)
+        old_edges_2d = np.repeat(old_edges[np.newaxis, :], nspectra, axis=0)
+        new_counts_2d = bq.core.rebin.rebin(old_counts_2d,
+                                            old_edges_2d,
+                                            new_edges)
+        assert np.allclose(old_counts_2d.sum(axis=1),
+                           new_counts_2d.sum(axis=1))
+
+    @pytest.mark.plottest
+    def test_uncal_spectrum_counts(self, uncal_spec):
+        """Plot the old and new spectrum bins as a sanity check"""
+
+        old_edges = np.concatenate([
+            uncal_spec.channels.astype('float') - 0.5,
+            np.array([uncal_spec.channels[-1] + 0.5])])
+        new_edges = old_edges + 0.3
+        new_data = bq.core.rebin(uncal_spec.data, old_edges, new_edges)
+        plt.figure()
+        plt.plot(*bq.core.bin_edges_and_heights_to_steps(old_edges,
+                                                         uncal_spec.data),
+                 color='dodgerblue', label='original')
+        plt.plot(*bq.core.bin_edges_and_heights_to_steps(new_edges,
+                                                         new_data),
+                 color='firebrick', label='rebinned')
+        plt.show()
 
 # ----------------------------------------------
 #         Test Spectrum.__len__
