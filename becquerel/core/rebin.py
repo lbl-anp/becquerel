@@ -199,9 +199,13 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     # TODO check that in_spectrum are all >= 0
     _check_ndim(in_spectra, {1, 2}, 'in_spectra')
     # broadcast in_edges out to the dimensions of in_spectra
-    # (specifically for the case 1D -> 2D)
-    in_edges = np.copy(  # copy req'd: the readonly array doesn't work w/ numba
-        np.broadcast_to(in_edges, (len(in_spectra), in_edges.shape[-1])))
+    # specifically for the case 1D -> 2D
+    if (in_spectra.ndim == 2) and (in_edges.ndim == 1):
+        # copy req'd: the readonly array doesn't work w/ numba
+        in_edges = np.copy(
+            np.broadcast_to(
+                in_edges,
+                (in_spectra.shape[0], in_edges.shape[-1])))
     _check_ndim(out_edges, 1, 'out_edges')
     _check_nonneg_monotonic_increasing(in_edges, 'in_edges')
     _check_nonneg_monotonic_increasing(out_edges, 'out_edges')
