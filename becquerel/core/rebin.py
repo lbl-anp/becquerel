@@ -3,12 +3,33 @@ import numba as nb
 
 
 def _check_ndim(arr, ndim, arr_name='array'):
-    """ ndim can be a scalar number or an iterable """
+    """Check the dimensionality of a numpy array
+
+    Check that the array arr has dimension ndim.
+
+    Args:
+      arr: numpy array for which dimensionality is checked
+      ndim: a scalar number or an iterable
+      arr_name: name of array, just for use in the AssertionError message
+
+    Raises:
+      AssertionError: if arr does not have dimension ndim
+    """
     assert arr.ndim == ndim or arr.ndim in ndim, \
         '{}({}) is not {}D'.format(arr_name, arr.shape, ndim)
 
 
 def _check_nonneg_monotonic_increasing(arr, arr_name='array'):
+    """Check that a numpy array is non-negative and monotonically increasing
+
+    Args:
+      arr: numpy array for checking
+      arr_name: name of array, just for use in the AssertionError message
+
+    Raises:
+      AssertionError: if arr has negative values or
+                      is not monotonically increasing
+    """
     # Check that elements along the last axis are increasing or
     # neighboring elements are equal
     assert np.all((np.diff(arr) > 0) | np.isclose(np.diff(arr), 0)), \
@@ -23,6 +44,15 @@ def _linear_offset(slope, cts, low, high):
     """
     Calculate the offset of the linear aproximation of slope when splitting
     counts between bins.
+
+    Args:
+      slope:
+      cts:
+      low:
+      high:
+
+    Returns:
+      the offset
     """
     if np.abs(slope) < 1e-6:
         offset = cts / (high - low)
@@ -35,6 +65,11 @@ def _linear_offset(slope, cts, low, high):
 def _slope_integral(x, m, b):
     '''
     Calculate the integral of our quadratic given some slope and offset.
+
+    Args:
+      x:
+      m:
+      b:
     '''
     return m * x**2 / 2 + b * x
 
@@ -46,6 +81,13 @@ def _counts(slope, offset, cts, low, high):
     rate in the vincity of relevant bins.  Edges of this integration
     are low and high while offset is provided from _linear_offset and cts
     from the bin being partitioned.
+
+    Args:
+      slope:
+      offset:
+      cts:
+      low:
+      high:
     '''
     return (_slope_integral(high, slope, offset) -
             _slope_integral(low, slope, offset))
@@ -57,9 +99,14 @@ def _counts(slope, offset, cts, low, high):
         nopython=True)
 def _rebin_interpolation(in_spectrum, in_edges, out_edges, slopes):
     """
-
+    Rebins a spectrum using linear interpolation.
 
     Keeps a running counter of two loop indices: in_idx & out_idx
+
+    Args:
+
+    Returns:
+      1D numpy array of rebinned spectrum counts in each bin
     """
     out_spectrum = np.zeros(out_edges.shape[0] - 1)  # init output
     # in_idx: input bin or left edge
@@ -114,6 +161,16 @@ def _rebin_listmode(in_spectrum, in_edges, out_edges, slopes):
 
     TODO Assume piecewise constant (ie steps, flat within each bin)
          distribution for in_spectrum (for now). slopes is unused.
+
+    Args:
+      in_spectrum: iterable of input spectrum counts in each bin
+      in_edges: iterable of input bin edges (len = len(in_spectrum) + 1)
+      out_edges: iterable of output bin edges
+      slopes: unused, just for keeping number of arguments the same as
+              _rebin_interpolation()
+
+    Returns:
+      1D numpy array of rebinned spectrum counts in each bin
     """
     energies = np.zeros(np.sum(in_spectrum))
     energy_idx_start = 0
@@ -138,6 +195,22 @@ def _rebin_listmode(in_spectrum, in_edges, out_edges, slopes):
 @nb.jit(nb.f8[:, :](nb.f8[:, :], nb.f8[:, :], nb.f8[:], nb.f8[:, :]),
         locals={'i': nb.u4}, nopython=True)
 def _rebin2d_interpolation(in_spectra, in_edges, out_edges, slopes):
+    """
+    Rebins a 2D array of spectra using linear interpolation
+
+    N.B. Does not keep Poisson statistics
+
+    Wrapper around _rebin_interpolation (1D) for the 2D case
+
+    Args:
+      in_spectra: np.2darray, shape (num_spectra, num_channels_in)
+        array of input spectrum counts of shape
+      in_edges: np.2darray, shape (num_spectra, num_channels_in + 1)
+        array of the input bin edges of shape
+      out_edges: np.1darray
+        array of the output bin edges
+      slopes:
+    """
     # Init output
     out_spectra = np.zeros((in_spectra.shape[0], out_edges.shape[0] - 1))
     for i in np.arange(in_spectra.shape[0]):
@@ -149,6 +222,25 @@ def _rebin2d_interpolation(in_spectra, in_edges, out_edges, slopes):
 @nb.jit(nb.i8[:, :](nb.i8[:, :], nb.f8[:, :], nb.f8[:], nb.f8[:, :]),
         locals={'i': nb.u4}, nopython=True)
 def _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes):
+    """
+    Rebins a 2D array of spectra stochastically: histogram to listmode and back
+
+    Wrapper around _rebin_listmode (1D) for the 2D case
+
+    Args:
+      in_spectra: np.2darray, shape (num_spectra, num_channels_in)
+        array of input spectrum counts of shape
+      in_edges: np.2darray, shape (num_spectra, num_channels_in + 1)
+        array of the input bin edges of shape
+      out_edges: np.1darray
+        array of the output bin edges
+      slopes: TODO unused, just for keeping number of arguments the same as
+              _rebin_interpolation()
+
+    Returns:
+      np.2darray, shape (num_spectra, num_channels_in)
+      The rebinned spectra
+    """
     # Init output
     out_spectra = np.zeros((in_spectra.shape[0], out_edges.shape[0] - 1),
                            np.int64)
@@ -182,6 +274,9 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
 
     Raises:
         AssertionError: for bad input arguments
+
+    Returns:
+        The rebinned spectrum/a
     """
     method = method.lower()
     if method == "listmode":
