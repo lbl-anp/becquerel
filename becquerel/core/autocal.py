@@ -399,6 +399,10 @@ class AutoCalibrator(object):
         self.max_num = 20
         self.min_chan = 0
         self.max_chan = np.inf
+        self.reset()
+
+    def reset(self):
+        """Restore calibrator to pristine starting condition."""
         # peak-finding results
         self.peak_channels = []
         self.peak_snrs = []
@@ -485,15 +489,14 @@ class AutoCalibrator(object):
             (self.snr[1:] < self.min_snr))[0]
         assert len(left_edges) == len(right_edges)
         # find maximum within each region
-        self.peak_channels = []
-        self.peak_snrs = []
         for left, right in zip(left_edges, right_edges):
             in_region = (left <= self.channels) & (self.channels <= right)
             peak_snr = self.snr[in_region].max()
             peak_chan = self.channels[(self.snr == peak_snr) & in_region][0]
             if self.min_chan <= peak_chan <= self.max_chan:
-                self.peak_channels.append(peak_chan)
-                self.peak_snrs.append(peak_snr)
+                if peak_chan not in self.peak_channels:
+                    self.peak_channels.append(peak_chan)
+                    self.peak_snrs.append(peak_snr)
         self.peak_channels = np.array(self.peak_channels)
         self.peak_snrs = np.array(self.peak_snrs)
         # reduce number of channels to a maximum number max_n
@@ -504,8 +507,8 @@ class AutoCalibrator(object):
         self.peak_snrs = self.peak_snrs[-self.max_num:]
         # sort by channel
         i = np.argsort(self.peak_channels)
-        self.peak_channels = self.peak_channels[i]
-        self.peak_snrs = self.peak_snrs[i]
+        self.peak_channels = list(self.peak_channels[i])
+        self.peak_snrs = list(self.peak_snrs[i])
 
     def fit(self, required_energies, optional=(),
             gain_range=(1e-3, 1e3), de_max=10.):
