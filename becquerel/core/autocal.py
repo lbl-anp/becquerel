@@ -510,6 +510,18 @@ class AutoCalibrator(object):
     def fit(self, required_energies, optional=(),
             gain_range=(1e-3, 1e3), de_max=10.):
         """Find the gain that gives the best match of peaks to energies."""
+        if len(self.peak_channels) == 1 and len(required_energies) == 1:
+            # special case: only one line identified
+            self.fit_channels = list(self.peak_channels)
+            self.fit_snrs = list(self.peak_snrs)
+            self.fit_energies = list(required_energies)
+            gain = required_energies[0] / self.peak_channels[0]
+            self.gain = gain
+            self.cal = LinearEnergyCal.from_coeffs(
+                {'offset': 0, 'slope': self.gain})
+            self.success = True
+            return
+        # handle the usual case: multiple lines to match
         assert len(self.peak_channels) >= 2
         assert len(required_energies) >= 2
         assert len(self.peak_channels) >= len(required_energies)
