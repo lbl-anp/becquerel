@@ -203,6 +203,33 @@ class Spectrum(object):
         else:
             self.infilename = None
 
+    def __repr__(self):
+        lines = ['becquerel.Spectrum']
+        ltups = []
+        for k in ['start_time', 'stop_time', 'realtime', 'livetime']:
+            ltups.append((k, getattr(self, k)))
+        ltups.append(('num_channels', len(self.channels)))
+        if self.counts is None:
+            ltups.append(('gross_counts', None))
+        else:
+            ltups.append(('gross_counts', self.counts.sum()))
+        if self.cps is None:
+            ltups.append(('gross_cps', None))
+        else:
+            ltups.append(('gross_cps', self.cps.sum()))
+        if hasattr(self, 'infilename'):
+            ltups.append(('filename', self.infilename))
+        else:
+            ltups.append(('filename', None))
+        for lt in ltups:
+            lines.append('    {:15} {}'.format(
+                '{}:'.format(lt[0]),
+                lt[1]))
+        return '\n'.join(lines)
+
+    def __str__(self):
+        return self.__repr__()
+
     @property
     def counts(self):
         """Counts in each channel, with uncertainty.
