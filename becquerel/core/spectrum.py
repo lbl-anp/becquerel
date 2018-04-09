@@ -786,6 +786,9 @@ class Spectrum(object):
         obj = Spectrum(**kwargs)
         return obj
 
+    def rebin_like(self, other, **kwargs):
+        return self.rebin(other.bin_edges_kev, **kwargs)
+
 
 def _get_file_object(infilename):
     """
