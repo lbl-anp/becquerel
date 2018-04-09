@@ -206,7 +206,8 @@ class Spectrum(object):
     def __repr__(self):
         lines = ['becquerel.Spectrum']
         ltups = []
-        for k in ['start_time', 'stop_time', 'realtime', 'livetime']:
+        for k in ['start_time', 'stop_time', 'realtime', 'livetime',
+                  'is_calibrated']:
             ltups.append((k, getattr(self, k)))
         ltups.append(('num_channels', len(self.channels)))
         if self.counts is None:
