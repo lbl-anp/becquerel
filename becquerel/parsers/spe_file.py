@@ -140,6 +140,14 @@ class SpeFile(SpectrumFile):
                         self.shape_cal.append(float(lines[i].split(' ')[j]))
                     if verbose:
                         print(self.shape_cal)
+                elif lines[i] == '$PRESETS:':
+                    # TODO #98 Implement these fields
+                    i += 1
+                    self.presets0 = lines[i]
+                    i += 1
+                    self.presets1 = lines[i]
+                    i += 1
+                    self.presets2 = lines[i]
                 else:
                     print('Line {} unknown: '.format(i + 1), lines[i])
                 i += 1
