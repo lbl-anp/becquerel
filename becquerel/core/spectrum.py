@@ -153,7 +153,11 @@ class Spectrum(object):
             raise ValueError(
                 'Bin edge energies must be strictly increasing')
         else:
-            self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
+            bin_edges_kev = np.asarray(bin_edges_kev, dtype=float)
+            # HACK @jccurtis
+            if bin_edges_kev[0] < 0:
+                bin_edges_kev[0] = 0.
+            self.bin_edges_kev = bin_edges_kev
 
         if realtime is None:
             self.realtime = None
