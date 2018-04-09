@@ -210,14 +210,14 @@ class Spectrum(object):
                   'is_calibrated']:
             ltups.append((k, getattr(self, k)))
         ltups.append(('num_channels', len(self.channels)))
-        if self.counts is None:
+        if self._counts is None:
             ltups.append(('gross_counts', None))
         else:
             ltups.append(('gross_counts', self.counts.sum()))
-        if self.cps is None:
-            ltups.append(('gross_cps', None))
-        else:
+        try:
             ltups.append(('gross_cps', self.cps.sum()))
+        except SpectrumError:
+            ltups.append(('gross_cps', None))
         if hasattr(self, 'infilename'):
             ltups.append(('filename', self.infilename))
         else:
