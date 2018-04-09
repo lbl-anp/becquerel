@@ -760,7 +760,7 @@ class Spectrum(object):
                 [len(spectrum) + 1]
 
         Raises:
-            AssertionError: for bad input arguments
+            SpectrumError: for bad input arguments
 
         Returns:
             A new Spectrum object with the rebinned data.
@@ -772,18 +772,14 @@ class Spectrum(object):
         else:
             in_edges = self.bin_edges_kev
         if self.counts is None:
-            key = 'cps'
-        else:
-            key = 'counts'
+            # TODO Update this?
+            raise SpectrumError('Cannot rebin method without `counts` data')
+        key = 'counts'
         in_spec = getattr(self, '{}_vals'.format(key))
-        # TODO propogate the uncertainties?
-        in_spec_uncs = getattr(self, '{}_uncs'.format(key))
-        if method == 'listmode' and key == 'cps':
-            raise SpectrumError('Cannot rebin via `listmode` method without '
-                                '`counts` data')
         out_spec = rebin(in_spec, in_edges, out_edges, method=method,
                          slopes=slopes)
         kwargs = {key: out_spec,
+                  'uncs': np.sqrt(out_spec),
                   'bin_edges_kev': out_edges,
                   'input_file_object': self._infileobject,
                   'livetime': self.livetime}
