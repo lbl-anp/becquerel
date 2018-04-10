@@ -47,9 +47,9 @@ def _linear_offset(slope, cts, low, high):
 
     Args:
       slope:
-      cts:
-      low:
-      high:
+      cts: counts within the bin
+      low: lower bin edge energy
+      high: higher bin edge energy
 
     Returns:
       the offset
@@ -64,33 +64,40 @@ def _linear_offset(slope, cts, low, high):
 @nb.jit(nb.f8(nb.f8, nb.f8, nb.f8), nopython=True)
 def _slope_integral(x, m, b):
     '''
-    Calculate the integral of our quadratic given some slope and offset.
+    The indefinite integral of y = mx + b, with an x value substituted in.
 
     Args:
-      x:
-      m:
-      b:
+      x: the x-value
+      m: the value of the slope
+      b: the y-offset value
+
+    Returns:
+      The indefinite integral of y = mx + b, with an x value substituted in.
+      (m x^2 / 2 + b x)
     '''
     return m * x**2 / 2 + b * x
 
 
 @nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
-def _counts(slope, offset, cts, low, high):
+def _counts(m, b, x_low, x_high):
     '''
+    the definite integral of y = mx + b
+
     Computes the area under a linear approximation of the changing count
     rate in the vincity of relevant bins.  Edges of this integration
     are low and high while offset is provided from _linear_offset and cts
     from the bin being partitioned.
 
     Args:
-      slope:
-      offset:
-      cts:
-      low:
-      high:
+      m: the value of slope m
+      b: the value of y-offset b
+      x_low: the "high" value for x, to be substituted into the integral
+      x_high: the "low" value for x, to be substituted into the integral
+
+    Returns:
+      the definite integral of y = mx + b
     '''
-    return (_slope_integral(high, slope, offset) -
-            _slope_integral(low, slope, offset))
+    return (_slope_integral(x_high, m, b) - _slope_integral(x_low, m, b))
 
 
 @nb.jit(nb.f8[:](nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:]),
@@ -104,6 +111,11 @@ def _rebin_interpolation(in_spectrum, in_edges, out_edges, slopes):
     Keeps a running counter of two loop indices: in_idx & out_idx
 
     Args:
+      in_spectrum: iterable of input spectrum counts in each bin
+      in_edges: iterable of input bin edges (len = len(in_spectrum) + 1)
+      out_edges: iterable of output bin edges
+      slopes: the slopes of each histogram bin, with the lines drawn between
+        each bin edge. (len = len(in_spectrum))
 
     Returns:
       1D numpy array of rebinned spectrum counts in each bin
@@ -148,7 +160,7 @@ def _rebin_interpolation(in_spectrum, in_edges, out_edges, slopes):
             else:
                 high = min(in_right_edge, out_right_edge)
             # Calc counts for this bin
-            out_spectrum[out_idx] += _counts(slope, offset, counts, low, high)
+            out_spectrum[out_idx] += _counts(slope, offset, low, high)
     return out_spectrum
 
 
@@ -210,6 +222,10 @@ def _rebin2d_interpolation(in_spectra, in_edges, out_edges, slopes):
       out_edges: np.1darray
         array of the output bin edges
       slopes:
+
+    Returns:
+      np.2darray, shape (num_spectra, num_channels_in)
+      The rebinned spectra
     """
     # Init output
     out_spectra = np.zeros((in_spectra.shape[0], out_edges.shape[0] - 1))
