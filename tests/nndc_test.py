@@ -297,6 +297,13 @@ class NNDCQueryTests(object):
             z_range=(9, 10), z_even=True, a_even=True, n_any=True)
         assert len(d) > 0
 
+    def test_query_z_6_arange_11_13(self):
+        """Test NNDCQuery: z=6, a_range=(11, 13)..........................."""
+        d = self.fetch(z=6, a_range=(11, 13))
+        assert len(d) > 0
+        assert (d.Z == 6).all()
+        assert ((11 <= d.A) & (d.A <= 13)).all()
+
     def test_query_exception_not_found(self):
         """Test NNDCQuery exception if website not found..................."""
         _URL_ORIG = self.cls._URL
