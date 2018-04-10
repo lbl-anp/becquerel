@@ -78,7 +78,7 @@ def _slope_integral(x, m, b):
     return m * x**2 / 2 + b * x
 
 
-@nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
+@nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
 def _counts(m, b, x_low, x_high):
     '''
     the definite integral of y = mx + b
@@ -97,7 +97,7 @@ def _counts(m, b, x_low, x_high):
     Returns:
       the definite integral of y = mx + b
     '''
-    return (_slope_integral(x_high, m, b) - _slope_integral(x_low, m, b))
+    return _slope_integral(x_high, m, b) - _slope_integral(x_low, m, b)
 
 
 @nb.jit(nb.f8[:](nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:]),
