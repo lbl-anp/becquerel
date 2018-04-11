@@ -678,6 +678,8 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
             self._data['eled'] = 'enabled'
             self._data['elmin'], self._data['elmax'] = \
                 _format_range(kwargs['elevel_range'])
+            if self._data['elmax'] == '':
+                self._data['elmax'] = '1000000000'
         # handle spin and parity
         if 'j' in kwargs:
             self._data['jled'] = 'enabled'
