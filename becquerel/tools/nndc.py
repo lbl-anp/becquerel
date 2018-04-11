@@ -763,6 +763,7 @@ class _DecayRadiationQuery(_NNDCQuery):
       z_even, etc.: (bool) : only even Z, A, or N
       t_range : (tuple of float) : range of isotope half-lives in seconds
       decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
+      elevel_range : (tuple of float) : range of parent energy level (MeV)
       type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
       e_range : (tuple of float) : radiation energy range (keV)
       i_range : (tuple of float): intensity range (percent)
@@ -787,7 +788,8 @@ class _DecayRadiationQuery(_NNDCQuery):
         'ord': 'zate',         # order file by Z, A, T1/2, E
     })
     _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
-    _ALLOWED_KEYWORDS.extend(['decay', 'type', 'e_range', 'i_range'])
+    _ALLOWED_KEYWORDS.extend([
+        'elevel_range', 'decay', 'type', 'e_range', 'i_range'])
     _DUMMY_TEXT = """
 <html>
 <body>
@@ -818,6 +820,19 @@ To save this output into a local File, clik on "File" in your browser menu and s
                         DECAYRAD_RADIATION_TYPE.keys(), kwargs['type']))
             self._data['rted'] = 'enabled'
             self._data['rtn'] = DECAYRAD_RADIATION_TYPE[kwargs['type']]
+        # handle energy level condition
+        self.elevel_range = (0, 1e9)
+        if 'elevel_range' in kwargs:
+            x = _format_range(kwargs['elevel_range'])
+            try:
+                x0 = float(x[0])
+            except ValueError:
+                x0 = 0.
+            try:
+                x1 = float(x[1])
+            except ValueError:
+                x1 = 1e9
+            self.elevel_range = (x0, x1)
         # handle radiation energy range
         if 'e_range' in kwargs:
             self._data['reed'] = 'enabled'
@@ -854,6 +869,7 @@ def fetch_decay_radiation(**kwargs):
       z_odd, etc. : (bool) : only odd Z, A, or N
       z_even, etc.: (bool) : only even Z, A, or N
       t_range : (tuple of float) : range of isotope half-lives in seconds
+      elevel_range : (tuple of float) : range of parent energy level (MeV)
       decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
       type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
       e_range : (tuple of float) : radiation energy range (keV)
@@ -869,4 +885,9 @@ def fetch_decay_radiation(**kwargs):
     """
 
     query = _DecayRadiationQuery(**kwargs)
+    # apply elevel_range filter (hack around the web API)
+    elevel = query.df['Energy Level (MeV)']
+    keep = (elevel >= query.elevel_range[0]) & \
+           (elevel <= query.elevel_range[1])
+    query.df = query.df[keep]
     return query.df
