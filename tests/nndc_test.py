@@ -472,6 +472,41 @@ class NNDCQueryTests(object):
         with pytest.raises(nndc.NNDCInputError):
             self.fetch(nuc='Pu-239', decay='InvalidMode')
 
+    def test_query_zrange_9_10_elevelrange_0_01(self):
+        """Test NNDCQuery: z_range=(9, 10), elevel_range=(0, 0.1).........."""
+        d = self.fetch(z_range=(9, 10), elevel_range=(0, 0.1))
+        assert len(d) > 0
+        assert ((9 <= d.Z) & (d.Z <= 10)).all()
+        assert ufloats_overlap_range(d['Energy Level (MeV)'], 0, 0.1)
+
+    def test_query_zrange_9_10_elevelrange_None_01(self):
+        """Test NNDCQuery: z_range=(9, 10), elevel_range=(None, 0.1)......."""
+        d = self.fetch(z_range=(9, 10), elevel_range=(None, 0.1))
+        assert len(d) > 0
+        assert ((9 <= d.Z) & (d.Z <= 10)).all()
+        assert ufloats_overlap_range(d['Energy Level (MeV)'], 0, 0.1)
+
+    def test_query_zrange_7_20_elevelrange_01_10(self):
+        """Test NNDCQuery: z_range=(7, 20), elevel_range=(0.1, 10)........."""
+        d = self.fetch(z_range=(7, 20), elevel_range=(0.1, 10))
+        assert len(d) > 0
+        assert ((7 <= d.Z) & (d.Z <= 20)).all()
+        assert ufloats_overlap_range(d['Energy Level (MeV)'], 0.1, 10)
+
+    def test_query_zrange_7_20_elevelrange_01_None(self):
+        """Test NNDCQuery: z_range=(7, 20), elevel_range=(0.1, None)......."""
+        d = self.fetch(z_range=(7, 20), elevel_range=(0.1, None))
+        assert len(d) > 0
+        assert ((7 <= d.Z) & (d.Z <= 20)).all()
+        assert ufloats_overlap_range(d['Energy Level (MeV)'], 0.1, 1e9)
+
+    def test_query_zrange_7_20_elevelrange_01_inf(self):
+        """Test NNDCQuery: z_range=(7, 20), elevel_range=(0.1, np.inf)....."""
+        d = self.fetch(z_range=(7, 20), elevel_range=(0.1, np.inf))
+        assert len(d) > 0
+        assert ((7 <= d.Z) & (d.Z <= 20)).all()
+        assert ufloats_overlap_range(d['Energy Level (MeV)'], 0.1, 1e9)
+
 
 @pytest.mark.webtest
 class TestNuclearWalletCard(NNDCQueryTests):
@@ -490,21 +525,6 @@ class TestNuclearWalletCard(NNDCQueryTests):
         """Test fetch_wallet_card: z_range=(230, 250) raises exception....."""
         with pytest.raises(nndc.NNDCRequestError):
             self.fetch(z_range=(230, 250))
-
-    def test_wallet_zrange_9_10_elevelrange_0_01(self):
-        """Test fetch_wallet_card: z_range=(9, 10), elevel_range=(0, 0.1).."""
-        d = self.fetch(z_range=(9, 10), elevel_range=(0, 0.1))
-        assert len(d) > 0
-        assert ((9 <= d.Z) & (d.Z <= 10)).all()
-        assert (d['Energy Level (MeV)'] <= 0.1).all()
-
-    def test_wallet_zrange_7_20_elevelrange_01_10(self):
-        """Test fetch_wallet_card: z_range=(7, 20), elevel_range=(0.1, 10)."""
-        d = self.fetch(z_range=(7, 20), elevel_range=(0.1, 10))
-        assert len(d) > 0
-        assert ((7 <= d.Z) & (d.Z <= 20)).all()
-        assert ((d['Energy Level (MeV)'] >= 0.1) &
-                (d['Energy Level (MeV)'] <= 10)).all()
 
     def test_wallet_zrange_9_10_j_0(self):
         """Test fetch_wallet_card: z_range=(9, 10), j='0'.................."""
@@ -666,11 +686,6 @@ class TestDecayRadiationQuery(NNDCQueryTests):
         d = self.fetch(e_range=(661.5, 661.9))
         assert len(d) > 0
         assert ufloats_overlap_range(d['Radiation Energy (keV)'], 661.5, 661.9)
-
-    def test_decay_elevelrange_exception(self):
-        """Test fetch_decay_radiation exception if elevel_range set........"""
-        with pytest.raises(nndc.NNDCInputError):
-            self.fetch(elevel_range=(0.1, 0.3))
 
     def test_decay_exception_too_many(self):
         """Test fetch_decay_radiation: exception if too many results......."""
