@@ -582,7 +582,7 @@ class TestDecayRadiationQuery(NNDCQueryTests):
         assert len(d) == 0
         assert (d.Z == 91).all()
         assert (d.A == 234).all()
-        assert (d['Parent Energy Level (MeV)'] > 0).all()
+        assert (d['Energy Level (MeV)'] > 0).all()
 
     def test_decay_zrange_230_250(self):
         """Test fetch_decay_radiation: z_range=(230, 250) dataframe empty.."""
