@@ -522,9 +522,9 @@ class _NNDCQuery(object):
         if 'Parent Energy Level' in self.keys():
             self._convert_column_uncertainty('Parent Energy Level')
             self.df.rename(
-                columns={'Parent Energy Level': 'Parent Energy Level (MeV)'},
+                columns={'Parent Energy Level': 'Energy Level (MeV)'},
                 inplace=True)
-            self.df['Parent Energy Level (MeV)'] *= 0.001
+            self.df['Energy Level (MeV)'] *= 0.001
 
         if 'Mass Excess' in self.keys():
             self._convert_column_uncertainty('Mass Excess')
