@@ -75,13 +75,15 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
         return unumpy.uarray(x_array, default_unc_func(x_array))
 
 
-def handle_datetime(input_time, error_name='datetime arg'):
+def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
     """Parse an argument as a datetime, date+time string, or None.
 
     Args:
       input_time: the input argument to be converted to a datetime
       error_name: the name to be displayed if an error is raised.
         (default: 'datetime arg')
+      allow_none: whether a None is allowed as an input and return value.
+        (default: False)
 
     Raises:
       TypeError: if input_time is not a string, datetime, or None
@@ -94,11 +96,11 @@ def handle_datetime(input_time, error_name='datetime arg'):
         return input_time
     elif isinstance(input_time, string_types):
         return dateutil_parse(input_time)
-    elif input_time is None:
+    elif input_time is None and allow_none:
         return None
     else:
         raise TypeError(
-            'Unknown type for {}}: {}'.format(error_name, input_time))
+            'Unknown type for {}: {}'.format(error_name, input_time))
 
 
 def bin_centers_from_edges(edges_kev):

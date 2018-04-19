@@ -54,6 +54,18 @@ class TestElementFunctions(object):
         for name2 in [name1, name1.lower(), name1.upper()]:
             assert element.validated_name(name2) == 'Aluminum'
 
+    def test_validated_name_cesium(self):
+        """Test validated_name('Cesium') returns 'Cesium'.................."""
+        name1 = 'Cesium'
+        for name2 in [name1, name1.lower(), name1.upper()]:
+            assert element.validated_name(name2) == 'Cesium'
+
+    def test_validated_name_caesium(self):
+        """Test validated_name('Caesium') returns 'Cesium'................."""
+        name1 = 'Caesium'
+        for name2 in [name1, name1.lower(), name1.upper()]:
+            assert element.validated_name(name2) == 'Cesium'
+
     def test_element_z(self):
         """Test element_z.................................................."""
         for z1, sym1, name1, mass1 in element._Z_SYMBOL_NAME_MASS:
