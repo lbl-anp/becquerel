@@ -165,8 +165,10 @@ class Spectrum(object):
                         'Livetime ({}) cannot exceed realtime ({})'.format(
                             self.livetime, self.realtime))
 
-        self.start_time = handle_datetime(start_time, 'start_time')
-        self.stop_time = handle_datetime(stop_time, 'stop_time')
+        self.start_time = handle_datetime(
+            start_time, 'start_time', allow_none=True)
+        self.stop_time = handle_datetime(
+            stop_time, 'stop_time', allow_none=True)
 
         if (self.realtime is not None
                 and self.stop_time is not None
