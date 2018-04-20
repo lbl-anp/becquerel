@@ -48,10 +48,8 @@ class SpectrumPlotter(object):
         else:
             self._eval_time = None
 
-
-
-        self.ax     = ax
         self.yscale = yscale
+        self.ax     = ax
         self.title  = title
         self.kwargs = kwargs
 
@@ -181,6 +179,23 @@ class SpectrumPlotter(object):
         """
 
         self._ax = ax
+        if ax is not None and self.yscale is None:
+            self.yscale = ax.get_yscale()
+
+    @property
+    def xlabel(self):
+        """
+        Returns the current x label
+        """
+        return self._xlabel
+
+
+    @property
+    def ylabel(self):
+        """
+        Returns the current y label
+        """
+        return self._ylabel
 
 
     def get_corners(self):
@@ -317,44 +332,45 @@ class SpectrumPlotter(object):
 
         return np.maximum(ymax, 0)
 
+    @property
+    def xlim(self):
+        """Returns the xlim, requires xedges"""
 
-    def _handle_axes_limits(self, xlim=None, ylim=None, **kwargs):
-        """Define xlim, ylim, linthreshy.
-        Requires xscale, yscale, xedges, ydata
-        """
+        return (np.min(self._xedges), np.max(self._xedges))
 
-        if xlim is not None:
-            if len(xlim) != 2:
-                raise PlottingError('xlim should be length 2: {}'.format(xlim))
-            self.xlim = xlim
-        else:
-            self.xlim = (np.min(self.xedges), np.max(self.xedges))
 
-        min_ind = np.argmin(np.abs(self.ydata[self.ydata != 0]))
-        delta_y = np.abs(self.ydata - self.ydata[min_ind])
+    @property
+    def ylim(self):
+        """Returns ylim, requires yscale, ydata"""
+
+        if self.yscale is None:
+            raise PlottingError('No y scale and no axes defined, requires at least one of them')
+
+        min_ind = np.argmin(np.abs(self._ydata[self._ydata != 0]))
+        delta_y = np.abs(self._ydata - self._ydata[min_ind])
         min_delta_y = np.min(delta_y[delta_y > 0])
 
-        if ylim is not None:
-            if len(ylim) != 2:
-                raise PlottingError('ylim should be length 2: {}'.format(ylim))
-            self.ylim = ylim
+        data_min = np.min(self._ydata)
+        if self.yscale == 'linear':
+            ymin = 0
+        elif self.yscale == 'log' and data_min < 0:
+            raise PlottingError('Cannot plot negative values on a log ' +
+                                'scale; use symlog scale')
+        elif self.yscale == 'symlog' and data_min >= 0:
+            ymin = 0
         else:
-            # y min
-            data_min = np.min(self.ydata)
-            if self.yscale == 'linear':
-                ymin = 0
-            elif self.yscale == 'log' and data_min < 0:
-                raise PlottingError('Cannot plot negative values on a log ' +
-                                    'scale; use symlog scale')
-            elif self.yscale == 'symlog' and data_min >= 0:
-                ymin = 0
-            else:
-                ymin = dynamic_min(data_min, min_delta_y)
+            ymin = self.dynamic_min(data_min, min_delta_y)
 
-            data_max = np.max(self.ydata)
-            ymax = dynamic_max(data_max, self.yscale)
+        data_max = np.max(self._ydata)
+        ymax = self.dynamic_max(data_max, self.yscale)
 
-            self.ylim = (ymin, ymax)
+        return ymin, ymax
 
-        if self.yscale == 'symlog':
-            self.linthreshy = min_delta_y
+
+    @property
+    def linthreshy(self):
+        """Returns linthreshy, requires ydata"""
+
+        min_ind = np.argmin(np.abs(self._ydata[self._ydata != 0]))
+        delta_y = np.abs(self._ydata - self._ydata[min_ind])
+        return np.min(delta_y[delta_y > 0])
