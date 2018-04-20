@@ -38,153 +38,214 @@ class SpectrumPlotter(object):
             self.fmt    = fmt[0]
         else:
           raise PlottingError('Wrong number of positional parameters')
-        
+
+        if 'figsize' in kwargs:
+            self._figsize = kwargs.pop('figsize')
+        else:
+            self._figsize = None
+        if 'eval_over' in kwargs:
+            self._eval_time = kwargs.pop('eval_over')
+        else:
+            self._eval_time = None
+
+
+
         self.ax     = ax
         self.yscale = yscale
         self.title  = title
         self.kwargs = kwargs
 
-        if ax is None:
-            if 'figsize' in kwargs:
-                _, self.ax = plt.subplots(figsize=kwargs.pop('figsize'))
-            else:
-                _, self.ax = plt.subplots()
-        else:
-            if 'figsize' in kwargs:
-                raise PlottingError('It is not possible to provide ax and figsize at the same time')
-            self.ax = ax
+        self.x_mode = x_mode
+        self.y_mode = y_mode
 
-        self.x_mode = None
-        self.y_mode = None
-        self._handle_data_modes(x_mode, y_mode, **kwargs)
-        self._handle_data_and_labels()
-
-
-    def _handle_data_modes(self, x_mode=None, y_mode=None, **kwargs):
+    @property
+    def x_mode(self):
         """
-        Define x and y data mode, handles all data errors
+        Returns the current x axis plotting mode
+        """
+        return self._x_mode
+
+
+    @x_mode.setter
+    def x_mode(self, mode):
+        """
+        Define x data mode, handles all data errors, requires spec
         
         Args:
-          x_mode: energy, channel
-          y_mode: counts, cps, cpskev, eval_over
+          mode: energy (or kev), channel (or channels, chn, chns)
         """
 
-        mode = None
-        if x_mode is None:
+        if mode is None:
             if self.spec.is_calibrated:
-                mode = 'energy'
+                self._x_mode = 'energy'
             else:
-                mode = 'channel'
+                self._x_mode = 'channel'
         else:
-            if x_mode.lower() in ('kev', 'energy'):
+            if mode.lower() in ('kev', 'energy'):
                 if not self.spec.is_calibrated:
                     raise PlottingError('Spectrum is not calibrated, however x axis was requested as energy')
-                mode = 'energy'
-            elif x_mode.lower() in ('channel', 'channels'):
-                mode = 'channel'
+                self._x_mode = 'energy'
+            elif mode.lower() in ('channel', 'channels', 'chn', 'chns'):
+                self._x_mode = 'channel'
+            else: 
+                raise PlottingError('Unknown x data mode: {}'.format(mode))
 
-        if mode is None:
-            raise PlottingError('Unknown x data mode: {}'.format(x_mode))
-        elif self.x_mode is not None and self.x_mode is not mode:
-            raise PlottingError('Spectrum x data mode does not fit predefined SpectrumPlotter mode')
-        self.x_mode = mode
+        if self._x_mode == 'energy':
+            self._xedges = self.spec.bin_edges_kev
+            self._xlabel = 'Energy [keV]'
+        elif self._x_mode == 'channel':
+            self._xedges = self.get_channel_edges(self.spec.channels)
+            self._xlabel = 'Channel'
 
-        mode = None
-        if 'eval_over' in kwargs:
-            self.eval_time = kwargs.pop('eval_over')
-            mode = 'eval_over'
-            self.kwargs = kwargs
-        elif y_mode is None:
+
+    @property
+    def y_mode(self):
+        """
+        Returns the current y axis plotting mode
+        """
+        return self._y_mode
+
+
+    @y_mode.setter
+    def y_mode(self, mode):
+        """
+        Define y data mode, handles all data errors, requires spec
+        
+        Args:
+          mode: counts, cps, cpskev, eval_over
+        """
+
+        if self._eval_time is not None:
+            self._y_mode = 'eval_over'
+        elif mode is None:
             if self.spec.counts is not None:
-                mode = 'counts'
+                self._y_mode = 'counts'
             elif self.spec.cps is not None:
-                mode = 'cps'
+                self._y_mode = 'cps'
             elif self.spec.cpskev is not None:
-                mode = 'cpskev'
+                self._y_mode = 'cpskev'
             else:
                 raise PlottingError('Cannot evaluate y data from spectrum')
-        elif y_mode.lower() in ('count', 'counts', 'cnt', 'cnts'):
+        elif mode.lower() in ('count', 'counts', 'cnt', 'cnts'):
             if self.spec.counts is None:
                 raise PlottingError('Spectrum has counts not defined')
-            mode = 'counts'
-        elif y_mode.lower() == 'cps':
+            self._y_mode = 'counts'
+        elif mode.lower() == 'cps':
             if self.spec.cps is None:
                 raise PlottingError('Spectrum has cps not defined')
-            mode = 'cps'
-        elif y_mode.lower() == 'cpskev':
+            self._y_mode = 'cps'
+        elif mode.lower() == 'cpskev':
             if self.spec.cps is None:
                 raise PlottingError('Spectrum has cps not defined')
-            mode = 'cpskev'
+            self._y_mode = 'cpskev'
+        else:
+            raise PlottingError('Unknown y data mode: {}'.format(mode))
 
-        if mode is None:
-            raise PlottingError('Unknown y data mode: {}'.format(y_mode))
-        elif self.y_mode is not None and self.y_mode is not mode:
-            raise PlottingError('Spectrum y data mode does not fit predefined SpectrumPlotter mode')
-        self.y_mode = mode
-
-
-    def _handle_data_and_labels(self):
-        """Define xedges/xlabel and ydata/ylabel. Assumes x_mode and y_mode have been properly set."""
-
-        if self.x_mode == 'energy':
-            self.xedges = self.spec.bin_edges_kev
-            self.xlabel = 'Energy [keV]'
-        elif self.x_mode == 'channel':
-            self.xedges = self.get_channel_edges()
-            self.xlabel = 'Channel'
-
-        if self.y_mode == 'counts':
-            self.ydata = self.spec.counts_vals
-            self.ylabel = 'Counts'
-        elif self.y_mode == 'cps':
-            self.ydata = self.spec.cps_vals
-            self.ylabel = 'Countrate [1/s]'
-        elif self.y_mode == 'cpskev':
-            self.ydata = self.spec.cpskev_vals
-            self.ylabel = 'Countrate [1/s/keV]'
-        elif self.y_mode == 'eval_over':
-            self.ydata = self.spec.counts_vals_over(self.eval_time)
-            self.ylabel = 'Countrate [1/s]'
+        if self._y_mode == 'counts':
+            self._ydata = self.spec.counts_vals
+            self._ylabel = 'Counts'
+        elif self._y_mode == 'cps':
+            self._ydata = self.spec.cps_vals
+            self._ylabel = 'Countrate [1/s]'
+        elif self._y_mode == 'cpskev':
+            self._ydata = self.spec.cpskev_vals
+            self._ylabel = 'Countrate [1/s/keV]'
+        elif self._y_mode == 'eval_over':
+            self._ydata = self.spec.counts_vals_over(self._eval_time)
+            self._ylabel = 'Countrate [1/s]'
 
 
-    def _prepare_plot(self):
+    @property
+    def ax(self):
+        """
+        Returns the current matplotlib axes object used for plotting.
+        If no axes object is defined yet it will create one.
+        """
+
+        if self._ax is None:
+            if self._figsize is None:
+                _, self._ax = plt.subplots()
+            else:
+                _, self._ax = plt.subplots(self._figsize)
+        return self._ax
+
+
+    @ax.setter
+    def ax(self, ax):
+        """
+        Defines the current matplotlib axes object used for plotting.
+        Is affected by the figsize member variable, if set
+        
+        Args:
+          ax: Axes to be set
+        """
+
+        self._ax = ax
+
+
+    def get_corners(self):
+        """
+        Creates a stepped version of the current spectrum data
+        
+        Return:
+          xcorner, ycorner: x and y values that can be used directly in
+                            matplotlib's plotting function
+        """
+
+        return self.bin_edges_and_heights_to_steps(
+            self._xedges, unumpy.nominal_values(self._ydata))
+
+
+    def _prepare_plot(self, **kwargs):
         """Prepare for the plotting."""
 
-        self.xcorners, self.ycorners = self.bin_edges_and_heights_to_steps(
-            self.xedges, unumpy.nominal_values(self.ydata))
+        self.kwargs.update(**kwargs)
         if not self.ax.get_xlabel():
-            self.ax.set_xlabel(self.xlabel)
+            self.ax.set_xlabel(self._xlabel)
         if not self.ax.get_ylabel():
-            self.ax.set_ylabel(self.ylabel)
+            self.ax.set_ylabel(self._ylabel)
         if self.yscale is not None:
             self.ax.set_yscale(self.yscale)
         if self.title is not None:
             self.ax.set_title(self.title)
         elif self.spec.infilename is not None:
-            self.ax.set_title(self.infilename)
+            self.ax.set_title(self.spec.infilename)
+        return self.get_corners()
 
 
-    def plot(self):
-        """Create actual plot with matplotlib's plot method"""
+    def plot(self, **kwargs):
+        """
+        Create actual plot with matplotlib's plot method.
+        
+        Args:
+          kwargs: Any matplotlib plot() keyword argument, overwrites
+                  previously defined keywords
+        """
 
-        self._prepare_plot()
-        self.ax.plot(self.xcorners, self.ycorners, self.fmt, **self.kwargs)
+        xcorners, ycorners = self._prepare_plot(**kwargs)
+        self.ax.plot(xcorners, ycorners, self.fmt, **self.kwargs)
         return self.ax
 
 
-    def fill_between(self):
-        """Create actual plot with matplotlib's fill_between method"""
-
-        self._prepare_plot()
-        self.ax.fill_between(self.xcorners, self.ycorners, **self.kwargs)
+    def fill_between(self, **kwargs):
+        """
+        Create actual plot with matplotlib's fill_between method.
+        
+        Args:
+          kwargs: Any matplotlib fill_between() keyword argument, overwrites
+                  previously defined keywords
+        """
+        
+        xcorners, ycorners = self._prepare_plot(**kwargs)
+        self.ax.fill_between(xcorners, ycorners, **self.kwargs)
         return self.ax
 
-
-    def get_channel_edges(self):
+    @staticmethod
+    def get_channel_edges(channels):
         """Get a vector of xedges for uncalibrated channels."""
 
-        n_edges = len(self.spec.channels) + 1
-        return np.linspace(-0.5, self.spec.channels[-1] + 0.5, num=n_edges)
+        n_edges = len(channels) + 1
+        return np.linspace(-0.5, channels[-1] + 0.5, num=n_edges)
 
 
     @staticmethod
