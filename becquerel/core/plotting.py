@@ -25,10 +25,10 @@ class SpectrumPlotter(object):
           y_mode: define what is plotted on y axis ('counts', 'cps', 'cpskev' 
                   or 'eval_over')
           ax:     matplotlib axes object, if not provided one is created with the
-                  argument provided in 'figsize'
+                  argument provided in 'figsize' once the plot command is called
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
-          title:  costum plot title
-          kwargs: arguments that are directly passed to matplotlib plot command
+          title:  costum plot title, default is filename if available
+          kwargs: arguments that are directly passed to matplotlib plot commands
         """
 
         self.spec   = spec
@@ -56,6 +56,7 @@ class SpectrumPlotter(object):
         self.x_mode = x_mode
         self.y_mode = y_mode
 
+
     @property
     def x_mode(self):
         """
@@ -67,7 +68,8 @@ class SpectrumPlotter(object):
     @x_mode.setter
     def x_mode(self, mode):
         """
-        Define x data mode, handles all data errors, requires spec
+        Define x data mode, handles all data errors, requires spec.
+        Defines also xedges and xlabel.
         
         Args:
           mode: energy (or kev), channel (or channels, chn, chns)
@@ -99,7 +101,7 @@ class SpectrumPlotter(object):
     @property
     def y_mode(self):
         """
-        Returns the current y axis plotting mode
+        Returns the current y axis plotting mode.
         """
         return self._y_mode
 
@@ -107,7 +109,8 @@ class SpectrumPlotter(object):
     @y_mode.setter
     def y_mode(self, mode):
         """
-        Define y data mode, handles all data errors, requires spec
+        Define y data mode, handles all data errors, requires spec.
+        Defines also ydata and ylabel.
         
         Args:
           mode: counts, cps, cpskev, eval_over
@@ -172,7 +175,7 @@ class SpectrumPlotter(object):
     def ax(self, ax):
         """
         Defines the current matplotlib axes object used for plotting.
-        Is affected by the figsize member variable, if set
+        Is affected by the figsize member variable, if set.
         
         Args:
           ax: Axes to be set
@@ -181,6 +184,7 @@ class SpectrumPlotter(object):
         self._ax = ax
         if ax is not None and self.yscale is None:
             self.yscale = ax.get_yscale()
+
 
     @property
     def xlabel(self):
@@ -200,7 +204,7 @@ class SpectrumPlotter(object):
 
     def get_corners(self):
         """
-        Creates a stepped version of the current spectrum data
+        Creates a stepped version of the current spectrum data.
         
         Return:
           xcorner, ycorner: x and y values that can be used directly in
@@ -254,6 +258,7 @@ class SpectrumPlotter(object):
         xcorners, ycorners = self._prepare_plot(**kwargs)
         self.ax.fill_between(xcorners, ycorners, **self.kwargs)
         return self.ax
+
 
     @staticmethod
     def get_channel_edges(channels):
@@ -332,16 +337,17 @@ class SpectrumPlotter(object):
 
         return np.maximum(ymax, 0)
 
+
     @property
     def xlim(self):
-        """Returns the xlim, requires xedges"""
+        """Returns the xlim, requires xedges."""
 
         return (np.min(self._xedges), np.max(self._xedges))
 
 
     @property
     def ylim(self):
-        """Returns ylim, requires yscale, ydata"""
+        """Returns ylim, requires yscale, ydata."""
 
         if self.yscale is None:
             raise PlottingError('No y scale and no axes defined, requires at least one of them')
@@ -369,7 +375,7 @@ class SpectrumPlotter(object):
 
     @property
     def linthreshy(self):
-        """Returns linthreshy, requires ydata"""
+        """Returns linthreshy, requires ydata."""
 
         min_ind = np.argmin(np.abs(self._ydata[self._ydata != 0]))
         delta_y = np.abs(self._ydata - self._ydata[min_ind])
