@@ -12,146 +12,250 @@ class PlottingError(Exception):
     pass
 
 
-def plot_spectrum(spec, fmtstring=None, **kwargs):
-    """Plot a Spectrum object."""
-
-    plotter = SpectrumPlotter(spec, fmtstring=fmtstring, **kwargs)
-    plotter.plot()
-    return plotter.axes
-
-
-def bin_edges_and_heights_to_steps(bin_edges, heights):
-    """A robust alternative to matplotlib's drawstyle='steps-*'"""
-
-    assert len(bin_edges) == len(heights) + 1
-    x = np.zeros(len(bin_edges) * 2)
-    y = np.zeros_like(x)
-    x[::2] = bin_edges.astype(float)
-    x[1::2] = bin_edges.astype(float)
-    y[1:-1:2] = heights.astype(float)
-    y[2:-1:2] = heights.astype(float)
-    return x, y
-
-
 class SpectrumPlotter(object):
     """Class for handling spectrum plotting."""
 
-    def __init__(self, spec, **kwargs):
+    def __init__(self, spec, *fmt, x_mode = None, 
+                 y_mode = None, ax = None, yscale = None, title = None, **kwargs):
         """
         Args:
-          spec: Spectrum instance to plot
+          spec:   Spectrum instance to plot
+          fmt:    matplotlib like plot format string
+          x_mode: define what is plotted on x axis ('energy' or 'channel')
+          y_mode: define what is plotted on y axis ('counts', 'cps', 'cpskev' 
+                  or 'eval_over')
+          ax:     matplotlib axes object, if not provided one is created with the
+                  argument provided in 'figsize'
+          yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
+          title:  costum plot title
+          kwargs: arguments that are directly passed to matplotlib plot command
         """
 
-        self.spec = spec
-        self._handle_axes(**kwargs)
-        self._handle_title(**kwargs)
-        self._handle_fmt(**kwargs)
-        self._handle_counts_mode(**kwargs)
-        self._handle_axes_scales(**kwargs)
-        self._handle_axes_labels(**kwargs)
-        self._handle_axes_data()
-        self._handle_axes_limits(**kwargs)
-        self._handle_kwargs(**kwargs)
-
-    def _handle_fmt(self, fmtstring=None, **kwargs):
-        """Define fmtstring"""
-
-        if fmtstring is None:
-            self.fmtstring = ''
+        self.spec   = spec
+        if len(fmt) == 0:
+            self.fmt  = ''
+        elif len(fmt) == 1:
+            self.fmt    = fmt[0]
         else:
-            self.fmtstring = fmtstring
+          raise PlottingError('Wrong number of positional parameters')
+        
+        self.ax     = ax
+        self.yscale = yscale
+        self.title  = title
+        self.kwargs = kwargs
 
-    def _handle_axes(self, axes=None, **kwargs):
-        """Define axes, new_axes"""
-
-        if axes is None:
-            self.axes = None
-            self.new_axes = True
+        if ax is None:
+            if 'figsize' in kwargs:
+                _, self.ax = plt.subplots(figsize=kwargs.pop('figsize'))
+            else:
+                _, self.ax = plt.subplots()
         else:
-            self.axes = axes
-            self.new_axes = False
+            if 'figsize' in kwargs:
+                raise PlottingError('It is not possible to provide ax and figsize at the same time')
+            self.ax = ax
 
-    def _handle_title(self, title=None, **kwargs):
-        """Define title"""
+        self.x_mode = None
+        self.y_mode = None
+        self._handle_data_modes(x_mode, y_mode, **kwargs)
+        self._handle_data_and_labels()
 
-        if title is None:
-            self.title = 'Becquerel Spectrum'
+
+    def _handle_data_modes(self, x_mode=None, y_mode=None, **kwargs):
+        """
+        Define x and y data mode, handles all data errors
+        
+        Args:
+          x_mode: energy, channel
+          y_mode: counts, cps, cpskev, eval_over
+        """
+
+        mode = None
+        if x_mode is None:
+            if self.spec.is_calibrated:
+                mode = 'energy'
+            else:
+                mode = 'channel'
         else:
-            self.title = title
+            if x_mode.lower() in ('kev', 'energy'):
+                if not self.spec.is_calibrated:
+                    raise PlottingError('Spectrum is not calibrated, however x axis was requested as energy')
+                mode = 'energy'
+            elif x_mode.lower() in ('channel', 'channels'):
+                mode = 'channel'
 
-    def _handle_counts_mode(self, counts_mode=None, **kwargs):
-        """Define counts_mode"""
+        if mode is None:
+            raise PlottingError('Unknown x data mode: {}'.format(x_mode))
+        elif self.x_mode is not None and self.x_mode is not mode:
+            raise PlottingError('Spectrum x data mode does not fit predefined SpectrumPlotter mode')
+        self.x_mode = mode
 
+        mode = None
         if 'eval_over' in kwargs:
-            self.eval_time = kwargs['eval_over']
-            self.counts_mode = 'eval_over'
-        elif counts_mode is not None:
-            if counts_mode.lower() not in ('counts', 'cps', 'cpskev'):
-                raise ValueError('Bad counts_mode: {}'.format(counts_mode))
-            self.counts_mode = counts_mode.lower()
-        elif self.spec.counts is not None:
-            self.counts_mode = 'counts'
-        else:
-            self.counts_mode = 'cps'
-
-    def _handle_axes_scales(self, yscale=None, **kwargs):
-        """Define xscale and yscale."""
-
-        self.xscale = 'linear'
-
-        if yscale is not None:
-            if yscale.lower() not in ('linear', 'log', 'symlog'):
-                raise ValueError('Bad yscale: {}'.format(yscale))
-            self.yscale = yscale.lower()
-        else:
-            self.yscale = 'symlog'
-        self.default_linscaley = 1.5
-
-    def _handle_axes_labels(self, xlabel=None, ylabel=None, **kwargs):
-        """Define xlabel and ylabel. Requires counts_mode.
-        """
-
-        if xlabel is not None:
-            self.xlabel = xlabel
-        elif self.spec.is_calibrated:
-            self.xlabel = 'Energy [keV]'
-        else:
-            self.xlabel = 'Energy [channels]'
-
-        if ylabel is not None:
-            self.ylabel = ylabel
-        elif self.counts_mode == 'counts':
-            self.ylabel = 'Counts'
-        elif self.counts_mode == 'cps':
-            self.ylabel = 'Countrate [1/s]'
-        elif self.counts_mode == 'cpskev':
-            self.ylabel = 'Countrate [1/s/keV]'
-
-    def _handle_axes_data(self):
-        """Define xedges and ydata. Requires counts_mode.
-        """
-
-        if self.spec.is_calibrated:
-            self.xedges = self.spec.bin_edges_kev
-        else:
-            self.xedges = self.get_channel_edges()
-
-        if self.counts_mode == 'counts':
+            self.eval_time = kwargs.pop('eval_over')
+            mode = 'eval_over'
+            self.kwargs = kwargs
+        elif y_mode is None:
+            if self.spec.counts is not None:
+                mode = 'counts'
+            elif self.spec.cps is not None:
+                mode = 'cps'
+            elif self.spec.cpskev is not None:
+                mode = 'cpskev'
+            else:
+                raise PlottingError('Cannot evaluate y data from spectrum')
+        elif y_mode.lower() in ('count', 'counts', 'cnt', 'cnts'):
             if self.spec.counts is None:
-                raise PlottingError('Cannot plot counts of CPS-only spectrum')
+                raise PlottingError('Spectrum has counts not defined')
+            mode = 'counts'
+        elif y_mode.lower() == 'cps':
+            if self.spec.cps is None:
+                raise PlottingError('Spectrum has cps not defined')
+            mode = 'cps'
+        elif y_mode.lower() == 'cpskev':
+            if self.spec.cps is None:
+                raise PlottingError('Spectrum has cps not defined')
+            mode = 'cpskev'
+
+        if mode is None:
+            raise PlottingError('Unknown y data mode: {}'.format(y_mode))
+        elif self.y_mode is not None and self.y_mode is not mode:
+            raise PlottingError('Spectrum y data mode does not fit predefined SpectrumPlotter mode')
+        self.y_mode = mode
+
+
+    def _handle_data_and_labels(self):
+        """Define xedges/xlabel and ydata/ylabel. Assumes x_mode and y_mode have been properly set."""
+
+        if self.x_mode == 'energy':
+            self.xedges = self.spec.bin_edges_kev
+            self.xlabel = 'Energy [keV]'
+        elif self.x_mode == 'channel':
+            self.xedges = self.get_channel_edges()
+            self.xlabel = 'Channel'
+
+        if self.y_mode == 'counts':
             self.ydata = self.spec.counts_vals
-        elif self.counts_mode == 'cps':
+            self.ylabel = 'Counts'
+        elif self.y_mode == 'cps':
             self.ydata = self.spec.cps_vals
-        elif self.counts_mode == 'cpskev':
+            self.ylabel = 'Countrate [1/s]'
+        elif self.y_mode == 'cpskev':
             self.ydata = self.spec.cpskev_vals
-        elif self.counts_mode == 'eval_over':
+            self.ylabel = 'Countrate [1/s/keV]'
+        elif self.y_mode == 'eval_over':
             self.ydata = self.spec.counts_vals_over(self.eval_time)
+            self.ylabel = 'Countrate [1/s]'
+
+
+    def _prepare_plot(self):
+        """Prepare for the plotting."""
+
+        self.xcorners, self.ycorners = self.bin_edges_and_heights_to_steps(
+            self.xedges, unumpy.nominal_values(self.ydata))
+        if not self.ax.get_xlabel():
+            self.ax.set_xlabel(self.xlabel)
+        if not self.ax.get_ylabel():
+            self.ax.set_ylabel(self.ylabel)
+        if self.yscale is not None:
+            self.ax.set_yscale(self.yscale)
+        if self.title is not None:
+            self.ax.set_title(self.title)
+        elif self.spec.infilename is not None:
+            self.ax.set_title(self.infilename)
+
+
+    def plot(self):
+        """Create actual plot with matplotlib's plot method"""
+
+        self._prepare_plot()
+        self.ax.plot(self.xcorners, self.ycorners, self.fmt, **self.kwargs)
+        return self.ax
+
+
+    def fill_between(self):
+        """Create actual plot with matplotlib's fill_between method"""
+
+        self._prepare_plot()
+        self.ax.fill_between(self.xcorners, self.ycorners, **self.kwargs)
+        return self.ax
+
 
     def get_channel_edges(self):
-        """Get a vector of xedges for uncalibrated channels.
+        """Get a vector of xedges for uncalibrated channels."""
+
+        n_edges = len(self.spec.channels) + 1
+        return np.linspace(-0.5, self.spec.channels[-1] + 0.5, num=n_edges)
+
+
+    @staticmethod
+    def bin_edges_and_heights_to_steps(bin_edges, heights):
+        """A robust alternative to matplotlib's drawstyle='steps-*'"""
+
+        assert len(bin_edges) == len(heights) + 1
+        x = np.zeros(len(bin_edges) * 2)
+        y = np.zeros_like(x)
+        x[::2] = bin_edges.astype(float)
+        x[1::2] = bin_edges.astype(float)
+        y[1:-1:2] = heights.astype(float)
+        y[2:-1:2] = heights.astype(float)
+        return x, y
+
+
+    @staticmethod
+    def dynamic_min(data_min, min_delta_y):
+        """Get an axes lower limit (for y) based on data value.
+
+        The lower limit is the next power of 10, or 3 * power of 10, below the min.
+
+        Args:
+          data_min: the minimum of the data (could be integers or floats)
+          min_delta_y: the minimum step in y
         """
 
-        return np.arange(-0.5, len(self.spec) - 0.4)
+        if data_min > 0:
+            ceil10 = 10**(np.ceil(np.log10(data_min)))
+            sig_fig = np.floor(10 * data_min / ceil10)
+            if sig_fig <= 3:
+                ymin = ceil10 / 10
+            else:
+                ymin = ceil10 / 10 * 3
+        elif data_min == 0:
+            ymin = min_delta_y / 10.0
+        else:
+            # negative
+            floor10 = 10**(np.floor(np.log10(-data_min)))
+            sig_fig = np.floor(-data_min / floor10)
+            if sig_fig < 3:
+                ymin = -floor10 * 3
+            else:
+                ymin = -floor10 * 10
+
+        return ymin
+
+
+    @staticmethod
+    def dynamic_max(data_max, yscale):
+        """Get an axes upper limit (for y) based on data value.
+
+        The upper limit is the next power of 10, or 3 * power of 10, above the max.
+        (For linear, the next N * power of 10.)
+
+        Args:
+          data_max: the maximum of the data (could be integers or floats)
+        """
+
+        floor10 = 10**(np.floor(np.log10(data_max)))
+        sig_fig = np.ceil(data_max / floor10)
+        if yscale == 'linear':
+            sig_fig = np.floor(data_max / floor10)
+            ymax = floor10 * (sig_fig + 1)
+        elif sig_fig < 3:
+            ymax = floor10 * 3
+        else:
+            ymax = floor10 * 10
+
+        return np.maximum(ymax, 0)
+
 
     def _handle_axes_limits(self, xlim=None, ylim=None, **kwargs):
         """Define xlim, ylim, linthreshy.
@@ -193,97 +297,3 @@ class SpectrumPlotter(object):
 
         if self.yscale == 'symlog':
             self.linthreshy = min_delta_y
-
-    def _handle_kwargs(self, **kwargs):
-        """Get kwargs for plt.plot and plt.yscale."""
-
-        if 'plot_kwargs' in kwargs:
-            self.plot_kwargs = kwargs['plot_kwargs']
-        else:
-            self.plot_kwargs = {}
-        if 'label' in kwargs:
-            self.plot_kwargs['label'] = kwargs['label']
-
-        if 'yscale_kwargs' in kwargs:
-            self.yscale_kwargs = kwargs['yscale_kwargs']
-        else:
-            self.yscale_kwargs = {}
-        if self.yscale == 'symlog' and 'linscaley' not in self.yscale_kwargs:
-            self.yscale_kwargs['linscaley'] = self.default_linscaley
-
-    def plot(self):
-        """Create actual plot."""
-
-        if self.new_axes:
-            self.axes = plt.axes()
-        else:
-            plt.axes(self.axes)
-
-        self.xcorners, self.ycorners = bin_edges_and_heights_to_steps(
-            self.xedges, unumpy.nominal_values(self.ydata))
-
-        plt.plot(self.xcorners, self.ycorners, self.fmtstring,
-                 axes=self.axes, **self.plot_kwargs)
-        self.axes.set_title(self.title)
-        self.axes.set_xlabel(self.xlabel)
-        self.axes.set_xscale(self.xscale)
-        self.axes.set_xlim(self.xlim)
-        self.axes.set_ylabel(self.ylabel)
-        self.axes.set_yscale(self.yscale, **self.yscale_kwargs)
-        self.axes.set_ylim(self.ylim)
-
-        plt.show()
-
-
-def dynamic_min(data_min, min_delta_y):
-    """Get an axes lower limit (for y) based on data value.
-
-    The lower limit is the next power of 10, or 3 * power of 10, below the min.
-
-    Args:
-      data_min: the minimum of the data (could be integers or floats)
-      min_delta_y: the minimum step in y
-    """
-
-    if data_min > 0:
-        ceil10 = 10**(np.ceil(np.log10(data_min)))
-        sig_fig = np.floor(10 * data_min / ceil10)
-        if sig_fig <= 3:
-            ymin = ceil10 / 10
-        else:
-            ymin = ceil10 / 10 * 3
-    elif data_min == 0:
-        ymin = min_delta_y / 10.0
-    else:
-        # negative
-        floor10 = 10**(np.floor(np.log10(-data_min)))
-        sig_fig = np.floor(-data_min / floor10)
-        if sig_fig < 3:
-            ymin = -floor10 * 3
-        else:
-            ymin = -floor10 * 10
-
-    return ymin
-
-
-def dynamic_max(data_max, yscale):
-    """Get an axes upper limit (for y) based on data value.
-
-    The upper limit is the next power of 10, or 3 * power of 10, above the max.
-    (For linear, the next N * power of 10.)
-
-    Args:
-      data_max: the maximum of the data (could be integers or floats)
-    """
-
-    floor10 = 10**(np.floor(np.log10(data_max)))
-    sig_fig = np.ceil(data_max / floor10)
-    if yscale == 'linear':
-        sig_fig = np.floor(data_max / floor10)
-        ymax = floor10 * (sig_fig + 1)
-    elif sig_fig < 3:
-        ymax = floor10 * 3
-    else:
-        ymax = floor10 * 10
-
-    return np.maximum(ymax, 0)

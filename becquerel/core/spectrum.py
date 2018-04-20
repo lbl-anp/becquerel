@@ -8,7 +8,7 @@ import numpy as np
 from uncertainties import UFloat, unumpy
 from .. import parsers
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
-
+from . import plotting
 
 class SpectrumError(Exception):
     """Exception raised by Spectrum."""
@@ -750,6 +750,49 @@ class Spectrum(object):
         obj = Spectrum(**kwargs)
         return obj
 
+
+    def plot(self, *fmt, **kwargs):
+        """Plot a spectrum with matplotlib's plot command.
+
+        Args:
+          fmt:    matplotlib like plot format string
+          x_mode: define what is plotted on x axis ('energy' or 'channel'),
+                  defaults to energy if available
+          y_mode: define what is plotted on y axis ('counts', 'cps', 'cpskev' 
+                  or 'eval_over'), defaults to counts
+          ax:     matplotlib axes object, if not provided one is created with the
+                  variables provided by 'figsize'
+          yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
+          title:  costum plot title
+          kwargs: arguments that are directly passed to matplotlib's plot command
+
+        Returns:
+          matplotlib axes object
+        """
+        plotter = plotting.SpectrumPlotter(self, *fmt, **kwargs)
+        return plotter.plot()
+
+
+    def fill_between(self, **kwargs):
+        """Plot a spectrum with matplotlib's fill_between command
+
+        Args:
+          x_mode: define what is plotted on x axis ('energy' or 'channel'),
+                  defaults to energy if available
+          y_mode: define what is plotted on y axis ('counts', 'cps', 'cpskev' 
+                  or 'eval_over'), defaults to counts
+          ax:     matplotlib axes object, if not provided one is created with the
+                  variables provided by 'figsize'
+          yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
+          title:  costum plot title
+          kwargs: arguments that are directly passed to matplotlib's fill_between
+                  command
+
+        Returns:
+          matplotlib axes object
+        """
+        plotter = plotting.SpectrumPlotter(self, **kwargs)
+        return plotter.fill_between()
 
 def _get_file_object(infilename):
     """
