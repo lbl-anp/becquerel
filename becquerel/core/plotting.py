@@ -15,8 +15,9 @@ class PlottingError(Exception):
 class SpectrumPlotter(object):
     """Class for handling spectrum plotting."""
 
-    def __init__(self, spec, *fmt, xmode = None, ymode = None, 
-        xlim = None, ylim = None, ax = None, yscale = None, title = None, **kwargs):
+    def __init__(self, spec, *fmt, xmode=None, ymode=None, xlim=None,
+                 ylim=None, ax=None, yscale=None, title=None, xlabel=None,
+                 ylabel=None, **kwargs):
         """
         Args:
           spec:   Spectrum instance to plot
@@ -24,22 +25,37 @@ class SpectrumPlotter(object):
           xmode:  define what is plotted on x axis ('energy' or 'channel')
           ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'
                   or 'eval_over')
-          xlim:   set x axes limits, if set to 'default' use SpectrumPlotter scales
-          ylim:   set y axes limits, if set to 'default' use SpectrumPlotter scales
-          ax:     matplotlib axes object, if not provided one is created with the
-                  argument provided in 'figsize' once the plot command is called
+          xlim:   set x axes limits, if set to 'default' use special scales
+          ylim:   set y axes limits, if set to 'default' use special scales
+          ax:     matplotlib axes object, if not provided one is created using
+                  the 'figsize' argument once the plot command is called
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
           title:  costum plot title, default is filename if available
+          xlabel: costum xlabel value
+          ylabel: costum ylabel value
           kwargs: arguments that are directly passed to matplotlib plot commands
         """
 
-        self.spec   = spec
-        if len(fmt) == 0:
-            self.fmt  = ''
-        elif len(fmt) == 1:
-            self.fmt    = fmt[0]
+        #TODO Marco: maybe we should use tuplets for all the x/y stuff in order
+        #to reduce the number of attributes (pylint ask for 7 we have 23)!
+        self._xedges = None
+        self._ydata = None
+        self._xmode = None
+        self._ymode = None
+        self._xlabel = None
+        self._ylabel = None
+        self._ax = None
+        self._xlim = None
+        self._ylim = None
+
+        self.spec = spec
+        fmtlen = len(fmt)
+        if fmtlen == 0:
+            self.fmt = ''
+        elif fmtlen == 1:
+            self.fmt = fmt[0]
         else:
-          raise PlottingError('Wrong number of positional parameters')
+            raise PlottingError('Wrong number of positional parameters')
 
         if 'figsize' in kwargs:
             self._figsize = kwargs.pop('figsize')
@@ -50,16 +66,19 @@ class SpectrumPlotter(object):
         else:
             self._eval_time = None
 
-        self.xlim   = xlim
-        self.ylim   = ylim
+        self.xlim = xlim
+        self.ylim = ylim
 
         self.yscale = yscale
-        self.ax     = ax
-        self.title  = title
+        self.ax = ax
+        self.title = title
         self.kwargs = kwargs
 
         self.xmode = xmode
         self.ymode = ymode
+
+        self.xlabel = xlabel
+        self.ylabel = ylabel
 
 
     @property
@@ -67,6 +86,7 @@ class SpectrumPlotter(object):
         """
         Returns the current x axis plotting mode
         """
+
         return self._xmode
 
 
@@ -75,7 +95,7 @@ class SpectrumPlotter(object):
         """
         Define x data mode, handles all data errors, requires spec.
         Defines also xedges and xlabel.
-        
+
         Args:
           mode: energy (or kev), channel (or channels, chn, chns)
         """
@@ -88,11 +108,12 @@ class SpectrumPlotter(object):
         else:
             if mode.lower() in ('kev', 'energy'):
                 if not self.spec.is_calibrated:
-                    raise PlottingError('Spectrum is not calibrated, however x axis was requested as energy')
+                    raise PlottingError('Spectrum is not calibrated, however'
+                                        ' x axis was requested as energy')
                 self._xmode = 'energy'
             elif mode.lower() in ('channel', 'channels', 'chn', 'chns'):
                 self._xmode = 'channel'
-            else: 
+            else:
                 raise PlottingError('Unknown x data mode: {}'.format(mode))
 
         if self._xmode == 'energy':
@@ -116,7 +137,7 @@ class SpectrumPlotter(object):
         """
         Define y data mode, handles all data errors, requires spec.
         Defines also ydata and ylabel.
-        
+
         Args:
           mode: counts, cps, cpskev, eval_over
         """
@@ -181,7 +202,7 @@ class SpectrumPlotter(object):
         """
         Defines the current matplotlib axes object used for plotting.
         Is affected by the figsize member variable, if set.
-        
+
         Args:
           ax: Axes to be set
         """
@@ -199,6 +220,15 @@ class SpectrumPlotter(object):
         return self._xlabel
 
 
+    @xlabel.setter
+    def xlabel(self, label):
+        """
+        Sets the xlabel to a costum value.
+        """
+        if label is not None:
+            self._xlabel = label
+
+
     @property
     def ylabel(self):
         """
@@ -207,10 +237,19 @@ class SpectrumPlotter(object):
         return self._ylabel
 
 
+    @ylabel.setter
+    def ylabel(self, label):
+        """
+        Sets the ylabel to a costum value.
+        """
+        if label is not None:
+            self._ylabel = label
+
+
     def get_corners(self):
         """
         Creates a stepped version of the current spectrum data.
-        
+
         Return:
           xcorner, ycorner: x and y values that can be used directly in
                             matplotlib's plotting function
@@ -239,18 +278,25 @@ class SpectrumPlotter(object):
         if self._ylim is not None:
             self.ax.set_ylim(self.ylim)
             if self.yscale == 'symlog':
-                self.ax.set_yscale(self.yscale, linthreshy = self.linthreshy)
+                self.ax.set_yscale(self.yscale, linthreshy=self.linthreshy)
         return self.get_corners()
 
 
-    def plot(self, **kwargs):
+    def plot(self, *fmt, **kwargs):
         """
         Create actual plot with matplotlib's plot method.
-        
+
         Args:
+          fmt:    Matplotlib plot like format string
           kwargs: Any matplotlib plot() keyword argument, overwrites
                   previously defined keywords
         """
+
+        fmtlen = len(fmt)
+        if fmtlen == 1:
+            self.fmt = fmt[0]
+        elif fmtlen > 1:
+            raise PlottingError('Wrong number of positional parameters')
 
         xcorners, ycorners = self._prepare_plot(**kwargs)
         self.ax.plot(xcorners, ycorners, self.fmt, **self.kwargs)
@@ -260,12 +306,12 @@ class SpectrumPlotter(object):
     def fill_between(self, **kwargs):
         """
         Create actual plot with matplotlib's fill_between method.
-        
+
         Args:
           kwargs: Any matplotlib fill_between() keyword argument, overwrites
                   previously defined keywords
         """
-        
+
         xcorners, ycorners = self._prepare_plot(**kwargs)
         self.ax.fill_between(xcorners, ycorners, **self.kwargs)
         return self.ax
@@ -329,8 +375,8 @@ class SpectrumPlotter(object):
     def dynamic_max(data_max, yscale):
         """Get an axes upper limit (for y) based on data value.
 
-        The upper limit is the next power of 10, or 3 * power of 10, above the max.
-        (For linear, the next N * power of 10.)
+        The upper limit is the next power of 10, or 3 * power of 10, above
+        the max (For linear, the next N * power of 10.).
 
         Args:
           data_max: the maximum of the data (could be integers or floats)
@@ -355,15 +401,15 @@ class SpectrumPlotter(object):
 
         if self._xlim is None or self._xlim == 'default':
             return np.min(self._xedges), np.max(self._xedges)
-        else:
-            return self._xlim
+
+        return self._xlim
 
     @xlim.setter
     def xlim(self, limits):
         """Sets xlim."""
 
         if limits is not None and limits != 'default' and len(limits) != 2:
-                raise PlottingError('xlim should be length 2: {}'.format(limits))
+            raise PlottingError('xlim should be length 2: {}'.format(limits))
         self._xlim = limits
 
 
@@ -373,7 +419,8 @@ class SpectrumPlotter(object):
 
         if self._ylim is None or self._ylim == 'default':
             if self.yscale is None:
-                raise PlottingError('No y scale and no axes defined, requires at least one of them')
+                raise PlottingError('No y scale and no axes defined,'
+                                    ' requires at least one of them')
 
             min_ind = np.argmin(np.abs(self._ydata[self._ydata != 0]))
             delta_y = np.abs(self._ydata - self._ydata[min_ind])
@@ -393,8 +440,8 @@ class SpectrumPlotter(object):
             data_max = np.max(self._ydata)
             ymax = self.dynamic_max(data_max, self.yscale)
             return ymin, ymax
-        else:
-            return self._ylim
+
+        return self._ylim
 
 
     @ylim.setter
@@ -402,7 +449,7 @@ class SpectrumPlotter(object):
         """Sets ylim."""
 
         if limits is not None and limits != 'default' and len(limits) != 2:
-                raise PlottingError('ylim should be length 2: {}'.format(limits))
+            raise PlottingError('ylim should be length 2: {}'.format(limits))
         self._ylim = limits
 
 

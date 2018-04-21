@@ -756,14 +756,16 @@ class Spectrum(object):
 
         Args:
           fmt:    matplotlib like plot format string
-          x_mode: define what is plotted on x axis ('energy' or 'channel'),
+          xmode:  define what is plotted on x axis ('energy' or 'channel'),
                   defaults to energy if available
-          y_mode: define what is plotted on y axis ('counts', 'cps', 'cpskev' 
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev' 
                   or 'eval_over'), defaults to counts
           ax:     matplotlib axes object, if not provided one is created with the
                   variables provided by 'figsize'
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
           title:  costum plot title
+          xlabel: costum xlabel value
+          ylabel: costum ylabel value
           kwargs: arguments that are directly passed to matplotlib's plot command
 
         Returns:
@@ -777,14 +779,16 @@ class Spectrum(object):
         """Plot a spectrum with matplotlib's fill_between command
 
         Args:
-          x_mode: define what is plotted on x axis ('energy' or 'channel'),
+          xmode:  define what is plotted on x axis ('energy' or 'channel'),
                   defaults to energy if available
-          y_mode: define what is plotted on y axis ('counts', 'cps', 'cpskev' 
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev' 
                   or 'eval_over'), defaults to counts
           ax:     matplotlib axes object, if not provided one is created with the
                   variables provided by 'figsize'
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
           title:  costum plot title
+          xlabel: costum xlabel value
+          ylabel: costum ylabel value
           kwargs: arguments that are directly passed to matplotlib's fill_between
                   command
 
