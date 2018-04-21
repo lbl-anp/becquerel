@@ -15,15 +15,17 @@ class PlottingError(Exception):
 class SpectrumPlotter(object):
     """Class for handling spectrum plotting."""
 
-    def __init__(self, spec, *fmt, x_mode = None, 
-                 y_mode = None, ax = None, yscale = None, title = None, **kwargs):
+    def __init__(self, spec, *fmt, xmode = None, ymode = None, 
+        xlim = None, ylim = None, ax = None, yscale = None, title = None, **kwargs):
         """
         Args:
           spec:   Spectrum instance to plot
           fmt:    matplotlib like plot format string
-          x_mode: define what is plotted on x axis ('energy' or 'channel')
-          y_mode: define what is plotted on y axis ('counts', 'cps', 'cpskev' 
+          xmode:  define what is plotted on x axis ('energy' or 'channel')
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'
                   or 'eval_over')
+          xlim:   set x axes limits, if set to 'default' use SpectrumPlotter scales
+          ylim:   set y axes limits, if set to 'default' use SpectrumPlotter scales
           ax:     matplotlib axes object, if not provided one is created with the
                   argument provided in 'figsize' once the plot command is called
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
@@ -48,25 +50,28 @@ class SpectrumPlotter(object):
         else:
             self._eval_time = None
 
+        self.xlim   = xlim
+        self.ylim   = ylim
+
         self.yscale = yscale
         self.ax     = ax
         self.title  = title
         self.kwargs = kwargs
 
-        self.x_mode = x_mode
-        self.y_mode = y_mode
+        self.xmode = xmode
+        self.ymode = ymode
 
 
     @property
-    def x_mode(self):
+    def xmode(self):
         """
         Returns the current x axis plotting mode
         """
-        return self._x_mode
+        return self._xmode
 
 
-    @x_mode.setter
-    def x_mode(self, mode):
+    @xmode.setter
+    def xmode(self, mode):
         """
         Define x data mode, handles all data errors, requires spec.
         Defines also xedges and xlabel.
@@ -77,37 +82,37 @@ class SpectrumPlotter(object):
 
         if mode is None:
             if self.spec.is_calibrated:
-                self._x_mode = 'energy'
+                self._xmode = 'energy'
             else:
-                self._x_mode = 'channel'
+                self._xmode = 'channel'
         else:
             if mode.lower() in ('kev', 'energy'):
                 if not self.spec.is_calibrated:
                     raise PlottingError('Spectrum is not calibrated, however x axis was requested as energy')
-                self._x_mode = 'energy'
+                self._xmode = 'energy'
             elif mode.lower() in ('channel', 'channels', 'chn', 'chns'):
-                self._x_mode = 'channel'
+                self._xmode = 'channel'
             else: 
                 raise PlottingError('Unknown x data mode: {}'.format(mode))
 
-        if self._x_mode == 'energy':
+        if self._xmode == 'energy':
             self._xedges = self.spec.bin_edges_kev
             self._xlabel = 'Energy [keV]'
-        elif self._x_mode == 'channel':
+        elif self._xmode == 'channel':
             self._xedges = self.get_channel_edges(self.spec.channels)
             self._xlabel = 'Channel'
 
 
     @property
-    def y_mode(self):
+    def ymode(self):
         """
         Returns the current y axis plotting mode.
         """
-        return self._y_mode
+        return self._ymode
 
 
-    @y_mode.setter
-    def y_mode(self, mode):
+    @ymode.setter
+    def ymode(self, mode):
         """
         Define y data mode, handles all data errors, requires spec.
         Defines also ydata and ylabel.
@@ -117,41 +122,41 @@ class SpectrumPlotter(object):
         """
 
         if self._eval_time is not None:
-            self._y_mode = 'eval_over'
+            self._ymode = 'eval_over'
         elif mode is None:
             if self.spec.counts is not None:
-                self._y_mode = 'counts'
+                self._ymode = 'counts'
             elif self.spec.cps is not None:
-                self._y_mode = 'cps'
+                self._ymode = 'cps'
             elif self.spec.cpskev is not None:
-                self._y_mode = 'cpskev'
+                self._ymode = 'cpskev'
             else:
                 raise PlottingError('Cannot evaluate y data from spectrum')
         elif mode.lower() in ('count', 'counts', 'cnt', 'cnts'):
             if self.spec.counts is None:
                 raise PlottingError('Spectrum has counts not defined')
-            self._y_mode = 'counts'
+            self._ymode = 'counts'
         elif mode.lower() == 'cps':
             if self.spec.cps is None:
                 raise PlottingError('Spectrum has cps not defined')
-            self._y_mode = 'cps'
+            self._ymode = 'cps'
         elif mode.lower() == 'cpskev':
             if self.spec.cps is None:
                 raise PlottingError('Spectrum has cps not defined')
-            self._y_mode = 'cpskev'
+            self._ymode = 'cpskev'
         else:
             raise PlottingError('Unknown y data mode: {}'.format(mode))
 
-        if self._y_mode == 'counts':
+        if self._ymode == 'counts':
             self._ydata = self.spec.counts_vals
             self._ylabel = 'Counts'
-        elif self._y_mode == 'cps':
+        elif self._ymode == 'cps':
             self._ydata = self.spec.cps_vals
             self._ylabel = 'Countrate [1/s]'
-        elif self._y_mode == 'cpskev':
+        elif self._ymode == 'cpskev':
             self._ydata = self.spec.cpskev_vals
             self._ylabel = 'Countrate [1/s/keV]'
-        elif self._y_mode == 'eval_over':
+        elif self._ymode == 'eval_over':
             self._ydata = self.spec.counts_vals_over(self._eval_time)
             self._ylabel = 'Countrate [1/s]'
 
@@ -229,6 +234,12 @@ class SpectrumPlotter(object):
             self.ax.set_title(self.title)
         elif self.spec.infilename is not None:
             self.ax.set_title(self.spec.infilename)
+        if self._xlim is not None:
+            self.ax.set_xlim(self.xlim)
+        if self._ylim is not None:
+            self.ax.set_ylim(self.ylim)
+            if self.yscale == 'symlog':
+                self.ax.set_yscale(self.yscale, linthreshy = self.linthreshy)
         return self.get_corners()
 
 
@@ -342,35 +353,57 @@ class SpectrumPlotter(object):
     def xlim(self):
         """Returns the xlim, requires xedges."""
 
-        return (np.min(self._xedges), np.max(self._xedges))
+        if self._xlim is None or self._xlim == 'default':
+            return np.min(self._xedges), np.max(self._xedges)
+        else:
+            return self._xlim
+
+    @xlim.setter
+    def xlim(self, limits):
+        """Sets xlim."""
+
+        if limits is not None and limits != 'default' and len(limits) != 2:
+                raise PlottingError('xlim should be length 2: {}'.format(limits))
+        self._xlim = limits
 
 
     @property
     def ylim(self):
         """Returns ylim, requires yscale, ydata."""
 
-        if self.yscale is None:
-            raise PlottingError('No y scale and no axes defined, requires at least one of them')
+        if self._ylim is None or self._ylim == 'default':
+            if self.yscale is None:
+                raise PlottingError('No y scale and no axes defined, requires at least one of them')
 
-        min_ind = np.argmin(np.abs(self._ydata[self._ydata != 0]))
-        delta_y = np.abs(self._ydata - self._ydata[min_ind])
-        min_delta_y = np.min(delta_y[delta_y > 0])
+            min_ind = np.argmin(np.abs(self._ydata[self._ydata != 0]))
+            delta_y = np.abs(self._ydata - self._ydata[min_ind])
+            min_delta_y = np.min(delta_y[delta_y > 0])
 
-        data_min = np.min(self._ydata)
-        if self.yscale == 'linear':
-            ymin = 0
-        elif self.yscale == 'log' and data_min < 0:
-            raise PlottingError('Cannot plot negative values on a log ' +
-                                'scale; use symlog scale')
-        elif self.yscale == 'symlog' and data_min >= 0:
-            ymin = 0
+            data_min = np.min(self._ydata)
+            if self.yscale == 'linear':
+                ymin = 0
+            elif self.yscale == 'log' and data_min < 0:
+                raise PlottingError('Cannot plot negative values on a log ' +
+                                    'scale; use symlog scale')
+            elif self.yscale == 'symlog' and data_min >= 0:
+                ymin = 0
+            else:
+                ymin = self.dynamic_min(data_min, min_delta_y)
+
+            data_max = np.max(self._ydata)
+            ymax = self.dynamic_max(data_max, self.yscale)
+            return ymin, ymax
         else:
-            ymin = self.dynamic_min(data_min, min_delta_y)
+            return self._ylim
 
-        data_max = np.max(self._ydata)
-        ymax = self.dynamic_max(data_max, self.yscale)
 
-        return ymin, ymax
+    @ylim.setter
+    def ylim(self, limits):
+        """Sets ylim."""
+
+        if limits is not None and limits != 'default' and len(limits) != 2:
+                raise PlottingError('ylim should be length 2: {}'.format(limits))
+        self._ylim = limits
 
 
     @property
