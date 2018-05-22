@@ -425,8 +425,9 @@ class _NNDCQuery(object):
         for x in ['z', 'a', 'n']:
             # handle Z, A, and N settings
             if x in kwargs:
-                self._data['spnuc'] = 'zan'
-                self._data[x.lower()] = '{}'.format(kwargs[x])
+                self._data['spnuc'] = 'zanrange'
+                self._data[x + 'min'], self._data[x + 'max'] = \
+                    _format_range((kwargs[x], kwargs[x]))
             # handle *_range, *_any, *_odd, *_even
             elif x + '_range' in kwargs:
                 self._data['spnuc'] = 'zanrange'
