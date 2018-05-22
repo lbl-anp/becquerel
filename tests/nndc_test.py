@@ -10,6 +10,22 @@ import pytest
 # pylint: disable=attribute-defined-outside-init,missing-docstring
 
 
+def ufloats_overlap_range(ufloats, vmin, vmax):
+    """Return whether the +/- 1 sigma range overlaps the value range."""
+    vals = []
+    sigmas = []
+    for val in ufloats:
+        if isinstance(val, float):
+            vals.append(val)
+            sigmas.append(0)
+        else:
+            vals.append(val.nominal_value)
+            sigmas.append(val.std_dev)
+    vals = np.array(vals)
+    sigmas = np.array(sigmas)
+    return ((vals - sigmas <= vmax) | (vals + sigmas >= vmin)).all()
+
+
 class TestParseFloatUncertainty(object):
     """Test _parse_float_uncertainty()."""
 
@@ -145,157 +161,207 @@ class NNDCQueryTests(object):
         """Test NNDCQuery: nuc='Co-60'....................................."""
         d = self.fetch(nuc='Co-60')
         assert len(d) > 0
+        assert (d.Z == 27).all()
+        assert (d.A == 60).all()
 
     def test_query_nuc_He4(self):
         """Test NNDCQuery: nuc='He-4'......................................"""
         d = self.fetch(nuc='He-4')
         assert self.stable_isotope_condition(d)
+        assert (d.Z == 2).all()
+        assert (d.A == 4).all()
 
     def test_query_nuc_V50(self):
         """Test NNDCQuery: nuc='V-50'......................................"""
         d = self.fetch(nuc='V-50')
         assert len(d) > 0
+        assert (d.Z == 23).all()
+        assert (d.A == 50).all()
 
     def test_query_nuc_Ge70(self):
         """Test NNDCQuery: nuc='Ge-70'....................................."""
         d = self.fetch(nuc='Ge-70')
         assert self.stable_isotope_condition(d)
+        assert (d.Z == 32).all()
+        assert (d.A == 70).all()
 
     def test_query_nuc_U238(self):
         """Test NNDCQuery: nuc='U-238'....................................."""
         d = self.fetch(nuc='U-238')
         assert len(d) > 0
+        assert (d.Z == 92).all()
+        assert (d.A == 238).all()
 
     def test_query_nuc_Pa234(self):
         """Test NNDCQuery: nuc='Pa-234'...................................."""
         d = self.fetch(nuc='Pa-234')
         assert len(d) > 0
+        assert (d.Z == 91).all()
+        assert (d.A == 234).all()
 
     def test_query_z_6(self):
         """Test NNDCQuery: z=6............................................."""
         d = self.fetch(z=6)
         assert len(d) > 0
+        assert (d.Z == 6).all()
 
     def test_query_a_12(self):
         """Test NNDCQuery: a=12............................................"""
         d = self.fetch(a=12)
         assert len(d) > 0
+        assert (d.A == 12).all()
 
     def test_query_n_6(self):
         """Test NNDCQuery: n=6............................................."""
         d = self.fetch(n=6)
         assert len(d) > 0
+        assert (d.N == 6).all()
 
     def test_query_z_6_a_12(self):
         """Test NNDCQuery: z=6, a=12......................................."""
         d = self.fetch(z=6, a=12)
         assert self.stable_isotope_condition(d)
+        assert (d.Z == 6).all()
+        assert (d.A == 12).all()
 
     def test_query_n_6_a_12(self):
         """Test NNDCQuery: n=6, a=12......................................."""
         d = self.fetch(n=6, a=12)
         assert self.stable_isotope_condition(d)
+        assert (d.A == 12).all()
+        assert (d.N == 6).all()
 
     def test_query_z_6_a_12_n_6(self):
         """Test NNDCQuery: z=6, a=12, n=6.................................."""
         d = self.fetch(z=6, a=12, n=6)
         assert self.stable_isotope_condition(d)
+        assert (d.Z == 6).all()
+        assert (d.A == 12).all()
+        assert (d.N == 6).all()
 
     def test_query_zrange_9_10(self):
         """Test NNDCQuery: z_range=(9, 10)................................."""
         d = self.fetch(z_range=(9, 10))
         assert len(d) > 0
+        assert ((9 <= d.Z) & (d.Z <= 10)).all()
 
     def test_query_zrange_9_10_z_any(self):
         """Test NNDCQuery: z_range=(9, 10), z_any=True....................."""
         d = self.fetch(z_range=(9, 10), z_any=True)
         assert len(d) > 0
+        assert ((9 <= d.Z) & (d.Z <= 10)).all()
 
     def test_query_zrange_9_10_z_even(self):
         """Test NNDCQuery: z_range=(9, 10), z_even=True...................."""
         d = self.fetch(z_range=(9, 10), z_even=True)
         assert len(d) > 0
+        assert (d.Z == 10).all()
 
     def test_query_zrange_9_10_z_odd(self):
         """Test NNDCQuery: z_range=(9, 10), z_odd=True....................."""
         d = self.fetch(z_range=(9, 10), z_odd=True)
         assert len(d) > 0
+        assert (d.Z == 9).all()
 
     def test_query_zrange_21_22(self):
         """Test NNDCQuery: z_range=(21, 22)................................"""
         d = self.fetch(z_range=(21, 22))
         assert len(d) > 0
+        assert ((21 <= d.Z) & (d.Z <= 22)).all()
 
     def test_query_zrange_110_118(self):
         """Test NNDCQuery: z_range=(110, 118).............................."""
         d = self.fetch(z_range=(110, 118))
         assert len(d) > 0
+        assert ((110 <= d.Z) & (d.Z <= 118)).all()
 
     def test_query_zrange_None_3(self):
         """Test NNDCQuery: z_range=(None, 3)..............................."""
         d = self.fetch(z_range=(None, 3))
         assert len(d) > 0
+        assert (d.Z <= 3).all()
 
     def test_query_zrange_110_None(self):
         """Test NNDCQuery: z_range=(110, None)............................."""
         d = self.fetch(z_range=(110, None))
         assert len(d) > 0
+        assert (110 <= d.Z).all()
 
     def test_query_arange_9_10(self):
         """Test NNDCQuery: a_range=(9, 10)................................."""
         d = self.fetch(a_range=(9, 10))
         assert len(d) > 0
+        assert ((9 <= d.A) & (d.A <= 10)).all()
 
     def test_query_arange_9_10_a_any(self):
         """Test NNDCQuery: a_range=(9, 10), a_any=True....................."""
         d = self.fetch(a_range=(9, 10), a_any=True)
         assert len(d) > 0
+        assert ((9 <= d.A) & (d.A <= 10)).all()
 
     def test_query_arange_9_10_a_even(self):
         """Test NNDCQuery: a_range=(9, 10), a_even=True...................."""
         d = self.fetch(a_range=(9, 10), a_even=True)
         assert len(d) > 0
+        assert (d.A == 10).all()
 
     def test_query_arange_7_10_a_odd(self):
         """Test NNDCQuery: a_range=(7, 10), a_odd=True....................."""
         d = self.fetch(a_range=(7, 10), a_odd=True)
         assert len(d) > 0
+        assert ((d.A == 7) | (d.A == 9)).all()
 
     def test_query_arange_None_3(self):
         """Test NNDCQuery: a_range=(None, 3)..............................."""
         d = self.fetch(a_range=(None, 3))
         assert len(d) > 0
+        assert (d.A <= 3).all()
 
     def test_query_arange_270_None(self):
         """Test NNDCQuery: a_range=(270, None)............................."""
         d = self.fetch(a_range=(270, None))
         assert len(d) > 0
+        assert (270 <= d.A).all()
 
     def test_query_nrange_9_10(self):
         """Test NNDCQuery: n_range=(9, 10)................................."""
         d = self.fetch(n_range=(9, 10))
         assert len(d) > 0
+        assert ((9 <= d.N) & (d.N <= 10)).all()
 
     def test_query_nrange_9_10_n_any(self):
         """Test NNDCQuery: n_range=(9, 10), n_any=True....................."""
         d = self.fetch(n_range=(9, 10), n_any=True)
         assert len(d) > 0
+        assert ((9 <= d.N) & (d.N <= 10)).all()
 
     def test_query_nrange_9_10_n_even(self):
         """Test NNDCQuery: n_range=(9, 10), n_even=True...................."""
         d = self.fetch(n_range=(9, 10), n_even=True)
         assert len(d) > 0
+        assert (d.N == 10).all()
 
     def test_query_nrange_9_10_n_odd(self):
         """Test NNDCQuery: n_range=(9, 10), n_odd=True....................."""
         d = self.fetch(n_range=(9, 10), n_odd=True)
         assert len(d) > 0
+        assert (d.N == 9).all()
 
-    def test_query_nrange_9_10_z_even_a_even_n_any(self):
+    def test_query_zrange_9_10_z_even_a_even_n_any(self):
         """Test NNDCQuery: z_range=(9, 10), z_even, a_even, n_any.........."""
         d = self.fetch(
             z_range=(9, 10), z_even=True, a_even=True, n_any=True)
         assert len(d) > 0
+        assert ((9 <= d.Z) & (d.Z <= 10)).all()
+        assert (d.Z % 2 == 0).all()
+        assert (d.A % 2 == 0).all()
+
+    def test_query_z_6_arange_11_13(self):
+        """Test NNDCQuery: z=6, a_range=(11, 13)..........................."""
+        d = self.fetch(z=6, a_range=(11, 13))
+        assert len(d) > 0
+        assert (d.Z == 6).all()
+        assert ((11 <= d.A) & (d.A <= 13)).all()
 
     def test_query_exception_not_found(self):
         """Test NNDCQuery exception if website not found..................."""
@@ -342,46 +408,64 @@ class NNDCQueryTests(object):
         """Test NNDCQuery: t_range=(1e-6, 1e-5)............................"""
         d = self.fetch(t_range=(1e-6, 1e-5))
         assert len(d) > 0
+        # TODO: the following assertion fails
+        # assert ((1e-6 <= d['T1/2 (s)']) & (d['T1/2 (s)'] <= 1e-5)).all()
 
     def test_query_zrange_9_10_trange_None_1E4(self):
         """Test NNDCQuery: z_range=(9, 10), t_range=(None, 1e4)............"""
         d = self.fetch(z_range=(9, 10), t_range=(None, 1e4))
         assert len(d) > 0
+        assert ((9 <= d.Z) & (d.Z <= 10)).all()
+        assert (d['T1/2 (s)'] <= 1e4).all()
 
     def test_query_zrange_9_10_trange_0_1E4(self):
         """Test NNDCQuery: z_range=(9, 10), t_range=(0, 1e4)..............."""
         d = self.fetch(z_range=(9, 10), t_range=(0, 1e4))
         assert len(d) > 0
+        assert ((9 <= d.Z) & (d.Z <= 10)).all()
+        assert (d['T1/2 (s)'] <= 1e4).all()
 
     def test_query_zrange_9_10_trange_1E3_1E9(self):
         """Test NNDCQuery: z_range=(9, 10), t_range=(1e3, 1e9)............."""
         d = self.fetch(z_range=(9, 10), t_range=(1e3, 1e9))
         assert len(d) > 0
+        assert ((9 <= d.Z) & (d.Z <= 10)).all()
+        assert ((1e3 <= d['T1/2 (s)']) & (d['T1/2 (s)'] <= 1e9)).all()
 
     def test_query_zrange_5_10_trange_1E9_None(self):
         """Test NNDCQuery: z_range=(5, 10), t_range=(1e9, None)............"""
         d = self.fetch(z_range=(5, 10), t_range=(1e9, None))
         assert len(d) > 0
+        assert ((5 <= d.Z) & (d.Z <= 10)).all()
+        assert (d['T1/2 (s)'] >= 1e9).all()
 
     def test_query_zrange_5_10_trange_1E9_inf(self):
         """Test NNDCQuery: z_range=(5, 10), t_range=(1e9, np.inf).........."""
         d = self.fetch(z_range=(5, 10), t_range=(1e9, np.inf))
         assert len(d) > 0
+        assert ((5 <= d.Z) & (d.Z <= 10)).all()
+        assert (d['T1/2 (s)'] >= 1e9).all()
 
     def test_query_nuc_Pu239_decay_A(self):
         """Test NNDCQuery: nuc='Pu-239', decay='Alpha'....................."""
         d = self.fetch(nuc='Pu-239', decay='Alpha')
         assert len(d) > 0
+        assert (d.Z == 94).all()
+        assert (d.A == 239).all()
 
     def test_query_nuc_Co60_decay_BM(self):
         """Test NNDCQuery: nuc='Co-60', decay='B-'........................."""
         d = self.fetch(nuc='Co-60', decay='B-')
         assert len(d) > 0
+        assert (d.Z == 27).all()
+        assert (d.A == 60).all()
 
     def test_query_nuc_Na22_decay_ECBP(self):
         """Test NNDCQuery: nuc='Na-22', decay='EC+B+'......................"""
         d = self.fetch(nuc='Na-22', decay='EC+B+')
         assert len(d) > 0
+        assert (d.Z == 11).all()
+        assert (d.A == 22).all()
 
     def test_query_exception_bad_decay(self):
         """Test NNDCQuery raises exception for an invalid decay mode......."""
@@ -411,11 +495,16 @@ class TestNuclearWalletCard(NNDCQueryTests):
         """Test fetch_wallet_card: z_range=(9, 10), elevel_range=(0, 0.1).."""
         d = self.fetch(z_range=(9, 10), elevel_range=(0, 0.1))
         assert len(d) > 0
+        assert ((9 <= d.Z) & (d.Z <= 10)).all()
+        assert (d['Energy Level (MeV)'] <= 0.1).all()
 
     def test_wallet_zrange_7_20_elevelrange_01_10(self):
         """Test fetch_wallet_card: z_range=(7, 20), elevel_range=(0.1, 10)."""
         d = self.fetch(z_range=(7, 20), elevel_range=(0.1, 10))
         assert len(d) > 0
+        assert ((7 <= d.Z) & (d.Z <= 20)).all()
+        assert ((d['Energy Level (MeV)'] >= 0.1) &
+                (d['Energy Level (MeV)'] <= 10)).all()
 
     def test_wallet_zrange_9_10_j_0(self):
         """Test fetch_wallet_card: z_range=(9, 10), j='0'.................."""
@@ -433,6 +522,7 @@ class TestNuclearWalletCard(NNDCQueryTests):
         """Test fetch_wallet_card: z_range=(9, 10), parity='ANY'..........."""
         d = self.fetch(z_range=(9, 10), parity='ANY')
         assert len(d) > 0
+        assert ((9 <= d.Z) & (d.Z <= 10)).all()
 
     def test_wallet_zrange_9_10_parity_p(self):
         """Test fetch_wallet_card: z_range=(9, 10), parity='+'............."""
@@ -490,6 +580,9 @@ class TestDecayRadiationQuery(NNDCQueryTests):
         """Test fetch_decay_radiation: no exception for nuc='Pa-234m'......"""
         d = self.fetch(nuc='Pa-234m')
         assert len(d) == 0
+        assert (d.Z == 91).all()
+        assert (d.A == 234).all()
+        assert (d['Parent Energy Level (MeV)'] > 0).all()
 
     def test_decay_zrange_230_250(self):
         """Test fetch_decay_radiation: z_range=(230, 250) dataframe empty.."""
@@ -500,6 +593,8 @@ class TestDecayRadiationQuery(NNDCQueryTests):
         """Test fetch_decay_radiation: nuc='Pu-239', type='Gamma'.........."""
         d = self.fetch(nuc='Pu-239', type='Gamma')
         assert len(d) > 0
+        assert (d.Z == 94).all()
+        assert (d.A == 239).all()
 
     def test_decay_exception_bad_type(self):
         """Test fetch_decay_radiation raises except. for invalid rad type.."""
@@ -510,46 +605,67 @@ class TestDecayRadiationQuery(NNDCQueryTests):
         """Test fetch_decay_radiation: z_range=(100, 102), type='ANY'......"""
         d = self.fetch(z_range=(100, 102), type='ANY')
         assert len(d) > 0
+        assert ((100 <= d.Z) & (d.Z <= 102)).all()
 
     def test_decay_zrange_100_102_type_G(self):
         """Test fetch_decay_radiation: z_range=(100, 102), type='Gamma'...."""
         d = self.fetch(z_range=(100, 102), type='Gamma')
         assert len(d) > 0
+        assert ((100 <= d.Z) & (d.Z <= 102)).all()
 
     def test_decay_nuc_Ba133_erange_300_400(self):
         """Test fetch_decay_radiation: nuc='Ba-133', e_range=(300, 400)...."""
         d = self.fetch(nuc='Ba-133', e_range=(300, 400))
         assert len(d) > 0
+        assert (d.Z == 56).all()
+        assert (d.A == 133).all()
+        assert ufloats_overlap_range(d['Radiation Energy (keV)'], 300, 400)
 
     def test_decay_nuc_Ba133_erange_300_None(self):
         """Test fetch_decay_radiation: nuc='Ba-133', e_range=(300, None)..."""
         d = self.fetch(nuc='Ba-133', e_range=(300, None))
         assert len(d) > 0
+        assert (d.Z == 56).all()
+        assert (d.A == 133).all()
+        assert ufloats_overlap_range(d['Radiation Energy (keV)'], 300, 1e9)
 
     def test_decay_nuc_Ba133_erange_None_400(self):
         """Test fetch_decay_radiation: nuc='Ba-133', e_range=(None, 400)..."""
         d = self.fetch(nuc='Ba-133', e_range=(None, 400))
         assert len(d) > 0
+        assert (d.Z == 56).all()
+        assert (d.A == 133).all()
+        assert ufloats_overlap_range(d['Radiation Energy (keV)'], 0, 400)
 
     def test_decay_nuc_Ba133_irange_10_100(self):
         """Test fetch_decay_radiation: nuc='Ba-133', i_range=(10, 100)....."""
         d = self.fetch(nuc='Ba-133', i_range=(10, 100))
         assert len(d) > 0
+        assert (d.Z == 56).all()
+        assert (d.A == 133).all()
+        assert ufloats_overlap_range(d['Radiation Intensity (%)'], 10, 100)
 
     def test_decay_nuc_Ba133_irange_40_None(self):
         """Test fetch_decay_radiation: nuc='Ba-133', i_range=(40, None)...."""
         d = self.fetch(nuc='Ba-133', i_range=(40, None))
         assert len(d) > 0
+        assert (d.Z == 56).all()
+        assert (d.A == 133).all()
+        assert ufloats_overlap_range(d['Radiation Intensity (%)'], 40, 100)
 
     def test_decay_nuc_Ba133_irange_None_40(self):
         """Test fetch_decay_radiation: nuc='Ba-133', i_range=(None, 40)...."""
         d = self.fetch(nuc='Ba-133', i_range=(None, 40))
         assert len(d) > 0
+        assert (d.Z == 56).all()
+        assert (d.A == 133).all()
+        assert ufloats_overlap_range(d['Radiation Intensity (%)'], 0, 40)
 
     def test_decay_erange_661_662(self):
         """Test fetch_decay_radiation: e_range=(661.5, 661.9).............."""
         d = self.fetch(e_range=(661.5, 661.9))
         assert len(d) > 0
+        assert ufloats_overlap_range(d['Radiation Energy (keV)'], 661.5, 661.9)
 
     def test_decay_elevelrange_exception(self):
         """Test fetch_decay_radiation exception if elevel_range set........"""
