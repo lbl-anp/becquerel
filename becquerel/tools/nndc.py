@@ -425,8 +425,9 @@ class _NNDCQuery(object):
         for x in ['z', 'a', 'n']:
             # handle Z, A, and N settings
             if x in kwargs:
-                self._data['spnuc'] = 'zan'
-                self._data[x.lower()] = '{}'.format(kwargs[x])
+                self._data['spnuc'] = 'zanrange'
+                self._data[x + 'min'], self._data[x + 'max'] = \
+                    _format_range((kwargs[x], kwargs[x]))
             # handle *_range, *_any, *_odd, *_even
             elif x + '_range' in kwargs:
                 self._data['spnuc'] = 'zanrange'
@@ -521,9 +522,9 @@ class _NNDCQuery(object):
         if 'Parent Energy Level' in self.keys():
             self._convert_column_uncertainty('Parent Energy Level')
             self.df.rename(
-                columns={'Parent Energy Level': 'Parent Energy Level (MeV)'},
+                columns={'Parent Energy Level': 'Energy Level (MeV)'},
                 inplace=True)
-            self.df['Parent Energy Level (MeV)'] *= 0.001
+            self.df['Energy Level (MeV)'] *= 0.001
 
         if 'Mass Excess' in self.keys():
             self._convert_column_uncertainty('Mass Excess')
@@ -677,6 +678,8 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
             self._data['eled'] = 'enabled'
             self._data['elmin'], self._data['elmax'] = \
                 _format_range(kwargs['elevel_range'])
+            if self._data['elmax'] == '':
+                self._data['elmax'] = '1000000000'
         # handle spin and parity
         if 'j' in kwargs:
             self._data['jled'] = 'enabled'
@@ -760,6 +763,7 @@ class _DecayRadiationQuery(_NNDCQuery):
       z_even, etc.: (bool) : only even Z, A, or N
       t_range : (tuple of float) : range of isotope half-lives in seconds
       decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
+      elevel_range : (tuple of float) : range of parent energy level (MeV)
       type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
       e_range : (tuple of float) : radiation energy range (keV)
       i_range : (tuple of float): intensity range (percent)
@@ -784,7 +788,8 @@ class _DecayRadiationQuery(_NNDCQuery):
         'ord': 'zate',         # order file by Z, A, T1/2, E
     })
     _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
-    _ALLOWED_KEYWORDS.extend(['decay', 'type', 'e_range', 'i_range'])
+    _ALLOWED_KEYWORDS.extend([
+        'elevel_range', 'decay', 'type', 'e_range', 'i_range'])
     _DUMMY_TEXT = """
 <html>
 <body>
@@ -815,6 +820,19 @@ To save this output into a local File, clik on "File" in your browser menu and s
                         DECAYRAD_RADIATION_TYPE.keys(), kwargs['type']))
             self._data['rted'] = 'enabled'
             self._data['rtn'] = DECAYRAD_RADIATION_TYPE[kwargs['type']]
+        # handle energy level condition
+        self.elevel_range = (0, 1e9)
+        if 'elevel_range' in kwargs:
+            x = _format_range(kwargs['elevel_range'])
+            try:
+                x0 = float(x[0])
+            except ValueError:
+                x0 = 0.
+            try:
+                x1 = float(x[1])
+            except ValueError:
+                x1 = 1e9
+            self.elevel_range = (x0, x1)
         # handle radiation energy range
         if 'e_range' in kwargs:
             self._data['reed'] = 'enabled'
@@ -851,6 +869,7 @@ def fetch_decay_radiation(**kwargs):
       z_odd, etc. : (bool) : only odd Z, A, or N
       z_even, etc.: (bool) : only even Z, A, or N
       t_range : (tuple of float) : range of isotope half-lives in seconds
+      elevel_range : (tuple of float) : range of parent energy level (MeV)
       decay : (str) : isotope decay mode from DECAYRAD_DECAY_MODE
       type :  (str) : radiation type from DECAYRAD_RADIATION_TYPE
       e_range : (tuple of float) : radiation energy range (keV)
@@ -866,4 +885,9 @@ def fetch_decay_radiation(**kwargs):
     """
 
     query = _DecayRadiationQuery(**kwargs)
+    # apply elevel_range filter (hack around the web API)
+    elevel = query.df['Energy Level (MeV)']
+    keep = (elevel >= query.elevel_range[0]) & \
+           (elevel <= query.elevel_range[1])
+    query.df = query.df[keep]
     return query.df
