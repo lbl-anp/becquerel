@@ -115,10 +115,12 @@ class SpectrumPlotter(object):
 
         if self._xmode == 'energy':
             self._xedges = self.spec.bin_edges_kev
-            self._xlabel = 'Energy [keV]'
+            if self._xlabel == 'Channel' or self._xlabel is None:
+                self._xlabel = 'Energy [keV]'
         elif self._xmode == 'channel':
             self._xedges = self.get_channel_edges(self.spec.channels)
-            self._xlabel = 'Channel'
+            if self._xlabel == 'Energy [keV]' or self._xlabel is None:
+                self._xlabel = 'Channel'
 
 
     @property
@@ -163,16 +165,20 @@ class SpectrumPlotter(object):
 
         if self._ymode == 'counts':
             self._ydata = self.spec.counts_vals
-            self._ylabel = 'Counts'
+            if self._ylabel in ['Countrate [1/s]', 'Countrate [1/s/keV]'] or self._ylabel is None:
+                self._ylabel = 'Counts'
         elif self._ymode == 'cps':
             self._ydata = self.spec.cps_vals
-            self._ylabel = 'Countrate [1/s]'
+            if self._ylabel in ['Counts', 'Countrate [1/s/keV]'] or self._ylabel is None:
+                self._ylabel = 'Countrate [1/s]'
         elif self._ymode == 'cpskev':
             self._ydata = self.spec.cpskev_vals
-            self._ylabel = 'Countrate [1/s/keV]'
+            if self._ylabel in ['Counts', 'Countrate [1/s]'] or self._ylabel is None:
+                self._ylabel = 'Countrate [1/s/keV]'
         elif self._ymode == 'eval_over':
             self._ydata = self.spec.counts_vals_over(self._eval_time)
-            self._ylabel = 'Counts'
+            if self._ylabel in ['Countrate [1/s]', 'Countrate [1/s/keV]'] or self._ylabel is None:
+                self._ylabel = 'Counts'
 
 
     @property
