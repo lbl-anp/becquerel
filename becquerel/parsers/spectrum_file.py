@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import os
+import warnings
 import numpy as np
 from scipy.interpolate import interp1d
 
@@ -102,6 +103,12 @@ class SpectrumFile(object):
         n_edges = len(self.energies) + 1
         channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
         self.energy_bin_edges = self.channel_to_energy(channel_edges)
+
+        # check that calibration makes sense, remove calibration if not
+        if np.any(np.diff(self.energies) <= 0):
+            warnings.warn(
+                'Ignoring calibration; energies not monotonically increasing')
+            self.cal_coeff = []
 
     def channel_to_energy(self, channel):
         """Apply energy calibration to the given channel(s)."""
