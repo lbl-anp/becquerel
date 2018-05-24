@@ -15,9 +15,7 @@ class PlottingError(Exception):
 class SpectrumPlotter(object):
     """Class for handling spectrum plotting."""
 
-    def __init__(self, spec, *fmt, xmode=None, ymode=None, xlim=None,
-                 ylim=None, ax=None, yscale=None, title=None, xlabel=None,
-                 ylabel=None, **kwargs):
+    def __init__(self, spec, *fmt, **kwargs):
         """
         Args:
           spec:   Spectrum instance to plot
@@ -50,6 +48,35 @@ class SpectrumPlotter(object):
         self._ylim = None
         self._linthreshy = None
         self._eval_time = None
+
+        xmode = None
+        ymode = None
+        xlim = None
+        ylim = None
+        ax = None
+        yscale = None
+        title = None
+        xlabel = None
+        ylabel = None
+
+        if 'xmode' in kwargs:
+            xmode = kwargs.pop('xmode')
+        if 'ymode' in kwargs:
+            ymode = kwargs.pop('ymode')
+        if 'xlim' in kwargs:
+            xlim = kwargs.pop('xlim')
+        if 'ylim' in kwargs:
+            ylim = kwargs.pop('ylim')
+        if 'ax' in kwargs:
+            ax = kwargs.pop('ax')
+        if 'yscale' in kwargs:
+            yscale = kwargs.pop('yscale')
+        if 'title' in kwargs:
+            title = kwargs.pop('title')
+        if 'xlabel' in kwargs:
+            xlabel = kwargs.pop('xlabel')
+        if 'ylabel' in kwargs:
+            ylabel = kwargs.pop('ylabel')
 
         self.spec = spec
 
@@ -340,18 +367,18 @@ class SpectrumPlotter(object):
         xdata = (self._xedges[0:-1]+self._xedges[1:])*0.5
 
         if 'fmt' in self.kwargs:
-            self.fmt = self.kwargs.pop('fmt')
+            self.fmt = (self.kwargs.pop('fmt'))
 
         if hasattr(self.fmt, '__len__') and len(self.fmt) == 0:
-            self.fmt = "none"
+            self.fmt = ("none",)
             import matplotlib as mp
             if '2.0.0' in mp.__version__:
-                self.fmt = "."
+                self.fmt = (".",)
 
-        if not hasattr(self.fmt, '__len__') or not len(self.fmt) in [0, 1]:
+        if not hasattr(self.fmt, '__len__') or len(self.fmt) != 1:
             raise PlottingError("Wrong number of argument for fmt")
 
-        self.ax.errorbar(xdata, self._ydata, yerr=self.yerror, fmt=self.fmt, **self.kwargs)
+        self.ax.errorbar(xdata, self._ydata, yerr=self.yerror, fmt=self.fmt[0], **self.kwargs)
 
 
     def errorband(self, **kwargs):
