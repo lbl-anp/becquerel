@@ -758,21 +758,45 @@ class Spectrum(object):
           fmt:    matplotlib like plot format string
           xmode:  define what is plotted on x axis ('energy' or 'channel'),
                   defaults to energy if available
-          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev' 
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'
                   or 'eval_over'), defaults to counts
-          ax:     matplotlib axes object, if not provided one is created with the
-                  variables provided by 'figsize'
+          xlim:   set x axes limits, if set to 'default' use special scales
+          ylim:   set y axes limits, if set to 'default' use special scales
+          ax:     matplotlib axes object, if not provided one is created
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
           title:  costum plot title
           xlabel: costum xlabel value
           ylabel: costum ylabel value
-          kwargs: arguments that are directly passed to matplotlib's plot command
+          emode:  can be 'band' for adding an erroband or 'bars' for adding
+                  error bars, default is 'none'. It herits the color from
+                  matplotlib plot and can not be configured. For better plotting
+                  control use SpectrumPlotter and its errorband and errorbars
+                  functions.
+          kwargs: arguments that are directly passed to matplotlib's plot command.
+                  In addition it is possible to pass eval_over=eval_time and
+                  linthreshy if ylim='default' and ymode='symlog'
 
         Returns:
           matplotlib axes object
         """
+
+        emode = 'none'
+        alpha = 1
+        if 'emode' in kwargs:
+            emode = kwargs.pop('emode')
+        if 'alpha' in kwargs:
+            alpha = kwargs['alpha']
+
         plotter = plotting.SpectrumPlotter(self, *fmt, **kwargs)
-        return plotter.plot()
+        ax = plotter.plot()
+        if emode == 'band':
+            plotter.errorband(color=ax.get_lines()[-1].get_color(), alpha=alpha*0.5, label='_nolegend_')
+        elif emode == 'bars' or emode == 'bar':
+            plotter.errorbar(color=ax.get_lines()[-1].get_color(), label='_nolegend_')
+        elif emode != 'none':
+            raise SpectrumError("Unknown error mode '{}', use 'bars' "
+                                "or 'band'".format(emode))
+        return ax
 
 
     def fill_between(self, **kwargs):
@@ -781,22 +805,26 @@ class Spectrum(object):
         Args:
           xmode:  define what is plotted on x axis ('energy' or 'channel'),
                   defaults to energy if available
-          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev' 
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'
                   or 'eval_over'), defaults to counts
-          ax:     matplotlib axes object, if not provided one is created with the
-                  variables provided by 'figsize'
+          xlim:   set x axes limits, if set to 'default' use special scales
+          ylim:   set y axes limits, if set to 'default' use special scales
+          ax:     matplotlib axes object, if not provided one is created
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
           title:  costum plot title
           xlabel: costum xlabel value
           ylabel: costum ylabel value
           kwargs: arguments that are directly passed to matplotlib's fill_between
-                  command
+                  command. In addition it is possible to pass eval_over=eval_time
+                  and linthreshy if ylim='default' and ymode='symlog'.
 
         Returns:
           matplotlib axes object
         """
+
         plotter = plotting.SpectrumPlotter(self, **kwargs)
         return plotter.fill_between()
+
 
 def _get_file_object(infilename):
     """

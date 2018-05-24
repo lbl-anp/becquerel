@@ -3,8 +3,11 @@
 from __future__ import print_function
 import pytest
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mp
 
 import becquerel as bq
+from becquerel import SpectrumPlotter as sp
 
 pytestmark = pytest.mark.plottest
 
@@ -33,7 +36,7 @@ def uncal_spec(spec_data):
 def uncal_spec_cps(spec_data):
     """Generate an uncalibrated spectrum with cps data."""
 
-    return bq.Spectrum(cps=spec_data)
+    return bq.Spectrum(cps=spec_data, livetime=300)
 
 
 @pytest.fixture
@@ -43,20 +46,23 @@ def cal_spec(spec_data):
     return bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
 
 
-@pytest.fixture(params=['uncal', 'cal'])
-def counts_spec(request, spec_data):
-    if request.param == 'uncal':
-        return uncal_spec(spec_data)
-    elif request.param == 'cal':
-        return cal_spec(spec_data)
-    else:
-        raise RuntimeError
+@pytest.fixture
+def cal_spec_cps(spec_data):
+    """Generate a calibrated spectrum with cps data."""
+
+    return bq.Spectrum(cps=spec_data, bin_edges_kev=TEST_EDGES_KEV, livetime=300)
 
 
 @pytest.fixture(params=[1, 10, 100])
 def y_counts_spec(request):
     floatdata = np.random.poisson(lam=request.param, size=TEST_DATA_LENGTH)
     return bq.Spectrum(floatdata.astype(np.int))
+
+#@pytest.fixture
+#def neg_spec(spec_data):
+#    """Generate an uncalibrated spectrum."""
+#
+#    return bq.Spectrum(-spec_data)
 
 
 # ----------------------------------------------
@@ -66,41 +72,73 @@ def y_counts_spec(request):
 def test_plot_uncal_counts(uncal_spec):
     """Plot an uncalibrated spectrum"""
 
-    bq.plot_spectrum(uncal_spec)
+    uncal_spec.plot()
+    assert plt.gca().get_xlabel() == "Channel"
+    assert plt.gca().get_ylabel() == "Counts"
+    assert plt.gca().get_title() == ""
+    plt.close("all")
 
 
-def test_plot_title(uncal_spec):
-    """Check the title"""
+def test_plot_uncal_counts(cal_spec):
+    """Plot an calibrated spectrum"""
 
-    bq.plot_spectrum(uncal_spec, title='0-1. This is a custom title')
+    cal_spec.fill_between()
+    assert plt.gca().get_xlabel() == "Energy [keV]"
+    assert plt.gca().get_ylabel() == "Counts"
+    assert plt.gca().get_title() == ""
+    #assert np.allclose(plt.gca().get_lines()[0].get_xdata(), TEST_EDGES_KEV)
+    plt.close("all")
 
 
 # ----------------------------------------------
-#             Check each counts_mode
+#             Check each mode
 # ----------------------------------------------
 
-def test_counts_mode(counts_spec):
-    """Test counts_mode='counts'"""
+def test_channel_mode(uncal_spec):
+    """Test xmode='channel'"""
 
-    bq.plot_spectrum(counts_spec, counts_mode='counts',
-                     title='0-2. Counts mode')
-
-
-def test_cps_mode(counts_spec):
-    """Test counts_mode='cps'"""
-
-    counts_spec.livetime = 300.0
-    bq.plot_spectrum(counts_spec, counts_mode='cps',
-                     title='0-3. CPS mode')
+    uncal_spec.plot(xmode='channel')
+    assert plt.gca().get_xlabel() == "Channel"
+    plt.close("all")
 
 
-def test_cpskev_mode(cal_spec):
-    """Test counts_mode='cpskev'"""
+def test_energy_mode(cal_spec):
+    """Test xmode='energy'"""
 
-    cal_spec.livetime = 300.0
-    bq.plot_spectrum(cal_spec, counts_mode='cpskev',
-                     title='0-4. CPS/keV mode')
+    cal_spec.plot(xmode='energy')
+    assert plt.gca().get_xlabel() == "Energy [keV]"
+    plt.close("all")
 
+
+def test_counts_mode(cal_spec):
+    """Test ymode='counts'"""
+
+    cal_spec.plot(ymode='counts')
+    assert plt.gca().get_ylabel() == "Counts"
+    plt.close("all")
+
+
+def test_cps_mode(cal_spec_cps):
+    """Test ymode='cps'"""
+
+    cal_spec_cps.plot(ymode='cps')
+    assert plt.gca().get_ylabel() == "Countrate [1/s]"
+    plt.close("all")
+
+
+def test_cpskev_mode(cal_spec_cps):
+    """Test ymode='cpskev'"""
+
+    cal_spec_cps.plot(ymode='cpskev')
+    assert plt.gca().get_ylabel() == "Countrate [1/s/keV]"
+    plt.close("all")
+
+def test_cpskev_mode(cal_spec_cps):
+    """Test ymode='cpskev'"""
+
+    cal_spec_cps.plot(eval_over=300)
+    assert plt.gca().get_ylabel() == "Counts"
+    plt.close("all")
 
 # ----------------------------------------------
 #                Check axes labels
@@ -109,38 +147,79 @@ def test_cpskev_mode(cal_spec):
 def test_plot_uncal_counts_labels(uncal_spec):
     """Default xlabel, ylabel for uncal counts spec"""
 
-    bq.plot_spectrum(
-        uncal_spec, title='1-1. Check xlabel is Channels, ylabel is Counts')
+    uncal_spec.plot()
+    assert plt.gca().get_xlabel() == "Channel"
+    assert plt.gca().get_ylabel() == "Counts"
+    plt.close("all")
 
 
 def test_plot_cal_counts_labels(cal_spec):
     """Default xlabel, ylabel for cal counts spec"""
 
-    bq.plot_spectrum(
-        cal_spec, title='1-2. Check xlabel is keV, ylabel is Counts')
+    cal_spec.plot()
+    assert plt.gca().get_xlabel() == "Energy [keV]"
+    assert plt.gca().get_ylabel() == "Counts"
+    plt.close("all")
 
 
 def test_plot_countrate_label(uncal_spec_cps):
-    """Default ylabel for cps spec"""
+    """Default ylabel for uncal cps spec"""
 
-    bq.plot_spectrum(uncal_spec_cps,
-                     title='1-3. Check ylabel is Countrate counts/s')
-
-
-def test_plot_countrate_density_label(cal_spec):
-    """Default ylabel for cpskev spec"""
-
-    cal_spec.livetime = 300.0
-    bq.plot_spectrum(cal_spec, counts_mode='cpskev',
-                     title='1-4. Check ylabel is Countrate counts/s/keV)')
+    uncal_spec_cps.plot()
+    assert plt.gca().get_xlabel() == "Channel"
+    assert plt.gca().get_ylabel() == "Countrate [1/s]"
+    plt.close("all")
 
 
-def test_custom_labels(counts_spec):
+def test_plot_countrate_density_label(cal_spec_cps):
+    """Default ylabel for cal cpskev spec"""
+
+    cal_spec_cps.plot(ymode='cpskev')
+    assert plt.gca().get_xlabel() == "Energy [keV]"
+    assert plt.gca().get_ylabel() == "Countrate [1/s/keV]"
+    plt.close("all")
+
+
+def test_custom_labels(cal_spec):
     """Custom xlabel, ylabel"""
 
-    bq.plot_spectrum(
-        counts_spec, xlabel='Custom x label', ylabel='Custom y label',
-        title='1-5. Check custom xlabel and ylabel')
+    xlab = "Custom x label"
+    ylab = "Custom y label"
+    cal_spec.plot(xlabel=xlab, ylabel=ylab)
+    assert plt.gca().get_xlabel() == xlab
+    assert plt.gca().get_ylabel() == ylab
+    plt.close("all")
+
+
+# ----------------------------------------------
+#                Check title
+# ----------------------------------------------
+
+def test_plot_default_title(uncal_spec):
+    """Default title of a inprogram spec"""
+
+    uncal_spec.plot()
+    assert plt.gca().get_title() == ""
+    plt.close("all")
+
+
+def test_plot_default_file_title(uncal_spec):
+    """Default title of a file spec"""
+
+    fname = "/path/to/custom/file"
+    uncal_spec.infilename = fname
+    uncal_spec.plot()
+    assert plt.gca().get_title() == fname
+    plt.close("all")
+
+
+def test_plot_default_custom_title(uncal_spec):
+    """Default title of a file spec"""
+
+    title = "My custom title"
+    uncal_spec.plot(title = title)
+    assert plt.gca().get_title() == title
+    plt.close("all")
 
 
 # ----------------------------------------------
@@ -150,62 +229,329 @@ def test_custom_labels(counts_spec):
 def test_yscale(y_counts_spec):
     """Default yscale"""
 
-    bq.plot_spectrum(y_counts_spec, title='2-1. Check default yscale (symlog)')
+    y_counts_spec.plot()
+    assert plt.gca().get_yscale() == "linear"
 
 
 def test_yscale_linear(y_counts_spec):
     """Linear yscale"""
 
-    bq.plot_spectrum(y_counts_spec, yscale='linear',
-                     title='2-2. Check yscale is linear')
+    y_counts_spec.plot(yscale='linear')
+    assert plt.gca().get_yscale() == "linear"
+    plt.close("all")
 
 
 def test_yscale_log(y_counts_spec):
     """Log yscale"""
 
-    bq.plot_spectrum(y_counts_spec, yscale='log',
-                     title='2-3. Check yscale is log')
+    y_counts_spec.plot(yscale='log')
+    assert plt.gca().get_yscale() == "log"
 
 
 def test_yscale_symlog(y_counts_spec):
     """Symlog yscale"""
 
-    bq.plot_spectrum(y_counts_spec, yscale='symlog',
-                     title='2-4. Check yscale is symlog')
+    y_counts_spec.plot(yscale='symlog')
+    assert plt.gca().get_yscale() == "symlog"
+    plt.close("all")
 
 
-def test_yscale_linear_cps(y_counts_spec):
-    """Linear yscale"""
+def test_yscale_linear_scale(y_counts_spec):
+    """Linear yscale with default scale"""
 
-    y_counts_spec.livetime = 3600
-    bq.plot_spectrum(y_counts_spec, counts_mode='cps', yscale='linear',
-                     title='2-5. Check yscale is linear')
-
-
-def test_yscale_log_cps(y_counts_spec):
-    """Log yscale"""
-
-    y_counts_spec.livetime = 3600
-    bq.plot_spectrum(y_counts_spec, counts_mode='cps', yscale='log',
-                     title='2-6. Check yscale is log')
+    y_counts_spec.plot(yscale='linear', ylim="default")
+    assert plt.gca().get_yscale() == "linear"
+    plt.close("all")
 
 
-def test_yscale_symlog_cps(y_counts_spec):
-    """Symlog yscale"""
 
-    y_counts_spec.livetime = 3600
-    bq.plot_spectrum(y_counts_spec, counts_mode='cps', yscale='symlog',
-                     title='2-7. Check yscale is symlog')
+def test_yscale_log_scale(y_counts_spec):
+    """Log yscale with default scale"""
+
+    y_counts_spec.plot(yscale='log', ylim="default")
+    assert plt.gca().get_yscale() == "log"
+    plt.close("all")
+
+
+def test_yscale_symlog_scale(y_counts_spec):
+    """Symlog yscale with default scale"""
+
+    y_counts_spec.plot(yscale='symlog', ylim="default")
+    assert plt.gca().get_yscale() == "symlog"
+    plt.close("all")
 
 
 # ----------------------------------------------
-#                Check y limits
+#                Check x and y limits
 # ----------------------------------------------
+
+def test_xlim(uncal_spec):
+    """Custom x limits"""
+
+    xlim = (50, 100)
+    uncal_spec.plot(xlim=xlim)
+    assert plt.gca().get_xlim() == xlim
+    plt.close("all")
+
 
 def test_ylim(uncal_spec):
     """Custom y limits"""
 
     ylim = (0.8, 11)
-    bq.plot_spectrum(uncal_spec, ylim=ylim,
-                     title='3-1. Check ylim = ({}, {})'.format(
-                         ylim[0], ylim[1]))
+    uncal_spec.plot(ylim=ylim)
+    assert plt.gca().get_ylim() == ylim
+    plt.close("all")
+
+# ----------------------------------------------
+#                Axes
+# ----------------------------------------------
+
+def test_axes(uncal_spec):
+    """Custom y limits"""
+
+    _, ax = plt.subplots()
+    uncal_spec.plot(ax=ax)
+    assert plt.gca() == ax
+    plt.close("all")
+
+
+# ----------------------------------------------
+#                Kwargs
+# ----------------------------------------------
+
+def test_kwargs(uncal_spec):
+    """Test kwargs, color and fmt in this case"""
+
+    uncal_spec.plot('--', color = '#ffffff')
+    assert plt.gca().get_lines()[0].get_linestyle() == '--'
+    assert plt.gca().get_lines()[0].get_color() == '#ffffff'
+    plt.close("all")
+
+def test_kwargs_SpectrumPlotter(uncal_spec):
+    """Test kwargs, color and fmt in this case"""
+
+    sp(uncal_spec).plot('--', color = '#ffffff')
+    assert plt.gca().get_lines()[0].get_linestyle() == '--'
+    assert plt.gca().get_lines()[0].get_color() == '#ffffff'
+    plt.close("all")
+
+# ----------------------------------------------
+#                multi line plot
+# ----------------------------------------------
+
+def test_multi(uncal_spec, cal_spec):
+    """Test multiple plots"""
+
+    _, ax = plt.subplots()
+    uncal_spec.plot(ax=ax)
+    cal_spec.plot(ax=ax)
+
+    assert len(plt.gca().get_lines()) == 2
+    plt.close("all")
+
+# ----------------------------------------------
+#                check errors
+# ----------------------------------------------
+
+def test_error_positional_parameters(cal_spec):
+    """Test errors when to many positional parameters are provided"""
+
+    with pytest.raises(bq.PlottingError):
+        cal_spec.plot('x','x')
+    with pytest.raises(bq.PlottingError):
+        sp(cal_spec).plot('x','x')
+
+
+def test_error_eval_over_ymode(cal_spec):
+    """Test errors with eval_over and ymode"""
+
+    with pytest.raises(bq.PlottingError):
+        cal_spec.plot(ymode='energy',eval_over=100)
+
+
+def test_uncal_as_cal(uncal_spec):
+    """Test errors for calibrated reqested for an uncalibrated spectrum"""
+    
+    with pytest.raises(bq.PlottingError):
+        uncal_spec.plot(xmode='energy')
+
+
+def test_unknown_xmode(uncal_spec):
+    """Test errors for unknown xmode"""
+
+    with pytest.raises(bq.PlottingError):
+        uncal_spec.plot(xmode='unknown')
+
+
+def test_unknown_ymode(uncal_spec):
+    """Test errors for unknown ymode"""
+
+    with pytest.raises(bq.PlottingError):
+        uncal_spec.plot(ymode='unknown')
+
+
+def test_cps_without_cps(uncal_spec):
+    """Test errors for cps requested but not provided, causes a SpectrumError"""
+
+    with pytest.raises(bq.SpectrumError):
+        uncal_spec.plot(ymode='cps')
+
+
+def test_cnts_without_cnts(uncal_spec_cps):
+    """Test errors for cnts requested but not provided"""
+
+    with pytest.raises(bq.PlottingError):
+        uncal_spec_cps.plot(ymode='cnts')
+
+#def test_call_ylim_default_without_any_input(neg_spec):
+#    """Test errors for cnts requested but not provided"""
+#
+#    with pytest.raises(bq.PlottingError):
+#        neg_spec.plot(yscale='log', ylim='default')
+
+def test_wrong_xlim(cal_spec):
+    """Test errors wrong xlim structure"""
+
+    with pytest.raises(bq.PlottingError):
+        cal_spec.plot(xlim=0)
+
+def test_wrong_ylim(cal_spec):
+    """Test errors for wrong ylim structure"""
+
+    with pytest.raises(bq.PlottingError):
+        cal_spec.plot(ylim=0)
+
+# ----------------------------------------------
+#                check getters
+# ----------------------------------------------
+
+def test_get_xmode(cal_spec_cps):
+    """Test get xmode function"""
+
+    tsp = sp(cal_spec_cps)
+    assert tsp.xmode == 'energy'
+
+
+def test_get_ymode(cal_spec_cps):
+    """Test get ymode function"""
+
+    tsp = sp(cal_spec_cps)
+    assert tsp.ymode == 'cps'
+
+
+def test_get_xlabel(cal_spec_cps):
+    """Test get xlabel function"""
+
+    tsp = sp(cal_spec_cps)
+    assert tsp.xlabel == 'Energy [keV]'
+
+
+def test_get_ylabel(cal_spec_cps):
+    """Test get ylabel function"""
+
+    tsp = sp(cal_spec_cps)
+    assert tsp.ylabel == 'Countrate [1/s]'
+
+
+def test_get_xlim(cal_spec_cps):
+    """Test get xlim function"""
+
+    tsp = sp(cal_spec_cps, xlim='default')
+    assert tsp.xlim == (cal_spec_cps.bin_edges_kev[0], cal_spec_cps.bin_edges_kev[-1])
+
+
+def test_get_linthreshy(cal_spec_cps):
+    """Test get linthreshy function"""
+
+    tsp = sp(cal_spec_cps, linthreshy=1)
+    assert tsp.linthreshy == 1
+
+# ----------------------------------------------
+#                check error modes
+# ----------------------------------------------
+
+def test_error_modes_counts(uncal_spec):
+    """Test error mode for counts mode"""
+
+    tsp = sp(uncal_spec, ymode='counts')
+    assert np.allclose(tsp.yerror, uncal_spec.counts_uncs)
+
+
+def test_error_modes_cps(cal_spec):
+    """Test error mode for cps mode"""
+
+    cal_spec.livetime = 200
+    tsp = sp(cal_spec, ymode='cps')
+    assert np.allclose(tsp.yerror, cal_spec.cps_uncs)
+
+
+def test_error_modes_cpskev(cal_spec):
+    """Test error mode for cps mode"""
+
+    cal_spec.livetime = 200
+    tsp = sp(cal_spec, ymode='cpskev')
+    assert np.allclose(tsp.yerror, cal_spec.cpskev_uncs)
+
+# ----------------------------------------------
+#                check error plots
+# ----------------------------------------------
+
+def test_errornone(uncal_spec):
+    """Test error mode none"""
+
+    ax = uncal_spec.plot(ymode='counts', emode='none')
+
+    colls=0
+    polys=0
+    lines=0
+    for i in ax.get_children():
+        if type(i) is mp.collections.LineCollection:
+            colls=colls+1
+        if type(i) is mp.collections.PolyCollection:
+            polys=polys+1
+
+        if type(i) is mp.lines.Line2D:
+            lines=lines+1
+    assert colls == 0
+    assert polys == 0
+    assert lines == 1
+    plt.close("all")
+
+
+def test_errorbars(uncal_spec):
+    """Test error bar plot"""
+
+    ax = uncal_spec.plot(ymode='counts', emode='bars')
+
+    colls=0
+    lines=0
+    for i in ax.get_children():
+        if type(i) is mp.collections.LineCollection:
+            colls=colls+1
+        if type(i) is mp.lines.Line2D:
+           lines=lines+1
+    assert colls == 1
+    assert lines >= 1
+    plt.close("all")
+
+def test_errorband(uncal_spec):
+    """Test error band mode"""
+
+    ax = uncal_spec.plot(ymode='counts', emode='band')
+
+    colls=0
+    lines=0
+    for i in ax.get_children():
+        if type(i) is mp.collections.PolyCollection:
+            colls=colls+1
+        if type(i) is mp.lines.Line2D:
+            lines=lines+1
+    assert colls == 1
+    assert lines == 1
+    plt.close("all")
+
+
+def test_unknown_emode(uncal_spec):
+    """Test error mode unknown"""
+    with pytest.raises(bq.SpectrumError):
+        ax = uncal_spec.plot(ymode='counts', emode='unknown')
