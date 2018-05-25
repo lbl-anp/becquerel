@@ -3,15 +3,12 @@
 from __future__ import print_function
 import pytest
 import numpy as np
-import matplotlib as mp
-mp.use('agg')
+import matplotlib
 import matplotlib.pyplot as plt
-
+plt.switch_backend('Agg')
 
 import becquerel as bq
 from becquerel import SpectrumPlotter as sp
-
-pytestmark = pytest.mark.plottest
 
 TEST_DATA_LENGTH = 256
 TEST_COUNTS = 4
@@ -507,12 +504,12 @@ def test_errornone(uncal_spec):
     polys=0
     lines=0
     for i in ax.get_children():
-        if type(i) is mp.collections.LineCollection:
+        if type(i) is matplotlib.collections.LineCollection:
             colls=colls+1
-        if type(i) is mp.collections.PolyCollection:
+        if type(i) is matplotlib.collections.PolyCollection:
             polys=polys+1
 
-        if type(i) is mp.lines.Line2D:
+        if type(i) is matplotlib.lines.Line2D:
             lines=lines+1
     assert colls == 0
     assert polys == 0
@@ -528,9 +525,9 @@ def test_errorbars(uncal_spec):
     colls=0
     lines=0
     for i in ax.get_children():
-        if type(i) is mp.collections.LineCollection:
+        if type(i) is matplotlib.collections.LineCollection:
             colls=colls+1
-        if type(i) is mp.lines.Line2D:
+        if type(i) is matplotlib.lines.Line2D:
            lines=lines+1
     assert colls == 1
     assert lines >= 1
@@ -544,9 +541,9 @@ def test_errorband(uncal_spec):
     colls=0
     lines=0
     for i in ax.get_children():
-        if type(i) is mp.collections.PolyCollection:
+        if type(i) is matplotlib.collections.PolyCollection:
             colls=colls+1
-        if type(i) is mp.lines.Line2D:
+        if type(i) is matplotlib.lines.Line2D:
             lines=lines+1
     assert colls == 1
     assert lines == 1

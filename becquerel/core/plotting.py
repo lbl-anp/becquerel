@@ -370,10 +370,7 @@ class SpectrumPlotter(object):
             self.fmt = (self.kwargs.pop('fmt'))
 
         if hasattr(self.fmt, '__len__') and len(self.fmt) == 0:
-            self.fmt = ("none",)
-            import matplotlib as mp
-            if '2.0.0' in mp.__version__:
-                self.fmt = (".",)
+            self.fmt = (',',)
 
         if not hasattr(self.fmt, '__len__') or len(self.fmt) != 1:
             raise PlottingError("Wrong number of argument for fmt")
