@@ -10,6 +10,6 @@ from .core.utils import UncertaintiesError
 from .core.plotting import SpectrumPlotter, PlottingError
 
 __all__ = ['core', 'parsers', 'tools',
-           'Spectrum', 'SpectrumError', 'SpectrumPlotter', 'UncalibratedError',
-           'LinearEnergyCal', 'EnergyCalError', 'BadInput',
-           'UncertaintiesError']
+           'Spectrum', 'SpectrumError', 'SpectrumPlotter', 'PlottingError',
+           'UncalibratedError', 'LinearEnergyCal', 'EnergyCalError',
+           'BadInput', 'UncertaintiesError']

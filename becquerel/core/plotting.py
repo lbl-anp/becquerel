@@ -280,7 +280,7 @@ class SpectrumPlotter(object):
         elif self._ymode == 'cpskev':
             return self.spec.cpskev_uncs
         elif self._ymode == 'eval_over':
-            return np.maximum(np.sqrt(self.spec.counts_vals_over(self._eval_time)), 1)
+            return self.spec.counts_uncs_over(self.eval_time);
 
 
     def get_corners(self):
