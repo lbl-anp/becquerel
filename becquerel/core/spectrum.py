@@ -319,26 +319,6 @@ class Spectrum(object):
 
         return unumpy.std_devs(self.cpskev)
 
-    def counts_over(self, seconds):
-        """Evaluate CPS over a given time interval, to get counts.
-
-        Args:
-          seconds: number of seconds to evaluate over
-
-        Returns:
-          an np.array of ufloats
-        """
-
-        return self.cps * seconds
-
-    def counts_vals_over(self, seconds):
-        """Evaluate CPS over a given time interval, to get counts."""
-
-        return unumpy.nominal_values(self.counts_over(seconds))
-
-    def counts_uncs_over(self, seconds):
-        return unumpy.std_devs(self.cpskev)
-
     @property
     def channels(self):
         """Channel index.
@@ -758,8 +738,8 @@ class Spectrum(object):
           fmt:    matplotlib like plot format string
           xmode:  define what is plotted on x axis ('energy' or 'channel'),
                   defaults to energy if available
-          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'
-                  or 'eval_over'), defaults to counts
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'),
+                  defaults to counts
           xlim:   set x axes limits, if set to 'default' use special scales
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created
@@ -773,8 +753,8 @@ class Spectrum(object):
                   control use SpectrumPlotter and its errorband and errorbars
                   functions.
           kwargs: arguments that are directly passed to matplotlib's plot command.
-                  In addition it is possible to pass eval_over=eval_time and
-                  linthreshy if ylim='default' and ymode='symlog'
+                  In addition it is possible to pass linthreshy if ylim='default'
+                  and ymode='symlog'
 
         Returns:
           matplotlib axes object
@@ -789,10 +769,11 @@ class Spectrum(object):
 
         plotter = plotting.SpectrumPlotter(self, *fmt, **kwargs)
         ax = plotter.plot()
+        color = ax.get_lines()[-1].get_color()
         if emode == 'band':
-            plotter.errorband(color=ax.get_lines()[-1].get_color(), alpha=alpha*0.5, label='_nolegend_')
+            plotter.errorband(color=color, alpha=alpha*0.5, label='_nolegend_')
         elif emode == 'bars' or emode == 'bar':
-            plotter.errorbar(color=ax.get_lines()[-1].get_color(), label='_nolegend_')
+            plotter.errorbar(color=color, label='_nolegend_')
         elif emode != 'none':
             raise SpectrumError("Unknown error mode '{}', use 'bars' "
                                 "or 'band'".format(emode))
@@ -805,8 +786,8 @@ class Spectrum(object):
         Args:
           xmode:  define what is plotted on x axis ('energy' or 'channel'),
                   defaults to energy if available
-          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'
-                  or 'eval_over'), defaults to counts
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'),
+                  defaults to counts
           xlim:   set x axes limits, if set to 'default' use special scales
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created
@@ -815,8 +796,8 @@ class Spectrum(object):
           xlabel: costum xlabel value
           ylabel: costum ylabel value
           kwargs: arguments that are directly passed to matplotlib's fill_between
-                  command. In addition it is possible to pass eval_over=eval_time
-                  and linthreshy if ylim='default' and ymode='symlog'.
+                  command. In addition it is possible to pass linthreshy if
+                  ylim='default' and ymode='symlog'.
 
         Returns:
           matplotlib axes object

@@ -21,8 +21,7 @@ class SpectrumPlotter(object):
           spec:   Spectrum instance to plot
           fmt:    matplotlib like plot format string
           xmode:  define what is plotted on x axis ('energy' or 'channel')
-          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'
-                  or 'eval_over')
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev')
           xlim:   set x axes limits, if set to 'default' use special scales
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created using
@@ -31,8 +30,8 @@ class SpectrumPlotter(object):
           xlabel: costum xlabel value
           ylabel: costum ylabel value
           kwargs: arguments that are directly passed to matplotlib's plot command.
-                  In addition it is possible to pass eval_over=eval_time and
-                  linthreshy if ylim='default' and ymode='symlog'
+                  In addition it is possible to pass linthreshy if ylim='default'
+                  and ymode='symlog'
         """
 
         #TODO Marco: maybe we should use tuplets for all the x/y stuff in order
@@ -47,7 +46,6 @@ class SpectrumPlotter(object):
         self._xlim = None
         self._ylim = None
         self._linthreshy = None
-        self._eval_time = None
 
         xmode = None
         ymode = None
@@ -85,8 +83,6 @@ class SpectrumPlotter(object):
         else:
             raise PlottingError("Wrong number of positional arguments")
 
-        if 'eval_over' in kwargs:
-            self._eval_time = kwargs.pop('eval_over')
         if 'linthreshy' in kwargs:
             self._linthreshy = kwargs.pop("linthreshy")
 
@@ -166,15 +162,10 @@ class SpectrumPlotter(object):
         If it is not defined it will trow a SpectrumError.
 
         Args:
-          mode: counts, cps, cpskev, eval_over
+          mode: counts, cps, cpskev
         """
 
-        if self._eval_time is not None:
-            if mode == 'eval_over' or mode is None:
-                self._ymode = 'eval_over'
-            else:
-                raise PlottingError('ymode and eval_over defined simultaneously')
-        elif mode is None:
+        if mode is None:
             if self.spec.counts is not None:
                 self._ymode = 'counts'
             else:
@@ -202,10 +193,6 @@ class SpectrumPlotter(object):
             self._ydata = self.spec.cpskev_vals
             if self._ylabel in ['Counts', 'Countrate [1/s]'] or self._ylabel is None:
                 self._ylabel = 'Countrate [1/s/keV]'
-        elif self._ymode == 'eval_over':
-            self._ydata = self.spec.counts_vals_over(self._eval_time)
-            if self._ylabel in ['Countrate [1/s]', 'Countrate [1/s/keV]'] or self._ylabel is None:
-                self._ylabel = 'Counts'
 
 
     @property
@@ -279,8 +266,6 @@ class SpectrumPlotter(object):
             return self.spec.cps_uncs
         elif self._ymode == 'cpskev':
             return self.spec.cpskev_uncs
-        elif self._ymode == 'eval_over':
-            return self.spec.counts_uncs_over(self.eval_time);
 
 
     def get_corners(self):
