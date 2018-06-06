@@ -132,13 +132,6 @@ def test_cpskev_mode(cal_spec_cps):
     assert plt.gca().get_ylabel() == "Countrate [1/s/keV]"
     plt.close("all")
 
-def test_cpskev_mode(cal_spec_cps):
-    """Test ymode='cpskev'"""
-
-    cal_spec_cps.plot(eval_over=300)
-    assert plt.gca().get_ylabel() == "Counts"
-    plt.close("all")
-
 # ----------------------------------------------
 #                Check axes labels
 # ----------------------------------------------
@@ -359,13 +352,6 @@ def test_error_positional_parameters(cal_spec):
         cal_spec.plot('x','x')
     with pytest.raises(bq.PlottingError):
         sp(cal_spec).plot('x','x')
-
-
-def test_error_eval_over_ymode(cal_spec):
-    """Test errors with eval_over and ymode"""
-
-    with pytest.raises(bq.PlottingError):
-        cal_spec.plot(ymode='energy',eval_over=100)
 
 
 def test_uncal_as_cal(uncal_spec):
