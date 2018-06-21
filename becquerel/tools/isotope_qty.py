@@ -553,7 +553,7 @@ class NeutronIrradiation(object):
             return '{} n/cm2/s from {} to {}'.format(
                 self.n_cm2_s, self.start_time, self.stop_time)
 
-    def activate(self, barns, initial, activated):
+    def activate(self, barns, initial, activated,  stability=1e18):
         """
         Calculate an IsotopeQuantity from before or after a neutron activation.
 
@@ -621,7 +621,7 @@ class NeutronIrradiation(object):
                 'Input args should be Isotope or IsotopeQuantity objects: ' +
                 '{}, {}'.format(initial, activated))
 
-        if not initial.is_stable:
+        if not initial.half_life > stability:
             raise NotImplementedError(
                 'Activation not implemented for a radioactive initial isotope')
 
