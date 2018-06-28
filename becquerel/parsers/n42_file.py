@@ -103,7 +103,7 @@ class N42File(SpectrumFile):
         self.data = np.array([], dtype=np.float)
         self.cal_coeff = []
 
-        xml_text = etree_parse_clean(filename)
+        xml_text = etree_parse_clean(self.filename)
         self._parse_xml(xml_text)
 
     def _parse_xml(self, xml_text):
@@ -118,7 +118,7 @@ class N42File(SpectrumFile):
             for thing in info:
                 tag = thing.tag.split(N42_NAMESPACE)[-1]
                 instrument_info[tag] = thing.text
-            instrument_info[info.attrib['id']] = info
+        self.detector_description = instrument_info
 
         # read detector information
         detector_info = {}
@@ -126,7 +126,6 @@ class N42File(SpectrumFile):
             for thing in info:
                 tag = thing.tag.split(N42_NAMESPACE)[-1]
                 detector_info[tag] = thing.text
-            detector_info[info.attrib['id']] = info
 
         # read energy calibrations
         energy_cals = {}
@@ -134,11 +133,14 @@ class N42File(SpectrumFile):
             for thing in cal:
                 tag = thing.tag.split(N42_NAMESPACE)[-1]
                 if tag == 'CoefficientValues':
-                    coefs  [float(x) for x in thing.text.split(' ')]
+                    coefs = [float(x) for x in thing.text.split(' ')]
+                    if 'PHD' in self.detector_description['RadInstrumentManufacturerName']:
+                        coefs[1] *= 2.
                     energy_cals[tag] = np.array(coefs)
+                    self.cal_coeff = energy_cals[tag]
+
                 else:
                     energy_cals[tag] = thing.text
-            energy_cals[cal.attrib['id']] = cal
 
         # read FWHM calibrations
         fwhm_cals = {}
@@ -146,51 +148,65 @@ class N42File(SpectrumFile):
             for thing in cal:
                 tag = thing.tag.split(N42_NAMESPACE)[-1]
                 fwhm_cals[tag] = thing.text
-            fwhm_cals[cal.attrib['id']] = cal
 
         # read measurements
         measurements = []
-        for measurement in root.findall(
-                N42_NAMESPACE + 'RadMeasurement'):
+        for idx, measurement in enumerate(root.findall(
+                N42_NAMESPACE + 'RadMeasurement')):
+            real_time = None
             print('    ', measurement.tag, measurement.attrib)
             measurements.append(measurement)
-            class_codes = measurement.findall(
-                N42_NAMESPACE + 'MeasurementClassCode')
 
-            # # read start time
-            # start_times = measurement.findall(N42_NAMESPACE + 'StartDateTime')
-            # # assert len(start_times) == 1
-            #
-            # if len(start_times) == 1:
-            #     start_time = start_times[0]
-            #     print('        Start time:', start_time.text)
-            #     start_time = dateutil.parser.parse(start_time.text)
-            #     print('        Start time:', start_time)
-            # else:
-            #     print('        Start times:', start_times)
-            #
-            # # read real time duration
-            # real_times = measurement.findall(N42_NAMESPACE + 'RealTimeDuration')
-            # assert len(real_times) == 1
-            # real_time = real_times[0]
-            # print('        Real time: ', real_time.text)
-            # real_time = parse_duration(real_time.text)
-            # print('        Real time: ', real_time)
-
-            for spectrum in measurement.findall(N42_NAMESPACE + 'Spectrum'):
-                print('        ', spectrum.tag, spectrum.attrib, spectrum.text)
-                # read live time duration
-                live_time = spectrum.findall(
-                    N42_NAMESPACE + 'LiveTimeDuration')[0]
-                real_time = spectrum.findall(
-                    N42_NAMESPACE + 'RealTimeDuration')[0]
-                live_time = parse_duration(live_time.text)
+            # read real time duration
+            real_times = measurement.findall(N42_NAMESPACE + 'RealTimeDuration')
+            if len(real_times) > 0:
+                real_time = real_times[0]
                 real_time = parse_duration(real_time.text)
 
+            spectra = {}
+            for spectrum in measurement.findall(N42_NAMESPACE + 'Spectrum'):
+                spect = dict(spectrum.items())
+
+                print('        ', spectrum.tag, spectrum.attrib, spectrum.text)
+                # read live time duration
+                live_times = spectrum.findall(
+                    N42_NAMESPACE + 'LiveTimeDuration')
+                if len(live_times) > 0:
+                    live_time = parse_duration(live_times[0].text)
+                    spect['live_time'] = live_time
+                    if idx == 0:
+                        self.livetime = live_time
+
+                real_times = spectrum.findall(
+                    N42_NAMESPACE + 'RealTimeDuration')
+                if len(real_times) > 0:
+                    real_time = real_times[0]
+                    real_time = parse_duration(real_time.text)
+                if real_time is not None:
+                    spect['real_time'] = real_time
+                    if idx == 0:
+                        self.realtime = real_time
+
+                spect['channel_data'] = []
                 for cd in spectrum.findall(N42_NAMESPACE + 'ChannelData'):
                     print('            ', cd.tag, cd.attrib)
                     comp = cd.get('compressionCode', None)
                     d = parse_channel_data(cd.text, compression=comp)
+                    spect['channel_data'].append(d)
+                    if idx == 0:
+                        self.data = d
+                        self.channels = np.arange(len(d))
+                        self.apply_calibration()
+                        self.spectrum_id = spect['id']
+
+                spectra[spect['id']] = spect
+
+        # self._instrument_info = instrument_info
+        # self._detector_info = detector_info
+        # self._energy_cals = energy_cals
+        # self._fwhm_cals = fwhm_cals
+        # self._spectra = spectra
+        return
 
 
 def etree_parse_clean(filename):
