@@ -66,29 +66,11 @@ class N42File(SpectrumFile):
     """
 
     def __init__(self, filename):
-        """Initialize the SPE file."""
+        """Initialize the N42 file."""
         super(N42File, self).__init__(filename)
         _, ext = os.path.splitext(self.filename)
-        if ext.lower() != '.n42':
+        if not ((ext.lower() == '.n42') or (ext.lower() == '.xml')):
             raise N42FileParsingError('File extension is incorrect: ' + ext)
-
-        # self.spectrum_id = ''
-        # self.sample_description = ''
-        # self.detector_description = ''
-        # self.location_description = ''
-        # self.hardware_status = ''
-        # self.collection_start = None
-        # self.collection_stop = None
-        # self.realtime = 0.0
-        # self.livetime = 0.0
-        # self.num_channels = 0
-        # # arrays to be read from file
-        # self.channels = np.array([], dtype=np.float)
-        # self.data = np.array([], dtype=np.float)
-        # self.cal_coeff = []
-        # # arrays to be calculated using calibration
-        # self.energies = np.array([], dtype=np.float)
-        # self.energy_bin_widths = np.array([], dtype=np.float)
 
         # read in the data
         self.read()
@@ -96,7 +78,7 @@ class N42File(SpectrumFile):
 
     def read(self, verbose=False):
         """Read in the file."""
-        print('SpeFile: Reading file ' + self.filename)
+        print('N42File: Reading file ' + self.filename)
         self.realtime = 0.0
         self.livetime = 0.0
         self.channels = np.array([], dtype=np.float)
@@ -138,7 +120,6 @@ class N42File(SpectrumFile):
                         coefs[1] *= 2.
                     energy_cals[tag] = np.array(coefs)
                     self.cal_coeff = energy_cals[tag]
-
                 else:
                     energy_cals[tag] = thing.text
 
@@ -153,8 +134,10 @@ class N42File(SpectrumFile):
         measurements = []
         for idx, measurement in enumerate(root.findall(
                 N42_NAMESPACE + 'RadMeasurement')):
+            if idx > 0:
+                print('WARNING: N42 parser ignoring additional measurements.')
+
             real_time = None
-            print('    ', measurement.tag, measurement.attrib)
             measurements.append(measurement)
 
             # read real time duration
@@ -166,8 +149,6 @@ class N42File(SpectrumFile):
             spectra = {}
             for spectrum in measurement.findall(N42_NAMESPACE + 'Spectrum'):
                 spect = dict(spectrum.items())
-
-                print('        ', spectrum.tag, spectrum.attrib, spectrum.text)
                 # read live time duration
                 live_times = spectrum.findall(
                     N42_NAMESPACE + 'LiveTimeDuration')
@@ -189,7 +170,6 @@ class N42File(SpectrumFile):
 
                 spect['channel_data'] = []
                 for cd in spectrum.findall(N42_NAMESPACE + 'ChannelData'):
-                    print('            ', cd.tag, cd.attrib)
                     comp = cd.get('compressionCode', None)
                     d = parse_channel_data(cd.text, compression=comp)
                     spect['channel_data'].append(d)
@@ -253,7 +233,6 @@ def parse_channel_data(text, compression=None):
                 new_data.extend([0] * data[k + 1])
                 k += 2
         data = new_data
-    print('length of data', len(data))
     return data
 
 
@@ -291,75 +270,75 @@ def valid_xml(text):
     #     return False
 
 
-def parse_n42(text):
-    """Parse an N42 file."""
-    tree = text
-    root = tree.getroot()
-    # root should be a RadInstrumentData
-    assert root.tag == N42_NAMESPACE + 'RadInstrumentData'
-
-    # read instrument information
-    instrument_info = {}
-    for info in root.findall(N42_NAMESPACE + 'RadInstrumentInformation'):
-        instrument_info[info.attrib['id']] = info
-
-    # read detector information
-    detector_info = {}
-    for info in root.findall(N42_NAMESPACE + 'RadDetectorInformation'):
-        detector_info[info.attrib['id']] = info
-
-    # read energy calibrations
-    energy_cals = {}
-    for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
-        energy_cals[cal.attrib['id']] = cal
-
-    # read FWHM calibrations
-    fwhm_cals = {}
-    for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
-        fwhm_cals[cal.attrib['id']] = cal
-
-    # read measurements
-    for measurement in root.findall(
-            N42_NAMESPACE + 'RadMeasurement'):
-        print('    ', measurement.tag, measurement.attrib)
-        class_codes = measurement.findall(
-            N42_NAMESPACE + 'MeasurementClassCode')
-        # read start time
-        start_times = measurement.findall(N42_NAMESPACE + 'StartDateTime')
-        # assert len(start_times) == 1
-        if len(start_times) == 1:
-            start_time = start_times[0]
-            print('        Start time:', start_time.text)
-            start_time = dateutil.parser.parse(start_time.text)
-            print('        Start time:', start_time)
-        else:
-            print('        Start times:', start_times)
-        # read real time duration
-        real_times = measurement.findall(N42_NAMESPACE + 'RealTimeDuration')
-        assert len(real_times) == 1
-        real_time = real_times[0]
-        print('        Real time: ', real_time.text)
-        real_time = parse_duration(real_time.text)
-        print('        Real time: ', real_time)
-        plt.figure()
-        for spectrum in measurement.findall(N42_NAMESPACE + 'Spectrum'):
-            print('        ', spectrum.tag, spectrum.attrib, spectrum.text)
-            # read live time duration
-            live_times = spectrum.findall(
-                N42_NAMESPACE + 'LiveTimeDuration')
-            assert len(live_times) == 1
-            live_time = live_times[0]
-            print('            Live time: ', live_time.text)
-            live_time = parse_duration(live_time.text)
-            print('            Live time: ', live_time)
-            for cd in spectrum.findall(N42_NAMESPACE + 'ChannelData'):
-                print('            ', cd.tag, cd.attrib)
-                comp = cd.get('compressionCode', None)
-                d = parse_channel_data(cd.text, compression=comp)
-                plt.plot(d, label=spectrum.attrib['id'])
-                plt.xlim(0, len(d))
-        plt.legend(prop={'size': 8})
-    return tree
+# def parse_n42(text):
+#     """Parse an N42 file."""
+#     tree = text
+#     root = tree.getroot()
+#     # root should be a RadInstrumentData
+#     assert root.tag == N42_NAMESPACE + 'RadInstrumentData'
+#
+#     # read instrument information
+#     instrument_info = {}
+#     for info in root.findall(N42_NAMESPACE + 'RadInstrumentInformation'):
+#         instrument_info[info.attrib['id']] = info
+#
+#     # read detector information
+#     detector_info = {}
+#     for info in root.findall(N42_NAMESPACE + 'RadDetectorInformation'):
+#         detector_info[info.attrib['id']] = info
+#
+#     # read energy calibrations
+#     energy_cals = {}
+#     for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
+#         energy_cals[cal.attrib['id']] = cal
+#
+#     # read FWHM calibrations
+#     fwhm_cals = {}
+#     for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
+#         fwhm_cals[cal.attrib['id']] = cal
+#
+#     # read measurements
+#     for measurement in root.findall(
+#             N42_NAMESPACE + 'RadMeasurement'):
+#         print('    ', measurement.tag, measurement.attrib)
+#         class_codes = measurement.findall(
+#             N42_NAMESPACE + 'MeasurementClassCode')
+#         # read start time
+#         start_times = measurement.findall(N42_NAMESPACE + 'StartDateTime')
+#         # assert len(start_times) == 1
+#         if len(start_times) == 1:
+#             start_time = start_times[0]
+#             print('        Start time:', start_time.text)
+#             start_time = dateutil.parser.parse(start_time.text)
+#             print('        Start time:', start_time)
+#         else:
+#             print('        Start times:', start_times)
+#         # read real time duration
+#         real_times = measurement.findall(N42_NAMESPACE + 'RealTimeDuration')
+#         assert len(real_times) == 1
+#         real_time = real_times[0]
+#         print('        Real time: ', real_time.text)
+#         real_time = parse_duration(real_time.text)
+#         print('        Real time: ', real_time)
+#         plt.figure()
+#         for spectrum in measurement.findall(N42_NAMESPACE + 'Spectrum'):
+#             print('        ', spectrum.tag, spectrum.attrib, spectrum.text)
+#             # read live time duration
+#             live_times = spectrum.findall(
+#                 N42_NAMESPACE + 'LiveTimeDuration')
+#             assert len(live_times) == 1
+#             live_time = live_times[0]
+#             print('            Live time: ', live_time.text)
+#             live_time = parse_duration(live_time.text)
+#             print('            Live time: ', live_time)
+#             for cd in spectrum.findall(N42_NAMESPACE + 'ChannelData'):
+#                 print('            ', cd.tag, cd.attrib)
+#                 comp = cd.get('compressionCode', None)
+#                 d = parse_channel_data(cd.text, compression=comp)
+#                 plt.plot(d, label=spectrum.attrib['id'])
+#                 plt.xlim(0, len(d))
+#         plt.legend(prop={'size': 8})
+#     return tree
 
 
 if __name__ == '__main__':
@@ -378,8 +357,11 @@ if __name__ == '__main__':
     for filename in SAMPLES:
         print('')
         print(filename)
-        xml_text = etree_parse_clean(filename)
-        os.remove('.temp.xml')
+        test = N42File(filename)
+
+
+        # xml_text = etree_parse_clean(filename)
+        # os.remove('.temp.xml')
 
         assert valid_xml(xml_text), 'N42 file is not valid'
         tree = parse_n42(xml_text)
