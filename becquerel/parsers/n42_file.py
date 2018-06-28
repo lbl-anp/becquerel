@@ -3,9 +3,13 @@
 # pylint: disable=no-member
 
 from __future__ import print_function
-import xml.etree.ElementTree as ET
+# from .spectrum_file import SpectrumFile, SpectrumFileParsingError
+import os
+import re
+import numpy as np
+# import xml.etree.ElementTree as ET
 import dateutil.parser
-import requests
+# import requests
 from lxml import etree
 import matplotlib.pyplot as plt
 
@@ -28,6 +32,155 @@ SAMPLES = [
     'n42/Annex_G_n42.xml',
     'n42/Annex_I_n42.xml',
 ]
+
+
+class N42FileParsingError(SpectrumFileParsingError):
+    """Failed while parsing an SPE file."""
+
+    pass
+
+
+class N42FileWritingError(SpectrumFileParsingError):
+    """Failed while writing an SPE file."""
+
+    pass
+
+
+class N42File(SpectrumFile):
+    """N42 XML file parser.
+
+    Just instantiate a class with a filename:
+        spec = N42File(filename)
+
+    Then the data are in
+        spec.data [counts]
+        spec.channels
+        spec.energies
+        spec.energy_bin_widths
+
+    http://physics.nist.gov/N42/2011/
+
+    """
+
+    def __init__(self, filename):
+        """Initialize the SPE file."""
+        super(N42File, self).__init__(filename)
+        _, ext = os.path.splitext(self.filename)
+        if ext.lower() != '.n42':
+            raise N42FileParsingError('File extension is incorrect: ' + ext)
+
+        # self.spectrum_id = ''
+        # self.sample_description = ''
+        # self.detector_description = ''
+        # self.location_description = ''
+        # self.hardware_status = ''
+        # self.collection_start = None
+        # self.collection_stop = None
+        # self.realtime = 0.0
+        # self.livetime = 0.0
+        # self.num_channels = 0
+        # # arrays to be read from file
+        # self.channels = np.array([], dtype=np.float)
+        # self.data = np.array([], dtype=np.float)
+        # self.cal_coeff = []
+        # # arrays to be calculated using calibration
+        # self.energies = np.array([], dtype=np.float)
+        # self.energy_bin_widths = np.array([], dtype=np.float)
+
+        # read in the data
+        self.read()
+        self.apply_calibration()
+
+    def read(self, verbose=False):
+        """Read in the file."""
+        print('SpeFile: Reading file ' + self.filename)
+        self.realtime = 0.0
+        self.livetime = 0.0
+        self.channels = np.array([], dtype=np.float)
+        self.data = np.array([], dtype=np.float)
+        self.cal_coeff = []
+
+        xml_text = etree_parse_clean(filename)
+        self._parse_xml(xml_text)
+
+    def _parse_xml(self, xml_text):
+        tree = xml_text
+        root = tree.getroot()
+        # root should be a RadInstrumentData
+        assert root.tag == N42_NAMESPACE + 'RadInstrumentData'
+
+        # read instrument information
+        instrument_info = {}
+        for info in root.findall(N42_NAMESPACE + 'RadInstrumentInformation'):
+            instrument_info[info.attrib['id']] = info
+
+        # read detector information
+        detector_info = {}
+        for info in root.findall(N42_NAMESPACE + 'RadDetectorInformation'):
+            detector_info[info.attrib['id']] = info
+
+        # read energy calibrations
+        energy_cals = {}
+        for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
+            energy_cals[cal.attrib['id']] = cal
+
+        # read FWHM calibrations
+        fwhm_cals = {}
+        for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
+            fwhm_cals[cal.attrib['id']] = cal
+
+        # read measurements
+        for measurement in root.findall(
+                N42_NAMESPACE + 'RadMeasurement'):
+            print('    ', measurement.tag, measurement.attrib)
+            class_codes = measurement.findall(
+                N42_NAMESPACE + 'MeasurementClassCode')
+            # read start time
+            start_times = measurement.findall(N42_NAMESPACE + 'StartDateTime')
+            # assert len(start_times) == 1
+            if len(start_times) == 1:
+                start_time = start_times[0]
+                print('        Start time:', start_time.text)
+                start_time = dateutil.parser.parse(start_time.text)
+                print('        Start time:', start_time)
+            else:
+                print('        Start times:', start_times)
+            # read real time duration
+            real_times = measurement.findall(N42_NAMESPACE + 'RealTimeDuration')
+            assert len(real_times) == 1
+            real_time = real_times[0]
+            print('        Real time: ', real_time.text)
+            real_time = parse_duration(real_time.text)
+            print('        Real time: ', real_time)
+            plt.figure()
+            for spectrum in measurement.findall(N42_NAMESPACE + 'Spectrum'):
+                print('        ', spectrum.tag, spectrum.attrib, spectrum.text)
+                # read live time duration
+                live_times = spectrum.findall(
+                    N42_NAMESPACE + 'LiveTimeDuration')
+                assert len(live_times) == 1
+                live_time = live_times[0]
+                print('            Live time: ', live_time.text)
+                live_time = parse_duration(live_time.text)
+                print('            Live time: ', live_time)
+                for cd in spectrum.findall(N42_NAMESPACE + 'ChannelData'):
+                    print('            ', cd.tag, cd.attrib)
+                    comp = cd.get('compressionCode', None)
+                    d = parse_channel_data(cd.text, compression=comp)
+                    plt.plot(d, label=spectrum.attrib['id'])
+                    plt.xlim(0, len(d))
+            plt.legend(prop={'size': 8})
+
+
+def etree_parse_clean(filename):
+    with open(filename, 'r') as f:
+        text = f.read()
+    text = re.sub(u"[^\x01-\x7f]+", u"", text)
+    with open('.temp.xml', 'w') as f:
+        f.write(text)
+    xml_text = etree.parse('.temp.xml')
+    os.remove('.temp.xml')
+    return xml_text
 
 
 def parse_duration(text):
@@ -107,22 +260,27 @@ def parse_n42(text):
     root = tree.getroot()
     # root should be a RadInstrumentData
     assert root.tag == N42_NAMESPACE + 'RadInstrumentData'
+
     # read instrument information
     instrument_info = {}
     for info in root.findall(N42_NAMESPACE + 'RadInstrumentInformation'):
         instrument_info[info.attrib['id']] = info
+
     # read detector information
     detector_info = {}
     for info in root.findall(N42_NAMESPACE + 'RadDetectorInformation'):
         detector_info[info.attrib['id']] = info
+
     # read energy calibrations
     energy_cals = {}
     for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
         energy_cals[cal.attrib['id']] = cal
+
     # read FWHM calibrations
     fwhm_cals = {}
     for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
         fwhm_cals[cal.attrib['id']] = cal
+
     # read measurements
     for measurement in root.findall(
             N42_NAMESPACE + 'RadMeasurement'):
@@ -183,8 +341,9 @@ if __name__ == '__main__':
     for filename in SAMPLES:
         print('')
         print(filename)
-        # req = requests.get(NIST_N42_URL + filename)
-        xml_text = etree.parse(filename)
+        xml_text = etree_parse_clean(filename)
+        os.remove('.temp.xml')
+
         assert valid_xml(xml_text), 'N42 file is not valid'
         tree = parse_n42(xml_text)
         # tree.write('tests/' + filename)
