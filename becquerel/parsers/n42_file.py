@@ -3,8 +3,9 @@
 # pylint: disable=no-member
 
 from __future__ import print_function
-# from .spectrum_file import SpectrumFile, SpectrumFileParsingError
+from .spectrum_file import SpectrumFile, SpectrumFileParsingError
 import os
+import sys
 import re
 import numpy as np
 # import xml.etree.ElementTree as ET
@@ -14,23 +15,25 @@ from lxml import etree
 import matplotlib.pyplot as plt
 
 
+scriptdir = os.path.dirname(os.path.realpath(__file__))
+
 # download N42 schema
 NIST_N42_URL = 'http://physics.nist.gov/N42/2011/'
 # N42_XSD_URL = NIST_N42_URL + 'n42.xsd'
 # req = requests.get(N42_XSD_URL)
-schema_text = etree.parse('n42/n42.xsd')
+schema_text = etree.parse(os.path.join(scriptdir, 'n42/n42.xsd'))
 # schema_root = etree.XML(schema_text)
 N42_SCHEMA = etree.XMLSchema(schema_text)
 N42_NAMESPACE = '{{{}}}'.format(NIST_N42_URL + 'N42')
 
 
 SAMPLES = [
-    'n42/Annex_B_n42.xml',
+    os.path.join(scriptdir, 'n42/Annex_B_n42.xml'),
     # 'n42/Annex_B_alternate_energy_calibration_n42.xml',
-    'n42/Annex_C_n42.xml',
-    'n42/Annex_E_n42.xml',
-    'n42/Annex_G_n42.xml',
-    'n42/Annex_I_n42.xml',
+    os.path.join(scriptdir, 'n42/Annex_C_n42.xml'),
+    os.path.join(scriptdir, 'n42/Annex_E_n42.xml'),
+    os.path.join(scriptdir, 'n42/Annex_G_n42.xml'),
+    os.path.join(scriptdir, 'n42/Annex_I_n42.xml'),
 ]
 
 
@@ -112,64 +115,82 @@ class N42File(SpectrumFile):
         # read instrument information
         instrument_info = {}
         for info in root.findall(N42_NAMESPACE + 'RadInstrumentInformation'):
+            for thing in info:
+                tag = thing.tag.split(N42_NAMESPACE)[-1]
+                instrument_info[tag] = thing.text
             instrument_info[info.attrib['id']] = info
 
         # read detector information
         detector_info = {}
         for info in root.findall(N42_NAMESPACE + 'RadDetectorInformation'):
+            for thing in info:
+                tag = thing.tag.split(N42_NAMESPACE)[-1]
+                detector_info[tag] = thing.text
             detector_info[info.attrib['id']] = info
 
         # read energy calibrations
         energy_cals = {}
         for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
+            for thing in cal:
+                tag = thing.tag.split(N42_NAMESPACE)[-1]
+                if tag == 'CoefficientValues':
+                    coefs  [float(x) for x in thing.text.split(' ')]
+                    energy_cals[tag] = np.array(coefs)
+                else:
+                    energy_cals[tag] = thing.text
             energy_cals[cal.attrib['id']] = cal
 
         # read FWHM calibrations
         fwhm_cals = {}
         for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
+            for thing in cal:
+                tag = thing.tag.split(N42_NAMESPACE)[-1]
+                fwhm_cals[tag] = thing.text
             fwhm_cals[cal.attrib['id']] = cal
 
         # read measurements
+        measurements = []
         for measurement in root.findall(
                 N42_NAMESPACE + 'RadMeasurement'):
             print('    ', measurement.tag, measurement.attrib)
+            measurements.append(measurement)
             class_codes = measurement.findall(
                 N42_NAMESPACE + 'MeasurementClassCode')
-            # read start time
-            start_times = measurement.findall(N42_NAMESPACE + 'StartDateTime')
-            # assert len(start_times) == 1
-            if len(start_times) == 1:
-                start_time = start_times[0]
-                print('        Start time:', start_time.text)
-                start_time = dateutil.parser.parse(start_time.text)
-                print('        Start time:', start_time)
-            else:
-                print('        Start times:', start_times)
-            # read real time duration
-            real_times = measurement.findall(N42_NAMESPACE + 'RealTimeDuration')
-            assert len(real_times) == 1
-            real_time = real_times[0]
-            print('        Real time: ', real_time.text)
-            real_time = parse_duration(real_time.text)
-            print('        Real time: ', real_time)
-            plt.figure()
+
+            # # read start time
+            # start_times = measurement.findall(N42_NAMESPACE + 'StartDateTime')
+            # # assert len(start_times) == 1
+            #
+            # if len(start_times) == 1:
+            #     start_time = start_times[0]
+            #     print('        Start time:', start_time.text)
+            #     start_time = dateutil.parser.parse(start_time.text)
+            #     print('        Start time:', start_time)
+            # else:
+            #     print('        Start times:', start_times)
+            #
+            # # read real time duration
+            # real_times = measurement.findall(N42_NAMESPACE + 'RealTimeDuration')
+            # assert len(real_times) == 1
+            # real_time = real_times[0]
+            # print('        Real time: ', real_time.text)
+            # real_time = parse_duration(real_time.text)
+            # print('        Real time: ', real_time)
+
             for spectrum in measurement.findall(N42_NAMESPACE + 'Spectrum'):
                 print('        ', spectrum.tag, spectrum.attrib, spectrum.text)
                 # read live time duration
-                live_times = spectrum.findall(
-                    N42_NAMESPACE + 'LiveTimeDuration')
-                assert len(live_times) == 1
-                live_time = live_times[0]
-                print('            Live time: ', live_time.text)
+                live_time = spectrum.findall(
+                    N42_NAMESPACE + 'LiveTimeDuration')[0]
+                real_time = spectrum.findall(
+                    N42_NAMESPACE + 'RealTimeDuration')[0]
                 live_time = parse_duration(live_time.text)
-                print('            Live time: ', live_time)
+                real_time = parse_duration(real_time.text)
+
                 for cd in spectrum.findall(N42_NAMESPACE + 'ChannelData'):
                     print('            ', cd.tag, cd.attrib)
                     comp = cd.get('compressionCode', None)
                     d = parse_channel_data(cd.text, compression=comp)
-                    plt.plot(d, label=spectrum.attrib['id'])
-                    plt.xlim(0, len(d))
-            plt.legend(prop={'size': 8})
 
 
 def etree_parse_clean(filename):
