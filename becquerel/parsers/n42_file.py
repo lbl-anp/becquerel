@@ -12,21 +12,21 @@ import matplotlib.pyplot as plt
 
 # download N42 schema
 NIST_N42_URL = 'http://physics.nist.gov/N42/2011/'
-N42_XSD_URL = NIST_N42_URL + 'n42.xsd'
-req = requests.get(N42_XSD_URL)
-schema_text = req.text.encode('ascii')
-schema_root = etree.XML(schema_text)
-N42_SCHEMA = etree.XMLSchema(schema_root)
+# N42_XSD_URL = NIST_N42_URL + 'n42.xsd'
+# req = requests.get(N42_XSD_URL)
+schema_text = etree.parse('n42/n42.xsd')
+# schema_root = etree.XML(schema_text)
+N42_SCHEMA = etree.XMLSchema(schema_text)
 N42_NAMESPACE = '{{{}}}'.format(NIST_N42_URL + 'N42')
 
 
 SAMPLES = [
-    'AnnexB.n42',
-    'AnnexB_alternate_energy_calibration.n42',
-    'AnnexC.n42',
-    'AnnexE.n42',
-    'AnnexG.n42',
-    'AnnexI.n42',
+    'n42/Annex_B_n42.xml',
+    # 'n42/Annex_B_alternate_energy_calibration_n42.xml',
+    'n42/Annex_C_n42.xml',
+    'n42/Annex_E_n42.xml',
+    'n42/Annex_G_n42.xml',
+    'n42/Annex_I_n42.xml',
 ]
 
 
@@ -91,17 +91,19 @@ def valid_xml(text):
     http://stackoverflow.com/questions/17819884/xml-xsd-feed-validation-against-a-schema
 
     """
-    xml_parser = etree.XMLParser(schema=N42_SCHEMA)
-    try:
-        etree.fromstring(text, xml_parser)
-        return True
-    except etree.XMLSchemaError:
-        return False
+    N42_SCHEMA.validate(text)
+    return True
+    # xml_parser = etree.XMLParser(schema=N42_SCHEMA)
+    # try:
+    #     etree.fromstring(text, xml_parser)
+    #     return True
+    # except etree.XMLSchemaError:
+    #     return False
 
 
 def parse_n42(text):
     """Parse an N42 file."""
-    tree = ET.ElementTree(ET.fromstring(text))
+    tree = text
     root = tree.getroot()
     # root should be a RadInstrumentData
     assert root.tag == N42_NAMESPACE + 'RadInstrumentData'
@@ -129,11 +131,14 @@ def parse_n42(text):
             N42_NAMESPACE + 'MeasurementClassCode')
         # read start time
         start_times = measurement.findall(N42_NAMESPACE + 'StartDateTime')
-        assert len(start_times) == 1
-        start_time = start_times[0]
-        print('        Start time:', start_time.text)
-        start_time = dateutil.parser.parse(start_time.text)
-        print('        Start time:', start_time)
+        # assert len(start_times) == 1
+        if len(start_times) == 1:
+            start_time = start_times[0]
+            print('        Start time:', start_time.text)
+            start_time = dateutil.parser.parse(start_time.text)
+            print('        Start time:', start_time)
+        else:
+            print('        Start times:', start_times)
         # read real time duration
         real_times = measurement.findall(N42_NAMESPACE + 'RealTimeDuration')
         assert len(real_times) == 1
@@ -178,9 +183,9 @@ if __name__ == '__main__':
     for filename in SAMPLES:
         print('')
         print(filename)
-        req = requests.get(NIST_N42_URL + filename)
-        xml_text = req.text.encode('ascii').decode('ascii')
+        # req = requests.get(NIST_N42_URL + filename)
+        xml_text = etree.parse(filename)
         assert valid_xml(xml_text), 'N42 file is not valid'
         tree = parse_n42(xml_text)
-        tree.write('tests/' + filename)
+        # tree.write('tests/' + filename)
         plt.show()

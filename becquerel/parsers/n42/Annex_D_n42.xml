@@ -1,0 +1,330 @@
+<?xml version="1.0"?>
+<?xml-model href="http://physics.nist.gov/N42/2011/N42/schematron/n42.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<RadInstrumentData xmlns="http://physics.nist.gov/N42/2011/N42" 
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                   xsi:schemaLocation="http://physics.nist.gov/N42/2011/N42 http://physics.nist.gov/N42/2011/n42.xsd"
+                   n42DocUUID="f7f99b76-d6dd-41b7-9452-9202931316af">
+
+  <RadInstrumentInformation id="A1234b">
+    <RadInstrumentManufacturerName>RPMs R Us</RadInstrumentManufacturerName>
+    <RadInstrumentIdentifier>A1234b</RadInstrumentIdentifier>
+    <RadInstrumentModelName>RPM 3000</RadInstrumentModelName>
+    <RadInstrumentDescription>Lane 1 RPM at Holland Tunnel</RadInstrumentDescription>
+    <RadInstrumentClassCode>Portal Monitor</RadInstrumentClassCode>
+    <RadInstrumentVersion>
+      <RadInstrumentComponentName>Hardware</RadInstrumentComponentName>
+      <RadInstrumentComponentVersion>22</RadInstrumentComponentVersion>
+    </RadInstrumentVersion>
+    <RadInstrumentVersion>
+      <RadInstrumentComponentName>Software</RadInstrumentComponentName>
+      <RadInstrumentComponentVersion>55Q</RadInstrumentComponentVersion>
+    </RadInstrumentVersion>
+    <RadInstrumentCharacteristics>
+      <Characteristic>
+        <CharacteristicName>Lane Width</CharacteristicName>
+        <CharacteristicValue>4</CharacteristicValue>
+        <CharacteristicValueUnits>meters</CharacteristicValueUnits>
+        <CharacteristicValueDataClassCode>double</CharacteristicValueDataClassCode>
+      </Characteristic>
+      <Characteristic>
+        <CharacteristicName>IP</CharacteristicName>
+        <CharacteristicValue>192.168.100.12</CharacteristicValue>
+        <CharacteristicValueUnits>unit-less</CharacteristicValueUnits>
+        <CharacteristicValueDataClassCode>string</CharacteristicValueDataClassCode>
+      </Characteristic>
+    </RadInstrumentCharacteristics>
+  </RadInstrumentInformation>
+
+  <RadDetectorInformation id="Aa1">
+    <RadDetectorName>Aa1</RadDetectorName>
+    <RadDetectorCategoryCode>Gamma</RadDetectorCategoryCode>
+    <RadDetectorKindCode>PVT</RadDetectorKindCode>
+    <RadDetectorDescription>Driver's side panel left slab</RadDetectorDescription>
+    <RadDetectorLengthValue units="cm">76</RadDetectorLengthValue>
+    <RadDetectorWidthValue units="cm">15</RadDetectorWidthValue>
+    <RadDetectorDepthValue units="cm">4</RadDetectorDepthValue>
+    <RadDetectorVolumeValue units="cc">1.77E07</RadDetectorVolumeValue>
+  </RadDetectorInformation>
+
+  <RadDetectorInformation id="Aa2">
+    <RadDetectorName>Aa2</RadDetectorName>
+    <RadDetectorCategoryCode>Gamma</RadDetectorCategoryCode>
+    <RadDetectorKindCode>PVT</RadDetectorKindCode>
+    <RadDetectorDescription>Driver's side panel right slab</RadDetectorDescription>
+    <RadDetectorLengthValue units="cm">76</RadDetectorLengthValue>
+    <RadDetectorWidthValue units="cm">15</RadDetectorWidthValue>
+    <RadDetectorDepthValue units="cm">4</RadDetectorDepthValue>
+    <RadDetectorVolumeValue units="cc">1.77E07</RadDetectorVolumeValue>
+  </RadDetectorInformation>
+
+  <RadDetectorInformation id="Ba1">
+    <RadDetectorName>Ba1</RadDetectorName>
+    <RadDetectorCategoryCode>Gamma</RadDetectorCategoryCode>
+    <RadDetectorKindCode>PVT</RadDetectorKindCode>
+    <RadDetectorDescription>Passenger's side panel left slab</RadDetectorDescription>
+    <RadDetectorLengthValue units="cm">76</RadDetectorLengthValue>
+    <RadDetectorWidthValue units="cm">15</RadDetectorWidthValue>
+    <RadDetectorDepthValue units="cm">4</RadDetectorDepthValue>
+    <RadDetectorVolumeValue units="cc">1.77E07</RadDetectorVolumeValue>
+  </RadDetectorInformation>
+
+  <RadDetectorInformation id="Ba2">
+    <RadDetectorName>Ba2</RadDetectorName>
+    <RadDetectorCategoryCode>Gamma</RadDetectorCategoryCode>
+    <RadDetectorKindCode>PVT</RadDetectorKindCode>
+    <RadDetectorDescription>Passenger's side panel right slab</RadDetectorDescription>
+    <RadDetectorLengthValue units="cm">76</RadDetectorLengthValue>
+    <RadDetectorWidthValue units="cm">15</RadDetectorWidthValue>
+    <RadDetectorDepthValue units="cm">4</RadDetectorDepthValue>
+    <RadDetectorVolumeValue units="cc">1.77E07</RadDetectorVolumeValue>
+  </RadDetectorInformation>
+
+  <RadDetectorInformation id="Aa1N">
+    <RadDetectorName>Aa1N</RadDetectorName>
+    <RadDetectorCategoryCode>Neutron</RadDetectorCategoryCode>
+    <RadDetectorKindCode>He3</RadDetectorKindCode>
+    <RadDetectorDescription>Driver's side panel He3 tube</RadDetectorDescription>
+    <RadDetectorLengthValue units="cm">91</RadDetectorLengthValue>
+    <RadDetectorDiameterValue units="cm">5</RadDetectorDiameterValue>
+  </RadDetectorInformation>
+
+  <RadDetectorInformation id="Ba1N">
+    <RadDetectorName>Ba1N</RadDetectorName>
+    <RadDetectorCategoryCode>Neutron</RadDetectorCategoryCode>
+    <RadDetectorKindCode>He3</RadDetectorKindCode>
+    <RadDetectorDescription>Passenger's side panel He3 tube</RadDetectorDescription>
+    <RadDetectorLengthValue units="cm">91</RadDetectorLengthValue>
+    <RadDetectorDiameterValue units="cm">5</RadDetectorDiameterValue>
+  </RadDetectorInformation>
+
+  <RadItemInformation id="ITEM"/>
+
+  <EnergyWindows id="GammaWindowSettings">
+    <WindowStartEnergyValues>0 0 100</WindowStartEnergyValues>
+    <WindowEndEnergyValues>100 3000 400</WindowEndEnergyValues>
+  </EnergyWindows> 
+
+  <RadMeasurementGroup id="MG-1"/>
+
+  <RadMeasurement id="M-1" radMeasurementGroupReferences="MG-1">
+    <MeasurementClassCode>Background</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:45:00.0-07:00</StartDateTime>
+    <RealTimeDuration>PT0.1S</RealTimeDuration>
+    <GrossCounts id="GC-1-1" radDetectorInformationReference="Aa1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>5 22 200</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-1-2" radDetectorInformationReference="Aa1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>0</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-1-3" radDetectorInformationReference="Aa2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>6 11 300</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-1-4" radDetectorInformationReference="Ba1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>22 7 555</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-1-5" radDetectorInformationReference="Ba1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>1</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-1-6" radDetectorInformationReference="Ba2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>3 7 345</CountData>
+    </GrossCounts>
+    <OccupancyIndicator>0</OccupancyIndicator>
+  </RadMeasurement>
+  
+  <RadMeasurement id="M-2" radMeasurementGroupReferences="MG-1">
+    <MeasurementClassCode>Background</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:45:00.1-07:00</StartDateTime>
+    <RealTimeDuration>PT0.1S</RealTimeDuration>
+    <GrossCounts id="GC-2-1" radDetectorInformationReference="Aa1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>5 22 200</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-2-2" radDetectorInformationReference="Aa1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>0</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-2-3" radDetectorInformationReference="Aa2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>6 11 300</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-2-4" radDetectorInformationReference="Ba1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>22 7 555</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-2-5" radDetectorInformationReference="Ba1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>1</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-2-6" radDetectorInformationReference="Ba2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>3 7 345</CountData>
+    </GrossCounts>
+    <OccupancyIndicator>0</OccupancyIndicator>
+  </RadMeasurement>
+  
+  <RadMeasurement id="M-3" radMeasurementGroupReferences="MG-1">
+    <MeasurementClassCode>Background</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:45:00.2-07:00</StartDateTime>
+    <RealTimeDuration>PT0.1S</RealTimeDuration>
+    <GrossCounts id="GC-3-1" radDetectorInformationReference="Aa1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>5 22 200</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-3-2" radDetectorInformationReference="Aa1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>0</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-3-3" radDetectorInformationReference="Aa2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>6 11 300</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-3-4" radDetectorInformationReference="Ba1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>22 7 555</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-3-5" radDetectorInformationReference="Ba1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>1</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-3-6" radDetectorInformationReference="Ba2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>3 7 345</CountData>
+    </GrossCounts>
+    <OccupancyIndicator>1</OccupancyIndicator>
+  </RadMeasurement>
+  
+  <RadMeasurement id="M-4" radMeasurementGroupReferences="MG-1">
+    <MeasurementClassCode>Background</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:45:00.3-07:00</StartDateTime>
+    <RealTimeDuration>PT0.1S</RealTimeDuration>
+    <GrossCounts id="GC-4-1" radDetectorInformationReference="Aa1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>5 22 200</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-4-2" radDetectorInformationReference="Aa1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>0</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-4-3" radDetectorInformationReference="Aa2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>6 11 300</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-4-4" radDetectorInformationReference="Ba1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>22 7 555</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-4-5" radDetectorInformationReference="Ba1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>1</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-4-6" radDetectorInformationReference="Ba2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>3 7 345</CountData>
+    </GrossCounts>
+    <OccupancyIndicator>1</OccupancyIndicator>
+  </RadMeasurement>
+  
+  <RadMeasurement id="M-5" radMeasurementGroupReferences="MG-1">
+    <MeasurementClassCode>Background</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:45:00.4-07:00</StartDateTime>
+    <RealTimeDuration>PT0.1S</RealTimeDuration>
+    <GrossCounts id="GC-5-1" radDetectorInformationReference="Aa1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>5 22 200</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-5-2" radDetectorInformationReference="Aa1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>0</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-5-3" radDetectorInformationReference="Aa2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>6 11 300</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-5-4" radDetectorInformationReference="Ba1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>22 7 555</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-5-5" radDetectorInformationReference="Ba1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>1</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-5-6" radDetectorInformationReference="Ba2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>3 7 345</CountData>
+    </GrossCounts>
+    <OccupancyIndicator>1</OccupancyIndicator>
+  </RadMeasurement>
+  
+  <RadMeasurement id="M-6" radMeasurementGroupReferences="MG-1">
+    <MeasurementClassCode>Background</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:45:00.5-07:00</StartDateTime>
+    <RealTimeDuration>PT0.1S</RealTimeDuration>
+    <GrossCounts id="GC-6-1" radDetectorInformationReference="Aa1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>5 22 200</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-6-2" radDetectorInformationReference="Aa1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>0</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-6-3" radDetectorInformationReference="Aa2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>6 11 300</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-6-4" radDetectorInformationReference="Ba1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>22 7 555</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-6-5" radDetectorInformationReference="Ba1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>1</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-6-6" radDetectorInformationReference="Ba2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>3 7 345</CountData>
+    </GrossCounts>
+    <OccupancyIndicator>0</OccupancyIndicator>
+  </RadMeasurement>
+  
+  <RadMeasurement id="M-7" radMeasurementGroupReferences="MG-1">
+    <MeasurementClassCode>Background</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:45:00.6-07:00</StartDateTime>
+    <RealTimeDuration>PT0.1S</RealTimeDuration>
+    <GrossCounts id="GC-7-1" radDetectorInformationReference="Aa1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>5 22 200</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-7-2" radDetectorInformationReference="Aa1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>0</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-7-3" radDetectorInformationReference="Aa2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>6 11 300</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-7-4" radDetectorInformationReference="Ba1" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>22 7 555</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-7-5" radDetectorInformationReference="Ba1N">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>1</CountData>
+    </GrossCounts>
+    <GrossCounts id="GC-7-6" radDetectorInformationReference="Ba2" energyWindowsReference="GammaWindowSettings">
+      <LiveTimeDuration>PT0.1S</LiveTimeDuration>
+      <CountData>3 7 345</CountData>
+    </GrossCounts>
+    <OccupancyIndicator>0</OccupancyIndicator>
+  </RadMeasurement>
+  
+  <AnalysisResults radMeasurementGroupReferences="MG-1">
+    <AnalysisStartDateTime>2003-11-22T23:45:00.7-07:00</AnalysisStartDateTime>
+    <AnalysisAlgorithmName>SPRT</AnalysisAlgorithmName>
+  </AnalysisResults>
+</RadInstrumentData> 

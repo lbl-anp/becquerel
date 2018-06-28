@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<?xml-model href="http://physics.nist.gov/N42/2011/N42/schematron/n42.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<RadInstrumentData xmlns="http://physics.nist.gov/N42/2011/N42" 
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                   xsi:schemaLocation="http://physics.nist.gov/N42/2011/N42 http://physics.nist.gov/N42/2011/n42.xsd"
+                   n42DocUUID="e757f277-a2f7-419b-8ffa-cf8c87290d62">
+
+  <RadInstrumentInformation id="RadInstrumentInformation-1">
+    <RadInstrumentManufacturerName>Handhelds R Us</RadInstrumentManufacturerName>
+    <RadInstrumentIdentifier>Serial Number 101</RadInstrumentIdentifier>
+    <RadInstrumentModelName>N1234</RadInstrumentModelName>
+    <RadInstrumentClassCode>Neutron Handheld</RadInstrumentClassCode>
+    <RadInstrumentVersion>
+      <RadInstrumentComponentName>Software</RadInstrumentComponentName>
+      <RadInstrumentComponentVersion>1</RadInstrumentComponentVersion>
+    </RadInstrumentVersion>
+    <RadInstrumentVersion>
+      <RadInstrumentComponentName>CPU</RadInstrumentComponentName>
+      <RadInstrumentComponentVersion>27X</RadInstrumentComponentVersion>
+    </RadInstrumentVersion>
+  </RadInstrumentInformation>
+
+  <RadDetectorInformation id="RadDetectorInformation-1">
+    <RadDetectorCategoryCode>Neutron</RadDetectorCategoryCode>
+    <RadDetectorKindCode>He3</RadDetectorKindCode>
+    <RadDetectorVolumeValue>1.0</RadDetectorVolumeValue>
+    <RadDetectorCharacteristics>
+      <Characteristic>
+        <CharacteristicName>GasPressure</CharacteristicName>
+        <CharacteristicValue>10</CharacteristicValue>
+        <CharacteristicValueUnits>ATM</CharacteristicValueUnits>
+        <CharacteristicValueDataClassCode>PositiveDouble</CharacteristicValueDataClassCode>
+      </Characteristic>
+      <Characteristic>
+        <CharacteristicName>QuenchGas</CharacteristicName>
+        <CharacteristicValue>CO2</CharacteristicValue>
+        <CharacteristicValueUnits>unit-less</CharacteristicValueUnits>
+        <CharacteristicValueDataClassCode>string</CharacteristicValueDataClassCode>
+      </Characteristic>
+    </RadDetectorCharacteristics>
+  </RadDetectorInformation>
+
+  <RadMeasurement id="RadMeasurement-1">
+    <MeasurementClassCode>Foreground</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:46:30-07:00</StartDateTime>
+    <RealTimeDuration>PT10.0S</RealTimeDuration>
+    <GrossCounts id="RadMeasurement-1-GrossCounts-1" radDetectorInformationReference="RadDetectorInformation-1">
+      <LiveTimeDuration>PT10.0S</LiveTimeDuration>
+      <CountData>4</CountData>
+    </GrossCounts>
+    <RadInstrumentState id="RadMeasurement-1-RadInstrumentState-1" radInstrumentInformationReference="RadInstrumentInformation-1">
+      <StateVector>
+        <GeographicPoint>
+          <LatitudeValue>35.840603</LatitudeValue>
+          <LongitudeValue>-106.267576</LongitudeValue>
+          <ElevationValue>2052</ElevationValue>
+          <GeoPointAccuracyValue>10</GeoPointAccuracyValue>
+          <ElevationAccuracyValue>15</ElevationAccuracyValue>
+        </GeographicPoint>
+      </StateVector>
+      <RadInstrumentCharacteristics>
+        <Characteristic valueOutOfLimits="false">
+          <CharacteristicName>BatteryCharge</CharacteristicName>
+          <CharacteristicValue>10</CharacteristicValue>
+          <CharacteristicValueUnits>%</CharacteristicValueUnits>
+          <CharacteristicValueDataClassCode>PositiveDouble</CharacteristicValueDataClassCode>
+        </Characteristic>
+      </RadInstrumentCharacteristics>
+    </RadInstrumentState>
+  </RadMeasurement>
+
+  <RadMeasurement id="RadMeasurement-2">
+    <MeasurementClassCode>Foreground</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:46:40-07:00</StartDateTime>
+    <RealTimeDuration>PT10.0S</RealTimeDuration>
+    <GrossCounts id="RadMeasurement-2-GrossCounts-1" radDetectorInformationReference="RadDetectorInformation-1">
+      <LiveTimeDuration>PT10.0S</LiveTimeDuration>
+      <CountData>2</CountData>
+    </GrossCounts>
+    <RadInstrumentState id="RadMeasurement-2-RadInstrumentState-1" radInstrumentInformationReference="RadInstrumentInformation-1">
+      <StateVector>
+        <GeographicPoint>
+          <LatitudeValue>35.840603</LatitudeValue>
+          <LongitudeValue>-106.267576</LongitudeValue>
+          <ElevationValue>2052</ElevationValue>
+          <GeoPointAccuracyValue>10</GeoPointAccuracyValue>
+          <ElevationAccuracyValue>15</ElevationAccuracyValue>
+        </GeographicPoint>
+      </StateVector>
+      <RadInstrumentCharacteristics>
+        <Characteristic valueOutOfLimits="false">
+          <CharacteristicName>BatteryCharge</CharacteristicName>
+          <CharacteristicValue>10</CharacteristicValue>
+          <CharacteristicValueUnits>%</CharacteristicValueUnits>
+          <CharacteristicValueDataClassCode>PositiveDouble</CharacteristicValueDataClassCode>
+        </Characteristic>
+      </RadInstrumentCharacteristics>
+    </RadInstrumentState>
+  </RadMeasurement>
+
+</RadInstrumentData>

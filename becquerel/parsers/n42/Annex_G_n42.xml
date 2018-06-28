@@ -1,0 +1,230 @@
+<?xml version="1.0"?>
+<?xml-model href="http://physics.nist.gov/N42/2011/N42/schematron/n42.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<RadInstrumentData xmlns="http://physics.nist.gov/N42/2011/N42" 
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                   xsi:schemaLocation="http://physics.nist.gov/N42/2011/N42 http://physics.nist.gov/N42/2011/n42.xsd"
+                   n42DocUUID="54d0f17f-0ed5-46ea-9390-e8f22d880396">
+
+  <RadInstrumentInformation id="RadInstrumentInformation-1">
+    <RadInstrumentManufacturerName>Mobiles R Us</RadInstrumentManufacturerName>
+    <RadInstrumentModelName>iCarTop</RadInstrumentModelName>
+    <RadInstrumentClassCode>Mobile System</RadInstrumentClassCode>
+    <RadInstrumentVersion>
+      <RadInstrumentComponentName>Software</RadInstrumentComponentName>
+      <RadInstrumentComponentVersion>4.2</RadInstrumentComponentVersion>
+    </RadInstrumentVersion>
+    <RadInstrumentVersion>
+      <RadInstrumentComponentName>Hardware</RadInstrumentComponentName>
+      <RadInstrumentComponentVersion>66</RadInstrumentComponentVersion>
+    </RadInstrumentVersion>
+    <RadInstrumentVersion>
+      <RadInstrumentComponentName>Firmware</RadInstrumentComponentName>
+      <RadInstrumentComponentVersion>117-1</RadInstrumentComponentVersion>
+    </RadInstrumentVersion>
+  </RadInstrumentInformation>
+
+  <RadDetectorInformation id="GammaDetector">
+    <RadDetectorCategoryCode>Gamma</RadDetectorCategoryCode>
+    <RadDetectorKindCode>NaI</RadDetectorKindCode>
+    <RadDetectorLengthValue>30</RadDetectorLengthValue>
+    <RadDetectorWidthValue>10</RadDetectorWidthValue>
+    <RadDetectorDepthValue>10</RadDetectorDepthValue>
+    <RadDetectorCharacteristics>
+      <Characteristic>
+        <CharacteristicName>HV</CharacteristicName>
+        <CharacteristicValue>1500</CharacteristicValue>
+        <CharacteristicValueUnits>V</CharacteristicValueUnits>
+        <CharacteristicValueDataClassCode>double</CharacteristicValueDataClassCode>
+      </Characteristic>
+    </RadDetectorCharacteristics>
+  </RadDetectorInformation>
+
+  <RadDetectorInformation id="NeutronDetector">
+    <RadDetectorCategoryCode>Neutron</RadDetectorCategoryCode>
+    <RadDetectorKindCode>He3</RadDetectorKindCode>
+    <RadDetectorVolumeValue>25</RadDetectorVolumeValue>
+    <RadDetectorCharacteristics>
+      <Characteristic>
+        <CharacteristicName>GasPressure</CharacteristicName>
+        <CharacteristicValue>15</CharacteristicValue>
+        <CharacteristicValueUnits>ATM</CharacteristicValueUnits>
+        <CharacteristicValueDataClassCode>PositiveDouble</CharacteristicValueDataClassCode>
+      </Characteristic>
+    </RadDetectorCharacteristics>
+  </RadDetectorInformation>
+
+  <EnergyCalibration id="ENCAL">
+    <CoefficientValues>0.5 3.15 .0013</CoefficientValues>
+  </EnergyCalibration> 
+  
+  <FWHMCalibration id="FWHMCAL">
+    <EnergyValues>59 661.65 1460.8</EnergyValues>
+    <FWHMValues>10.5 126.5 256.5</FWHMValues>
+  </FWHMCalibration> 
+  
+  <RadMeasurement id="M-1222">
+    <MeasurementClassCode>Foreground</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:45:19-07:00</StartDateTime>
+    <RealTimeDuration>PT3.0S</RealTimeDuration>
+    <Spectrum id="GammaDetector-1222" radDetectorInformationReference="GammaDetector" energyCalibrationReference="ENCAL" FWHMCalibrationReference="FWHMCAL">
+      <LiveTimeDuration>PT2.9S</LiveTimeDuration>
+      <ChannelData>
+        0 0 0 22 421 847 1295 1982 2127 2222 2302 2276
+        2234 1921 1939 1715 1586 1469 1296 1178 1127 1047 928 760
+        679 641 542 529 443 423 397 393 322 272 294 227
+        216 224 208 191 189 163 167 173 150 137 136 129
+        150 142 160 159 140 103 90 82 83 85 67 76
+        73 84 63 74 70 69 76 61 49 61 63 65
+        58 62 48 75 56 61 46 56 43 37 55 47
+        50 40 38 54 43 41 45 51 32 35 29 33
+        40 44 33 35 20 26 27 17 19 20 16 19
+        18 19 18 20 17 45 55 70 62 59 32 30
+        21 23 10 9 5 13 11 11 6 7 7 9
+        11 4 8 8 14 14 11 9 13 5 5 6
+        10 9 3 4 3 7 5 5 4 5 3 6
+        5 0 5 6 3 1 4 4 3 10 11 4
+        1 4 2 11 9 6 3 5 5 1 4 2
+        6 6 2 3 0 2 2 2 2 0 1 3
+        1 1 2 3 2 4 5 2 6 4 1 0
+        3 1 2 1 1 0 1 0 0 2 0 1
+        0 0 0 1 0 0 0 0 0 0 0 2
+        0 0 0 1 0 1 0 0 2 1 0 0
+        0 0 1 3 0 0 0 1 0 1 0 0
+        0 0 0 0 
+      </ChannelData> 
+    </Spectrum>
+
+    <GrossCounts id="NeutronDetector-1222" radDetectorInformationReference="NeutronDetector">
+      <LiveTimeDuration>PT3.0S</LiveTimeDuration>
+      <CountData>2</CountData>
+    </GrossCounts>
+
+    <RadInstrumentState radInstrumentInformationReference="RadInstrumentInformation-1">
+      <RadInstrumentModeCode>Search</RadInstrumentModeCode>
+      <StateVector>
+        <GeographicPoint>
+          <LatitudeValue>41.608476</LatitudeValue>
+          <LongitudeValue>-72.88579</LongitudeValue>
+          <ElevationValue>84</ElevationValue>
+        </GeographicPoint>
+        <Orientation>
+          <AzimuthValue>-90.0</AzimuthValue>
+        </Orientation>
+        <SpeedValue>2.2</SpeedValue>
+      </StateVector>
+    </RadInstrumentState>
+  </RadMeasurement>	
+
+  <RadMeasurement id="M-1223">
+    <MeasurementClassCode>Foreground</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:48:22-07:00</StartDateTime>
+    <RealTimeDuration>PT3.0S</RealTimeDuration>
+    <Spectrum id="GammaDetector-1223" radDetectorInformationReference="GammaDetector" energyCalibrationReference="ENCAL" FWHMCalibrationReference="FWHMCAL">
+      <LiveTimeDuration>PT2.9S</LiveTimeDuration>
+      <ChannelData>
+        0 0 0 22 421 847 1295 1982 2127 2222 2302 2276
+        2234 1921 1939 1715 1586 1469 1296 1178 1127 1047 928 760
+        679 641 542 529 443 423 397 393 322 272 294 227
+        216 224 208 191 189 163 167 173 150 137 136 129
+        150 142 160 159 140 103 90 82 83 85 67 76
+        73 84 63 74 70 69 76 61 49 61 63 65
+        58 62 48 75 56 61 46 56 43 37 55 47
+        50 40 38 54 43 41 45 51 32 35 29 33
+        40 44 33 35 20 26 27 17 19 20 16 19
+        18 19 18 20 17 45 55 70 62 59 32 30
+        21 23 10 9 5 13 11 11 6 7 7 9
+        11 4 8 8 14 14 11 9 13 5 5 6
+        10 9 3 4 3 7 5 5 4 5 3 6
+        5 0 5 6 3 1 4 4 3 10 11 4
+        1 4 2 11 9 6 3 5 5 1 4 2
+        6 6 2 3 0 2 2 2 2 0 1 3
+        1 1 2 3 2 4 5 2 6 4 1 0
+        3 1 2 1 1 0 1 0 0 2 0 1
+        0 0 0 1 0 0 0 0 0 0 0 2
+        0 0 0 1 0 1 0 0 2 1 0 0
+        0 0 1 3 0 0 0 1 0 1 0 0
+        0 0 0 0 
+      </ChannelData> 
+    </Spectrum>
+
+    <GrossCounts id="NeutronDetector-1223" radDetectorInformationReference="NeutronDetector">
+      <LiveTimeDuration>PT3.0S</LiveTimeDuration>
+      <CountData>3</CountData>
+    </GrossCounts>
+
+    <RadInstrumentState radInstrumentInformationReference="RadInstrumentInformation-1">
+      <RadInstrumentModeCode>Search</RadInstrumentModeCode>
+      <StateVector>
+        <GeographicPoint>
+          <LatitudeValue>41.608494</LatitudeValue>
+          <LongitudeValue>-72.885999</LongitudeValue>
+          <ElevationValue>84</ElevationValue>
+        </GeographicPoint>
+        <Orientation>
+          <AzimuthValue>-90.0</AzimuthValue>
+        </Orientation>
+        <SpeedValue>2.2</SpeedValue>
+      </StateVector>
+    </RadInstrumentState>
+  </RadMeasurement>	
+
+  <AnalysisResults radMeasurementReferences="M-1222">
+    <AnalysisAlgorithmName>SuperNID</AnalysisAlgorithmName>
+    <AnalysisAlgorithmCreatorName>Spectrometers R Us</AnalysisAlgorithmCreatorName>
+    <AnalysisAlgorithmVersion>
+      <AnalysisAlgorithmComponentName>Main</AnalysisAlgorithmComponentName>
+      <AnalysisAlgorithmComponentVersion>1.0</AnalysisAlgorithmComponentVersion>
+    </AnalysisAlgorithmVersion>
+
+    <NuclideAnalysisResults>
+      <Nuclide>
+        <NuclideIdentifiedIndicator>true</NuclideIdentifiedIndicator>
+        <NuclideName>Cs-137</NuclideName>
+        <NuclideIDConfidenceValue>0.99</NuclideIDConfidenceValue>
+      </Nuclide>
+    </NuclideAnalysisResults>
+
+    <SpectrumPeakAnalysisResults>
+      <SpectrumPeak>
+        <SpectrumPeakEnergyValue>661.7</SpectrumPeakEnergyValue>
+        <SpectrumPeakNetAreaValue>123.5</SpectrumPeakNetAreaValue>
+        <SpectrumPeakNetAreaUncertaintyValue>12.4</SpectrumPeakNetAreaUncertaintyValue>
+      </SpectrumPeak>
+      <SpectrumPeak>
+        <SpectrumPeakEnergyValue>1460.9</SpectrumPeakEnergyValue>
+        <SpectrumPeakNetAreaValue>23.4</SpectrumPeakNetAreaValue>
+        <SpectrumPeakNetAreaUncertaintyValue>2.3</SpectrumPeakNetAreaUncertaintyValue>
+      </SpectrumPeak>
+    </SpectrumPeakAnalysisResults>
+  </AnalysisResults>
+
+  <AnalysisResults radMeasurementReferences="M-1223">
+    <AnalysisAlgorithmName>SuperNID</AnalysisAlgorithmName>
+    <AnalysisAlgorithmCreatorName>Spectrometers R Us</AnalysisAlgorithmCreatorName>
+    <AnalysisAlgorithmVersion>
+      <AnalysisAlgorithmComponentName>Main</AnalysisAlgorithmComponentName>
+      <AnalysisAlgorithmComponentVersion>1.0</AnalysisAlgorithmComponentVersion>
+    </AnalysisAlgorithmVersion>
+
+    <NuclideAnalysisResults>
+      <Nuclide>
+        <NuclideIdentifiedIndicator>true</NuclideIdentifiedIndicator>
+        <NuclideName>Cs-137</NuclideName>
+        <NuclideIDConfidenceValue>0.99</NuclideIDConfidenceValue>
+      </Nuclide>
+    </NuclideAnalysisResults>
+
+    <SpectrumPeakAnalysisResults>
+      <SpectrumPeak>
+        <SpectrumPeakEnergyValue>661.7</SpectrumPeakEnergyValue>
+        <SpectrumPeakNetAreaValue>123.4</SpectrumPeakNetAreaValue>
+        <SpectrumPeakNetAreaUncertaintyValue>12.3</SpectrumPeakNetAreaUncertaintyValue>
+      </SpectrumPeak>
+      <SpectrumPeak>
+        <SpectrumPeakEnergyValue>1460.9</SpectrumPeakEnergyValue>
+        <SpectrumPeakNetAreaValue>23.4</SpectrumPeakNetAreaValue>
+        <SpectrumPeakNetAreaUncertaintyValue>2.3</SpectrumPeakNetAreaUncertaintyValue>
+      </SpectrumPeak>
+    </SpectrumPeakAnalysisResults>
+  </AnalysisResults>
+</RadInstrumentData>

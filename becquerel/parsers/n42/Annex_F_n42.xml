@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<?xml-model href="http://physics.nist.gov/N42/2011/N42/schematron/n42.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<RadInstrumentData xmlns="http://physics.nist.gov/N42/2011/N42" 
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                   xsi:schemaLocation="http://physics.nist.gov/N42/2011/N42 http://physics.nist.gov/N42/2011/n42.xsd"
+                   n42DocUUID="7d5feab1-f9d3-4864-aa4b-e05c6411abbd">
+
+  <Remark>Dose rate values are the average over the integration time</Remark>
+
+  <RadInstrumentDataCreatorName>ePRD 100 V1.1</RadInstrumentDataCreatorName>
+
+  <RadInstrumentInformation id="RadInstrumentInformation-1">
+    <RadInstrumentManufacturerName>PRDs R Us</RadInstrumentManufacturerName>
+    <RadInstrumentIdentifier>FA 20110344</RadInstrumentIdentifier>
+    <RadInstrumentModelName>ePRD 100</RadInstrumentModelName>
+    <RadInstrumentClassCode>Radionuclide Identifier</RadInstrumentClassCode>
+    <RadInstrumentVersion>
+      <RadInstrumentComponentName>Hardware</RadInstrumentComponentName>
+      <RadInstrumentComponentVersion>C</RadInstrumentComponentVersion>
+    </RadInstrumentVersion>
+    <RadInstrumentVersion>
+      <RadInstrumentComponentName>Software</RadInstrumentComponentName>
+      <RadInstrumentComponentVersion>1.1</RadInstrumentComponentVersion>
+    </RadInstrumentVersion>
+    <RadInstrumentQualityControl>
+      <InspectionDateTime>2011-03-10T12:00:00-06:00</InspectionDateTime>
+      <InCalibrationIndicator>true</InCalibrationIndicator>
+    </RadInstrumentQualityControl>
+    <RadInstrumentCharacteristics>
+      <Characteristic>
+        <CharacteristicName>IP</CharacteristicName>
+        <CharacteristicValue>192.168.100.32</CharacteristicValue>
+        <CharacteristicValueUnits>unit-less</CharacteristicValueUnits>
+        <CharacteristicValueDataClassCode>string</CharacteristicValueDataClassCode>
+      </Characteristic>
+      <Characteristic>
+        <CharacteristicName>RF BAND</CharacteristicName>
+        <CharacteristicValue>2.1</CharacteristicValue>
+        <CharacteristicValueUnits>GHz</CharacteristicValueUnits>
+        <CharacteristicValueDataClassCode>PositiveDouble</CharacteristicValueDataClassCode>
+      </Characteristic>
+    </RadInstrumentCharacteristics>
+  </RadInstrumentInformation>
+
+  <RadDetectorInformation id="RadDetectorInformation-1">
+    <RadDetectorCategoryCode>Gamma</RadDetectorCategoryCode>
+    <RadDetectorKindCode>GMT</RadDetectorKindCode>
+    <RadDetectorDescription>1" GM tube</RadDetectorDescription>
+    <RadDetectorLengthValue>2.54</RadDetectorLengthValue>
+    <RadDetectorDiameterValue>.64</RadDetectorDiameterValue>
+  </RadDetectorInformation>
+
+  <RadMeasurement id="RadMeasurement-1">
+    <MeasurementClassCode>Foreground</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:46:30-07:00</StartDateTime>
+    <RealTimeDuration>PT1.0S</RealTimeDuration>
+    <DoseRate id="RadMeasurement-1-DoseRate-1" radDetectorInformationReference="RadDetectorInformation-1">
+      <DoseRateValue>10.2</DoseRateValue>
+    </DoseRate>
+    <RadInstrumentState radInstrumentInformationReference="RadInstrumentInformation-1">
+      <StateVector>
+        <GeographicPoint>
+          <LatitudeValue>42.123</LatitudeValue>
+          <LongitudeValue>-22.456</LongitudeValue>
+          <ElevationValue>5.2</ElevationValue>
+        </GeographicPoint>
+      </StateVector>
+      <RadInstrumentCharacteristics>
+        <CharacteristicGroup groupOutOfLimits="false">
+          <CharacteristicGroupName>StateOfHealth</CharacteristicGroupName>
+          <Characteristic valueOutOfLimits="false">
+            <CharacteristicName>BatteryCharge</CharacteristicName>
+            <CharacteristicValue>85</CharacteristicValue>
+            <CharacteristicValueUnits>% charge</CharacteristicValueUnits>
+            <CharacteristicValueDataClassCode>double</CharacteristicValueDataClassCode>
+          </Characteristic>
+          <Characteristic valueOutOfLimits="false">
+            <CharacteristicName>RadioSignalStrength</CharacteristicName>
+            <CharacteristicValue>-50</CharacteristicValue>
+            <CharacteristicValueUnits>dBm</CharacteristicValueUnits>
+            <CharacteristicValueDataClassCode>double</CharacteristicValueDataClassCode>
+          </Characteristic>
+        </CharacteristicGroup>
+      </RadInstrumentCharacteristics>
+    </RadInstrumentState>
+  </RadMeasurement>
+
+  <RadMeasurement id="RadMeasurement-2">
+    <MeasurementClassCode>Foreground</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:46:31-07:00</StartDateTime>
+    <RealTimeDuration>PT1.0S</RealTimeDuration>
+    <DoseRate id="RadMeasurement-2-DoseRate-1" radDetectorInformationReference="RadDetectorInformation-1">
+      <DoseRateValue>10.0</DoseRateValue>
+    </DoseRate>
+    <RadInstrumentState radInstrumentInformationReference="RadInstrumentInformation-1">
+      <StateVector>
+        <GeographicPoint>
+          <LatitudeValue>42.123</LatitudeValue>
+          <LongitudeValue>-22.456</LongitudeValue>
+          <ElevationValue>5.2</ElevationValue>
+        </GeographicPoint>
+      </StateVector>
+      <RadInstrumentCharacteristics>
+        <CharacteristicGroup groupOutOfLimits="false">
+          <CharacteristicGroupName>StateOfHealth</CharacteristicGroupName>
+          <Characteristic valueOutOfLimits="false">
+            <CharacteristicName>BatteryCharge</CharacteristicName>
+            <CharacteristicValue>84</CharacteristicValue>
+            <CharacteristicValueUnits>% charge</CharacteristicValueUnits>
+            <CharacteristicValueDataClassCode>double</CharacteristicValueDataClassCode>
+          </Characteristic>
+          <Characteristic valueOutOfLimits="false">
+            <CharacteristicName>RadioSignalStrength</CharacteristicName>
+            <CharacteristicValue>-50</CharacteristicValue>
+            <CharacteristicValueUnits>dBm</CharacteristicValueUnits>
+            <CharacteristicValueDataClassCode>double</CharacteristicValueDataClassCode>
+          </Characteristic>
+        </CharacteristicGroup>
+      </RadInstrumentCharacteristics>
+    </RadInstrumentState>
+  </RadMeasurement>
+
+  <RadMeasurement id="RadMeasurement-3">
+    <MeasurementClassCode>Foreground</MeasurementClassCode>
+    <StartDateTime>2003-11-22T23:46:32-07:00</StartDateTime>
+    <RealTimeDuration>PT1.0S</RealTimeDuration>
+    <DoseRate id="RadMeasurement-3-DoseRate-1" radDetectorInformationReference="RadDetectorInformation-1">
+      <DoseRateValue>10.4</DoseRateValue>
+    </DoseRate>
+    <RadInstrumentState radInstrumentInformationReference="RadInstrumentInformation-1">
+      <StateVector>
+        <GeographicPoint>
+          <LatitudeValue>42.123</LatitudeValue>
+          <LongitudeValue>-22.456</LongitudeValue>
+          <ElevationValue>5.2</ElevationValue>
+        </GeographicPoint>
+      </StateVector>
+      <RadInstrumentCharacteristics>
+        <CharacteristicGroup groupOutOfLimits="false">
+          <CharacteristicGroupName>StateOfHealth</CharacteristicGroupName>
+          <Characteristic valueOutOfLimits="false">
+            <CharacteristicName>BatteryCharge</CharacteristicName>
+            <CharacteristicValue>83</CharacteristicValue>
+            <CharacteristicValueUnits>% charge</CharacteristicValueUnits>
+            <CharacteristicValueDataClassCode>double</CharacteristicValueDataClassCode>
+          </Characteristic>
+          <Characteristic valueOutOfLimits="false">
+            <CharacteristicName>RadioSignalStrength</CharacteristicName>
+            <CharacteristicValue>-49</CharacteristicValue>
+            <CharacteristicValueUnits>dBm</CharacteristicValueUnits>
+            <CharacteristicValueDataClassCode>double</CharacteristicValueDataClassCode>
+          </Characteristic>
+        </CharacteristicGroup>
+      </RadInstrumentCharacteristics>
+    </RadInstrumentState>
+  </RadMeasurement>
+</RadInstrumentData>
