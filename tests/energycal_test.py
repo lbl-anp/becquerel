@@ -69,7 +69,7 @@ def cal_spec(spec_data):
 
     return bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
 
-#@pytest.fixture
+
 def linear_regression(x, y):
     """Perform a linear regression manually"""
 
