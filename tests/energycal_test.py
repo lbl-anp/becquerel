@@ -69,7 +69,7 @@ def cal_spec(spec_data):
 
     return bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
 
-@pytest.fixture
+#@pytest.fixture
 def linear_regression(x, y):
     """Perform a linear regression manually"""
 
@@ -78,7 +78,7 @@ def linear_regression(x, y):
     n = len(x)
     sx = np.sum(x)
     sy = np.sum(y)
-    b = (n*np.sum(x*y)-sx*sy)/(n*np.sum(x**2)-sx*sx)
+    b = float(n*np.sum(x*y)-sx*sy)/float(n*np.sum(x**2)-sx*sx)
     a = 1.0/n*(sy-b*sx)
     return [a, b]
 
@@ -223,6 +223,11 @@ def test_linear_construction_coefficients(slope, offset):
     assert cal.slope == slope
     assert cal.offset == offset
 
+def test_linear_fitting_simple():
+    """Test fitting with calling update_fit function"""
+
+    cal = bq.LinearEnergyCal.from_points(chlist=[0.0, 1.0], kevlist=[1.0, 3.0])
+    assert(np.allclose([1.0, 2.0], [cal.offset, cal.slope]))
 
 def test_linear_fitting_with_fit(chlist, kevlist):
     """Test fitting with calling update_fit function"""
@@ -264,6 +269,15 @@ def test_linear_bad_fitting():
     with pytest.raises(bq.EnergyCalError):
         cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
 
+def test_bad_access_error(uncal_spec):
+    """Test trying to access coeffs not yet supplied"""
+
+    cal = bq.LinearEnergyCal()
+    with pytest.raises(bq.EnergyCalError):
+        cal.slope
+    with pytest.raises(bq.EnergyCalError):
+        cal.offset
+
 # ----------------------------------------------------
 #        Spectrum calibration methods tests
 # ----------------------------------------------------
@@ -301,3 +315,10 @@ def test_rm_calibration_error(uncal_spec):
     assert not uncal_spec.is_calibrated
     uncal_spec.rm_calibration()
     assert not uncal_spec.is_calibrated
+
+def test_callibration_not_inizialized_error(uncal_spec):
+    """Test that calling apply_calibration on empty calibration causes an error"""
+
+    cal = bq.LinearEnergyCal()
+    with pytest.raises(bq.EnergyCalError):
+        uncal_spec.apply_calibration(cal)
