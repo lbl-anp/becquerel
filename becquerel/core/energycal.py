@@ -46,12 +46,16 @@ class EnergyCalBase(object):
         # initialize fit constraints?
 
     @classmethod
-    def from_points(cls, chlist, kevlist):
+    def from_points(cls, chlist, kevlist, include_origin=False):
         """Construct EnergyCal from calibration points.
+
+        Does not include a point at zero automatically.
 
         Args:
           chlist: list/tuple/array of the channel values of calibration points
           kevlist: list/tuple/array of the corresponding energy values [keV]
+          include_origin: Default is False, if set to True will add a point
+                          at zero into the fit.
 
         Raises:
           BadInput: for bad chlist and/or kevlist.
@@ -59,8 +63,20 @@ class EnergyCalBase(object):
 
         if chlist is None or kevlist is None:
             raise BadInput('Channel list and energy list are required')
-        elif (not isinstance(chlist, VECTOR_TYPES) or
-                not isinstance(kevlist, VECTOR_TYPES)):
+
+        cond1 = isinstance(chlist, VECTOR_TYPES)
+        cond2 = isinstance(kevlist, VECTOR_TYPES)
+
+        if include_origin:
+            if cond1 and cond2:
+                chlist = np.append(0, chlist)
+                kevlist = np.append(0, kevlist)
+            elif not cond1 and not cond2:
+                chlist = [0, chlist]
+                kevlist = [0, kevlist]
+                cond1 = cond2 = True
+
+        if (not cond1 or not cond2):
             raise BadInput('Inputs should be vector iterables, not scalars')
         elif len(chlist) != len(kevlist):
             raise BadInput('Channels and energies must be same length')
@@ -68,6 +84,7 @@ class EnergyCalBase(object):
         cal = cls()
         for ch, kev in zip(chlist, kevlist):
             cal.new_calpoint(ch, kev)
+        cal.update_fit()
         return cal
 
     @classmethod
