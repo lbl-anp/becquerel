@@ -224,7 +224,7 @@ def test_linear_construction_coefficients(slope, offset):
     assert cal.offset == offset
 
 def test_linear_fitting_simple():
-    """Test fitting with calling update_fit function"""
+    """Test fitting of known slope and offset"""
 
     cal = bq.LinearEnergyCal.from_points(chlist=[0.0, 1.0], kevlist=[1.0, 3.0])
     assert(np.allclose([1.0, 2.0], [cal.offset, cal.slope]))
