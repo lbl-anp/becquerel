@@ -49,8 +49,6 @@ class EnergyCalBase(object):
     def from_points(cls, chlist, kevlist, include_origin=False):
         """Construct EnergyCal from calibration points.
 
-        Does not include a point at zero automatically.
-
         Args:
           chlist: list/tuple/array of the channel values of calibration points
           kevlist: list/tuple/array of the corresponding energy values [keV]
