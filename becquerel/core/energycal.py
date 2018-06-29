@@ -1,8 +1,8 @@
 """"Energy calibration classes"""
 
 from abc import ABCMeta, abstractmethod, abstractproperty
-from future.utils import viewitems
 from builtins import dict, super, zip  # pylint: disable=redefined-builtin
+from future.utils import viewitems
 import numpy as np
 
 from .utils import VECTOR_TYPES
@@ -74,7 +74,7 @@ class EnergyCalBase(object):
                 kevlist = [0, kevlist]
                 cond1 = cond2 = True
 
-        if (not cond1 or not cond2):
+        if not cond1 or not cond2:
             raise BadInput('Inputs should be vector iterables, not scalars')
         elif len(chlist) != len(kevlist):
             raise BadInput('Channels and energies must be same length')
