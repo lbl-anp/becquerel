@@ -347,13 +347,21 @@ class LinearEnergyCal(EnergyCalBase):
     def slope(self):
         """Return the slope coefficient value."""
 
-        return self._coeffs['b']
+        try:
+            return self._coeffs['b']
+        except KeyError:
+            raise EnergyCalError(
+                'Slope coefficient not yet supplied or calculated.')
 
     @property
     def offset(self):
         """Return the offset coefficient value."""
 
-        return self._coeffs['c']
+        try:
+            return self._coeffs['c']
+        except KeyError:
+            raise EnergyCalError(
+                'Offset coefficient not yet supplied or calculated.')
 
     def _ch2kev(self, ch):
         """Convert scalar OR np.array of channel(s) to energies.
