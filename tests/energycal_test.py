@@ -120,7 +120,7 @@ def test_construction_bad_coefficients(slope, offset):
         bq.LinearEnergyCal.from_coeffs(coeffs)
 
 
-def test_construction_bad_points(chlist, kevlist):
+def test_construction_wrong_length(chlist, kevlist):
     """Test from_points with bad input"""
 
     with pytest.raises(bq.BadInput) as excinfo:
@@ -128,9 +128,32 @@ def test_construction_bad_points(chlist, kevlist):
             chlist=chlist, kevlist=kevlist[:-1])
     excinfo.match('Channels and energies must be same length')
 
+@pytest.mark.parametrize('cl, kl, io', [
+    (32, 661.7, False),
+    (32, 661.7, True),
+    ({"val": 32}, {"ene": 661.7}, False),
+    ({"val": 32}, {"ene": 661.7}, True),
+    ([[32, 64],[72,108]], [[661.7, 1172.7],[1332.5, 2614.5]], False),
+    ([[32, 64],[72,108]], [[661.7, 1172.7],[1332.5, 2614.5]], True)])
+def test_construction_bad_points(cl, kl, io):
     with pytest.raises(bq.BadInput) as excinfo:
-        bq.LinearEnergyCal.from_points(chlist=32, kevlist=661.7)
+        bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
     excinfo.match('Inputs should be vector iterables, not scalars')
+
+@pytest.mark.parametrize('cl, kl, io', [
+    ([], [], False),
+    ([], [], True)])
+def test_construction_empty_points(cl, kl, io):
+    with pytest.raises(bq.EnergyCalError) as excinfo:
+        bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
+
+@pytest.mark.parametrize('cl, kl, io', [
+    (None, 661.7, False),
+    (32, None, False)])
+def test_construction_None_points(cl, kl, io):
+    with pytest.raises(bq.EnergyCalError) as excinfo:
+        bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
+    excinfo.match('Channel list and energy list are required')
 
 
 # ----------------------------------------------------
