@@ -5,9 +5,6 @@ from builtins import dict, super, zip  # pylint: disable=redefined-builtin
 from future.utils import viewitems
 import numpy as np
 
-from .utils import VECTOR_TYPES
-
-
 class EnergyCalError(Exception):
     """Base class for errors in energycal.py"""
 
@@ -62,21 +59,17 @@ class EnergyCalBase(object):
         if chlist is None or kevlist is None:
             raise BadInput('Channel list and energy list are required')
 
-        cond1 = isinstance(chlist, VECTOR_TYPES)
-        cond2 = isinstance(kevlist, VECTOR_TYPES)
-
+        origin = []
         if include_origin:
-            if cond1 and cond2:
-                chlist = np.append(0, chlist)
-                kevlist = np.append(0, kevlist)
-            elif not cond1 and not cond2:
-                chlist = [0, chlist]
-                kevlist = [0, kevlist]
-                cond1 = cond2 = True
+            origin = [0]
 
-        if not cond1 or not cond2:
+        try:
+            chlist = np.append(origin, chlist, axis=0)
+            kevlist = np.append(origin, kevlist, axis=0)
+        except ValueError:
             raise BadInput('Inputs should be vector iterables, not scalars')
-        elif len(chlist) != len(kevlist):
+
+        if len(chlist) != len(kevlist):
             raise BadInput('Channels and energies must be same length')
 
         cal = cls()
