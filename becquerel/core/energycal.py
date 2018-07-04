@@ -59,22 +59,24 @@ class EnergyCalBase(object):
         if chlist is None or kevlist is None:
             raise BadInput('Channel list and energy list are required')
 
-        origin = []
-        if include_origin:
-            origin = [0]
-
         try:
-            chlist = np.append(origin, chlist, axis=0)
-            kevlist = np.append(origin, kevlist, axis=0)
-        except ValueError:
-            raise BadInput('Inputs should be vector iterables, not scalars')
-
-        if len(chlist) != len(kevlist):
+            len1 = len(chlist)
+            len2 = len(kevlist)
+        except:
+            raise BadInput('Inputs must be one dimensional iterables')
+        if len1 != len2:
             raise BadInput('Channels and energies must be same length')
 
         cal = cls()
+
+        if include_origin:
+            cal.new_calpoint(0, 0)
+
         for ch, kev in zip(chlist, kevlist):
-            cal.new_calpoint(ch, kev)
+            try:
+                cal.new_calpoint(ch, kev)
+            except (ValueError, TypeError):
+                raise BadInput('Inputs must be one dimensional iterables')
         cal.update_fit()
         return cal
 
