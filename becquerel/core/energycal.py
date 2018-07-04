@@ -61,7 +61,7 @@ class EnergyCalBase(object):
 
         try:
             cond = len(chlist) != len(kevlist)
-        except:
+        except TypeError:
             raise BadInput('Inputs must be one dimensional iterables')
         if cond:
             raise BadInput('Channels and energies must be same length')
