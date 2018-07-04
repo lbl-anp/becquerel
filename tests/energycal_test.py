@@ -140,7 +140,7 @@ def test_construction_bad_points(cl, kl, io):
 
     with pytest.raises(bq.BadInput) as excinfo:
         bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
-    excinfo.match('Inputs should be vector iterables, not scalars')
+    excinfo.match('Inputs must be one dimensional iterables')
 
 @pytest.mark.parametrize('cl, kl, io', [
     ([], [], False),
