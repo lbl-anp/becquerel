@@ -60,11 +60,10 @@ class EnergyCalBase(object):
             raise BadInput('Channel list and energy list are required')
 
         try:
-            len1 = len(chlist)
-            len2 = len(kevlist)
+            cond = len(chlist) != len(kevlist)
         except:
             raise BadInput('Inputs must be one dimensional iterables')
-        if len1 != len2:
+        if cond:
             raise BadInput('Channels and energies must be same length')
 
         cal = cls()

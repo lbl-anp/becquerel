@@ -258,6 +258,9 @@ def test_linear_fitting_simple():
     cal = bq.LinearEnergyCal.from_points(chlist=[0.0, 1.0], kevlist=[1.0, 3.0])
     assert np.allclose([1.0, 2.0], [cal.offset, cal.slope])
 
+    cal = bq.LinearEnergyCal.from_points(chlist=[1.0], kevlist=[2.0], include_origin=True)
+    assert np.allclose([0.0, 2.0], [cal.offset, cal.slope])
+
 def test_linear_fitting_with_fit(chlist, kevlist):
     """Test fitting with calling update_fit function"""
 
