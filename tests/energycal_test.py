@@ -128,6 +128,7 @@ def test_construction_wrong_length(chlist, kevlist):
             chlist=chlist, kevlist=kevlist[:-1])
     excinfo.match('Channels and energies must be same length')
 
+
 @pytest.mark.parametrize('cl, kl, io', [
     (32, 661.7, False),
     (32, 661.7, True),
@@ -142,14 +143,18 @@ def test_construction_bad_points(cl, kl, io):
         bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
     excinfo.match('Inputs must be one dimensional iterables')
 
+
 @pytest.mark.parametrize('cl, kl, io', [
     ([], [], False),
-    ([], [], True)])
+    ([], [], True),
+    ((32,), (661.7,), False),
+    ([32], [661.7], False)])
 def test_construction_empty_points(cl, kl, io):
     """Test errors if input to points is empty"""
 
     with pytest.raises(bq.EnergyCalError) as excinfo:
         bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
+
 
 @pytest.mark.parametrize('cl, kl, io', [
     (None, 661.7, False),
@@ -252,6 +257,7 @@ def test_linear_construction_coefficients(slope, offset):
     assert cal.slope == slope
     assert cal.offset == offset
 
+
 def test_linear_fitting_simple():
     """Test fitting of known slope and offset"""
 
@@ -260,6 +266,7 @@ def test_linear_fitting_simple():
 
     cal = bq.LinearEnergyCal.from_points(chlist=[1.0], kevlist=[2.0], include_origin=True)
     assert np.allclose([0.0, 2.0], [cal.offset, cal.slope])
+
 
 def test_linear_fitting_with_fit(chlist, kevlist):
     """Test fitting with calling update_fit function"""
@@ -288,18 +295,10 @@ def test_linear_fitting_with_origin(chlist, kevlist):
 def test_linear_bad_fitting():
     """Test fitting - too few calpoints (EnergyCalBase.update_fit())"""
 
-    chlist = (67, 133)
-    kevlist = (661.7, 1460.83)
-    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
-    cal.update_fit()
-
     cal = bq.LinearEnergyCal()
     with pytest.raises(bq.EnergyCalError):
         cal.update_fit()
 
-    chlist, kevlist = (67,), (661.7,)
-    with pytest.raises(bq.EnergyCalError):
-        cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
 
 def test_bad_access_error(uncal_spec):
     """Test trying to access coeffs not yet supplied"""
