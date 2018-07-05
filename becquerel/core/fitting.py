@@ -3,7 +3,7 @@ import numpy as np
 import scipy.special
 from lmfit.model import Model
 
-
+# TODO: add fitting exception
 # -----------------------------------------------------------------------------
 # Base functions
 # -----------------------------------------------------------------------------
@@ -84,6 +84,8 @@ class ExpModel(Model):
 # TODO: add ability to initialize and fit with Fitter.__init__
 # TODO: change to use ABC
 # TODO: include x_edges?
+# TODO: handle y normalization (i.e. cps vs cps/keV), needs x_edges
+# TODO: use set_param_hint to set global model defaults
 # -----------------------------------------------------------------------------
 
 
@@ -204,6 +206,55 @@ class Fitter(object):
     def eval(self, x, **params):
         return self.model.eval(x=x, **params)
 
+    # Parameter guessing
+    def _cen_msk(self, ratio=0.5):
+        assert ratio < 1, \
+            'Center mask ratio cannot exceed 1: {}'.format(ratio)
+        xcen = (self.x_roi[0] + self.x_roi[-1]) / 2.0
+        xoffset = (self.x_roi[-1] - self.x_roi[0]) * (0.5 - ratio / 2.0)
+        return ((self.x_roi >= (xcen - xoffset)) &
+                (self.x_roi <= xcen + xoffset))
+
+    def _xy_left(self, num=4):
+        return np.mean(self.x_roi[:num]), np.mean(self.y_roi[:num])
+
+    def _xy_right(self, num=4):
+        return np.mean(self.x_roi[-num:]), np.mean(self.y_roi[-num:])
+
+    def _integrate_center(self, ratio=0.5):
+        # NOTE: this assumes y is NOT normalized to dx
+        return np.sum(self.y_roi[self._cen_msk(ratio=0.5)])
+
+    def _guess_gauss_params(self, prefix='gauss_'):
+        amp = self._integrate_center(ratio=0.5)
+        mu = (self.x_roi[0] + self.x_roi[-1]) / 2.
+        # TODO: update this, minimizer creates NaN's if default sigma used (0)
+        sigma = (self.x_roi[-1] - self.x_roi[0]) / 10.
+        return [
+            ('{}amp'.format(prefix), 'value', amp),
+            ('{}amp'.format(prefix), 'min', 0.0),
+            ('{}mu'.format(prefix), 'value', mu),
+            ('{}mu'.format(prefix), 'min', self.x_roi[0]),
+            ('{}mu'.format(prefix), 'max', self.x_roi[-1]),
+            ('{}sigma'.format(prefix), 'value', sigma),
+            ('{}sigma'.format(prefix), 'min', 0.0),
+        ]
+
+    def _guess_erf_params(self, prefix='erf_'):
+        return [
+            ('{}amp'.format(prefix), 'value', self.y_roi[0] - self.y_roi[-1]),
+            ('{}amp'.format(prefix), 'min', 0.),
+            ('{}mu'.format(prefix), 'expr', 'gauss_mu'),
+            ('{}sigma'.format(prefix), 'expr', 'gauss_sigma'),
+        ]
+
+    def _guess_line_params(self, prefix='line_', num=2):
+        _, b = self._xy_left(num=num)
+        return [
+            ('{}m'.format(prefix), 'value', 0.),
+            ('{}b'.format(prefix), 'value', b),
+        ]
+
 
 class FitterGaussErfLine(Fitter):
 
@@ -215,33 +266,7 @@ class FitterGaussErfLine(Fitter):
 
     def guess_param_defaults(self):
         params = []
-        # Defaults
-        cen50_msk = (
-            (np.arange(len(self.x_roi)) >= float(len(self.x_roi) - 1) * 0.25) &
-            (np.arange(len(self.x_roi)) <= float(len(self.x_roi) - 1) * 0.75))
-        # Integrate and clip last channel of center 50%
-        params.append((
-            'gauss_amp',
-            'value',
-            np.sum(
-                np.diff(self.x_roi[cen50_msk]) * self.y_roi[cen50_msk][:-1])))
-        params.append(('gauss_amp', 'min', 0.))
-        params.append((
-            'gauss_mu',
-            'value',
-            (self.x_roi[0] + self.x_roi[-1]) / 2.))
-        params.append(('gauss_mu', 'min', self.x_roi[0]))
-        params.append(('gauss_mu', 'max', self.x_roi[-1]))
-        params.append(('gauss_sigma', 'min', 0.))
-        # TODO: update this, minimizer creates NaN's if default sigma used (0)
-        params.append((
-            'gauss_sigma',
-            'value',
-            (self.x_roi[-1] - self.x_roi[0]) / 10.))
-        params.append(('erf_amp', 'value', self.y_roi[0] - self.y_roi[-1]))
-        params.append(('erf_amp', 'min', 0.))
-        params.append(('erf_mu', 'expr', 'gauss_mu'))
-        params.append(('erf_sigma', 'expr', 'gauss_sigma'))
-        params.append(('line_m', 'value', 0.))
-        params.append(('line_b', 'value', self.y_roi[0]))
+        params += self._guess_gauss_params(prefix='gauss_')
+        params += self._guess_erf_params(prefix='erf_')
+        params += self._guess_line_params(prefix='line_')
         return params
