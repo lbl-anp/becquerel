@@ -137,7 +137,7 @@ def test_construction_wrong_length(chlist, kevlist):
     ([[32, 64], [72, 108]], [[661.7, 1172.7], [1332.5, 2614.5]], False),
     ([[32, 64], [72, 108]], [[661.7, 1172.7], [1332.5, 2614.5]], True)])
 def test_construction_bad_points(cl, kl, io):
-    """Test errors if input to points is not appropriate"""
+    """Test errors of from_points with bad input"""
 
     with pytest.raises(bq.BadInput) as excinfo:
         bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
@@ -150,7 +150,7 @@ def test_construction_bad_points(cl, kl, io):
     ((32,), (661.7,), False),
     ([32], [661.7], False)])
 def test_construction_empty_points(cl, kl, io):
-    """Test errors if input to points is empty"""
+    """Test errors of from_points with empty/insufficient input"""
 
     with pytest.raises(bq.EnergyCalError) as excinfo:
         bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
@@ -160,7 +160,7 @@ def test_construction_empty_points(cl, kl, io):
     (None, 661.7, False),
     (32, None, False)])
 def test_construction_None_points(cl, kl, io):
-    """Test errors if input to points is None"""
+    """Test errors if input to from_points is None"""
 
     with pytest.raises(bq.EnergyCalError) as excinfo:
         bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
@@ -259,7 +259,7 @@ def test_linear_construction_coefficients(slope, offset):
 
 
 def test_linear_fitting_simple():
-    """Test fitting of known slope and offset"""
+    """Test linear fitting of known slope and offset"""
 
     cal = bq.LinearEnergyCal.from_points(chlist=[0.0, 1.0], kevlist=[1.0, 3.0])
     assert np.allclose([1.0, 2.0], [cal.offset, cal.slope])
@@ -269,7 +269,7 @@ def test_linear_fitting_simple():
 
 
 def test_linear_fitting_with_fit(chlist, kevlist):
-    """Test fitting with calling update_fit function"""
+    """Test linear fitting with calling update_fit function"""
 
     cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
     cal.update_fit()
@@ -284,7 +284,7 @@ def test_linear_fitting_without_fit(chlist, kevlist):
 
 
 def test_linear_fitting_with_origin(chlist, kevlist):
-    """Test linear fitting with including origin"""
+    """Test linear fitting that includes the origin"""
 
     c = np.append(0, chlist)
     k = np.append(0, kevlist)
@@ -293,7 +293,7 @@ def test_linear_fitting_with_origin(chlist, kevlist):
 
 
 def test_linear_bad_fitting():
-    """Test fitting - too few calpoints (EnergyCalBase.update_fit())"""
+    """Test linear fitting - too few calpoints (EnergyCalBase.update_fit())"""
 
     cal = bq.LinearEnergyCal()
     with pytest.raises(bq.EnergyCalError):
@@ -347,7 +347,7 @@ def test_rm_calibration_error(uncal_spec):
     uncal_spec.rm_calibration()
     assert not uncal_spec.is_calibrated
 
-def test_callibration_not_inizialized_error(uncal_spec):
+def test_callibration_not_initialized_error(uncal_spec):
     """Test that calling apply_calibration on empty calibration causes an error"""
 
     cal = bq.LinearEnergyCal()
