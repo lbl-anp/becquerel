@@ -1,12 +1,9 @@
 """"Energy calibration classes"""
 
 from abc import ABCMeta, abstractmethod, abstractproperty
-from future.utils import viewitems
 from builtins import dict, super, zip  # pylint: disable=redefined-builtin
+from future.utils import viewitems
 import numpy as np
-
-from .utils import VECTOR_TYPES
-
 
 class EnergyCalError(Exception):
     """Base class for errors in energycal.py"""
@@ -46,12 +43,14 @@ class EnergyCalBase(object):
         # initialize fit constraints?
 
     @classmethod
-    def from_points(cls, chlist, kevlist):
+    def from_points(cls, chlist, kevlist, include_origin=False):
         """Construct EnergyCal from calibration points.
 
         Args:
           chlist: list/tuple/array of the channel values of calibration points
           kevlist: list/tuple/array of the corresponding energy values [keV]
+          include_origin: Default is False, if set to True will add a point
+                          at zero into the fit.
 
         Raises:
           BadInput: for bad chlist and/or kevlist.
@@ -59,15 +58,25 @@ class EnergyCalBase(object):
 
         if chlist is None or kevlist is None:
             raise BadInput('Channel list and energy list are required')
-        elif (not isinstance(chlist, VECTOR_TYPES) or
-                not isinstance(kevlist, VECTOR_TYPES)):
-            raise BadInput('Inputs should be vector iterables, not scalars')
-        elif len(chlist) != len(kevlist):
+
+        try:
+            cond = len(chlist) != len(kevlist)
+        except TypeError:
+            raise BadInput('Inputs must be one dimensional iterables')
+        if cond:
             raise BadInput('Channels and energies must be same length')
 
         cal = cls()
+
+        if include_origin:
+            cal.new_calpoint(0, 0)
+
         for ch, kev in zip(chlist, kevlist):
-            cal.new_calpoint(ch, kev)
+            try:
+                cal.new_calpoint(ch, kev)
+            except (ValueError, TypeError):
+                raise BadInput('Inputs must be one dimensional iterables')
+        cal.update_fit()
         return cal
 
     @classmethod
@@ -332,13 +341,21 @@ class LinearEnergyCal(EnergyCalBase):
     def slope(self):
         """Return the slope coefficient value."""
 
-        return self._coeffs['b']
+        try:
+            return self._coeffs['b']
+        except KeyError:
+            raise EnergyCalError(
+                'Slope coefficient not yet supplied or calculated.')
 
     @property
     def offset(self):
         """Return the offset coefficient value."""
 
-        return self._coeffs['c']
+        try:
+            return self._coeffs['c']
+        except KeyError:
+            raise EnergyCalError(
+                'Offset coefficient not yet supplied or calculated.')
 
     def _ch2kev(self, ch):
         """Convert scalar OR np.array of channel(s) to energies.
