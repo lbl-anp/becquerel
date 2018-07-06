@@ -167,10 +167,11 @@ class GaussianPeakFilter(PeakFilter):
 class PeakFinder(object):
     """Find peaks in a spectrum after convolving it with a kernel."""
 
-    def __init__(self, spectrum, kernel, min_sep=5):
+    def __init__(self, spectrum, kernel, min_sep=5, fwhm_tol=(0.5, 1.5)):
         """Initialize with a spectrum and kernel."""
         assert min_sep > 0
         self.min_sep = min_sep
+        self.fwhm_tol = tuple(fwhm_tol)
         self.calculate(spectrum, kernel)
 
     def reset(self):
@@ -207,8 +208,6 @@ class PeakFinder(object):
             if abs(chan - chan2) <= self.min_sep:
                 new_channel = False
         if new_channel:
-            self.channels.append(chan)
-            self.snrs.append(self.snr[chan])
             # estimate FWHM using the second derivative
             # snr(chan) = snr(chan0) - 0.5 d2snr/dchan2(chan0) (chan-chan0)^2
             # 0.5 = 1 - 0.5 d2snr/dchan2 (fwhm/2)^2 / snr0
@@ -223,6 +222,11 @@ class PeakFinder(object):
             d2 *= -1
             fwhm = 2 * np.sqrt(self.snr[chan] / d2)
             self.fwhms.append(fwhm)
+            # add the peak if it has a similar FWHM to the kernel's FWHM
+            if self.fwhm_tol[0] * fwhm0 <= fwhm <= self.fwhm_tol[1] * fwhm0:
+                self.channels.append(chan)
+                self.snrs.append(self.snr[chan])
+                self.fwhms.append(fwhm)
         # sort the peaks by channel
         self.channels = np.array(self.channels)
         self.snrs = np.array(self.snrs)
