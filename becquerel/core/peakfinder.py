@@ -177,6 +177,7 @@ class PeakFinder(object):
         """Restore peak finder to pristine starting condition."""
         self.channels = []
         self.snrs = []
+        self.fwhms = []
 
     def calculate(self, spectrum, kernel):
         """Calculate the convolution of the spectrum with the kernel."""
@@ -208,12 +209,28 @@ class PeakFinder(object):
         if new_channel:
             self.channels.append(chan)
             self.snrs.append(self.snr[chan])
+            # estimate FWHM using the second derivative
+            # snr(chan) = snr(chan0) - 0.5 d2snr/dchan2(chan0) (chan-chan0)^2
+            # 0.5 = 1 - 0.5 d2snr/dchan2 (fwhm/2)^2 / snr0
+            # 1 = d2snr/dchan2 (fwhm/2)^2 / snr0
+            # fwhm = 2 sqrt(snr0 / d2snr/dchan2)
+            fwhm0 = self.kernel.fwhm(chan)
+            h = int(max(1, 0.2 * fwhm0))
+            d2 = (1 * self.snr[chan - h]
+                  - 2 * self.snr[chan]
+                  + 1 * self.snr[chan + h]) / h**2
+            assert d2 < 0
+            d2 *= -1
+            fwhm = 2 * np.sqrt(self.snr[chan] / d2)
+            self.fwhms.append(fwhm)
         # sort the peaks by channel
         self.channels = np.array(self.channels)
         self.snrs = np.array(self.snrs)
+        self.fwhms = np.array(self.fwhms)
         i = np.argsort(self.channels)
         self.channels = list(self.channels[i])
         self.snrs = list(self.snrs[i])
+        self.fwhms = list(self.fwhms[i])
 
     def plot(self, facecolor='red', linecolor=None, alpha=0.5, peaks=True):
         """Plot the peak signal-to-noise ratios calculated using the kernel."""
@@ -224,9 +241,12 @@ class PeakFinder(object):
         if linecolor is not None:
             plt.plot(self.spectrum.channels, self.snr, '-', color=linecolor)
         if peaks:
-            for chan, snr in zip(self.channels, self.snrs):
+            for chan, snr, fwhm in zip(self.channels, self.snrs, self.fwhms):
                 plt.plot([chan] * 2, [0, snr], 'b-', lw=1.5)
                 plt.plot(chan, snr, 'bo')
+                plt.plot(
+                    [chan - fwhm / 2, chan + fwhm / 2], [snr / 2] * 2,
+                    'b-', lw=1.5)
         plt.xlim(0, len(self.spectrum))
         plt.ylim(0)
         plt.xlabel('Channels')
@@ -295,13 +315,17 @@ class PeakFinder(object):
                 self.add_peak(peak_chan)
         self.channels = np.array(self.channels)
         self.snrs = np.array(self.snrs)
+        self.fwhms = np.array(self.fwhms)
         # reduce number of channels to a maximum number max_n
         i = np.argsort(self.snrs)
         self.channels = self.channels[i][::-1]
         self.snrs = self.snrs[i][::-1]
+        self.fwhms = self.fwhms[i][::-1]
         self.channels = self.channels[-self.max_num:]
         self.snrs = self.snrs[-self.max_num:]
+        self.fwhms = self.fwhms[-self.max_num:]
         # sort by channel
         i = np.argsort(self.channels)
         self.channels = list(self.channels[i])
         self.snrs = list(self.snrs[i])
+        self.fwhms = list(self.fwhms[i])
