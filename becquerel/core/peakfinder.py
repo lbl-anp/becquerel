@@ -199,7 +199,7 @@ class PeakFinder(object):
         self.max_chan = np.inf
         self.reset()
 
-    def add_peak(self, chan, snr):
+    def add_peak(self, chan):
         """Add a peak at the channelto the list if it is not already there."""
         new_channel = True
         for chan2 in self.channels:
@@ -207,7 +207,7 @@ class PeakFinder(object):
                 new_channel = False
         if new_channel:
             self.channels.append(chan)
-            self.snrs.append(snr)
+            self.snrs.append(self.snr[chan])
         # sort the peaks by channel
         self.channels = np.array(self.channels)
         self.snrs = np.array(self.snrs)
@@ -249,8 +249,8 @@ class PeakFinder(object):
         if peak_snr < self.min_snr:
             return None
         peak_chan = np.where((self.snr == peak_snr) & chan_range)[0][0]
-        self.add_peak(peak_chan, peak_snr)
-        return peak_chan, peak_snr
+        self.add_peak(peak_chan)
+        return peak_chan
 
     def find_peaks(
             self, min_chan=None, max_chan=None, min_snr=None, max_num=None):
@@ -292,7 +292,7 @@ class PeakFinder(object):
             peak_chan = self.spectrum.channels[
                 (self.snr == peak_snr) & in_region][0]
             if self.min_chan <= peak_chan <= self.max_chan:
-                self.add_peak(peak_chan, peak_snr)
+                self.add_peak(peak_chan)
         self.channels = np.array(self.channels)
         self.snrs = np.array(self.snrs)
         # reduce number of channels to a maximum number max_n
