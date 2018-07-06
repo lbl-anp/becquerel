@@ -347,7 +347,7 @@ def test_rm_calibration_error(uncal_spec):
     uncal_spec.rm_calibration()
     assert not uncal_spec.is_calibrated
 
-def test_callibration_not_initialized_error(uncal_spec):
+def test_calibration_not_initialized_error(uncal_spec):
     """Test that calling apply_calibration on empty calibration causes an error"""
 
     cal = bq.LinearEnergyCal()
