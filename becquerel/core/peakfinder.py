@@ -180,6 +180,17 @@ class PeakFinder(object):
         self.snrs = []
         self.fwhms = []
 
+    def sort_by(self, arr):
+        """Sort peaks by the provided array."""
+        assert len(arr) == len(self.channels)
+        self.channels = np.array(self.channels)
+        self.snrs = np.array(self.snrs)
+        self.fwhms = np.array(self.fwhms)
+        i = np.argsort(arr)
+        self.channels = list(self.channels[i])
+        self.snrs = list(self.snrs[i])
+        self.fwhms = list(self.fwhms[i])
+
     def calculate(self, spectrum, kernel):
         """Calculate the convolution of the spectrum with the kernel."""
         assert isinstance(spectrum, Spectrum)
@@ -228,13 +239,7 @@ class PeakFinder(object):
                 self.snrs.append(self.snr[chan])
                 self.fwhms.append(fwhm)
         # sort the peaks by channel
-        self.channels = np.array(self.channels)
-        self.snrs = np.array(self.snrs)
-        self.fwhms = np.array(self.fwhms)
-        i = np.argsort(self.channels)
-        self.channels = list(self.channels[i])
-        self.snrs = list(self.snrs[i])
-        self.fwhms = list(self.fwhms[i])
+        self.sort_by(self.channels)
 
     def plot(self, facecolor='red', linecolor=None, alpha=0.5, peaks=True):
         """Plot the peak signal-to-noise ratios calculated using the kernel."""
@@ -317,19 +322,10 @@ class PeakFinder(object):
                 (self.snr == peak_snr) & in_region][0]
             if self.min_chan <= peak_chan <= self.max_chan:
                 self.add_peak(peak_chan)
-        self.channels = np.array(self.channels)
-        self.snrs = np.array(self.snrs)
-        self.fwhms = np.array(self.fwhms)
-        # reduce number of channels to a maximum number max_n
-        i = np.argsort(self.snrs)
-        self.channels = self.channels[i][::-1]
-        self.snrs = self.snrs[i][::-1]
-        self.fwhms = self.fwhms[i][::-1]
+        # reduce number of channels to a maximum number max_n of highest SNR
+        self.sort_by(-1 * np.array(self.snrs))
         self.channels = self.channels[-self.max_num:]
         self.snrs = self.snrs[-self.max_num:]
         self.fwhms = self.fwhms[-self.max_num:]
         # sort by channel
-        i = np.argsort(self.channels)
-        self.channels = list(self.channels[i])
-        self.snrs = list(self.snrs[i])
-        self.fwhms = list(self.fwhms[i])
+        self.sort_by(self.channels)
