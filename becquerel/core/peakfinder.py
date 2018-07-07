@@ -179,6 +179,8 @@ class PeakFinder(object):
         self.channels = []
         self.snrs = []
         self.fwhms = []
+        self.integrals = []
+        self.backgrounds = []
 
     def sort_by(self, arr):
         """Sort peaks by the provided array."""
@@ -186,10 +188,14 @@ class PeakFinder(object):
         self.channels = np.array(self.channels)
         self.snrs = np.array(self.snrs)
         self.fwhms = np.array(self.fwhms)
+        self.integrals = np.array(self.integrals)
+        self.backgrounds = np.array(self.backgrounds)
         i = np.argsort(arr)
         self.channels = list(self.channels[i])
         self.snrs = list(self.snrs[i])
         self.fwhms = list(self.fwhms[i])
+        self.integrals = list(self.integrals[i])
+        self.backgrounds = list(self.backgrounds[i])
 
     def calculate(self, spectrum, kernel):
         """Calculate the convolution of the spectrum with the kernel."""
@@ -238,6 +244,8 @@ class PeakFinder(object):
                 self.channels.append(chan)
                 self.snrs.append(self.snr[chan])
                 self.fwhms.append(fwhm)
+                self.integrals.append(self._signal[chan])
+                self.backgrounds.append(self._bkg[chan])
         # sort the peaks by channel
         self.sort_by(self.channels)
 
@@ -327,5 +335,7 @@ class PeakFinder(object):
         self.channels = self.channels[-self.max_num:]
         self.snrs = self.snrs[-self.max_num:]
         self.fwhms = self.fwhms[-self.max_num:]
+        self.integrals = self.integrals[-self.max_num:]
+        self.backgrounds = self.backgrounds[-self.max_num:]
         # sort by channel
         self.sort_by(self.channels)
