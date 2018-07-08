@@ -301,35 +301,30 @@ class PeakFinder(object):
         if min_snr is not None:
             self.min_snr = min_snr
         assert self.min_snr > 0.
-        assert self.min_snr <= self.snr.max()
-        if max_num is not None:
-            self.max_num = max_num
-        assert self.max_num >= 2
-        # find regions above min_snr
         if self.snr.max() < self.min_snr:
             raise Exception(
                 'SNR threshold is {:.3f} but maximum SNR is {:.3f}'.format(
                     self.min_snr, self.snr.max()))
-        if self.snr[0] >= self.min_snr:
-            self.snr[0] = 0.
-        if self.snr[-1] >= self.min_snr:
-            self.snr[-1] = 0.
-        left_edges = np.where(
-            (self.snr[:-1] < self.min_snr) &
-            (self.snr[1:] >= self.min_snr))[0] + 1
-        right_edges = np.where(
-            (self.snr[:-1] >= self.min_snr) &
-            (self.snr[1:] < self.min_snr))[0]
-        assert len(left_edges) == len(right_edges)
-        # find maximum within each region
-        for left, right in zip(left_edges, right_edges):
-            in_region = (left <= self.spectrum.channels) & \
-                (self.spectrum.channels <= right)
-            peak_snr = self.snr[in_region].max()
-            peak_chan = self.spectrum.channels[
-                (self.snr == peak_snr) & in_region][0]
-            if self.min_chan <= peak_chan <= self.max_chan:
-                self.add_peak(peak_chan)
+        if max_num is not None:
+            self.max_num = max_num
+        assert self.max_num >= 2
+        # calculate the first derivative and second derivatives of the SNR
+        d1 = (self.snr[2:] - self.snr[:-2]) / 2
+        d1 = np.append(0, d1)
+        d1 = np.append(d1, 0)
+        d2 = self.snr[2:] - 2 * self.snr[1:-1] + self.snr[:-2]
+        d2 = np.append(0, d2)
+        d2 = np.append(d2, 0)
+        # find maxima
+        peak = (d1[2:] < 0) & (d1[:-2] > 0) & (d2[1:-1] < 0)
+        peak = np.append(False, peak)
+        peak = np.append(peak, False)
+        # select peaks using SNR and channel criteria
+        peak &= (self.min_snr <= self.snr)
+        peak &= (self.min_chan <= self.spectrum.channels)
+        peak &= (self.spectrum.channels <= self.max_chan)
+        for chan in self.spectrum.channels[peak]:
+            self.add_peak(chan)
         # reduce number of channels to a maximum number max_n of highest SNR
         self.sort_by(-1 * np.array(self.snrs))
         self.channels = self.channels[-self.max_num:]
