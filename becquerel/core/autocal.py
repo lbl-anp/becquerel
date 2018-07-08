@@ -180,7 +180,16 @@ class AutoCalibrator(object):
     def __init__(self, peakfinder):
         """Initialize the calibration with a spectrum and kernel."""
         self.set_peaks(peakfinder)
-        # fit results
+        self.gain = None
+        self.cal = None
+        self.success = False
+        self.fit_channels = []
+        self.fit_snrs = []
+        self.fit_energies = []
+        self.reset()
+
+    def reset(self):
+        """Reset all of the members."""
         self.gain = None
         self.cal = None
         self.success = False
@@ -188,19 +197,14 @@ class AutoCalibrator(object):
         self.fit_snrs = []
         self.fit_energies = []
 
-    def reset(self):
-        """Reset all of the members."""
-        pass
-
     def set_peaks(self, peakfinder):
         """Use the peaks found by the PeakFinder."""
         assert isinstance(peakfinder, PeakFinder)
         self.peakfinder = peakfinder
 
-    def plot(self, facecolor='red', linecolor=None, alpha=0.5):
+    def plot(self, **kwargs):
         """Plot the peaks found and the peaks used to fit."""
-        self.peakfinder.plot(
-            facecolor=facecolor, linecolor=linecolor, alpha=alpha, peaks=True)
+        self.peakfinder.plot(peaks=True, **kwargs)
         for chan, snr in zip(self.fit_channels, self.fit_snrs):
             plt.plot([chan] * 2, [0, snr], 'g-', lw=2)
             plt.plot(chan, snr, 'go')
