@@ -174,6 +174,12 @@ def find_best_gain(
         }
 
 
+class AutoCalibratorError(Exception):
+    """Base class for errors in AutoCalibrator."""
+
+    pass
+
+
 class AutoCalibrator(object):
     """Automatically calibrate a spectrum by convolving it with a filter."""
 
@@ -182,7 +188,6 @@ class AutoCalibrator(object):
         self.set_peaks(peakfinder)
         self.gain = None
         self.cal = None
-        self.success = False
         self.fit_channels = []
         self.fit_snrs = []
         self.fit_energies = []
@@ -192,7 +197,6 @@ class AutoCalibrator(object):
         """Reset all of the members."""
         self.gain = None
         self.cal = None
-        self.success = False
         self.fit_channels = []
         self.fit_snrs = []
         self.fit_energies = []
@@ -222,12 +226,20 @@ class AutoCalibrator(object):
             self.gain = gain
             self.cal = LinearEnergyCal.from_coeffs(
                 {'offset': 0, 'slope': self.gain})
-            self.success = True
             return
         # handle the usual case: multiple lines to match
-        assert len(self.peakfinder.channels) >= 2
-        assert len(required_energies) >= 2
-        assert len(self.peakfinder.channels) >= len(required_energies)
+        if len(self.peakfinder.channels) < 2:
+            raise AutoCalibratorError(
+                'Need more than {} peaks to fit'.format(
+                    len(self.peakfinder.channels)))
+        if len(required_energies) < 2:
+            raise AutoCalibratorError(
+                'Need more than {} energies to fit'.format(
+                    len(required_energies)))
+        if len(self.peakfinder.channels) < len(required_energies):
+            raise AutoCalibratorError(
+                'Require {} energies but only {} peaks are available'.format(
+                    len(required_energies), len(self.peakfinder.channels)))
         fit = find_best_gain(
             self.peakfinder.channels, self.peakfinder.snrs,
             required_energies, optional=optional, gain_range=gain_range,
@@ -238,7 +250,7 @@ class AutoCalibrator(object):
             self.fit_energies = []
             self.gain = None
             self.cal = None
-            self.success = False
+            raise AutoCalibratorError('No valid fit was found')
         else:
             self.fit_channels = fit['channels']
             self.fit_snrs = fit['snrs']
@@ -246,4 +258,3 @@ class AutoCalibrator(object):
             self.gain = fit['gain']
             self.cal = LinearEnergyCal.from_coeffs(
                 {'offset': 0, 'slope': self.gain})
-            self.success = True

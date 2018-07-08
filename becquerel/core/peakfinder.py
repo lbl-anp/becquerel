@@ -164,6 +164,12 @@ class GaussianPeakFilter(PeakFilter):
         return kernel
 
 
+class PeakFinderError(Exception):
+    """Base class for errors in PeakFinder."""
+
+    pass
+
+
 class PeakFinder(object):
     """Find peaks in a spectrum after convolving it with a kernel."""
 
@@ -279,18 +285,33 @@ class PeakFinder(object):
 
     def find_peak(self, channel, frac_range=(0.8, 1.2), min_snr=2):
         """Find the highest SNR peak within f0*channel and f1*channel."""
-        assert 0 <= channel <= self.spectrum.channels.max()
-        assert 0 < frac_range[0] < 1
-        assert frac_range[1] > 1
-        assert frac_range[0] < frac_range[1]
-        assert min_snr >= 0.
-        assert min_snr <= self.snr.max()
+        if channel < self.spectrum.channels.min() or \
+                channel > self.spectrum.channels.max():
+            raise PeakFinderError(
+                'Channel {} is outside of range {}-{}'.format(
+                    channel, self.spectrum.channels.min(),
+                    self.spectrum.channels.max()))
+        if frac_range[0] < 0 or frac_range[0] > 1 or frac_range[1] < 1 or \
+                frac_range[0] > frac_range[1]:
+            raise PeakFinderError(
+                'Fractional range {}-{} is invalid'.format(*frac_range))
+        if min_snr < 0:
+            raise PeakFinderError(
+                'Minimum SNR {:.3f} must be > 0'.format(min_snr))
+        if self.snr.max() < min_snr:
+            raise PeakFinderError(
+                'SNR threshold is {:.3f} but maximum SNR is {:.3f}'.format(
+                    min_snr, self.snr.max()))
+        chan0 = frac_range[0] * channel
+        chan1 = frac_range[1] * channel
         chan_range = \
-            (frac_range[0] * channel <= self.spectrum.channels) & \
-            (self.spectrum.channels <= frac_range[1] * channel)
+            (chan0 <= self.spectrum.channels) & \
+            (self.spectrum.channels <= chan1)
         peak_snr = self.snr[chan_range].max()
         if peak_snr < min_snr:
-            return None
+            raise PeakFinderError(
+                'No peak found in range {}-{} with SNR > {}'.format(
+                    chan0, chan1, min_snr))
         peak_chan = np.where((self.snr == peak_snr) & chan_range)[0][0]
         self.add_peak(peak_chan)
         return peak_chan
@@ -302,11 +323,18 @@ class PeakFinder(object):
             min_chan = self.spectrum.channels.min()
         if max_chan is None:
             max_chan = self.spectrum.channels.max()
-        assert min_chan >= 0
-        assert min_chan < max_chan
-        assert min_snr >= 0.
+        if min_chan < self.spectrum.channels.min() or \
+                min_chan > self.spectrum.channels.max() or \
+                max_chan > self.spectrum.channels.max() or \
+                max_chan < self.spectrum.channels.min() or \
+                min_chan > max_chan:
+            raise PeakFinderError(
+                'Channel range {}-{} is invalid'.format(min_chan, max_chan))
+        if min_snr < 0:
+            raise PeakFinderError(
+                'Minimum SNR {:.3f} must be > 0'.format(min_snr))
         if self.snr.max() < min_snr:
-            raise Exception(
+            raise PeakFinderError(
                 'SNR threshold is {:.3f} but maximum SNR is {:.3f}'.format(
                     min_snr, self.snr.max()))
         assert isinstance(max_num, int)
