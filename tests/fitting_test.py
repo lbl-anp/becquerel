@@ -41,6 +41,7 @@ class TestFittingFakeData(object):
         for p, v in fitter.result.best_values.items():
             # TODO: discuss this 20% tol, maybe smaller tol for gauss?
             assert np.isclose(v, params_true[p], rtol=2e-1), p
+        fitter.custom_plot()
 
     def test_gauss_erf_line(self):
         fitter = bq.fitting.FitterGaussErfLine()
@@ -62,6 +63,7 @@ class TestFittingFakeData(object):
         for p, v in fitter.result.best_values.items():
             # TODO: discuss this 20% tol, maybe smaller tol for gauss?
             assert np.isclose(v, params_true[p], rtol=2e-1), p
+        fitter.custom_plot()
 
     def test_gauss_erf_exp(self):
         fitter = bq.fitting.FitterGaussErfExp()
@@ -83,6 +85,7 @@ class TestFittingFakeData(object):
         for p, v in fitter.result.best_values.items():
             # TODO: discuss this 20% tol, maybe smaller tol for gauss?
             assert np.isclose(v, params_true[p], rtol=2e-1), p
+        fitter.custom_plot()
 
     def test_gauss_gauss_line(self):
         fitter = bq.fitting.FitterGaussGaussLine()
@@ -104,6 +107,7 @@ class TestFittingFakeData(object):
         for p, v in fitter.result.best_values.items():
             # TODO: discuss this 20% tol, maybe smaller tol for gauss?
             assert np.isclose(v, params_true[p], rtol=2e-1), p
+        fitter.custom_plot()
 
     def test_gauss_gauss_exp(self):
         fitter = bq.fitting.FitterGaussGaussExp()
@@ -125,3 +129,4 @@ class TestFittingFakeData(object):
         for p, v in fitter.result.best_values.items():
             # TODO: discuss this 20% tol, maybe smaller tol for gauss?
             assert np.isclose(v, params_true[p], rtol=2e-1), p
+        fitter.custom_plot()
