@@ -207,29 +207,26 @@ class Fitter(object):
         return self.model.eval(x=x, **params)
 
     # Parameter guessing
-    def _cen_msk(self, ratio=0.5):
-        assert ratio < 1, \
-            'Center mask ratio cannot exceed 1: {}'.format(ratio)
-        xcen = (self.x_roi[0] + self.x_roi[-1]) / 2.0
-        xoffset = (self.x_roi[-1] - self.x_roi[0]) * (0.5 - ratio / 2.0)
-        return ((self.x_roi >= (xcen - xoffset)) &
-                (self.x_roi <= xcen + xoffset))
-
     def _xy_left(self, num=4):
         return np.mean(self.x_roi[:num]), np.mean(self.y_roi[:num])
 
     def _xy_right(self, num=4):
         return np.mean(self.x_roi[-num:]), np.mean(self.y_roi[-num:])
 
-    def _integrate_center(self, ratio=0.5):
-        # NOTE: this assumes y is NOT normalized to dx
-        return np.sum(self.y_roi[self._cen_msk(ratio=0.5)])
-
-    def _guess_gauss_params(self, prefix='gauss_'):
-        amp = self._integrate_center(ratio=0.5)
-        mu = (self.x_roi[0] + self.x_roi[-1]) / 2.
+    def _guess_gauss_params(self, prefix='gauss_', center_ratio=0.5,
+                            width_ratio=0.5):
+        assert center_ratio < 1, \
+            'Center mask ratio cannot exceed 1: {}'.format(center_ratio)
+        assert width_ratio < 1, \
+            'Width mask ratio cannot exceed 1: {}'.format(width_ratio)
+        xspan = self.x_roi[-1] - self.x_roi[0]
+        mu = self.x_roi[0] + xspan * center_ratio
+        msk = ((self.x_roi >= (mu - xspan * width_ratio)) &
+               (self.x_roi <= mu + xspan * width_ratio))
+        # NOTE: this integration assumes y is NOT normalized to dx
+        amp = np.sum(self.y_roi[msk])
         # TODO: update this, minimizer creates NaN's if default sigma used (0)
-        sigma = (self.x_roi[-1] - self.x_roi[0]) / 10.
+        sigma = xspan * width_ratio / 10.
         return [
             ('{}amp'.format(prefix), 'value', amp),
             ('{}amp'.format(prefix), 'min', 0.0),
@@ -255,6 +252,32 @@ class Fitter(object):
             ('{}b'.format(prefix), 'value', b),
         ]
 
+    def _guess_exp_params(self, num=1, prefix='exp_'):
+        (xl, yl), (xr, yr) = self._xy_left(num), self._xy_right(num)
+        # TODO: update this hardcoded zero offset
+        lam = (xl - xr) / np.log(yl / (yr + 0.0001))
+        amp = yl / np.exp(xl / lam)
+        return [
+            ('{}lam'.format(prefix), 'value', lam),
+            ('{}lam'.format(prefix), 'max', -1e-3),
+            ('{}amp'.format(prefix), 'value', amp),
+            ('{}amp'.format(prefix), 'min', 0.0),
+        ]
+
+
+class FitterGaussExp(Fitter):
+
+    def make_model(self):
+        self.model = \
+            GaussModel(prefix='gauss_') + \
+            ExpModel(prefix='exp_')
+
+    def guess_param_defaults(self):
+        params = []
+        params += self._guess_gauss_params(prefix='gauss_')
+        params += self._guess_exp_params(prefix='exp_')
+        return params
+
 
 class FitterGaussErfLine(Fitter):
 
@@ -269,4 +292,60 @@ class FitterGaussErfLine(Fitter):
         params += self._guess_gauss_params(prefix='gauss_')
         params += self._guess_erf_params(prefix='erf_')
         params += self._guess_line_params(prefix='line_')
+        return params
+
+
+class FitterGaussErfExp(Fitter):
+
+    def make_model(self):
+        self.model = \
+            GaussModel(prefix='gauss_') + \
+            ErfModel(prefix='erf_') + \
+            ExpModel(prefix='exp_')
+
+    def guess_param_defaults(self):
+        params = []
+        params += self._guess_gauss_params(prefix='gauss_')
+        params += self._guess_erf_params(prefix='erf_')
+        params += self._guess_exp_params(prefix='exp_')
+        return params
+
+
+class FitterGaussGaussLine(Fitter):
+
+    def make_model(self):
+        self.model = \
+            GaussModel(prefix='gauss0_') + \
+            GaussModel(prefix='gauss1_') + \
+            LineModel(prefix='line_')
+
+    def guess_param_defaults(self):
+        params = []
+        params += self._guess_gauss_params(prefix='gauss0_',
+                                           center_ratio=0.33,
+                                           width_ratio=0.5)
+        params += self._guess_gauss_params(prefix='gauss1_',
+                                           center_ratio=0.66,
+                                           width_ratio=0.5)
+        params += self._guess_line_params(prefix='line_')
+        return params
+
+
+class FitterGaussGaussExp(Fitter):
+
+    def make_model(self):
+        self.model = \
+            GaussModel(prefix='gauss0_') + \
+            GaussModel(prefix='gauss1_') + \
+            ExpModel(prefix='exp_')
+
+    def guess_param_defaults(self):
+        params = []
+        params += self._guess_gauss_params(prefix='gauss0_',
+                                           center_ratio=0.33,
+                                           width_ratio=0.5)
+        params += self._guess_gauss_params(prefix='gauss1_',
+                                           center_ratio=0.66,
+                                           width_ratio=0.5)
+        params += self._guess_exp_params(prefix='exp_')
         return params
