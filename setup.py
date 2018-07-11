@@ -31,6 +31,8 @@ Topic :: Scientific/Engineering :: Physics
 
 with open('README.md', 'r') as fh:
     README = fh.read()
+# remove package title from description
+README = '\n'.join(README.split('\n')[2:])
 
 with open('CONTRIBUTING.md', 'r') as fh:
     CONTRIBUTING = fh.read()
@@ -72,6 +74,7 @@ setup(
     maintainer=MAINTAINER,
     maintainer_email=EMAIL,
     classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
+    platforms='any',
     packages=find_packages(),
     python_requires='>=2.6',
     install_requires=[_f for _f in REQUIREMENTS.split('\n') if _f],
