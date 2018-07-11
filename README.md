@@ -1,5 +1,18 @@
 # becquerel
 
+## Overview
+
+Becquerel is a Python package for analyzing nuclear spectroscopic
+measurements. The core functionalities are reading and writing different
+spectrum file types, fitting spectral features, performing detector
+calibrations, and interpreting measurement results. It includes tools for
+plotting radiation spectra as well as convenient access to tabulated nuclear
+data, and it will include fits of different spectral features. It relies
+heavily on the standard scientific Python stack of numpy, scipy, matplotlib,
+and pandas. It is intended to be general-purpose enough that it can be useful
+to anyone from an undergraduate taking a laboratory course to the advanced
+researcher.
+
 ## Installation instructions
 
 ### As a user
