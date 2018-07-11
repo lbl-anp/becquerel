@@ -187,10 +187,9 @@ class Fitter(object):
                 self.set_param(*dp)
 
     def set_roi(self, low, high):
-        self._roi_low = float(low)
-        self._roi_high = float(high)
-        self._roi_msk = ((self.x >= self.roi_low) &
-                         (self.x <= self.roi_high))
+        self._roi = (float(low), float(high))
+        self._roi_msk = ((self.x >= self.roi[0]) &
+                         (self.x <= self.roi[1]))
 
     def set_param(self, pname, ptype, pvalue):
         self.params[pname].set(**{ptype: pvalue})
