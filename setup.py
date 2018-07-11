@@ -71,7 +71,6 @@ setup(
     download_url=URL + '/releases',
     maintainer=MAINTAINER,
     maintainer_email=EMAIL,
-    license=LICENSE,
     classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
     packages=find_packages(),
     python_requires='>=2.6',
