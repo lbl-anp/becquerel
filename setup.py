@@ -29,7 +29,10 @@ Topic :: Scientific/Engineering :: Physics
 """
 
 with open('README.md', 'r') as fh:
-    LONG_DESCRIPTION = fh.read()
+    README = fh.read()
+
+with open('CONTRIBUTING.md', 'r') as fh:
+    CONTRIBUTING = fh.read()
 
 with open('LICENSE.txt', 'r') as fh:
     LICENSE = fh.read()
@@ -37,6 +40,12 @@ with open('LICENSE.txt', 'r') as fh:
 with open('requirements.txt', 'r') as fh:
     REQUIREMENTS = fh.read()
 
+# make long description from README and CONTRIBUTING
+# but move copyright notice to the end
+LONG_DESCRIPTION, COPYRIGHT = README.split('## Copyright Notice')
+COPYRIGHT = '\n' + '## Copyright Notice' + COPYRIGHT
+LONG_DESCRIPTION += '\n' + CONTRIBUTING
+LONG_DESCRIPTION += COPYRIGHT
 
 setup(
     name='becquerel',
