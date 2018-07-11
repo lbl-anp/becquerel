@@ -104,21 +104,20 @@ class ExpModel(Model):
 class Fitter(object):
 
     def __init__(self, x=None, y=None, y_unc=None, roi=None):
+        self.make_model()
+        self.params = self.model.make_params()
+        self.result = None
+        if roi is None:
+            self._roi = None
+            self._roi_msk = None
+        else:
+            self.set_roi(*roi)
         if y is None:
             self._x = None
             self._y = None
             self._y_unc = None
         else:
             self.set_data(y, x, y_unc)
-        if roi is None:
-            self._roi_low = None
-            self._roi_high = None
-            self._roi_msk = None
-        else:
-            self.set_roi(*roi)
-        self.make_model()
-        self.params = self.model.make_params()
-        self.result = None
 
     @property
     def x(self):
