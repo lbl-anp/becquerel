@@ -65,15 +65,6 @@ with line-by-line highlighting:
 pytest --cov-report html:htmlcov
 ```
 
-## Code Style Guide
-
-Use [google standards](https://google.github.io/styleguide/pyguide.html)
-
-## Linter
-
-* Use `flake8` in your IDE
-* Use `pylint` from command line (as in style guide)
-
 ## Copyright Notice
 Becquerel v. 0.1, Copyright (c) 2017, The Regents of the University of California (UC), through Lawrence Berkeley National Laboratory, and the UC Berkeley campus (subject to receipt of any required approvals from the U.S. Dept. of Energy). All rights reserved.
 If you have questions about your rights to use or distribute this software, please contact Berkeley Lab's Innovation & Partnerships Office at  IPO@lbl.gov.
