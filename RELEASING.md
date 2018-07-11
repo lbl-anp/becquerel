@@ -1,12 +1,21 @@
 ## Release checklist
 
 - [ ] Branch off of `develop` and name the branch `version-X.X.X`
-- [ ] Update version in `setup.py`
-- [ ] Update version in the copyright notice in `README`
-- [ ] Update version in the `LICENSE`
+- [ ] Update version number within the repository
+  - in `setup.py`
+  - in Copyright Notice in `README`
+  - in the `LICENSE`
 - [ ] Update classifiers in `setup.py`
 - [ ] Update `HISTORY` with a list of changes for this version
 - [ ] Verify that all tests pass (`python setup.py test`)
 - [ ] Commit the changes, push to GitHub, and start a pull request
 - [ ] After PR is accepted, create tagged version on GitHub
 - [ ] Upload new version to PyPI
+  - `python3 -m pip install --user --upgrade setuptools wheel`
+  - `python3 setup.py sdist bdist_wheel`
+  - `python3 -m pip install --user --upgrade twine`
+  - `python3 -m twine upload dist/*`
+- [ ] Test new version installs from PyPI
+  - `cd ..`
+  - `python3 -m pip install becquerel`
+  - `python3 -c "import becquerel; print(becquerel.__version__)"`
