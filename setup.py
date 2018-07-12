@@ -40,9 +40,6 @@ with open('CONTRIBUTING.md', 'r') as fh:
 with open('LICENSE.txt', 'r') as fh:
     LICENSE = fh.read()
 
-with open('HISTORY.md', 'r') as fh:
-    HISTORY = fh.read()
-
 with open('requirements.txt', 'r') as fh:
     REQUIREMENTS = fh.read()
 
@@ -50,7 +47,6 @@ with open('requirements.txt', 'r') as fh:
 # but move copyright notice to the end
 LONG_DESCRIPTION, COPYRIGHT = README.split('## Copyright Notice')
 LONG_DESCRIPTION += '\n' + CONTRIBUTING
-LONG_DESCRIPTION += '\n' + HISTORY
 LONG_DESCRIPTION += '\n' + '## Copyright Notice' + COPYRIGHT
 
 # write metadata to a file that will be imported by becquerel

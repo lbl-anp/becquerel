@@ -6,10 +6,10 @@
   - in Copyright Notice in `README`
   - in the `LICENSE`
 - [ ] Update classifiers in `setup.py`
-- [ ] Update `HISTORY` with a list of changes for this version
 - [ ] Verify that all tests pass (`python setup.py test`)
 - [ ] Commit the changes, push to GitHub, and start a pull request
 - [ ] After PR is accepted, create tagged version on GitHub
+- [ ] Add release notes to the tag on GitHub with a list of changes
 - [ ] Upload new version to PyPI
   - `python3 -m pip install --user --upgrade setuptools wheel`
   - `python3 setup.py sdist bdist_wheel`
