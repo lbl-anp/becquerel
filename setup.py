@@ -51,6 +51,8 @@ LONG_DESCRIPTION += '\n' + '## Copyright Notice' + COPYRIGHT
 
 # write metadata to a file that will be imported by becquerel
 with open('becquerel/__metadata__.py', 'w') as f:
+    print('"""Becquerel package metadata."""', file=f)
+    print('', file=f)
     print('__description__ = "{}"'.format(DESCRIPTION), file=f)
     print('__url__ = "{}"'.format(URL), file=f)
     print('__version__ = "{}"'.format(VERSION), file=f)

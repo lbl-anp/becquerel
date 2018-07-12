@@ -14,4 +14,6 @@ from .core.plotting import SpectrumPlotter, PlottingError
 __all__ = ['core', 'parsers', 'tools',
            'Spectrum', 'SpectrumError', 'SpectrumPlotter', 'PlottingError',
            'UncalibratedError', 'LinearEnergyCal', 'EnergyCalError',
-           'BadInput', 'UncertaintiesError']
+           'BadInput', 'UncertaintiesError',
+           '__description__', '__url__', '__version__', '__license__',
+           '__copyright__']
