@@ -17,7 +17,7 @@ researcher.
 
 ```
 pip install -r requirements.txt
-python setup.py install
+python setup.py install --user
 ```
 
 Before reinstalling, be sure to either remove the ```build``` directory
