@@ -104,20 +104,27 @@ class ExpModel(Model):
 class Fitter(object):
 
     def __init__(self, x=None, y=None, y_unc=None, roi=None):
+        # Model and parameters
         self.make_model()
         self.params = self.model.make_params()
+        # Empty fit result
         self.result = None
-        if roi is None:
-            self._roi = None
-            self._roi_msk = None
-        else:
-            self.set_roi(*roi)
+        # Set data vectors
         if y is None:
             self._x = None
             self._y = None
             self._y_unc = None
         else:
-            self.set_data(y, x, y_unc)
+            self.set_data(x=x, y=y, y_unc=y_unc, update_defaults=False)
+        # Set roi and roi_msk
+        if roi is None:
+            self._roi = None
+            self._roi_msk = None
+        else:
+            self.set_roi(*roi, update_defaults=False)
+        # Update parameter defaults if possible
+        if self.y is not None:
+            self.guess_param_defaults(update=True)
 
     @property
     def x(self):
@@ -158,7 +165,7 @@ class Fitter(object):
     def param_names(self):
         return list(self.params.keys())
 
-    def set_data(self, y, x=None, y_unc=None):
+    def set_data(self, y, x=None, y_unc=None, update_defaults=True):
         # Set y data
         self._y = np.asarray(y)
         # Set x data
@@ -180,14 +187,15 @@ class Fitter(object):
                     len(self.x), len(self._y_unc))
             # TODO: revisit this non zero unc option
             self._y_unc[self._y_unc <= 0.] = np.min(self._y_unc > 0.)
-        # Set param defaults based on guess
-        self.guess_param_defaults(update=True)
+        if update_defaults:
+            self.guess_param_defaults(update=True)
 
-    def set_roi(self, low, high):
+    def set_roi(self, low, high, update_defaults=True):
         self._roi = (float(low), float(high))
         self._roi_msk = ((self.x >= self.roi[0]) &
                          (self.x <= self.roi[1]))
-        self.guess_param_defaults(update=True)
+        if update_defaults:
+            self.guess_param_defaults(update=True)
 
     def set_param(self, pname, ptype, pvalue):
         self.params[pname].set(**{ptype: pvalue})
