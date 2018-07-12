@@ -2,7 +2,6 @@
 
 from __future__ import print_function
 
-
 # Element data (Z, symbol, name, and relative atomic mass) are from Wikipedia:
 # https://en.wikipedia.org/wiki/List_of_chemical_elements
 
@@ -126,7 +125,6 @@ _Z_SYMBOL_NAME_MASS = (
     (117, 'Ts', 'Tennessine', 294),
     (118, 'Og', 'Oganesson', 294),
 )
-
 
 ZS = set([d[0] for d in _Z_SYMBOL_NAME_MASS])
 SYMBOLS = set([d[1] for d in _Z_SYMBOL_NAME_MASS])
@@ -406,8 +404,7 @@ class Element(object):
     def __eq__(self, other):
         """Define equality of two elements."""
         try:
-            return (
-                self.name == other.name and self.symbol == other.symbol and
-                self.Z == other.Z)
+            return (self.name == other.name and self.symbol == other.symbol
+                    and self.Z == other.Z)
         except:
             raise ElementError('Cannot determine equality')

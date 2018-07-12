@@ -10,6 +10,7 @@ from .. import parsers
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
 from . import plotting
 
+
 class SpectrumError(Exception):
     """Exception raised by Spectrum."""
 
@@ -75,9 +76,16 @@ class Spectrum(object):
       copy: return a deep copy of this Spectrum object
     """
 
-    def __init__(self, counts=None, cps=None, uncs=None, bin_edges_kev=None,
-                 input_file_object=None, livetime=None, realtime=None,
-                 start_time=None, stop_time=None):
+    def __init__(self,
+                 counts=None,
+                 cps=None,
+                 uncs=None,
+                 bin_edges_kev=None,
+                 input_file_object=None,
+                 livetime=None,
+                 realtime=None,
+                 start_time=None,
+                 stop_time=None):
         """Initialize the spectrum.
 
         Either counts or cps must be specified. Other args are optional.
@@ -126,8 +134,8 @@ class Spectrum(object):
         if counts is not None:
             if len(counts) == 0:
                 raise SpectrumError('Empty spectrum counts')
-            self._counts = handle_uncs(
-                counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
+            self._counts = handle_uncs(counts, uncs,
+                                       lambda x: np.maximum(np.sqrt(x), 1))
             if livetime is None:
                 self.livetime = None
             else:
@@ -150,8 +158,7 @@ class Spectrum(object):
         elif len(bin_edges_kev) != len(self) + 1:
             raise SpectrumError('Bad length of bin edges vector')
         elif np.any(np.diff(bin_edges_kev) <= 0):
-            raise ValueError(
-                'Bin edge energies must be strictly increasing')
+            raise ValueError('Bin edge energies must be strictly increasing')
         else:
             self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
 
@@ -170,12 +177,10 @@ class Spectrum(object):
         self.stop_time = handle_datetime(
             stop_time, 'stop_time', allow_none=True)
 
-        if (self.realtime is not None
-                and self.stop_time is not None
+        if (self.realtime is not None and self.stop_time is not None
                 and self.start_time is not None):
-            raise SpectrumError(
-                'Specify no more than 2 out of 3 args: ' +
-                'realtime, stop_time, start_time')
+            raise SpectrumError('Specify no more than 2 out of 3 args: ' +
+                                'realtime, stop_time, start_time')
         elif self.start_time is not None and self.stop_time is not None:
             if self.start_time > self.stop_time:
                 raise ValueError(
@@ -387,8 +392,10 @@ class Spectrum(object):
 
         spect_file_obj = _get_file_object(infilename)
 
-        kwargs = {'counts': spect_file_obj.data,
-                  'input_file_object': spect_file_obj}
+        kwargs = {
+            'counts': spect_file_obj.data,
+            'input_file_object': spect_file_obj
+        }
 
         if spect_file_obj.cal_coeff:
             kwargs['bin_edges_kev'] = spect_file_obj.energy_bin_edges
@@ -448,8 +455,7 @@ class Spectrum(object):
                 kwargs['livetime'] = self.livetime + other.livetime
         else:
             kwargs = {'cps': self.cps + other.cps}
-        spect_obj = Spectrum(
-            bin_edges_kev=self.bin_edges_kev, **kwargs)
+        spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **kwargs)
         return spect_obj
 
     def __sub__(self, other):
@@ -578,17 +584,14 @@ class Spectrum(object):
             except (TypeError, ValueError):
                 raise TypeError(
                     'Spectrum must be multiplied/divided by a scalar')
-            if (scaling_factor == 0 or
-                    np.isinf(scaling_factor) or
-                    np.isnan(scaling_factor)):
-                raise ValueError(
-                    'Scaling factor must be nonzero and finite')
+            if (scaling_factor == 0 or np.isinf(scaling_factor)
+                    or np.isnan(scaling_factor)):
+                raise ValueError('Scaling factor must be nonzero and finite')
         else:
-            if (scaling_factor.nominal_value == 0 or
-                    np.isinf(scaling_factor.nominal_value) or
-                    np.isnan(scaling_factor.nominal_value)):
-                raise ValueError(
-                    'Scaling factor must be nonzero and finite')
+            if (scaling_factor.nominal_value == 0
+                    or np.isinf(scaling_factor.nominal_value)
+                    or np.isnan(scaling_factor.nominal_value)):
+                raise ValueError('Scaling factor must be nonzero and finite')
         if div:
             multiplier = 1 / scaling_factor
         else:
@@ -647,9 +650,10 @@ class Spectrum(object):
         old_counts = self.counts_vals.astype(int)
         new_counts = np.random.binomial(old_counts, 1. / f)
 
-        return Spectrum(counts=new_counts,
-                        bin_edges_kev=self.bin_edges_kev,
-                        livetime=new_livetime)
+        return Spectrum(
+            counts=new_counts,
+            bin_edges_kev=self.bin_edges_kev,
+            livetime=new_livetime)
 
     def apply_calibration(self, cal):
         """Use an EnergyCal to generate bin edge energies for this spectrum.
@@ -718,18 +722,19 @@ class Spectrum(object):
         if self.is_calibrated:
             combined_bin_edges = self.bin_edges_kev[::f]
             if combined_bin_edges[-1] != self.bin_edges_kev[-1]:
-                combined_bin_edges = np.append(
-                    combined_bin_edges, self.bin_edges_kev[-1])
+                combined_bin_edges = np.append(combined_bin_edges,
+                                               self.bin_edges_kev[-1])
         else:
             combined_bin_edges = None
 
-        kwargs = {key: combined_counts,
-                  'bin_edges_kev': combined_bin_edges,
-                  'input_file_object': self._infileobject,
-                  'livetime': self.livetime}
+        kwargs = {
+            key: combined_counts,
+            'bin_edges_kev': combined_bin_edges,
+            'input_file_object': self._infileobject,
+            'livetime': self.livetime
+        }
         obj = Spectrum(**kwargs)
         return obj
-
 
     def plot(self, *fmt, **kwargs):
         """Plot a spectrum with matplotlib's plot command.
@@ -771,14 +776,14 @@ class Spectrum(object):
         ax = plotter.plot()
         color = ax.get_lines()[-1].get_color()
         if emode == 'band':
-            plotter.errorband(color=color, alpha=alpha*0.5, label='_nolegend_')
+            plotter.errorband(
+                color=color, alpha=alpha * 0.5, label='_nolegend_')
         elif emode == 'bars' or emode == 'bar':
             plotter.errorbar(color=color, label='_nolegend_')
         elif emode != 'none':
             raise SpectrumError("Unknown error mode '{}', use 'bars' "
                                 "or 'band'".format(emode))
         return ax
-
 
     def fill_between(self, **kwargs):
         """Plot a spectrum with matplotlib's fill_between command

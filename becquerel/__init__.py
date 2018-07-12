@@ -9,7 +9,8 @@ from .core.energycal import LinearEnergyCal, EnergyCalError, BadInput
 from .core.utils import UncertaintiesError
 from .core.plotting import SpectrumPlotter, PlottingError
 
-__all__ = ['core', 'parsers', 'tools',
-           'Spectrum', 'SpectrumError', 'SpectrumPlotter', 'PlottingError',
-           'UncalibratedError', 'LinearEnergyCal', 'EnergyCalError',
-           'BadInput', 'UncertaintiesError']
+__all__ = [
+    'core', 'parsers', 'tools', 'Spectrum', 'SpectrumError', 'SpectrumPlotter',
+    'PlottingError', 'UncalibratedError', 'LinearEnergyCal', 'EnergyCalError',
+    'BadInput', 'UncertaintiesError'
+]

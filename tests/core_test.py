@@ -106,6 +106,7 @@ class TestSpectrumFromFile(object):
 #         Test Spectrum.__init__()
 # ----------------------------------------------
 
+
 def test_uncal(uncal_spec):
     """Test simple uncalibrated construction."""
 
@@ -158,6 +159,7 @@ def test_uncalibrated_exception(uncal_spec):
 #      Test Spectrum livetime properties
 # ----------------------------------------------
 
+
 @pytest.fixture(params=[86400, 300.6, 0.88])
 def livetime(request):
     return request.param
@@ -192,12 +194,13 @@ def test_no_livetime(spec_data):
 #     Test start_time, stop_time, realtime
 # ----------------------------------------------
 
-@pytest.mark.parametrize('start, stop', [
-    (datetime.datetime(2017, 1, 1, 17, 0, 3),
-     datetime.datetime(2017, 1, 1, 18, 0, 3)),
-    ('2017-01-19 17:21:00', '2017-01-20 14:19:32'),
-    (datetime.datetime(2017, 1, 1, 0, 30, 0, 385), '2017-01-01 12:44:22')
-])
+
+@pytest.mark.parametrize(
+    'start, stop',
+    [(datetime.datetime(2017, 1, 1, 17, 0, 3),
+      datetime.datetime(2017, 1, 1, 18, 0, 3)),
+     ('2017-01-19 17:21:00', '2017-01-20 14:19:32'),
+     (datetime.datetime(2017, 1, 1, 0, 30, 0, 385), '2017-01-01 12:44:22')])
 @pytest.mark.parametrize('rt', [3600, 2345.6])
 def test_acqtime_construction(spec_data, start, stop, rt):
     """Test construction with 2 out of 3 of start, stop, and realtime."""
@@ -228,6 +231,7 @@ def test_bad_realtime_livetime(spec_data):
 # ----------------------------------------------
 #         Test uncertainties in Spectrum
 # ----------------------------------------------
+
 
 def test_construct_float_int(spec_data):
     """Construct spectrum with non-UFloats (float and int)."""
@@ -295,6 +299,7 @@ def test_properties(spec_data):
 #         Test Spectrum.bin_widths
 # ----------------------------------------------
 
+
 def test_bin_widths(cal_spec):
     """Test Spectrum.bin_widths"""
 
@@ -314,10 +319,15 @@ def test_bin_width_error(uncal_spec):
 #         Test Spectrum CPS and CPS/keV
 # ----------------------------------------------
 
+
 @pytest.mark.parametrize('construction_kwargs', [
-    {'livetime': 300.0},
-    {'livetime': 300.0,
-     'bin_edges_kev': TEST_EDGES_KEV},
+    {
+        'livetime': 300.0
+    },
+    {
+        'livetime': 300.0,
+        'bin_edges_kev': TEST_EDGES_KEV
+    },
 ])
 def test_cps(spec_data, construction_kwargs):
     """Test cps property and uncertainties on uncal and cal spectrum."""
@@ -334,15 +344,15 @@ def test_cps(spec_data, construction_kwargs):
 def test_cpskev(spec_data, livetime):
     """Test cpskev property and uncertainties"""
 
-    spec = bq.Spectrum(spec_data, livetime=livetime,
-                       bin_edges_kev=TEST_EDGES_KEV)
+    spec = bq.Spectrum(
+        spec_data, livetime=livetime, bin_edges_kev=TEST_EDGES_KEV)
     spec.cpskev
     spec.cpskev_vals
     spec.cpskev_uncs
-    assert np.allclose(
-        spec.cpskev_vals, spec_data / spec.bin_widths / float(livetime))
-    assert np.allclose(
-        spec.cpskev_uncs, spec.counts_uncs / spec.bin_widths / float(livetime))
+    assert np.allclose(spec.cpskev_vals,
+                       spec_data / spec.bin_widths / float(livetime))
+    assert np.allclose(spec.cpskev_uncs,
+                       spec.counts_uncs / spec.bin_widths / float(livetime))
 
 
 def test_cps_cpsspec(spec_data, livetime):
@@ -375,6 +385,7 @@ def test_cpskev_errors(spec_data):
 # ----------------------------------------------
 #   Test addition and subtraction of spectra
 # ----------------------------------------------
+
 
 def get_spectrum(t, lt=None):
     """Get spectrum to use in parameterized tests.
@@ -413,41 +424,30 @@ def get_spectrum(t, lt=None):
     return spec
 
 
-@pytest.mark.parametrize('lt1, lt2', [
-    (300, 600),
-    (12.6, 0.88),
-    (300, 12.6),
-    (12.6, None),
-    (None, None)])
-@pytest.mark.parametrize('type1, type2', [
-    ('uncal', 'uncal'),
-    ('cal', 'cal')])
+@pytest.mark.parametrize('lt1, lt2', [(300, 600), (12.6, 0.88), (300, 12.6),
+                                      (12.6, None), (None, None)])
+@pytest.mark.parametrize('type1, type2', [('uncal', 'uncal'), ('cal', 'cal')])
 def test_add(type1, type2, lt1, lt2):
     """Test addition of spectra"""
 
-    spec1, spec2 = (get_spectrum(type1, lt=lt1),
-                    get_spectrum(type2, lt=lt2))
+    spec1, spec2 = (get_spectrum(type1, lt=lt1), get_spectrum(type2, lt=lt2))
 
     tot = spec1 + spec2
     assert np.all(tot.counts == spec1.counts + spec2.counts)
-    assert np.all(tot.counts_vals ==
-                  spec1.counts_vals + spec2.counts_vals)
+    assert np.all(tot.counts_vals == spec1.counts_vals + spec2.counts_vals)
     if lt1 and lt2:
         assert tot.livetime == lt1 + lt2
     else:
         assert tot.livetime is None
 
 
-@pytest.mark.parametrize('type1, type2, expected_error', [
-    ('uncal', 'cal', bq.SpectrumError),
-    ('uncal', 'uncal_long', bq.SpectrumError),
-    ('uncal', 5, TypeError),
-    (5, 'cal', TypeError),
-    ('cal', 'asdf', TypeError),
-    ('asdf', 'uncal', TypeError),
-    ('uncal', 'data', TypeError),
-    ('cal', 'cal_new', NotImplementedError)
-])
+@pytest.mark.parametrize(
+    'type1, type2, expected_error',
+    [('uncal', 'cal', bq.SpectrumError),
+     ('uncal', 'uncal_long', bq.SpectrumError), ('uncal', 5, TypeError),
+     (5, 'cal', TypeError), ('cal', 'asdf', TypeError),
+     ('asdf', 'uncal', TypeError), ('uncal', 'data', TypeError),
+     ('cal', 'cal_new', NotImplementedError)])
 def test_add_sub_errors(type1, type2, expected_error):
     """Test addition and subtraction that causes errors"""
 
@@ -458,9 +458,7 @@ def test_add_sub_errors(type1, type2, expected_error):
         spec1 - spec2
 
 
-@pytest.mark.parametrize('type1, type2', [
-    ('uncal', 'uncal'),
-    ('cal', 'cal')])
+@pytest.mark.parametrize('type1, type2', [('uncal', 'uncal'), ('cal', 'cal')])
 def test_add_uncs(type1, type2):
     """Test uncertainties on addition of uncal spectra"""
 
@@ -471,16 +469,15 @@ def test_add_uncs(type1, type2):
     assert np.allclose(tot.counts_uncs, uncs)
 
 
-@pytest.mark.parametrize('type1, type2, lt1, lt2', [
-    ('uncal_cps', 'uncal_cps', 300, 12.6),
-    ('uncal_cps', 'uncal_cps', None, 12.6),
-    ('uncal_cps', 'uncal_cps', None, None),
-    ('uncal_cps', 'uncal', None, 300)])
+@pytest.mark.parametrize('type1, type2, lt1, lt2',
+                         [('uncal_cps', 'uncal_cps', 300, 12.6),
+                          ('uncal_cps', 'uncal_cps', None, 12.6),
+                          ('uncal_cps', 'uncal_cps', None, None),
+                          ('uncal_cps', 'uncal', None, 300)])
 def test_add_sub_cps(type1, type2, lt1, lt2):
     """Test addition and subtraction of CPS spectra"""
 
-    spec1, spec2 = (get_spectrum(type1, lt=lt1),
-                    get_spectrum(type2, lt=lt2))
+    spec1, spec2 = (get_spectrum(type1, lt=lt1), get_spectrum(type2, lt=lt2))
 
     tot = spec1 + spec2
     assert tot.counts is None
@@ -492,18 +489,12 @@ def test_add_sub_cps(type1, type2, lt1, lt2):
     assert np.allclose(diff.cps_vals, spec1.cps_vals - spec2.cps_vals)
 
 
-@pytest.mark.parametrize('lt1, lt2', [
-    (300, 600),
-    (12.6, 0.88),
-    (300, 12.6)])
-@pytest.mark.parametrize('type1, type2', [
-    ('uncal', 'uncal'),
-    ('cal', 'cal')])
+@pytest.mark.parametrize('lt1, lt2', [(300, 600), (12.6, 0.88), (300, 12.6)])
+@pytest.mark.parametrize('type1, type2', [('uncal', 'uncal'), ('cal', 'cal')])
 def test_subtract(type1, type2, lt1, lt2):
     """Test Spectrum subtraction"""
 
-    spec1, spec2 = (get_spectrum(type1, lt=lt1),
-                    get_spectrum(type2, lt=lt2))
+    spec1, spec2 = (get_spectrum(type1, lt=lt1), get_spectrum(type2, lt=lt2))
     diff = spec1 - spec2
     assert diff.counts is None
     assert np.allclose(diff.cps_vals, spec1.cps_vals - spec2.cps_vals)
@@ -511,14 +502,13 @@ def test_subtract(type1, type2, lt1, lt2):
     assert np.all(diff.cps_uncs > spec2.cps_uncs)
 
 
-@pytest.mark.parametrize('type1, type2, lt1, lt2', [
-    ('uncal', 'uncal', 300, None),
-    ('cal', 'cal', None, None)])
+@pytest.mark.parametrize('type1, type2, lt1, lt2',
+                         [('uncal', 'uncal', 300, None),
+                          ('cal', 'cal', None, None)])
 def test_subtract_errors(type1, type2, lt1, lt2):
     """Test errors in Spectrum subtract with no livetime"""
 
-    spec1, spec2 = (get_spectrum(type1, lt=lt1),
-                    get_spectrum(type2, lt=lt2))
+    spec1, spec2 = (get_spectrum(type1, lt=lt1), get_spectrum(type2, lt=lt2))
     with pytest.raises(bq.SpectrumError):
         spec1 - spec2
 
@@ -526,6 +516,7 @@ def test_subtract_errors(type1, type2, lt1, lt2):
 # ----------------------------------------------
 #  Test multiplication and division of spectra
 # ----------------------------------------------
+
 
 @pytest.mark.parametrize('factor', [0.88, 1, 2, 43.6])
 @pytest.mark.parametrize('spectype', ['uncal', 'cal'])
@@ -558,10 +549,10 @@ def test_cps_mul_div(uncal_spec_cps, factor):
     assert np.isnan(div.livetime)
 
 
-@pytest.mark.parametrize('factor', [
-    ufloat(0.88, 0.01),
-    ufloat(1, 0.1),
-    ufloat(43, 1)])
+@pytest.mark.parametrize(
+    'factor',
+    [ufloat(0.88, 0.01), ufloat(1, 0.1),
+     ufloat(43, 1)])
 @pytest.mark.parametrize('spectype', ['uncal', 'cal'])
 def test_uncal_mul_div_uncertainties(spectype, factor):
     """
@@ -571,30 +562,26 @@ def test_uncal_mul_div_uncertainties(spectype, factor):
     spec = get_spectrum(spectype)
 
     mult = spec * factor
-    assert np.allclose(
-        mult.counts_vals, factor.nominal_value * spec.counts_vals)
-    assert np.all(
-        (mult.counts_uncs > factor.nominal_value * spec.counts_uncs) |
-        (spec.counts_vals == 0))
+    assert np.allclose(mult.counts_vals,
+                       factor.nominal_value * spec.counts_vals)
+    assert np.all((mult.counts_uncs > factor.nominal_value * spec.counts_uncs)
+                  | (spec.counts_vals == 0))
     assert mult.livetime is None
     div = spec / factor
-    assert np.allclose(
-        div.counts_vals, spec.counts_vals / factor.nominal_value)
-    assert np.all(
-        (div.counts_uncs > spec.counts_uncs / factor.nominal_value) |
-        (spec.counts_vals == 0))
+    assert np.allclose(div.counts_vals,
+                       spec.counts_vals / factor.nominal_value)
+    assert np.all((div.counts_uncs > spec.counts_uncs / factor.nominal_value)
+                  | (spec.counts_vals == 0))
     assert div.livetime is None
 
 
-@pytest.mark.parametrize('type1, type2, error', [
-    ('uncal', 'uncal', TypeError),
-    ('uncal', 'asdf', TypeError),
-    ('uncal', 'data', TypeError),
-    ('uncal', 0, ValueError),
-    ('uncal', np.inf, ValueError),
-    ('uncal', np.nan, ValueError),
-    ('uncal', ufloat(0, 1), ValueError),
-    ('uncal', ufloat(np.inf, np.nan), ValueError)])
+@pytest.mark.parametrize(
+    'type1, type2, error',
+    [('uncal', 'uncal', TypeError), ('uncal', 'asdf', TypeError),
+     ('uncal', 'data', TypeError), ('uncal', 0, ValueError),
+     ('uncal', np.inf, ValueError), ('uncal', np.nan, ValueError),
+     ('uncal', ufloat(0, 1), ValueError),
+     ('uncal', ufloat(np.inf, np.nan), ValueError)])
 def test_mul_div_errors(type1, type2, error):
     """Multiplication/division errors."""
 
@@ -609,6 +596,7 @@ def test_mul_div_errors(type1, type2, error):
 # ----------------------------------------------
 #         Test Spectrum.calibrate_like
 # ----------------------------------------------
+
 
 def test_calibrate_like(uncal_spec, cal_spec):
     """Test calibrate_like with an uncalibrated spectrum."""
@@ -648,6 +636,7 @@ def test_calibrate_like_copy(uncal_spec, cal_spec):
 # ----------------------------------------------
 #         Test Spectrum.combine_bins
 # ----------------------------------------------
+
 
 @pytest.mark.parametrize('spectype', ['uncal', 'cal', 'uncal_cps'])
 def test_combine_bins(spectype):
@@ -690,20 +679,20 @@ def test_combine_bins_padding(spectype):
 #         Test Spectrum.downsample
 # ----------------------------------------------
 
+
 @pytest.fixture
 def many_counts_data():
     floatdata = np.random.poisson(lam=1000, size=TEST_DATA_LENGTH)
     return floatdata.astype(int)
 
 
-@pytest.mark.parametrize('spec, f', [
-    (uncal_spec(many_counts_data()), 2),
-    (cal_spec(many_counts_data()), 2),
-    (uncal_spec(many_counts_data()), 1.5),
-    (cal_spec(many_counts_data()), 1.5),
-    (uncal_spec(many_counts_data()), 999.99),
-    (cal_spec(many_counts_data()), 999.99)
-])
+@pytest.mark.parametrize(
+    'spec, f',
+    [(uncal_spec(many_counts_data()), 2), (cal_spec(many_counts_data()), 2),
+     (uncal_spec(many_counts_data()), 1.5),
+     (cal_spec(many_counts_data()), 1.5),
+     (uncal_spec(many_counts_data()), 999.99),
+     (cal_spec(many_counts_data()), 999.99)])
 def test_downsample(spec, f):
     """Test Spectrum.downsample on uncalibrated and calibrated spectra"""
 
@@ -800,6 +789,7 @@ def test_len_cps(length, livetime):
 # ----------------------------------------------
 #         Test Spectrum.copy
 # ----------------------------------------------
+
 
 def test_copy_uncal(uncal_spec):
     """Test copy method on uncal spectrum"""

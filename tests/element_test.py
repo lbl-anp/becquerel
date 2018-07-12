@@ -107,15 +107,11 @@ class TestElementFunctions(object):
                 element.element_name(name1)
 
 
-@pytest.mark.parametrize('z, sym, name', [
-    (1, 'H', 'Hydrogen'),
-    (2, 'He', 'Helium'),
-    (13, 'Al', 'Aluminum'),
-    (19, 'K', 'Potassium'),
-    (32, 'Ge', 'Germanium'),
-    (70, 'Yb', 'Ytterbium'),
-    (92, 'U', 'Uranium'),
-    (118, 'Og', 'Oganesson')])
+@pytest.mark.parametrize('z, sym, name',
+                         [(1, 'H', 'Hydrogen'), (2, 'He', 'Helium'),
+                          (13, 'Al', 'Aluminum'), (19, 'K', 'Potassium'),
+                          (32, 'Ge', 'Germanium'), (70, 'Yb', 'Ytterbium'),
+                          (92, 'U', 'Uranium'), (118, 'Og', 'Oganesson')])
 def test_element(z, sym, name):
     """Run instantiation tests for various elements.
 

@@ -7,7 +7,6 @@ import pytest
 import matplotlib.pyplot as plt
 import becquerel as bq
 
-
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'samples')
 
 SAMPLES = {}

@@ -151,14 +151,13 @@ class IsotopeQuantity(object):
         if 'atoms' in kwargs:
             return self._check_positive_qty(kwargs['atoms'])
         elif 'g' in kwargs:
-            return (self._check_positive_qty(kwargs['g']) /
-                    self.isotope.A * N_AV)
+            return (
+                self._check_positive_qty(kwargs['g']) / self.isotope.A * N_AV)
         elif 'bq' in kwargs and not self.is_stable:
-            return (self._check_positive_qty(kwargs['bq']) /
-                    self.decay_const)
+            return (self._check_positive_qty(kwargs['bq']) / self.decay_const)
         elif 'uci' in kwargs and not self.is_stable:
-            return (self._check_positive_qty(kwargs['uci']) *
-                    UCI_TO_BQ / self.decay_const)
+            return (self._check_positive_qty(kwargs['uci']) * UCI_TO_BQ /
+                    self.decay_const)
         elif 'bq' in kwargs or 'uci' in kwargs:
             raise IsotopeQuantityError(
                 'Cannot initialize a stable IsotopeQuantity from activity')
@@ -174,7 +173,7 @@ class IsotopeQuantity(object):
           ValueError: if val is negative
         """
 
-        val *= 1.   # convert to float, or preserve ufloat, as appropriate
+        val *= 1.  # convert to float, or preserve ufloat, as appropriate
         if val < 0:
             raise ValueError(
                 'Mass or activity must be a positive quantity: {}'.format(val))
@@ -213,8 +212,8 @@ class IsotopeQuantity(object):
         return obj
 
     @classmethod
-    def from_comparison(cls, isotope_qty1, counts1, interval1,
-                        counts2, interval2):
+    def from_comparison(cls, isotope_qty1, counts1, interval1, counts2,
+                        interval2):
         """Calculate an IsotopeQuantity by comparison with a known sample.
 
         Assumes the samples are in identical geometry with the detector.
@@ -469,7 +468,8 @@ class IsotopeQuantity(object):
         else:
             factor = float(other)
         return IsotopeQuantity(
-            copy.deepcopy(self.isotope), date=self.ref_date,
+            copy.deepcopy(self.isotope),
+            date=self.ref_date,
             atoms=self.ref_atoms * factor)
 
     def __eq__(self, other):
@@ -478,8 +478,8 @@ class IsotopeQuantity(object):
         if not isinstance(other, IsotopeQuantity):
             return False
         else:
-            return (self.isotope == other.isotope and
-                    np.isclose(self.ref_atoms, other.atoms_at(self.ref_date)))
+            return (self.isotope == other.isotope and np.isclose(
+                self.ref_atoms, other.atoms_at(self.ref_date)))
 
 
 class NeutronIrradiationError(Exception):
@@ -601,16 +601,16 @@ class NeutronIrradiation(object):
             IsotopeQuantity objects
         """
 
-        if (isinstance(initial, IsotopeQuantity) and
-                isinstance(activated, IsotopeQuantity)):
+        if (isinstance(initial, IsotopeQuantity)
+                and isinstance(activated, IsotopeQuantity)):
             raise NeutronIrradiationError(
                 "Two IsotopeQuantity's in args, nothing left to calculate!" +
                 'Args: {}, {}'.format(initial, activated))
-        elif (isinstance(initial, IsotopeQuantity) and
-              isinstance(activated, Isotope)):
+        elif (isinstance(initial, IsotopeQuantity)
+              and isinstance(activated, Isotope)):
             forward = True
-        elif (isinstance(initial, Isotope) and
-              isinstance(activated, IsotopeQuantity)):
+        elif (isinstance(initial, Isotope)
+              and isinstance(activated, IsotopeQuantity)):
             forward = False
         elif isinstance(initial, Isotope) and isinstance(activated, Isotope):
             raise NeutronIrradiationError(
@@ -629,30 +629,25 @@ class NeutronIrradiation(object):
 
         if forward:
             if self.duration == 0:
-                activated_bq = (
-                    self.n_cm2 * cross_section *
-                    initial.atoms_at(self.stop_time) *
-                    activated.decay_const)
+                activated_bq = (self.n_cm2 * cross_section * initial.atoms_at(
+                    self.stop_time) * activated.decay_const)
             else:
                 activated_bq = (
-                    self.n_cm2_s * cross_section *
-                    initial.atoms_at(self.stop_time) *
-                    (1 - np.exp(-activated.decay_const * self.duration))
-                )
-            return IsotopeQuantity(activated,
-                                   date=self.stop_time, bq=activated_bq)
+                    self.n_cm2_s * cross_section * initial.atoms_at(
+                        self.stop_time) *
+                    (1 - np.exp(-activated.decay_const * self.duration)))
+            return IsotopeQuantity(
+                activated, date=self.stop_time, bq=activated_bq)
         else:
             if self.duration == 0:
-                initial_atoms = (
-                    activated.bq_at(self.stop_time) /
-                    (self.n_cm2 * cross_section * activated.decay_const))
+                initial_atoms = (activated.bq_at(self.stop_time) / (
+                    self.n_cm2 * cross_section * activated.decay_const))
             else:
-                initial_atoms = (
-                    activated.bq_at(self.stop_time) /
-                    (self.n_cm2_s * cross_section * (1 - np.exp(
-                        -activated.decay_const * self.duration))))
-            return IsotopeQuantity(initial,
-                                   date=self.start_time, atoms=initial_atoms)
+                initial_atoms = (activated.bq_at(self.stop_time) / (
+                    self.n_cm2_s * cross_section *
+                    (1 - np.exp(-activated.decay_const * self.duration))))
+            return IsotopeQuantity(
+                initial, date=self.start_time, atoms=initial_atoms)
 
 
 def decay_normalize(isotope, interval1, interval2):
@@ -720,6 +715,5 @@ def decay_normalize_spectra(isotope, spec1, spec2):
       AttributeError: if spec1 or spec2 do not have start_time and stop_time
     """
 
-    return decay_normalize(isotope,
-                           (spec1.start_time, spec1.stop_time),
+    return decay_normalize(isotope, (spec1.start_time, spec1.stop_time),
                            (spec2.start_time, spec2.stop_time))

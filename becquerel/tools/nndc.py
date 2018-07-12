@@ -15,9 +15,7 @@ import pandas as pd
 from six import string_types
 import uncertainties
 
-
 PARITIES = ['+', '-', 'ANY']
-
 
 WALLET_DECAY_MODE = {
     'ANY': 'ANY',
@@ -36,7 +34,6 @@ WALLET_DECAY_MODE = {
     'B-delayed F': 'DF',
 }
 
-
 DECAYRAD_DECAY_MODE = {
     'ANY': 'ANY',
     'IT': 'IT',
@@ -47,7 +44,6 @@ DECAYRAD_DECAY_MODE = {
     'Alpha': 'A',
     'SF': 'SF',
 }
-
 
 DECAYRAD_RADIATION_TYPE = {
     'ANY': 'ANY',
@@ -171,10 +167,9 @@ def _parse_table(text):
                 table[header] = []
         else:
             if len(tokens) != len(headers):
-                raise NNDCRequestError(
-                    'Too few data in table row\n' +
-                    '    Headers: "{}"\n'.format(headers) +
-                    '    Row:     "{}"'.format(tokens))
+                raise NNDCRequestError('Too few data in table row\n' +
+                                       '    Headers: "{}"\n'.format(headers) +
+                                       '    Row:     "{}"'.format(tokens))
             for header, token in zip(headers, tokens):
                 table[header].append(token)
     return table
@@ -322,38 +317,50 @@ class _NNDCQuery(object):
 
     _URL = ''
     _DATA = {
-        'spnuc': '',           # specify parent ('name', 'zan', or 'zanrange')
-        'nuc': '',             # isotope name (use with 'name')
-        'z': '',               # Z or element (use with 'zan')
-        'zmin': '',            # Z min        (use with 'zanrange')
-        'zmax': '',            # Z max        (use with 'zanrange')
-        'a': '',               # A            (use with 'zan')
-        'amin': '',            # A min        (use with 'zanrange')
-        'amax': '',            # A max        (use with 'zanrange')
-        'n': '',               # N            (use with 'zan')
-        'nmin': '',            # N min        (use with 'zanrange')
-        'nmax': '',            # N max        (use with 'zanrange')
-        'evenz': '',           # 'any', 'even', or 'odd' Z (use with zanrange)
-        'evena': '',           # 'any', 'even', or 'odd' A (use with zanrange')
-        'evenn': '',           # 'any', 'even', or 'odd' N (use with zanrange)
-        'tled': 'disabled',    # half-life condition on/off
-        'tlmin': '0',          # half-life min
-        'utlow': 'S',          # half-life min units ('S' = seconds)
-        'tlmax': '3E17',       # half-life max
-        'utupp': 'S',          # half-life max units ('ST' = stable, 'GY' = Gy)
+        'spnuc': '',  # specify parent ('name', 'zan', or 'zanrange')
+        'nuc': '',  # isotope name (use with 'name')
+        'z': '',  # Z or element (use with 'zan')
+        'zmin': '',  # Z min        (use with 'zanrange')
+        'zmax': '',  # Z max        (use with 'zanrange')
+        'a': '',  # A            (use with 'zan')
+        'amin': '',  # A min        (use with 'zanrange')
+        'amax': '',  # A max        (use with 'zanrange')
+        'n': '',  # N            (use with 'zan')
+        'nmin': '',  # N min        (use with 'zanrange')
+        'nmax': '',  # N max        (use with 'zanrange')
+        'evenz': '',  # 'any', 'even', or 'odd' Z (use with zanrange)
+        'evena': '',  # 'any', 'even', or 'odd' A (use with zanrange')
+        'evenn': '',  # 'any', 'even', or 'odd' N (use with zanrange)
+        'tled': 'disabled',  # half-life condition on/off
+        'tlmin': '0',  # half-life min
+        'utlow': 'S',  # half-life min units ('S' = seconds)
+        'tlmax': '3E17',  # half-life max
+        'utupp': 'S',  # half-life max units ('ST' = stable, 'GY' = Gy)
         'notlim': 'disabled',  # half-life: no limit
-        'dmed': 'disabled',    # decay mode condition on/off
-        'dmn': 'ANY',          # decay mode: 'ANY' = any
-        'out': 'file',         # output to formatted file
-        'unc': 'stdandard',    # standard style uncertainties
-        'sub': 'Search',       # search for the data
+        'dmed': 'disabled',  # decay mode condition on/off
+        'dmn': 'ANY',  # decay mode: 'ANY' = any
+        'out': 'file',  # output to formatted file
+        'unc': 'stdandard',  # standard style uncertainties
+        'sub': 'Search',  # search for the data
     }
     _ALLOWED_KEYWORDS = [
-        'perform', 'nuc', 'z', 'a', 'n',
-        'z_range', 'a_range', 'n_range',
-        'z_any', 'z_even', 'z_odd',
-        'a_any', 'a_even', 'a_odd',
-        'n_any', 'n_even', 'n_odd',
+        'perform',
+        'nuc',
+        'z',
+        'a',
+        'n',
+        'z_range',
+        'a_range',
+        'n_range',
+        'z_any',
+        'z_even',
+        'z_odd',
+        'a_any',
+        'a_even',
+        'a_odd',
+        'n_any',
+        'n_even',
+        'n_odd',
         't_range',
     ]
     _DUMMY_TEXT = ''
@@ -513,9 +520,8 @@ class _NNDCQuery(object):
     def _add_units_uncertainties(self):
         """Add units and uncertainties with some columns as applicable."""
         if 'Energy Level' in self.keys():
-            self._convert_column(
-                'Energy Level',
-                lambda x: _parse_float_uncertainty(x, ''))
+            self._convert_column('Energy Level',
+                                 lambda x: _parse_float_uncertainty(x, ''))
             self.df.rename(
                 columns={'Energy Level': 'Energy Level (MeV)'}, inplace=True)
 
@@ -537,9 +543,8 @@ class _NNDCQuery(object):
             self._convert_column_uncertainty('Abundance (%)')
 
         if 'Branching (%)' in self.keys():
-            self._convert_column(
-                'Branching (%)',
-                lambda x: _parse_float_uncertainty(x, ''))
+            self._convert_column('Branching (%)',
+                                 lambda x: _parse_float_uncertainty(x, ''))
 
         if 'Radiation Energy' in self.keys():
             self._convert_column_uncertainty('Radiation Energy')
@@ -583,10 +588,21 @@ class _NNDCQuery(object):
     def _sort_columns(self):
         """Sort columns."""
         preferred_order = [
-            'Z', 'Element', 'A', 'm', 'M', 'N', 'JPi', 'T1/2',
-            'Energy Level (MeV)', 'Decay Mode', 'Branching (%)',
-            'Radiation', 'Radiation subtype',
-            'Radiation Energy (keV)', 'Radiation Intensity (%)',
+            'Z',
+            'Element',
+            'A',
+            'm',
+            'M',
+            'N',
+            'JPi',
+            'T1/2',
+            'Energy Level (MeV)',
+            'Decay Mode',
+            'Branching (%)',
+            'Radiation',
+            'Radiation subtype',
+            'Radiation Energy (keV)',
+            'Radiation Intensity (%)',
         ]
         new_cols = []
         for col in preferred_order:
@@ -640,13 +656,13 @@ class _NuclearWalletCardQuery(_NNDCQuery):
     _URL = 'http://www.nndc.bnl.gov/nudat2/sigma_searchi.jsp'
     _DATA = dict(_NNDCQuery._DATA)
     _DATA.update({
-        'eled': 'disabled',    # E(level) condition on/off
-        'elmin': '0',          # E(level) min
-        'elmax': '40',         # E(level) max
-        'jled': 'disabled',    # J_pi(level) condition on/off
-        'jlv': '',             # J
-        'plv': 'ANY',          # parity
-        'ord': 'zalt',         # order file by Z, A, E(level), T1/2
+        'eled': 'disabled',  # E(level) condition on/off
+        'elmin': '0',  # E(level) min
+        'elmax': '40',  # E(level) max
+        'jled': 'disabled',  # J_pi(level) condition on/off
+        'jlv': '',  # J
+        'plv': 'ANY',  # parity
+        'ord': 'zalt',  # order file by Z, A, E(level), T1/2
     })
     _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
     _ALLOWED_KEYWORDS.extend(['elevel_range', 'decay', 'j', 'parity'])
@@ -686,9 +702,8 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
             self._data['jlv'] = kwargs['j']
         if 'parity' in kwargs:
             if kwargs['parity'] not in PARITIES:
-                raise NNDCInputError(
-                    'Parity must be one of {}, not {}'.format(
-                        PARITIES, kwargs['parity']))
+                raise NNDCInputError('Parity must be one of {}, not {}'.format(
+                    PARITIES, kwargs['parity']))
             self._data['jled'] = 'enabled'
             self._data['plv'] = kwargs['parity']
 
@@ -777,19 +792,19 @@ class _DecayRadiationQuery(_NNDCQuery):
     _URL = 'http://www.nndc.bnl.gov/nudat2/dec_searchi.jsp'
     _DATA = dict(_NNDCQuery._DATA)
     _DATA.update({
-        'rted': 'enabled',     # radiation type condition on/off
-        'rtn': 'ANY',          # radiation type: 'ANY' = any, 'G' = gamma
-        'reed': 'disabled',    # radiation energy condition on/off
-        'remin': '0',          # radiation energy min (keV)
-        'remax': '10000',      # radiation energy max (keV)
-        'ried': 'disabled',    # radiation intensity condition on/off
-        'rimin': '0',          # radiation intensity min (%)
-        'rimax': '100',        # radiation intensity max (%)
-        'ord': 'zate',         # order file by Z, A, T1/2, E
+        'rted': 'enabled',  # radiation type condition on/off
+        'rtn': 'ANY',  # radiation type: 'ANY' = any, 'G' = gamma
+        'reed': 'disabled',  # radiation energy condition on/off
+        'remin': '0',  # radiation energy min (keV)
+        'remax': '10000',  # radiation energy max (keV)
+        'ried': 'disabled',  # radiation intensity condition on/off
+        'rimin': '0',  # radiation intensity min (%)
+        'rimax': '100',  # radiation intensity max (%)
+        'ord': 'zate',  # order file by Z, A, T1/2, E
     })
     _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
-    _ALLOWED_KEYWORDS.extend([
-        'elevel_range', 'decay', 'type', 'e_range', 'i_range'])
+    _ALLOWED_KEYWORDS.extend(
+        ['elevel_range', 'decay', 'type', 'e_range', 'i_range'])
     _DUMMY_TEXT = """
 <html>
 <body>

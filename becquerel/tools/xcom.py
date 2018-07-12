@@ -16,7 +16,6 @@ import pandas as pd
 from six import string_types
 from . import element
 
-
 # Dry air relative weights taken from:
 # http://www.engineeringtoolbox.com/air-composition-d_212.html
 MIXTURE_AIR_DRY = [
@@ -51,25 +50,25 @@ MIXTURE_PORTLAND_CEMENT = [
     'CaSO6H4 5',
 ]
 
-
 # base URL for three scripts on NIST where data can be queried
 _URL = 'https://physics.nist.gov/cgi-bin/Xcom/xcom3_'
 
-
 # Dictionary of data that will be posted to URL
 _DATA = {
-    'NumAdd': '1',          # always '1'?
-    'Energies': '',         # additional energies separated by ; (MeV)
+    'NumAdd': '1',  # always '1'?
+    'Energies': '',  # additional energies separated by ; (MeV)
     'WindowXmin': '0.001',  # lower limit of energy grid (MeV)
-    'WindowXmax': '100',    # upper limit of energy grid (MeV)
-    'Output': '',           # 'on' for standard energy grid
-    'OutOpt': 'PIC',        # return cross sections in cm^2/g
-    'ResizeFlag': 'on',     # seems to determine whether Xmin and Xmax are used
+    'WindowXmax': '100',  # upper limit of energy grid (MeV)
+    'Output': '',  # 'on' for standard energy grid
+    'OutOpt': 'PIC',  # return cross sections in cm^2/g
+    'ResizeFlag': 'on',  # seems to determine whether Xmin and Xmax are used
 }
 
 # abbreviated names for the table columns (these are used in the dataframe)
-COLUMNS_SHORT = ['energy', 'coherent', 'incoherent', 'photoelec',
-                 'pair_nuc', 'pair_elec', 'total_w_coh', 'total_wo_coh']
+COLUMNS_SHORT = [
+    'energy', 'coherent', 'incoherent', 'photoelec', 'pair_nuc', 'pair_elec',
+    'total_w_coh', 'total_wo_coh'
+]
 
 # medium length names for the table columns
 COLUMNS_MEDIUM = {
@@ -214,9 +213,8 @@ class _XCOMQuery(object):
             return {'z': arg}
         elif isinstance(arg, Iterable):
             return {'mixture': arg}
-        raise XCOMInputError(
-            'Cannot determine if argument {}'.format(arg) +
-            ' is a symbol, Z, compound, or mixture')
+        raise XCOMInputError('Cannot determine if argument {}'.format(arg) +
+                             ' is a symbol, Z, compound, or mixture')
 
     @staticmethod
     def _check_z(zstr):
@@ -284,8 +282,9 @@ class _XCOMQuery(object):
         # check for valid keywords
         for kwarg in kwargs:
             if kwarg not in [
-                    'symbol', 'z', 'compound', 'mixture',
-                    'e_range_kev', 'energies_kev', 'perform']:
+                    'symbol', 'z', 'compound', 'mixture', 'e_range_kev',
+                    'energies_kev', 'perform'
+            ]:
                 raise XCOMInputError('Unknown keyword: "{}"'.format(kwarg))
 
         # determine the search method (element, compound, or mixture)
@@ -357,8 +356,8 @@ class _XCOMQuery(object):
                         'XCOM energy must be >= 1 and <= 1E8 keV: {}'.format(
                             energy))
             self._data['Energies'] = ';'.join([
-                '{:.6f}'.format(erg / 1000.)
-                for erg in kwargs['energies_kev']])
+                '{:.6f}'.format(erg / 1000.) for erg in kwargs['energies_kev']
+            ])
 
     def _request(self):
         """Request data table from the URL."""
@@ -369,8 +368,8 @@ class _XCOMQuery(object):
                 'XCOM Request failed: reason={}, status_code={}'.format(
                     self._req.reason, self._req.status_code))
         if 'Error' in self._req.text:
-            raise XCOMRequestError(
-                'XCOM returned an error:\n{}'.format(self._req.text))
+            raise XCOMRequestError('XCOM returned an error:\n{}'.format(
+                self._req.text))
 
     def _parse_text(self):
         """Parse table contained in the text into a dictionary."""
@@ -382,9 +381,8 @@ class _XCOMQuery(object):
             raise XCOMRequestError('More than one HTML table found')
         self.df = tables[0]
         if len(self.df.keys()) != 1 + len(COLUMNS_SHORT):
-            raise XCOMRequestError(
-                'Found {} columns but expected {}'.format(
-                    len(self.df.keys()), 1 + len(COLUMNS_SHORT)))
+            raise XCOMRequestError('Found {} columns but expected {}'.format(
+                len(self.df.keys()), 1 + len(COLUMNS_SHORT)))
         # remove 'edge' column
         self.df = self.df[self.df.keys()[1:]]
         self.df.columns = COLUMNS_SHORT

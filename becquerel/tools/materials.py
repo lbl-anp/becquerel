@@ -14,10 +14,8 @@ import pandas as pd
 from six import string_types
 from .element import element_symbol
 
-
 MAX_Z = 92
 N_COMPOUNDS = 48
-
 
 _URL_TABLE1 = 'http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html'
 _URL_TABLE2 = 'http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html'
@@ -163,10 +161,10 @@ def fetch_compound_data():
     # set column names
     df.columns = ['Material', 'Z_over_A', 'I_eV', 'Density', 'Composition_Z']
     # clean up Z composition
-    df['Composition_Z'] = [
-        [line.strip() for line in comp.split(';')]
-        for comp in df['Composition_Z']]
+    df['Composition_Z'] = [[line.strip() for line in comp.split(';')]
+                           for comp in df['Composition_Z']]
     # create a column of compositions by symbol (for use with fetch_xcom_data)
     df['Composition_symbol'] = [
-        convert_composition(comp) for comp in df['Composition_Z']]
+        convert_composition(comp) for comp in df['Composition_Z']
+    ]
     return df

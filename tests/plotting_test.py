@@ -49,7 +49,8 @@ def cal_spec(spec_data):
 def cal_spec_cps(spec_data):
     """Generate a calibrated spectrum with cps data."""
 
-    return bq.Spectrum(cps=spec_data, bin_edges_kev=TEST_EDGES_KEV, livetime=300)
+    return bq.Spectrum(
+        cps=spec_data, bin_edges_kev=TEST_EDGES_KEV, livetime=300)
 
 
 @pytest.fixture(params=[1, 10, 100])
@@ -57,16 +58,17 @@ def y_counts_spec(request):
     floatdata = np.random.poisson(lam=request.param, size=TEST_DATA_LENGTH)
     return bq.Spectrum(floatdata.astype(np.int))
 
+
 #@pytest.fixture
 #def neg_spec(spec_data):
 #    """Generate an uncalibrated spectrum."""
 #
 #    return bq.Spectrum(-spec_data)
 
-
 # ----------------------------------------------
 #                Very basic tests
 # ----------------------------------------------
+
 
 def test_plot_uncal_counts(uncal_spec):
     """Plot an uncalibrated spectrum"""
@@ -92,6 +94,7 @@ def test_plot_uncal_counts(cal_spec):
 # ----------------------------------------------
 #             Check each mode
 # ----------------------------------------------
+
 
 def test_channel_mode(uncal_spec):
     """Test xmode='channel'"""
@@ -132,9 +135,11 @@ def test_cpskev_mode(cal_spec_cps):
     assert plt.gca().get_ylabel() == "Countrate [1/s/keV]"
     plt.close("all")
 
+
 # ----------------------------------------------
 #                Check axes labels
 # ----------------------------------------------
+
 
 def test_plot_uncal_counts_labels(uncal_spec):
     """Default xlabel, ylabel for uncal counts spec"""
@@ -187,6 +192,7 @@ def test_custom_labels(cal_spec):
 #                Check title
 # ----------------------------------------------
 
+
 def test_plot_default_title(uncal_spec):
     """Default title of a inprogram spec"""
 
@@ -209,7 +215,7 @@ def test_plot_default_custom_title(uncal_spec):
     """Default title of a file spec"""
 
     title = "My custom title"
-    uncal_spec.plot(title = title)
+    uncal_spec.plot(title=title)
     assert plt.gca().get_title() == title
     plt.close("all")
 
@@ -217,6 +223,7 @@ def test_plot_default_custom_title(uncal_spec):
 # ----------------------------------------------
 #                Check y scale
 # ----------------------------------------------
+
 
 def test_yscale(y_counts_spec):
     """Default yscale"""
@@ -256,7 +263,6 @@ def test_yscale_linear_scale(y_counts_spec):
     plt.close("all")
 
 
-
 def test_yscale_log_scale(y_counts_spec):
     """Log yscale with default scale"""
 
@@ -277,6 +283,7 @@ def test_yscale_symlog_scale(y_counts_spec):
 #                Check x and y limits
 # ----------------------------------------------
 
+
 def test_xlim(uncal_spec):
     """Custom x limits"""
 
@@ -294,9 +301,11 @@ def test_ylim(uncal_spec):
     assert plt.gca().get_ylim() == ylim
     plt.close("all")
 
+
 # ----------------------------------------------
 #                Axes
 # ----------------------------------------------
+
 
 def test_axes(uncal_spec):
     """Custom y limits"""
@@ -311,25 +320,29 @@ def test_axes(uncal_spec):
 #                Kwargs
 # ----------------------------------------------
 
+
 def test_kwargs(uncal_spec):
     """Test kwargs, color and fmt in this case"""
 
-    uncal_spec.plot('--', color = '#ffffff')
+    uncal_spec.plot('--', color='#ffffff')
     assert plt.gca().get_lines()[0].get_linestyle() == '--'
     assert plt.gca().get_lines()[0].get_color() == '#ffffff'
     plt.close("all")
+
 
 def test_kwargs_SpectrumPlotter(uncal_spec):
     """Test kwargs, color and fmt in this case"""
 
-    sp(uncal_spec).plot('--', color = '#ffffff')
+    sp(uncal_spec).plot('--', color='#ffffff')
     assert plt.gca().get_lines()[0].get_linestyle() == '--'
     assert plt.gca().get_lines()[0].get_color() == '#ffffff'
     plt.close("all")
 
+
 # ----------------------------------------------
 #                multi line plot
 # ----------------------------------------------
+
 
 def test_multi(uncal_spec, cal_spec):
     """Test multiple plots"""
@@ -341,22 +354,24 @@ def test_multi(uncal_spec, cal_spec):
     assert len(plt.gca().get_lines()) == 2
     plt.close("all")
 
+
 # ----------------------------------------------
 #                check errors
 # ----------------------------------------------
+
 
 def test_error_positional_parameters(cal_spec):
     """Test errors when to many positional parameters are provided"""
 
     with pytest.raises(bq.PlottingError):
-        cal_spec.plot('x','x')
+        cal_spec.plot('x', 'x')
     with pytest.raises(bq.PlottingError):
-        sp(cal_spec).plot('x','x')
+        sp(cal_spec).plot('x', 'x')
 
 
 def test_uncal_as_cal(uncal_spec):
     """Test errors for calibrated reqested for an uncalibrated spectrum"""
-    
+
     with pytest.raises(bq.PlottingError):
         uncal_spec.plot(xmode='energy')
 
@@ -388,11 +403,13 @@ def test_cnts_without_cnts(uncal_spec_cps):
     with pytest.raises(bq.PlottingError):
         uncal_spec_cps.plot(ymode='cnts')
 
+
 #def test_call_ylim_default_without_any_input(neg_spec):
 #    """Test errors for cnts requested but not provided"""
 #
 #    with pytest.raises(bq.PlottingError):
 #        neg_spec.plot(yscale='log', ylim='default')
+
 
 def test_wrong_xlim(cal_spec):
     """Test errors wrong xlim structure"""
@@ -400,15 +417,18 @@ def test_wrong_xlim(cal_spec):
     with pytest.raises(bq.PlottingError):
         cal_spec.plot(xlim=0)
 
+
 def test_wrong_ylim(cal_spec):
     """Test errors for wrong ylim structure"""
 
     with pytest.raises(bq.PlottingError):
         cal_spec.plot(ylim=0)
 
+
 # ----------------------------------------------
 #                check getters
 # ----------------------------------------------
+
 
 def test_get_xmode(cal_spec_cps):
     """Test get xmode function"""
@@ -442,7 +462,8 @@ def test_get_xlim(cal_spec_cps):
     """Test get xlim function"""
 
     tsp = sp(cal_spec_cps, xlim='default')
-    assert tsp.xlim == (cal_spec_cps.bin_edges_kev[0], cal_spec_cps.bin_edges_kev[-1])
+    assert tsp.xlim == (cal_spec_cps.bin_edges_kev[0],
+                        cal_spec_cps.bin_edges_kev[-1])
 
 
 def test_get_linthreshy(cal_spec_cps):
@@ -451,9 +472,11 @@ def test_get_linthreshy(cal_spec_cps):
     tsp = sp(cal_spec_cps, linthreshy=1)
     assert tsp.linthreshy == 1
 
+
 # ----------------------------------------------
 #                check error modes
 # ----------------------------------------------
+
 
 def test_error_modes_counts(uncal_spec):
     """Test error mode for counts mode"""
@@ -477,26 +500,28 @@ def test_error_modes_cpskev(cal_spec):
     tsp = sp(cal_spec, ymode='cpskev')
     assert np.allclose(tsp.yerror, cal_spec.cpskev_uncs)
 
+
 # ----------------------------------------------
 #                check error plots
 # ----------------------------------------------
+
 
 def test_errornone(uncal_spec):
     """Test error mode none"""
 
     ax = uncal_spec.plot(ymode='counts', emode='none')
 
-    colls=0
-    polys=0
-    lines=0
+    colls = 0
+    polys = 0
+    lines = 0
     for i in ax.get_children():
         if type(i) is matplotlib.collections.LineCollection:
-            colls=colls+1
+            colls = colls + 1
         if type(i) is matplotlib.collections.PolyCollection:
-            polys=polys+1
+            polys = polys + 1
 
         if type(i) is matplotlib.lines.Line2D:
-            lines=lines+1
+            lines = lines + 1
     assert colls == 0
     assert polys == 0
     assert lines == 1
@@ -508,29 +533,30 @@ def test_errorbars(uncal_spec):
 
     ax = uncal_spec.plot(ymode='counts', emode='bars')
 
-    colls=0
-    lines=0
+    colls = 0
+    lines = 0
     for i in ax.get_children():
         if type(i) is matplotlib.collections.LineCollection:
-            colls=colls+1
+            colls = colls + 1
         if type(i) is matplotlib.lines.Line2D:
-           lines=lines+1
+            lines = lines + 1
     assert colls == 1
     assert lines >= 1
     plt.close("all")
+
 
 def test_errorband(uncal_spec):
     """Test error band mode"""
 
     ax = uncal_spec.plot(ymode='counts', emode='band')
 
-    colls=0
-    lines=0
+    colls = 0
+    lines = 0
     for i in ax.get_children():
         if type(i) is matplotlib.collections.PolyCollection:
-            colls=colls+1
+            colls = colls + 1
         if type(i) is matplotlib.lines.Line2D:
-            lines=lines+1
+            lines = lines + 1
     assert colls == 1
     assert lines == 1
     plt.close("all")

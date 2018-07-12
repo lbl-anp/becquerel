@@ -7,7 +7,6 @@ import uncertainties
 from . import element
 from .wallet_cache import wallet_cache
 
-
 # pylint: disable=no-self-use
 
 
@@ -119,8 +118,8 @@ def _split_mass_isomer(arg):
     if 'm' in arg.lower():
         tokens = arg.lower().split('m')
         if len(tokens) != 2:
-            raise IsotopeError(
-                'Too many ms in mass number: {} {}'.format(arg, tokens))
+            raise IsotopeError('Too many ms in mass number: {} {}'.format(
+                arg, tokens))
         try:
             aa = int(tokens[0])
         except ValueError:
@@ -237,8 +236,7 @@ class Isotope(element.Element):
             raise IsotopeError(
                 'Mass number cannot be converted to integer: {}'.format(arg))
         if self.A < 1:
-            raise IsotopeError(
-                'Mass number must be >= 1: {}'.format(self.A))
+            raise IsotopeError('Mass number must be >= 1: {}'.format(self.A))
 
     def _init_m(self, arg):
         """Initialize with an isomer level number."""
@@ -303,9 +301,8 @@ class Isotope(element.Element):
     def __eq__(self, other):
         """Define equality of two isotopes."""
         if isinstance(other, Isotope):
-            return (
-                super().__eq__(other) and
-                self.A == other.A and self.Z == other.Z and self.M == other.M)
+            return (super().__eq__(other) and self.A == other.A
+                    and self.Z == other.Z and self.M == other.M)
         else:
             raise TypeError('Cannot compare to non-isotope')
 

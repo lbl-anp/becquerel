@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 import datetime
 from dateutil.parser import parse as dateutil_parse
@@ -15,54 +14,56 @@ from becquerel.tools.isotope_qty import decay_normalize_spectra
 from becquerel import Spectrum
 import pytest
 
-
 # ----------------------------------------------------
 #               IsotopeQuantity class
 # ----------------------------------------------------
 
-@pytest.fixture(params=(
-    'Bi-212',
-    'Cs-137',
-    'K-40',
-    'Cs-134',
-    'N-13',
-    'Rn-220',
-    'Tc-99m',
-    'Tl-208',
-    'Th-232',
-))
+
+@pytest.fixture(
+    params=(
+        'Bi-212',
+        'Cs-137',
+        'K-40',
+        'Cs-134',
+        'N-13',
+        'Rn-220',
+        'Tc-99m',
+        'Tl-208',
+        'Th-232',
+    ))
 def radioisotope(request):
     return Isotope(request.param)
 
 
-@pytest.fixture(params=(
-    'H-2',
-    'Cs-133',
-    'Pb-208',
-    'La-138',
-    'Eu-151',
-    'Ge-76',
-))
+@pytest.fixture(
+    params=(
+        'H-2',
+        'Cs-133',
+        'Pb-208',
+        'La-138',
+        'Eu-151',
+        'Ge-76',
+    ))
 def stable_isotope(request):
     return Isotope(request.param)
 
 
-@pytest.fixture(params=[
-    {'bq': 10.047 * UCI_TO_BQ},
-    {'uci': 10.047},
-    {'uci': ufloat(10.047, 0.025)},
-    {'atoms': 1e24},
-    {'g': 1e-5}
-])
+@pytest.fixture(params=[{
+    'bq': 10.047 * UCI_TO_BQ
+}, {
+    'uci': 10.047
+}, {
+    'uci': ufloat(10.047, 0.025)
+}, {
+    'atoms': 1e24
+}, {
+    'g': 1e-5
+}])
 def iq_kwargs(request):
     return request.param
 
 
-@pytest.fixture(params=[
-    datetime.datetime.now(),
-    '2015-01-08 00:00:00',
-    None
-])
+@pytest.fixture(params=[datetime.datetime.now(), '2015-01-08 00:00:00', None])
 def iq_date(request):
     return request.param
 
@@ -146,12 +147,15 @@ def test_isotopequantity_ref_date_stable(stable_isotope, iq_date):
         assert (datetime.datetime.now() - iq.ref_date).total_seconds() < 5
 
 
-@pytest.mark.parametrize('iso, date, kwargs, error', [
-    (['Cs-137'], None, {'atoms': 1e24}, TypeError),
-    ('Cs-137', 123, {'bq': 456}, TypeError),
-    ('Cs-137', datetime.datetime.now(), {'asdf': 3}, IsotopeQuantityError),
-    ('Cs-137', None, {'bq': -13.3}, ValueError)
-])
+@pytest.mark.parametrize('iso, date, kwargs, error', [(['Cs-137'], None, {
+    'atoms': 1e24
+}, TypeError), ('Cs-137', 123, {
+    'bq': 456
+}, TypeError), ('Cs-137', datetime.datetime.now(), {
+    'asdf': 3
+}, IsotopeQuantityError), ('Cs-137', None, {
+    'bq': -13.3
+}, ValueError)])
 def test_isotopequantity_bad_init(iso, date, kwargs, error):
     """Test errors from Isotope.__init__()"""
 
@@ -179,7 +183,7 @@ def test_isotopequantity_at_methods(iq):
     assert np.isclose(
         iq.uci_at(iq.ref_date), iq.ref_atoms * iq.decay_const / UCI_TO_BQ)
 
-    if iq.half_life < 3.156e7 * 1000:   # OverflowError or year out of range
+    if iq.half_life < 3.156e7 * 1000:  # OverflowError or year out of range
         dt1 = iq.ref_date + datetime.timedelta(seconds=half_life)
         dt2 = iq.ref_date - datetime.timedelta(seconds=half_life)
         dt3 = iq.ref_date + datetime.timedelta(seconds=half_life * 50)
@@ -255,8 +259,9 @@ def test_isotopequantity_decays_from(iq):
 
         assert np.isclose(iq.bq_from(t0, t1), iq.atoms_at(t1) / iq.half_life)
 
-        assert np.isclose(iq.uci_from(t0, t1),
-                          iq.atoms_at(t1) / iq.half_life / UCI_TO_BQ)
+        assert np.isclose(
+            iq.uci_from(t0, t1),
+            iq.atoms_at(t1) / iq.half_life / UCI_TO_BQ)
 
 
 def test_isotopequantity_decays_during(iq):
@@ -328,35 +333,30 @@ def test_isotopequantity_from_comparison(iq):
     start = iq.ref_date
     stop = start + datetime.timedelta(seconds=3600)
     interval1 = (start, stop)
-    iq2 = IsotopeQuantity.from_comparison(
-        iq, counts1, interval1,
-        counts1, interval1)
+    iq2 = IsotopeQuantity.from_comparison(iq, counts1, interval1, counts1,
+                                          interval1)
     assert iq2 == iq
 
     f = 3.1
     counts2 = counts1 * f
-    iq3 = IsotopeQuantity.from_comparison(
-        iq, counts1, interval1,
-        counts2, interval1)
+    iq3 = IsotopeQuantity.from_comparison(iq, counts1, interval1, counts2,
+                                          interval1)
     assert iq3 == iq * f
 
     if iq.half_life < 1000 * 3.156e7:
         dt = datetime.timedelta(seconds=iq.half_life)
         interval2 = (start + dt, stop + dt)
-        iq4 = IsotopeQuantity.from_comparison(
-            iq, counts1, interval1,
-            counts1, interval2)
+        iq4 = IsotopeQuantity.from_comparison(iq, counts1, interval1, counts1,
+                                              interval2)
         assert iq4 == iq * 2
 
-        iq5 = IsotopeQuantity.from_comparison(
-            iq, counts1, interval1,
-            counts2, interval2)
+        iq5 = IsotopeQuantity.from_comparison(iq, counts1, interval1, counts2,
+                                              interval2)
         assert iq5 == iq * 2 * f
 
         interval3 = (start - dt, stop - dt)
-        iq6 = IsotopeQuantity.from_comparison(
-            iq, counts1, interval1,
-            counts1, interval3)
+        iq6 = IsotopeQuantity.from_comparison(iq, counts1, interval1, counts1,
+                                              interval3)
         assert iq6 == iq / 2
 
 
@@ -364,11 +364,12 @@ def test_isotopequantity_from_comparison(iq):
 #               NeutronIrradiation class
 # ----------------------------------------------------
 
-@pytest.mark.parametrize('start, stop, n_cm2, n_cm2_s', [
-    ('2017-01-01 00:00:00', '2017-01-01 12:00:00', None, 1e12),
-    ('2017-01-01 00:00:00', '2017-01-01 12:00:00', 1e15, None),
-    ('2017-01-01 00:00:00', '2017-01-01 00:00:00', 1e15, None)
-])
+
+@pytest.mark.parametrize(
+    'start, stop, n_cm2, n_cm2_s',
+    [('2017-01-01 00:00:00', '2017-01-01 12:00:00', None, 1e12),
+     ('2017-01-01 00:00:00', '2017-01-01 12:00:00', 1e15, None),
+     ('2017-01-01 00:00:00', '2017-01-01 00:00:00', 1e15, None)])
 def test_irradiation_init(start, stop, n_cm2, n_cm2_s):
     """Test valid inits for NeutronIrradiation"""
 
@@ -376,10 +377,10 @@ def test_irradiation_init(start, stop, n_cm2, n_cm2_s):
     assert hasattr(ni, 'n_cm2')
 
 
-@pytest.mark.parametrize('start, stop, n_cm2, n_cm2_s, error', [
-    ('2017-01-01 00:00:00', '2017-01-01 12:00:00', 1e15, 1e12, ValueError),
-    ('2017-01-01 12:00:00', '2017-01-01 00:00:00', None, 1e12, ValueError)
-])
+@pytest.mark.parametrize(
+    'start, stop, n_cm2, n_cm2_s, error',
+    [('2017-01-01 00:00:00', '2017-01-01 12:00:00', 1e15, 1e12, ValueError),
+     ('2017-01-01 12:00:00', '2017-01-01 00:00:00', None, 1e12, ValueError)])
 def test_irradiation_bad_init(start, stop, n_cm2, n_cm2_s, error):
     """Test invalid inits for NeutronIrradiation"""
 
@@ -387,11 +388,8 @@ def test_irradiation_bad_init(start, stop, n_cm2, n_cm2_s, error):
         NeutronIrradiation(start, stop, n_cm2=n_cm2, n_cm2_s=n_cm2_s)
 
 
-@pytest.fixture(params=[
-    ('Cs-133', 'Cs-134'),
-    ('Hg-202', 'Hg-203'),
-    ('Na-23', 'Na-24')
-])
+@pytest.fixture(params=[('Cs-133', 'Cs-134'), ('Hg-202', 'Hg-203'), ('Na-23',
+                                                                     'Na-24')])
 def activation_pair(request):
     return Isotope(request.param[0]), Isotope(request.param[1])
 
@@ -477,11 +475,11 @@ def test_irradiation_activate_errors():
         ni.activate(barns, initial=iq1, activated=iso2)
 
 
-@pytest.mark.parametrize('start, stop, n_cm2, n_cm2_s', [
-    ('2017-01-01 00:00:00', '2017-01-01 12:00:00', None, 1e12),
-    ('2017-01-01 00:00:00', '2017-01-01 12:00:00', 1e15, None),
-    ('2017-01-01 00:00:00', '2017-01-01 00:00:00', 1e15, None)
-])
+@pytest.mark.parametrize(
+    'start, stop, n_cm2, n_cm2_s',
+    [('2017-01-01 00:00:00', '2017-01-01 12:00:00', None, 1e12),
+     ('2017-01-01 00:00:00', '2017-01-01 12:00:00', 1e15, None),
+     ('2017-01-01 00:00:00', '2017-01-01 00:00:00', 1e15, None)])
 def test_irradiation_str(start, stop, n_cm2, n_cm2_s):
     """Test NeutronIrradiation string representation"""
 
@@ -492,6 +490,7 @@ def test_irradiation_str(start, stop, n_cm2, n_cm2_s):
 # ----------------------------------------------------
 #               decay_normalize
 # ----------------------------------------------------
+
 
 def test_decay_normalize(radioisotope):
     """Test decay_normalize()"""

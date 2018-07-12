@@ -349,8 +349,7 @@ class NNDCQueryTests(object):
 
     def test_query_zrange_9_10_z_even_a_even_n_any(self):
         """Test NNDCQuery: z_range=(9, 10), z_even, a_even, n_any.........."""
-        d = self.fetch(
-            z_range=(9, 10), z_even=True, a_even=True, n_any=True)
+        d = self.fetch(z_range=(9, 10), z_even=True, a_even=True, n_any=True)
         assert len(d) > 0
         assert ((9 <= d.Z) & (d.Z <= 10)).all()
         assert (d.Z % 2 == 0).all()

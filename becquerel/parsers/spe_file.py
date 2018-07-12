@@ -150,9 +150,8 @@ class SpeFile(SpectrumFile):
             raise SpeFileParsingError(
                 'Livetime not parsed correctly: {}'.format(self.livetime))
         if self.livetime > self.realtime:
-            raise SpeFileParsingError(
-                'Livetime > realtime: {} > {}'.format(
-                    self.livetime, self.realtime))
+            raise SpeFileParsingError('Livetime > realtime: {} > {}'.format(
+                self.livetime, self.realtime))
         self.collection_stop = self.collection_start + \
             datetime.timedelta(seconds=self.realtime)
 

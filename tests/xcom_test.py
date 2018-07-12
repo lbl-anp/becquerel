@@ -8,26 +8,115 @@ import pytest
 # pylint: disable=protected-access,too-many-public-methods
 XCOM_URL_ORIG = xcom._URL
 
-
 # energies to query using energies keyword
 ENERGIES_3 = [60., 662., 1460.]
 
-
 # standard grid energies for Germanium from 1 keV to 10 MeV
 GE_GRID_ENERGIES = [
-    1, 1.103, 1.217, 1.217, 1.232, 1.248, 1.248, 1.328, 1.414, 1.414, 1.500,
-    2, 3, 4, 5, 6, 8, 10, 11.100, 11.100, 15, 20, 30, 40, 50, 60, 80, 100,
-    150, 200, 300, 400, 500, 600, 800, 1000, 1022, 1250, 1500, 2000, 2044,
-    3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
+    1,
+    1.103,
+    1.217,
+    1.217,
+    1.232,
+    1.248,
+    1.248,
+    1.328,
+    1.414,
+    1.414,
+    1.500,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    10,
+    11.100,
+    11.100,
+    15,
+    20,
+    30,
+    40,
+    50,
+    60,
+    80,
+    100,
+    150,
+    200,
+    300,
+    400,
+    500,
+    600,
+    800,
+    1000,
+    1022,
+    1250,
+    1500,
+    2000,
+    2044,
+    3000,
+    4000,
+    5000,
+    6000,
+    7000,
+    8000,
+    9000,
+    10000,
 ]
-
 
 # standard grid energies for Germanium, plus 60, 662, and 1460
 GE_GRID_ENERGIES_PLUS_3 = [
-    1, 1.103, 1.217, 1.217, 1.232, 1.248, 1.248, 1.328, 1.414, 1.414, 1.500,
-    2, 3, 4, 5, 6, 8, 10, 11.100, 11.100, 15, 20, 30, 40, 50, 60, 80, 100,
-    150, 200, 300, 400, 500, 600, 662, 800, 1000, 1022, 1250, 1460, 1500,
-    2000, 2044, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
+    1,
+    1.103,
+    1.217,
+    1.217,
+    1.232,
+    1.248,
+    1.248,
+    1.328,
+    1.414,
+    1.414,
+    1.500,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    10,
+    11.100,
+    11.100,
+    15,
+    20,
+    30,
+    40,
+    50,
+    60,
+    80,
+    100,
+    150,
+    200,
+    300,
+    400,
+    500,
+    600,
+    662,
+    800,
+    1000,
+    1022,
+    1250,
+    1460,
+    1500,
+    2000,
+    2044,
+    3000,
+    4000,
+    5000,
+    6000,
+    7000,
+    8000,
+    9000,
+    10000,
 ]
 
 
@@ -121,14 +210,12 @@ class TestFetchXCOMData(object):
     def test_except_bad_compound(self):
         """Test fetch_xcom_data raises except for bad compound formula."""
         with pytest.raises(xcom.XCOMInputError):
-            xcom.fetch_xcom_data(
-                'H2O++', energies_kev=ENERGIES_3)
+            xcom.fetch_xcom_data('H2O++', energies_kev=ENERGIES_3)
 
     def test_except_bad_mixture1(self):
         """Test fetch_xcom_data raises except for badly formed mixture (1)."""
         with pytest.raises(xcom.XCOMInputError):
-            xcom.fetch_xcom_data(
-                ['H2O 0.9', 'NaCl'], energies_kev=ENERGIES_3)
+            xcom.fetch_xcom_data(['H2O 0.9', 'NaCl'], energies_kev=ENERGIES_3)
 
     def test_except_bad_mixture2(self):
         """Test fetch_xcom_data raises except for badly formed mixture (2)."""
@@ -140,7 +227,10 @@ class TestFetchXCOMData(object):
         """Test fetch_xcom_data raises except for badly formed mixture (3)."""
         with pytest.raises(xcom.XCOMInputError):
             xcom.fetch_xcom_data(
-                {'H2O': '1', 'NaCl': '1'}, energies_kev=ENERGIES_3)
+                {
+                    'H2O': '1',
+                    'NaCl': '1'
+                }, energies_kev=ENERGIES_3)
 
     def test_except_bad_mixture4(self):
         """Test fetch_xcom_data raises except for badly formed mixture (4)."""

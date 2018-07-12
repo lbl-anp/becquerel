@@ -22,28 +22,20 @@ def offset(request):
     return request.param
 
 
-@pytest.fixture(params=[
-    (32, 67, 115),
-    [32, 67, 115],
-    np.array((32, 67, 115)),
-    [31.7, 67.2, 115]
-])
+@pytest.fixture(params=[(32, 67, 115), [32, 67, 115],
+                        np.array((32, 67, 115)), [31.7, 67.2, 115]])
 def chlist(request):
     return request.param
 
 
-@pytest.fixture(params=[
-    (661.66, 1460.83, 2614.5),
-    [661.66, 1460.83, 2614.5],
-    np.array((661.66, 1460.83, 2614.5)),
-    (662, 1461, 2615)
-])
+@pytest.fixture(params=[(661.66, 1460.83, 2614.5), [661.66, 1460.83, 2614.5],
+                        np.array((661.66, 1460.83, 2614.5)), (662, 1461,
+                                                              2615)])
 def kevlist(request):
     return request.param
 
 
-@pytest.fixture(params=[
-    32, -5, 67.83, (34, 35), np.arange(113, 7678.3, 55.5)])
+@pytest.fixture(params=[32, -5, 67.83, (34, 35), np.arange(113, 7678.3, 55.5)])
 def channels(request):
     return request.param
 
@@ -78,13 +70,15 @@ def linear_regression(x, y):
     n = len(x)
     sx = np.sum(x)
     sy = np.sum(y)
-    b = float(n*np.sum(x*y)-sx*sy)/float(n*np.sum(x**2)-sx*sx)
-    a = 1.0/n*(sy-b*sx)
+    b = float(n * np.sum(x * y) - sx * sy) / float(n * np.sum(x**2) - sx * sx)
+    a = 1.0 / n * (sy - b * sx)
     return [a, b]
+
 
 # ----------------------------------------------------
 #        Construction tests
 # ----------------------------------------------------
+
 
 def test_construction_empty():
     """Test empty construction"""
@@ -95,8 +89,7 @@ def test_construction_empty():
 def test_construction_chkevlist(chlist, kevlist):
     """Test construction (not fitting) from chlist, kevlist"""
 
-    cal = bq.LinearEnergyCal.from_points(
-        chlist=chlist, kevlist=kevlist)
+    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
     assert len(cal.channels) == len(chlist)
     assert len(cal.energies) == len(chlist)
     assert len(cal.calpoints) == len(chlist)
@@ -124,52 +117,59 @@ def test_construction_wrong_length(chlist, kevlist):
     """Test from_points with bad input"""
 
     with pytest.raises(bq.BadInput) as excinfo:
-        bq.LinearEnergyCal.from_points(
-            chlist=chlist, kevlist=kevlist[:-1])
+        bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist[:-1])
     excinfo.match('Channels and energies must be same length')
 
 
-@pytest.mark.parametrize('cl, kl, io', [
-    (32, 661.7, False),
-    (32, 661.7, True),
-    ({"val": 32}, {"ene": 661.7}, False),
-    ({"val": 32}, {"ene": 661.7}, True),
-    ([[32, 64], [72, 108]], [[661.7, 1172.7], [1332.5, 2614.5]], False),
-    ([[32, 64], [72, 108]], [[661.7, 1172.7], [1332.5, 2614.5]], True)])
+@pytest.mark.parametrize(
+    'cl, kl, io',
+    [(32, 661.7, False), (32, 661.7, True), ({
+        "val": 32
+    }, {
+        "ene": 661.7
+    }, False),
+     ({
+         "val": 32
+     }, {
+         "ene": 661.7
+     }, True),
+     ([[32, 64], [72, 108]], [[661.7, 1172.7], [1332.5, 2614.5]], False),
+     ([[32, 64], [72, 108]], [[661.7, 1172.7], [1332.5, 2614.5]], True)])
 def test_construction_bad_points(cl, kl, io):
     """Test errors of from_points with bad input"""
 
     with pytest.raises(bq.BadInput) as excinfo:
-        bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
+        bq.LinearEnergyCal.from_points(
+            chlist=cl, kevlist=kl, include_origin=io)
     excinfo.match('Inputs must be one dimensional iterables')
 
 
-@pytest.mark.parametrize('cl, kl, io', [
-    ([], [], False),
-    ([], [], True),
-    ((32,), (661.7,), False),
-    ([32], [661.7], False)])
+@pytest.mark.parametrize('cl, kl, io',
+                         [([], [], False), ([], [], True),
+                          ((32, ), (661.7, ), False), ([32], [661.7], False)])
 def test_construction_empty_points(cl, kl, io):
     """Test errors of from_points with empty/insufficient input"""
 
     with pytest.raises(bq.EnergyCalError) as excinfo:
-        bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
+        bq.LinearEnergyCal.from_points(
+            chlist=cl, kevlist=kl, include_origin=io)
 
 
-@pytest.mark.parametrize('cl, kl, io', [
-    (None, 661.7, False),
-    (32, None, False)])
+@pytest.mark.parametrize('cl, kl, io', [(None, 661.7, False),
+                                        (32, None, False)])
 def test_construction_None_points(cl, kl, io):
     """Test errors if input to from_points is None"""
 
     with pytest.raises(bq.EnergyCalError) as excinfo:
-        bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
+        bq.LinearEnergyCal.from_points(
+            chlist=cl, kevlist=kl, include_origin=io)
     excinfo.match('Channel list and energy list are required')
 
 
 # ----------------------------------------------------
 #        other EnergyCal method tests
 # ----------------------------------------------------
+
 
 def test_methods_add_calpoint():
     """Test add_calpoint"""
@@ -232,12 +232,13 @@ def test_methods_kev2ch(slope, offset, channels):
     else:
         assert np.all(np.isclose(cal.kev2ch(cal.ch2kev(channels)), channels))
 
-# update_fit is in LinearEnergyCal section
 
+# update_fit is in LinearEnergyCal section
 
 # ----------------------------------------------------
 #        LinearEnergyCal tests
 # ----------------------------------------------------
+
 
 def test_linear_construction_coefficients(slope, offset):
     """Test alternate construction coefficient names"""
@@ -264,7 +265,8 @@ def test_linear_fitting_simple():
     cal = bq.LinearEnergyCal.from_points(chlist=[0.0, 1.0], kevlist=[1.0, 3.0])
     assert np.allclose([1.0, 2.0], [cal.offset, cal.slope])
 
-    cal = bq.LinearEnergyCal.from_points(chlist=[1.0], kevlist=[2.0], include_origin=True)
+    cal = bq.LinearEnergyCal.from_points(
+        chlist=[1.0], kevlist=[2.0], include_origin=True)
     assert np.allclose([0.0, 2.0], [cal.offset, cal.slope])
 
 
@@ -273,14 +275,16 @@ def test_linear_fitting_with_fit(chlist, kevlist):
 
     cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
     cal.update_fit()
-    assert np.allclose(linear_regression(chlist, kevlist), [cal.offset, cal.slope])
+    assert np.allclose(
+        linear_regression(chlist, kevlist), [cal.offset, cal.slope])
 
 
 def test_linear_fitting_without_fit(chlist, kevlist):
     """Test linear fitting without calling update_fit function"""
 
     cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
-    assert np.allclose(linear_regression(chlist, kevlist), [cal.offset, cal.slope])
+    assert np.allclose(
+        linear_regression(chlist, kevlist), [cal.offset, cal.slope])
 
 
 def test_linear_fitting_with_origin(chlist, kevlist):
@@ -288,7 +292,8 @@ def test_linear_fitting_with_origin(chlist, kevlist):
 
     c = np.append(0, chlist)
     k = np.append(0, kevlist)
-    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist, include_origin=True)
+    cal = bq.LinearEnergyCal.from_points(
+        chlist=chlist, kevlist=kevlist, include_origin=True)
     assert np.allclose(linear_regression(c, k), [cal.offset, cal.slope])
 
 
@@ -309,9 +314,11 @@ def test_bad_access_error(uncal_spec):
     with pytest.raises(bq.EnergyCalError):
         cal.offset
 
+
 # ----------------------------------------------------
 #        Spectrum calibration methods tests
 # ----------------------------------------------------
+
 
 def test_apply_calibration(uncal_spec, chlist, kevlist):
     """Apply calibration on an uncalibrated spectrum"""
@@ -319,8 +326,8 @@ def test_apply_calibration(uncal_spec, chlist, kevlist):
     cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
     uncal_spec.apply_calibration(cal)
     assert uncal_spec.is_calibrated
-    assert np.allclose(
-        uncal_spec.energies_kev, cal.ch2kev(uncal_spec.channels))
+    assert np.allclose(uncal_spec.energies_kev,
+                       cal.ch2kev(uncal_spec.channels))
 
 
 def test_apply_calibration_recal(cal_spec, chlist, kevlist):
@@ -346,6 +353,7 @@ def test_rm_calibration_error(uncal_spec):
     assert not uncal_spec.is_calibrated
     uncal_spec.rm_calibration()
     assert not uncal_spec.is_calibrated
+
 
 def test_calibration_not_initialized_error(uncal_spec):
     """Test that calling apply_calibration on empty calibration causes an error"""

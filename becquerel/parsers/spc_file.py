@@ -99,7 +99,9 @@ class SpcFile(SpectrumFile):
             ['RRSFCT', 'f'],
         ],
         # Unknown Record
-        [['Unknown Record 1', '128B'], ],
+        [
+            ['Unknown Record 1', '128B'],
+        ],
         # Acquisition Information Record
         [
             ['Default spectrum file name', '16s'],
@@ -114,51 +116,89 @@ class SpcFile(SpectrumFile):
             ['Stop time of sample collection', '8s'],
         ],
         # Sample Description Record
-        [['Sample Description', '128s'], ],
+        [
+            ['Sample Description', '128s'],
+        ],
         # Detector Description Record
-        [['Detector Description', '128s'], ],
+        [
+            ['Detector Description', '128s'],
+        ],
         # First Analysis Parameter
         [
             ['Calibration ?', '16f'],
             ['Testing', '64s'],
         ],
         # Unknown Record
-        [['Unknown Record 2', '128B'], ],
+        [
+            ['Unknown Record 2', '128B'],
+        ],
         # Calibration Description Record
-        [['Calibration Description', '128s'], ],
+        [
+            ['Calibration Description', '128s'],
+        ],
         # Description Record 1
-        [['Location Description Record 1', 'x127s'], ],
+        [
+            ['Location Description Record 1', 'x127s'],
+        ],
         # Description Record 2
-        [['Location Description Record 2', '128s'], ],
+        [
+            ['Location Description Record 2', '128s'],
+        ],
         # Unknown Record
-        [['Unknown Record 3', '128B'], ],
+        [
+            ['Unknown Record 3', '128B'],
+        ],
         # Unknown Record
-        [['Unknown Record 4', '128B'], ],
+        [
+            ['Unknown Record 4', '128B'],
+        ],
         # Unknown Record
-        [['Unknown Record 5', '128B'], ],
+        [
+            ['Unknown Record 5', '128B'],
+        ],
         # Unknown Record
-        [['Unknown Record 6', '128B'], ],
+        [
+            ['Unknown Record 6', '128B'],
+        ],
         # Empty Record
-        [['Empty Record 1', '128B'], ],
+        [
+            ['Empty Record 1', '128B'],
+        ],
         # Empty Record
-        [['Empty Record 2', '128B'], ],
+        [
+            ['Empty Record 2', '128B'],
+        ],
         # Empty Record
-        [['Empty Record 3', '128B'], ],
+        [
+            ['Empty Record 3', '128B'],
+        ],
         # Empty Record
-        [['Empty Record 4', '128B'], ],
+        [
+            ['Empty Record 4', '128B'],
+        ],
         # Empty Record
-        [['Empty Record 5', '128B'], ],
+        [
+            ['Empty Record 5', '128B'],
+        ],
         # Hardware Parameters Record 1
-        [['Hardware Parameters Record 1', '128s'], ],
+        [
+            ['Hardware Parameters Record 1', '128s'],
+        ],
         # Hardware Parameters Record 2
-        [['Hardware Parameters Record 2', '128s'], ],
+        [
+            ['Hardware Parameters Record 2', '128s'],
+        ],
     ]
 
     SPC_FORMAT_END = [
         # Unknown Record
-        [['Unknown Record 1', '128B'], ],
+        [
+            ['Unknown Record 1', '128B'],
+        ],
         # Unknown Record
-        [['Unknown Record 2', '128B'], ],
+        [
+            ['Unknown Record 2', '128B'],
+        ],
         # Calibration parameters
         [
             ['Calibration parameter 0', 'f'],
@@ -200,9 +240,8 @@ class SpcFile(SpectrumFile):
                         'Unable to read 128 bytes from file')
                 if len(binary_data) < 128:
                     break
-            print(
-                'Done reading in SPC file.  Number of records: ',
-                len(data_records))
+            print('Done reading in SPC file.  Number of records: ',
+                  len(data_records))
             if len(data_records) not in (279, 280):
                 raise SpcFileParsingError(
                     'Number of data records incorrect: {}'.format(
@@ -210,8 +249,8 @@ class SpcFile(SpectrumFile):
             # read record data
             i_rec = 0
             for record_format in self.SPC_FORMAT_BEGINNING:
-                if not (len(data_records) == 279 and
-                        record_format[0][0] == 'Location Description Record 2'):
+                if not (len(data_records) == 279 and record_format[0][0] ==
+                        'Location Description Record 2'):
                     binary_data = data_records[i_rec]
                     i_rec += 1
                     fmt = '<'
@@ -237,11 +276,8 @@ class SpcFile(SpectrumFile):
                         else:
                             self.metadata[data_format[0]] = data[j]
                         if verbose:
-                            print(
-                                data_format[0],
-                                ': ',
-                                self.metadata[
-                                    data_format[0]])
+                            print(data_format[0], ': ',
+                                  self.metadata[data_format[0]])
             # read spectrum records
             # These records are the spectrum data stored as INTEGER*4
             # numbers beginning with the channel number given and going
@@ -285,11 +321,8 @@ class SpcFile(SpectrumFile):
                     else:
                         self.metadata[data_format[0]] = data[j]
                     if verbose:
-                        print(
-                            data_format[0],
-                            ': ',
-                            self.metadata[
-                                data_format[0]])
+                        print(data_format[0], ': ',
+                              self.metadata[data_format[0]])
         # finish the parsing
         self.sample_description = self.metadata['Sample Description']
         self.detector_description = self.metadata['Detector Description']
@@ -319,10 +352,10 @@ class SpcFile(SpectrumFile):
             self.location_description += \
                 self.metadata['Location Description Record 2'].split(
                     '\x00\x00\x00')[0].replace('\x00', '\n')
-        self.hardware_status = (
-            self.metadata['Hardware Parameters Record 1'] +
-            self.metadata['Hardware Parameters Record 2']).split(
-                '\x00\x00\x00')[0].replace('\x00', '\n')
+        self.hardware_status = (self.metadata['Hardware Parameters Record 1'] +
+                                self.metadata['Hardware Parameters Record 2']
+                                ).split('\x00\x00\x00')[0].replace(
+                                    '\x00', '\n')
         self.livetime = float(self.metadata['Live Time'])
         self.realtime = float(self.metadata['Real Time'])
         if self.realtime <= 0.0:
@@ -332,9 +365,8 @@ class SpcFile(SpectrumFile):
             raise SpcFileParsingError(
                 'Livetime not parsed correctly: {}'.format(self.livetime))
         if self.livetime > self.realtime:
-            raise SpcFileParsingError(
-                'Livetime > realtime: {} > {}'.format(
-                    self.livetime, self.realtime))
+            raise SpcFileParsingError('Livetime > realtime: {} > {}'.format(
+                self.livetime, self.realtime))
         self.num_channels = len(self.channels)
         try:
             self.cal_coeff = [

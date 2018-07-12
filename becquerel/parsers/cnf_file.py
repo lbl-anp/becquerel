@@ -211,8 +211,8 @@ class CnfFile(SpectrumFile):
             self.num_channels = 256 * \
                 _from_little_endian(data, offset_pha + 10, 2)
             if self.num_channels < 256 or self.num_channels > 16384:
-                raise CnfFileParsingError(
-                    'Unexpected number of channels: ', self.num_channels)
+                raise CnfFileParsingError('Unexpected number of channels: ',
+                                          self.num_channels)
             print('Number of channels: ', self.num_channels)
 
         # extract date and time information
@@ -268,6 +268,5 @@ class CnfFile(SpectrumFile):
             raise CnfFileParsingError(
                 'Livetime not parsed correctly: {}'.format(self.livetime))
         if self.livetime > self.realtime:
-            raise CnfFileParsingError(
-                'Livetime > realtime: {} > {}'.format(
-                    self.livetime, self.realtime))
+            raise CnfFileParsingError('Livetime > realtime: {} > {}'.format(
+                self.livetime, self.realtime))

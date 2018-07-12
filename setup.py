@@ -9,7 +9,6 @@ in the setup metadata.
 from __future__ import print_function
 from setuptools import setup
 
-
 DOCLINES = (__doc__ or '').split('\n')
 
 CLASSIFIERS = """\
@@ -27,11 +26,10 @@ Operating System :: Unix
 Operating System :: MacOS
 """
 
-MAJOR               = 0
-MINOR               = 0
-MICRO               = 0
-VERSION             = '{}.{}.{}'.format(MAJOR, MINOR, MICRO)
-
+MAJOR = 0
+MINOR = 0
+MICRO = 0
+VERSION = '{}.{}.{}'.format(MAJOR, MINOR, MICRO)
 
 # TODO: maintainer
 # TODO: maintainer_email
@@ -39,13 +37,13 @@ VERSION             = '{}.{}.{}'.format(MAJOR, MINOR, MICRO)
 # TODO: license
 
 setup(
-    name = 'becquerel',
-    description = DOCLINES[0],
-    long_description = '\n'.join(DOCLINES[2:]),
-    url = 'https://github.com/anp-lbl/becquerel/wiki',
-    download_url = 'https://github.com/anp-lbl/becquerel/releases',
+    name='becquerel',
+    description=DOCLINES[0],
+    long_description='\n'.join(DOCLINES[2:]),
+    url='https://github.com/anp-lbl/becquerel/wiki',
+    download_url='https://github.com/anp-lbl/becquerel/releases',
     classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
-    platforms = ['Windows', 'Linux', 'Solaris', 'Mac OS-X', 'Unix'],
+    platforms=['Windows', 'Linux', 'Solaris', 'Mac OS-X', 'Unix'],
     packages=[
         'becquerel',
         'becquerel.core',
