@@ -319,6 +319,11 @@ def test_kwargs(uncal_spec):
     assert plt.gca().get_lines()[0].get_color() == '#ffffff'
     plt.close("all")
 
+    uncal_spec.plot('--', color = '#ffffff', emode='bar')
+    assert plt.gca().get_lines()[0].get_linestyle() == '--'
+    assert plt.gca().get_lines()[0].get_color() == '#ffffff'
+    plt.close("all")
+
 def test_kwargs_SpectrumPlotter(uncal_spec):
     """Test kwargs, color and fmt in this case"""
 

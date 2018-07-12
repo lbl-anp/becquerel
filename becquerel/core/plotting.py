@@ -4,7 +4,7 @@ from __future__ import print_function
 import matplotlib.pyplot as plt
 import numpy as np
 from uncertainties import unumpy
-
+from .utils import isstring
 
 class PlottingError(Exception):
     """General exception for plotting.py"""
@@ -29,9 +29,9 @@ class SpectrumPlotter(object):
           title:  costum plot title, default is filename if available
           xlabel: costum xlabel value
           ylabel: costum ylabel value
-          kwargs: arguments that are directly passed to matplotlib's plot command.
-                  In addition it is possible to pass linthreshy if ylim='default'
-                  and ymode='symlog'
+          kwargs: arguments that are directly passed to matplotlib's plot
+                  command. In addition it is possible to pass linthreshy if
+                  ylim='default' and ymode='symlog'
         """
 
         #TODO Marco: maybe we should use tuplets for all the x/y stuff in order
@@ -46,6 +46,7 @@ class SpectrumPlotter(object):
         self._xlim = None
         self._ylim = None
         self._linthreshy = None
+        self._fmt = []
 
         xmode = None
         ymode = None
@@ -78,8 +79,8 @@ class SpectrumPlotter(object):
 
         self.spec = spec
 
-        if hasattr(fmt, '__len__') and len(fmt) in [0, 1]:
-            self.fmt = fmt
+        if len(fmt) in [0, 1]:
+            self._fmt = fmt
         else:
             raise PlottingError("Wrong number of positional arguments")
 
@@ -141,7 +142,7 @@ class SpectrumPlotter(object):
             if self._xlabel == 'Channel' or self._xlabel is None:
                 self._xlabel = 'Energy [keV]'
         elif self._xmode == 'channel':
-            self._xedges = self.get_channel_edges(self.spec.channels)
+            self._xedges = get_channel_edges(self.spec.channels)
             if self._xlabel == 'Energy [keV]' or self._xlabel is None:
                 self._xlabel = 'Channel'
 
@@ -183,15 +184,18 @@ class SpectrumPlotter(object):
 
         if self._ymode == 'counts':
             self._ydata = self.spec.counts_vals
-            if self._ylabel in ['Countrate [1/s]', 'Countrate [1/s/keV]'] or self._ylabel is None:
+            if (self._ylabel in ['Countrate [1/s]', 'Countrate [1/s/keV]'] or
+                    self._ylabel is None):
                 self._ylabel = 'Counts'
         elif self._ymode == 'cps':
             self._ydata = self.spec.cps_vals
-            if self._ylabel in ['Counts', 'Countrate [1/s/keV]'] or self._ylabel is None:
+            if (self._ylabel in ['Counts', 'Countrate [1/s/keV]'] or
+                    self._ylabel is None):
                 self._ylabel = 'Countrate [1/s]'
         elif self._ymode == 'cpskev':
             self._ydata = self.spec.cpskev_vals
-            if self._ylabel in ['Counts', 'Countrate [1/s]'] or self._ylabel is None:
+            if (self._ylabel in ['Counts', 'Countrate [1/s]'] or
+                    self._ylabel is None):
                 self._ylabel = 'Countrate [1/s/keV]'
 
 
@@ -277,7 +281,7 @@ class SpectrumPlotter(object):
                             matplotlib's plotting function
         """
 
-        return self.bin_edges_and_heights_to_steps(
+        return bin_edges_and_heights_to_steps(
             self._xedges, unumpy.nominal_values(self._ydata))
 
 
@@ -314,14 +318,14 @@ class SpectrumPlotter(object):
                   previously defined keywords
         """
 
-        if hasattr(fmt, '__len__') and len(fmt) > 0:
-            self.fmt = fmt
+        if fmt:
+            self._fmt = fmt
 
-        if not hasattr(self.fmt, '__len__') or not len(self.fmt) in [0, 1]:
+        if not len(self._fmt) in [0, 1]:
             raise PlottingError("Wrong number of positional argument")
 
         xcorners, ycorners = self._prepare_plot(**kwargs)
-        self.ax.plot(xcorners, ycorners, *self.fmt, **self.kwargs)
+        self.ax.plot(xcorners, ycorners, *self._fmt, **self.kwargs)
         return self.ax
 
 
@@ -352,15 +356,20 @@ class SpectrumPlotter(object):
         xdata = (self._xedges[0:-1]+self._xedges[1:])*0.5
 
         if 'fmt' in self.kwargs:
-            self.fmt = (self.kwargs.pop('fmt'))
+            if (not hasattr(kwargs['fmt'], '__len__') or
+                    isstring(kwargs['fmt'])):
+                self._fmt = (self.kwargs.pop('fmt'),)
+            else:
+                self._fmt = self.kwargs.pop('fmt')
 
-        if hasattr(self.fmt, '__len__') and len(self.fmt) == 0:
-            self.fmt = (',',)
+        if not self._fmt:
+            self._fmt = (',',)
 
-        if not hasattr(self.fmt, '__len__') or len(self.fmt) != 1:
+        if len(self._fmt) != 1:
             raise PlottingError("Wrong number of argument for fmt")
 
-        self.ax.errorbar(xdata, self._ydata, yerr=self.yerror, fmt=self.fmt[0], **self.kwargs)
+        self.ax.errorbar(xdata, self._ydata, yerr=self.yerror,
+                         fmt=self._fmt[0], **self.kwargs)
 
 
     def errorband(self, **kwargs):
@@ -378,89 +387,13 @@ class SpectrumPlotter(object):
         if 'alpha' in self.kwargs:
             alpha = self.kwargs.pop("alpha")
 
-        xcorners, ycorlow = self.bin_edges_and_heights_to_steps(
+        xcorners, ycorlow = bin_edges_and_heights_to_steps(
             self._xedges, unumpy.nominal_values(self._ydata-self.yerror))
-        _, ycorhig = self.bin_edges_and_heights_to_steps(
+        _, ycorhig = bin_edges_and_heights_to_steps(
             self._xedges, unumpy.nominal_values(self._ydata+self.yerror))
-        self.ax.fill_between(xcorners, ycorlow, ycorhig, alpha=alpha, **self.kwargs)
+        self.ax.fill_between(xcorners, ycorlow, ycorhig,
+                             alpha=alpha, **self.kwargs)
         return self.ax
-
-    @staticmethod
-    def get_channel_edges(channels):
-        """Get a vector of xedges for uncalibrated channels."""
-
-        n_edges = len(channels) + 1
-        return np.linspace(-0.5, channels[-1] + 0.5, num=n_edges)
-
-
-    @staticmethod
-    def bin_edges_and_heights_to_steps(bin_edges, heights):
-        """A robust alternative to matplotlib's drawstyle='steps-*'"""
-
-        assert len(bin_edges) == len(heights) + 1
-        x = np.zeros(len(bin_edges) * 2)
-        y = np.zeros_like(x)
-        x[::2] = bin_edges.astype(float)
-        x[1::2] = bin_edges.astype(float)
-        y[1:-1:2] = heights.astype(float)
-        y[2:-1:2] = heights.astype(float)
-        return x, y
-
-
-    @staticmethod
-    def dynamic_min(data_min, min_delta_y):
-        """Get an axes lower limit (for y) based on data value.
-
-        The lower limit is the next power of 10, or 3 * power of 10, below the min.
-
-        Args:
-          data_min: the minimum of the data (could be integers or floats)
-          min_delta_y: the minimum step in y
-        """
-
-        if data_min > 0:
-            ceil10 = 10**(np.ceil(np.log10(data_min)))
-            sig_fig = np.floor(10 * data_min / ceil10)
-            if sig_fig <= 3:
-                ymin = ceil10 / 10
-            else:
-                ymin = ceil10 / 10 * 3
-        elif data_min == 0:
-            ymin = min_delta_y / 10.0
-        else:
-            # negative
-            floor10 = 10**(np.floor(np.log10(-data_min)))
-            sig_fig = np.floor(-data_min / floor10)
-            if sig_fig < 3:
-                ymin = -floor10 * 3
-            else:
-                ymin = -floor10 * 10
-
-        return ymin
-
-
-    @staticmethod
-    def dynamic_max(data_max, yscale):
-        """Get an axes upper limit (for y) based on data value.
-
-        The upper limit is the next power of 10, or 3 * power of 10, above
-        the max (For linear, the next N * power of 10.).
-
-        Args:
-          data_max: the maximum of the data (could be integers or floats)
-        """
-
-        floor10 = 10**(np.floor(np.log10(data_max)))
-        sig_fig = np.ceil(data_max / floor10)
-        if yscale == 'linear':
-            sig_fig = np.floor(data_max / floor10)
-            ymax = floor10 * (sig_fig + 1)
-        elif sig_fig < 3:
-            ymax = floor10 * 3
-        else:
-            ymax = floor10 * 10
-
-        return np.maximum(ymax, 0)
 
 
     @property
@@ -471,6 +404,7 @@ class SpectrumPlotter(object):
             return np.min(self._xedges), np.max(self._xedges)
 
         return self._xlim
+
 
     @xlim.setter
     def xlim(self, limits):
@@ -504,10 +438,10 @@ class SpectrumPlotter(object):
             elif yscale == 'symlog' and data_min >= 0:
                 ymin = 0
             else:
-                ymin = self.dynamic_min(data_min, min_delta_y)
+                ymin = dynamic_min(data_min, min_delta_y)
 
             data_max = np.max(self._ydata)
-            ymax = self.dynamic_max(data_max, yscale)
+            ymax = dynamic_max(data_max, yscale)
             return ymin, ymax
 
         return self._ylim
@@ -532,3 +466,78 @@ class SpectrumPlotter(object):
         min_ind = np.argmin(np.abs(self._ydata[self._ydata != 0]))
         delta_y = np.abs(self._ydata - self._ydata[min_ind])
         return np.min(delta_y[delta_y > 0])
+
+
+def get_channel_edges(channels):
+    """Get a vector of xedges for uncalibrated channels."""
+
+    n_edges = len(channels) + 1
+    return np.linspace(-0.5, channels[-1] + 0.5, num=n_edges)
+
+
+def bin_edges_and_heights_to_steps(bin_edges, heights):
+    """A robust alternative to matplotlib's drawstyle='steps-*'"""
+
+    assert len(bin_edges) == len(heights) + 1
+    x = np.zeros(len(bin_edges) * 2)
+    y = np.zeros_like(x)
+    x[::2] = bin_edges.astype(float)
+    x[1::2] = bin_edges.astype(float)
+    y[1:-1:2] = heights.astype(float)
+    y[2:-1:2] = heights.astype(float)
+    return x, y
+
+
+def dynamic_min(data_min, min_delta_y):
+    """Get an axes lower limit (for y) based on data value.
+
+    The lower limit is the next power of 10, or 3 * power of 10,
+    below the min.
+
+    Args:
+      data_min: the minimum of the data (could be integers or floats)
+      min_delta_y: the minimum step in y
+    """
+
+    if data_min > 0:
+        ceil10 = 10**(np.ceil(np.log10(data_min)))
+        sig_fig = np.floor(10 * data_min / ceil10)
+        if sig_fig <= 3:
+            ymin = ceil10 / 10
+        else:
+            ymin = ceil10 / 10 * 3
+    elif data_min == 0:
+        ymin = min_delta_y / 10.0
+    else:
+        # negative
+        floor10 = 10**(np.floor(np.log10(-data_min)))
+        sig_fig = np.floor(-data_min / floor10)
+        if sig_fig < 3:
+            ymin = -floor10 * 3
+        else:
+            ymin = -floor10 * 10
+
+    return ymin
+
+
+def dynamic_max(data_max, yscale):
+    """Get an axes upper limit (for y) based on data value.
+
+    The upper limit is the next power of 10, or 3 * power of 10, above
+    the max (For linear, the next N * power of 10.).
+
+    Args:
+      data_max: the maximum of the data (could be integers or floats)
+    """
+
+    floor10 = 10**(np.floor(np.log10(data_max)))
+    sig_fig = np.ceil(data_max / floor10)
+    if yscale == 'linear':
+        sig_fig = np.floor(data_max / floor10)
+        ymax = floor10 * (sig_fig + 1)
+    elif sig_fig < 3:
+        ymax = floor10 * 3
+    else:
+        ymax = floor10 * 10
+
+    return np.maximum(ymax, 0)

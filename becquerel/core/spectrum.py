@@ -124,7 +124,7 @@ class Spectrum(object):
         if not (counts is None) ^ (cps is None):
             raise SpectrumError('Must specify one of counts or CPS')
         if counts is not None:
-            if len(counts) == 0:
+            if len(counts) == 0:  # Required for numpy, pylint: disable=len-as-condition
                 raise SpectrumError('Empty spectrum counts')
             self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
@@ -141,7 +141,7 @@ class Spectrum(object):
                 self.livetime = livetime
                 # TODO should this be allowed?
                 #   all calculations with CPS return livetime=np.nan anyway...
-            if len(cps) == 0:
+            if len(cps) == 0:   # Required for numpy, pylint: disable=len-as-condition
                 raise SpectrumError('Empty spectrum counts')
             self._cps = handle_uncs(cps, uncs, lambda x: np.nan)
 
@@ -226,8 +226,8 @@ class Spectrum(object):
 
         if self.counts is None:
             return None
-        else:
-            return unumpy.nominal_values(self._counts)
+
+        return unumpy.nominal_values(self._counts)
 
     @property
     def counts_uncs(self):
@@ -239,8 +239,8 @@ class Spectrum(object):
 
         if self.counts is None:
             return None
-        else:
-            return unumpy.std_devs(self._counts)
+
+        return unumpy.std_devs(self._counts)
 
     @property
     def cps(self):
@@ -415,8 +415,8 @@ class Spectrum(object):
 
         if self.counts is not None:
             return len(self.counts)
-        else:
-            return len(self.cps)
+
+        return len(self.cps)
 
     def __add__(self, other):
         """Add spectra together.
@@ -752,9 +752,9 @@ class Spectrum(object):
                   matplotlib plot and can not be configured. For better plotting
                   control use SpectrumPlotter and its errorband and errorbars
                   functions.
-          kwargs: arguments that are directly passed to matplotlib's plot command.
-                  In addition it is possible to pass linthreshy if ylim='default'
-                  and ymode='symlog'
+          kwargs: arguments that are directly passed to matplotlib's plot
+                  command. In addition it is possible to pass linthreshy if
+                  ylim='default' and ymode='symlog'
 
         Returns:
           matplotlib axes object
@@ -795,9 +795,9 @@ class Spectrum(object):
           title:  costum plot title
           xlabel: costum xlabel value
           ylabel: costum ylabel value
-          kwargs: arguments that are directly passed to matplotlib's fill_between
-                  command. In addition it is possible to pass linthreshy if
-                  ylim='default' and ymode='symlog'.
+          kwargs: arguments that are directly passed to matplotlib's
+                  fill_between command. In addition it is possible to pass
+                  linthreshy if ylim='default' and ymode='symlog'.
 
         Returns:
           matplotlib axes object
