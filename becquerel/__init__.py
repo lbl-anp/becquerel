@@ -3,7 +3,7 @@
 from . import core
 from . import parsers
 from . import tools
-from .__metadata__ import __name__, __package__, __description__, __url__
+from .__metadata__ import __description__, __url__
 from .__metadata__ import __version__, __license__, __copyright__
 
 from .core.spectrum import Spectrum, SpectrumError, UncalibratedError
