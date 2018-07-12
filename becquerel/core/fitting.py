@@ -181,15 +181,13 @@ class Fitter(object):
             # TODO: revisit this non zero unc option
             self._y_unc[self._y_unc <= 0.] = np.min(self._y_unc > 0.)
         # Set param defaults based on guess
-        defaults = self.guess_param_defaults()
-        if defaults is not None:
-            for dp in defaults:
-                self.set_param(*dp)
+        self.guess_param_defaults(update=True)
 
     def set_roi(self, low, high):
         self._roi = (float(low), float(high))
         self._roi_msk = ((self.x >= self.roi[0]) &
                          (self.x <= self.roi[1]))
+        self.guess_param_defaults(update=True)
 
     def set_param(self, pname, ptype, pvalue):
         self.params[pname].set(**{ptype: pvalue})
@@ -198,9 +196,17 @@ class Fitter(object):
         # TODO: change to ABC
         raise NotImplementedError()
 
-    def guess_param_defaults(self):
+    def _guess_param_defaults(self, **kwargs):
         # TODO: change to ABC
         raise NotImplementedError()
+
+    def guess_param_defaults(self, update=False, **kwargs):
+        defaults = self._guess_param_defaults(**kwargs)
+        if update:
+            if defaults is not None:
+                for dp in defaults:
+                    self.set_param(*dp)
+        return defaults
 
     def fit(self, backend='lmfit'):
         assert self.y is not None, \
@@ -444,7 +450,7 @@ class FitterGaussExp(Fitter):
             GaussModel(prefix='gauss_') + \
             ExpModel(prefix='exp_')
 
-    def guess_param_defaults(self):
+    def _guess_param_defaults(self):
         params = []
         params += self._guess_gauss_params(prefix='gauss_')
         params += self._guess_exp_params(prefix='exp_')
@@ -459,7 +465,7 @@ class FitterGaussErfLine(Fitter):
             ErfModel(prefix='erf_') + \
             LineModel(prefix='line_')
 
-    def guess_param_defaults(self):
+    def _guess_param_defaults(self):
         params = []
         params += self._guess_gauss_params(prefix='gauss_')
         params += self._guess_erf_params(prefix='erf_')
@@ -475,7 +481,7 @@ class FitterGaussErfExp(Fitter):
             ErfModel(prefix='erf_') + \
             ExpModel(prefix='exp_')
 
-    def guess_param_defaults(self):
+    def _guess_param_defaults(self):
         params = []
         params += self._guess_gauss_params(prefix='gauss_')
         params += self._guess_erf_params(prefix='erf_')
@@ -491,7 +497,7 @@ class FitterGaussGaussLine(Fitter):
             GaussModel(prefix='gauss1_') + \
             LineModel(prefix='line_')
 
-    def guess_param_defaults(self):
+    def _guess_param_defaults(self):
         params = []
         params += self._guess_gauss_params(prefix='gauss0_',
                                            center_ratio=0.33,
@@ -511,7 +517,7 @@ class FitterGaussGaussExp(Fitter):
             GaussModel(prefix='gauss1_') + \
             ExpModel(prefix='exp_')
 
-    def guess_param_defaults(self):
+    def _guess_param_defaults(self):
         params = []
         params += self._guess_gauss_params(prefix='gauss0_',
                                            center_ratio=0.33,
