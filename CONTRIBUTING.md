@@ -16,8 +16,9 @@ For a feature request, please create an issue and label it as a `new feature`.
   - [ ] Branch off of `develop` and name the branch `feature-XX` or `issue-XX`
   - [ ] Develop the feature or fix
   - [ ] Write tests to cover all use cases
-  - [ ] Ensure test coverage is >95%
   - [ ] Ensure all tests pass (`python setup.py test`)
-  - [ ] Ensure there are no linter issues (both `flake8` and `pylint`)
-  - [ ] Check style is [consistent with Google Python style guide](https://google.github.io/styleguide/pyguide.html)
+  - [ ] Ensure test coverage is >95%
+  - [ ] Ensure there are no linter issues (`flake8`, `pylint`, and `pydocstyle`)
+  - [ ] Spellcheck your code and docstrings
+  - [ ] Check style is [consistent with Google Python style guide](https://github.com/google/styleguide/blob/gh-pages/pyguide.md)
   - [ ] Push branch to GitHub and create a pull request
