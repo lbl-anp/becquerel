@@ -19,6 +19,8 @@ filename2 = os.path.join(
     '../tests/samples/Mendocino_07-10-13_Acq-10-10-13.Spe')
 filename3 = os.path.join(
     os.path.dirname(bq.__file__), '../tests/samples/nai_detector.csv')
+filename4 = os.path.join(
+    os.path.dirname(bq.__file__), '../tests/samples/SGM102432.csv')
 
 counts = []
 with open(filename1, 'r') as f:
@@ -37,6 +39,14 @@ with open(filename3, 'r') as f:
         if len(tokens) == 2:
             counts.append(float(tokens[1]))
 spec3 = bq.Spectrum(counts=counts)
+
+counts = []
+with open(filename4, 'r') as f:
+    for line in f:
+        tokens = line.strip().split(',')
+        if len(tokens) == 2:
+            counts.append(float(tokens[1]))
+spec4 = bq.Spectrum(counts=counts)
 
 
 REQUIRED = [609.32, 1460.82, 2614.3]
@@ -284,3 +294,20 @@ def test_autocal_spec3():
     )
     assert len(cal.fit_channels) == 7
     assert np.isclose(cal.gain, 2.02, rtol=1e-3)
+
+
+def test_autocal_spec4():
+    """Test AutoCalibrator on spectrum 4."""
+    kernel = GaussianPeakFilter(2400, 120, 30)
+    finder = PeakFinder(spec4, kernel)
+    cal = AutoCalibrator(finder)
+    cal.peakfinder.find_peaks(min_snr=3, min_chan=100)
+    assert len(cal.peakfinder.channels) == 7
+    cal.fit(
+        [356.0129, 661.657, 1460.82],
+        optional=[911.20, 1120.294, 1620.50, 1764.49, 2118.514, 2614.3],
+        gain_range=[0.3, 0.7],
+        de_max=50.,
+    )
+    assert len(cal.fit_channels) == 3
+    assert np.isclose(cal.gain, 0.6133, rtol=1e-3)
