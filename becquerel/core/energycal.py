@@ -5,6 +5,7 @@ from builtins import dict, super, zip  # pylint: disable=redefined-builtin
 from future.utils import viewitems
 import numpy as np
 
+
 class EnergyCalError(Exception):
     """Base class for errors in energycal.py"""
 

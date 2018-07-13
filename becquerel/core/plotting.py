@@ -6,6 +6,7 @@ import numpy as np
 from uncertainties import unumpy
 from .utils import isstring
 
+
 class PlottingError(Exception):
     """General exception for plotting.py"""
 
@@ -34,8 +35,8 @@ class SpectrumPlotter(object):
                   ylim='default' and ymode='symlog'
         """
 
-        #TODO Marco: maybe we should use tuplets for all the x/y stuff in order
-        #to reduce the number of attributes (pylint ask for 7 we have 23)!
+        # TODO Marco: maybe we should use tuple for all the x/y stuff in order
+        # to reduce the number of attributes (pylint ask for 7 we have 23)!
         self._xedges = None
         self._ydata = None
         self._xmode = None
@@ -101,7 +102,6 @@ class SpectrumPlotter(object):
         self.xlabel = xlabel
         self.ylabel = ylabel
 
-
     @property
     def xmode(self):
         """
@@ -109,7 +109,6 @@ class SpectrumPlotter(object):
         """
 
         return self._xmode
-
 
     @xmode.setter
     def xmode(self, mode):
@@ -146,14 +145,12 @@ class SpectrumPlotter(object):
             if self._xlabel == 'Energy [keV]' or self._xlabel is None:
                 self._xlabel = 'Channel'
 
-
     @property
     def ymode(self):
         """
         Returns the current y axis plotting mode.
         """
         return self._ymode
-
 
     @ymode.setter
     def ymode(self, mode):
@@ -198,7 +195,6 @@ class SpectrumPlotter(object):
                     self._ylabel is None):
                 self._ylabel = 'Countrate [1/s/keV]'
 
-
     @property
     def ax(self):
         """
@@ -209,7 +205,6 @@ class SpectrumPlotter(object):
         if self._ax is None:
             _, self._ax = plt.subplots()
         return self._ax
-
 
     @ax.setter
     def ax(self, ax):
@@ -229,7 +224,6 @@ class SpectrumPlotter(object):
         """
         return self._xlabel
 
-
     @xlabel.setter
     def xlabel(self, label):
         """
@@ -239,7 +233,6 @@ class SpectrumPlotter(object):
         if label is not None:
             self._xlabel = label
 
-
     @property
     def ylabel(self):
         """
@@ -247,7 +240,6 @@ class SpectrumPlotter(object):
         """
 
         return self._ylabel
-
 
     @ylabel.setter
     def ylabel(self, label):
@@ -271,7 +263,6 @@ class SpectrumPlotter(object):
         elif self._ymode == 'cpskev':
             return self.spec.cpskev_uncs
 
-
     def get_corners(self):
         """
         Creates a stepped version of the current spectrum data.
@@ -283,7 +274,6 @@ class SpectrumPlotter(object):
 
         return bin_edges_and_heights_to_steps(
             self._xedges, unumpy.nominal_values(self._ydata))
-
 
     def _prepare_plot(self, **kwargs):
         """Prepare for the plotting."""
@@ -307,7 +297,6 @@ class SpectrumPlotter(object):
                 self.ax.set_yscale(self.yscale, linthreshy=self.linthreshy)
         return self.get_corners()
 
-
     def plot(self, *fmt, **kwargs):
         """
         Create actual plot with matplotlib's plot method.
@@ -328,7 +317,6 @@ class SpectrumPlotter(object):
         self.ax.plot(xcorners, ycorners, *self._fmt, **self.kwargs)
         return self.ax
 
-
     def fill_between(self, **kwargs):
         """
         Create actual plot with matplotlib's fill_between method.
@@ -341,7 +329,6 @@ class SpectrumPlotter(object):
         xcorners, ycorners = self._prepare_plot(**kwargs)
         self.ax.fill_between(xcorners, ycorners, **self.kwargs)
         return self.ax
-
 
     def errorbar(self, **kwargs):
         """
@@ -371,7 +358,6 @@ class SpectrumPlotter(object):
         self.ax.errorbar(xdata, self._ydata, yerr=self.yerror,
                          fmt=self._fmt[0], **self.kwargs)
 
-
     def errorband(self, **kwargs):
         """
         Create an errorband with matplotlib's plot fill_between method.
@@ -395,7 +381,6 @@ class SpectrumPlotter(object):
                              alpha=alpha, **self.kwargs)
         return self.ax
 
-
     @property
     def xlim(self):
         """Returns the xlim, requires xedges."""
@@ -405,16 +390,14 @@ class SpectrumPlotter(object):
 
         return self._xlim
 
-
     @xlim.setter
     def xlim(self, limits):
         """Sets xlim."""
 
-        if limits is not None and limits != 'default' and \
-        (not hasattr(limits, '__len__') or len(limits) != 2):
+        if (limits is not None and limits != 'default' and
+                (not hasattr(limits, '__len__') or len(limits) != 2)):
             raise PlottingError('xlim should be length 2: {}'.format(limits))
         self._xlim = limits
-
 
     @property
     def ylim(self):
@@ -446,16 +429,14 @@ class SpectrumPlotter(object):
 
         return self._ylim
 
-
     @ylim.setter
     def ylim(self, limits):
         """Sets ylim."""
 
-        if limits is not None and limits != 'default' and \
-        (not hasattr(limits, '__len__') or len(limits) != 2):
+        if (limits is not None and limits != 'default' and
+                (not hasattr(limits, '__len__') or len(limits) != 2)):
             raise PlottingError('ylim should be length 2: {}'.format(limits))
         self._ylim = limits
-
 
     @property
     def linthreshy(self):

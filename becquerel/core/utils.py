@@ -10,11 +10,15 @@ VECTOR_TYPES = (list, tuple, np.ndarray)
 
 
 try:
+
     isinstance("", basestring)
+
     def isstring(s):
         """Test for strings in python2 and 3 without relying on six"""
         return isinstance(s, basestring)
+
 except NameError:
+
     def isstring(s):
         """Test for strings in python2 and 3 without relying on six"""
         return isinstance(s, str)

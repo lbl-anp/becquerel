@@ -10,6 +10,7 @@ from .. import parsers
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
 from . import plotting
 
+
 class SpectrumError(Exception):
     """Exception raised by Spectrum."""
 
@@ -124,7 +125,7 @@ class Spectrum(object):
         if not (counts is None) ^ (cps is None):
             raise SpectrumError('Must specify one of counts or CPS')
         if counts is not None:
-            if len(counts) == 0:  # Required for numpy, pylint: disable=len-as-condition
+            if len(counts) == 0:  # numpy-way pylint: disable=len-as-condition
                 raise SpectrumError('Empty spectrum counts')
             self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
@@ -141,7 +142,7 @@ class Spectrum(object):
                 self.livetime = livetime
                 # TODO should this be allowed?
                 #   all calculations with CPS return livetime=np.nan anyway...
-            if len(cps) == 0:   # Required for numpy, pylint: disable=len-as-condition
+            if len(cps) == 0:   # numpy-way, pylint: disable=len-as-condition
                 raise SpectrumError('Empty spectrum counts')
             self._cps = handle_uncs(cps, uncs, lambda x: np.nan)
 
@@ -170,9 +171,9 @@ class Spectrum(object):
         self.stop_time = handle_datetime(
             stop_time, 'stop_time', allow_none=True)
 
-        if (self.realtime is not None
-                and self.stop_time is not None
-                and self.start_time is not None):
+        if (self.realtime is not None and
+                self.stop_time is not None and
+                self.start_time is not None):
             raise SpectrumError(
                 'Specify no more than 2 out of 3 args: ' +
                 'realtime, stop_time, start_time')
@@ -730,7 +731,6 @@ class Spectrum(object):
         obj = Spectrum(**kwargs)
         return obj
 
-
     def plot(self, *fmt, **kwargs):
         """Plot a spectrum with matplotlib's plot command.
 
@@ -749,9 +749,9 @@ class Spectrum(object):
           ylabel: costum ylabel value
           emode:  can be 'band' for adding an erroband or 'bars' for adding
                   error bars, default is 'none'. It herits the color from
-                  matplotlib plot and can not be configured. For better plotting
-                  control use SpectrumPlotter and its errorband and errorbars
-                  functions.
+                  matplotlib plot and can not be configured. For better
+                  plotting control use SpectrumPlotter and its errorband and
+                  errorbars functions.
           kwargs: arguments that are directly passed to matplotlib's plot
                   command. In addition it is possible to pass linthreshy if
                   ylim='default' and ymode='symlog'
@@ -778,7 +778,6 @@ class Spectrum(object):
             raise SpectrumError("Unknown error mode '{}', use 'bars' "
                                 "or 'band'".format(emode))
         return ax
-
 
     def fill_between(self, **kwargs):
         """Plot a spectrum with matplotlib's fill_between command
