@@ -441,6 +441,8 @@ def test_add(type1, type2, lt1, lt2):
 @pytest.mark.parametrize('type1, type2, expected_error', [
     ('uncal', 'cal', bq.SpectrumError),
     ('uncal', 'uncal_long', bq.SpectrumError),
+    ('uncal', 'data', TypeError),
+    ('data', 'uncal', TypeError),
     ('uncal', 5, TypeError),
     (5, 'cal', TypeError),
     ('cal', 'asdf', TypeError),
@@ -536,10 +538,16 @@ def test_basic_mul_div(spectype, factor):
 
     spec = get_spectrum(spectype)
 
-    mult = spec * factor
-    assert np.allclose(mult.counts_vals, factor * spec.counts_vals)
-    assert np.allclose(mult.counts_uncs, factor * spec.counts_uncs)
-    assert mult.livetime is None
+    mult_left = spec * factor
+    assert np.allclose(mult_left.counts_vals, factor * spec.counts_vals)
+    assert np.allclose(mult_left.counts_uncs, factor * spec.counts_uncs)
+    assert mult_left.livetime is None
+
+    mult_right = factor * spec
+    assert np.allclose(mult_right.counts_vals, factor * spec.counts_vals)
+    assert np.allclose(mult_right.counts_uncs, factor * spec.counts_uncs)
+    assert mult_right.livetime is None
+
     div = spec / factor
     assert np.allclose(div.counts_vals, spec.counts_vals / factor)
     assert np.allclose(div.counts_uncs, spec.counts_uncs / factor)
@@ -550,9 +558,14 @@ def test_basic_mul_div(spectype, factor):
 def test_cps_mul_div(uncal_spec_cps, factor):
     """Multiplication/division of a CPS spectrum."""
 
-    mult = uncal_spec_cps * factor
-    assert np.allclose(mult.cps_vals, factor * uncal_spec_cps.cps_vals)
-    assert np.isnan(mult.livetime)
+    mult_left = uncal_spec_cps * factor
+    assert np.allclose(mult_left.cps_vals, factor * uncal_spec_cps.cps_vals)
+    assert np.isnan(mult_left.livetime)
+
+    mult_right = factor * uncal_spec_cps
+    assert np.allclose(mult_right.cps_vals, factor * uncal_spec_cps.cps_vals)
+    assert np.isnan(mult_right.livetime)
+
     div = uncal_spec_cps / factor
     assert np.allclose(div.cps_vals, uncal_spec_cps.cps_vals / factor)
     assert np.isnan(div.livetime)
@@ -570,13 +583,22 @@ def test_uncal_mul_div_uncertainties(spectype, factor):
 
     spec = get_spectrum(spectype)
 
-    mult = spec * factor
+    mult_left = spec * factor
     assert np.allclose(
-        mult.counts_vals, factor.nominal_value * spec.counts_vals)
+        mult_left.counts_vals, factor.nominal_value * spec.counts_vals)
     assert np.all(
-        (mult.counts_uncs > factor.nominal_value * spec.counts_uncs) |
+        (mult_left.counts_uncs > factor.nominal_value * spec.counts_uncs) |
         (spec.counts_vals == 0))
-    assert mult.livetime is None
+    assert mult_left.livetime is None
+
+    mult_right = factor * spec
+    assert np.allclose(
+        mult_right.counts_vals, factor.nominal_value * spec.counts_vals)
+    assert np.all(
+        (mult_right.counts_uncs > factor.nominal_value * spec.counts_uncs) |
+        (spec.counts_vals == 0))
+    assert mult_right.livetime is None
+
     div = spec / factor
     assert np.allclose(
         div.counts_vals, spec.counts_vals / factor.nominal_value)
@@ -602,6 +624,10 @@ def test_mul_div_errors(type1, type2, error):
 
     with pytest.raises(error):
         spec * bad_factor
+
+    with pytest.raises(error):
+        bad_factor * spec
+
     with pytest.raises(error):
         spec / bad_factor
 

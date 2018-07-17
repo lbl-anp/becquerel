@@ -203,6 +203,11 @@ class Spectrum(object):
         else:
             self.infilename = None
 
+        # These two lines make sure operators between a Spectrum
+        # and a numpy arrays are forbidden and cause a TypeError
+        self.__array_ufunc__ = None
+        self.__array_priority__ = 1
+
     @property
     def counts(self):
         """Counts in each channel, with uncertainty.
@@ -528,6 +533,9 @@ class Spectrum(object):
         """
 
         return self._mul_div(other, div=False)
+
+    # This line will allow the right multiplication to work	
+    __rmul__ = __mul__
 
     def __div__(self, other):
         """Return a new Spectrum object with counts (or CPS) scaled down.
