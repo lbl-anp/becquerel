@@ -8,7 +8,7 @@ References:
 """
 
 from __future__ import print_function
-from builtins import super
+from future.builtins import super
 import numpy as np
 import requests
 import pandas as pd
