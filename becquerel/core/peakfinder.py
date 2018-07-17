@@ -357,7 +357,7 @@ class PeakFinder(object):
         for chan in self.spectrum.channels[peak]:
             self.add_peak(chan)
         # reduce number of channels to a maximum number max_n of highest SNR
-        self.sort_by(-1 * np.array(self.snrs))
+        self.sort_by(np.array(self.snrs))
         self.channels = self.channels[-max_num:]
         self.snrs = self.snrs[-max_num:]
         self.fwhms = self.fwhms[-max_num:]
