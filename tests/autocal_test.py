@@ -4,10 +4,6 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import becquerel as bq
-from becquerel.core.peakfinder import PeakFilter
-from becquerel.core.peakfinder import BoxcarPeakFilter, GaussianPeakFilter
-from becquerel.core.peakfinder import PeakFinder, PeakFinderError
-from becquerel.core.autocal import AutoCalibrator, AutoCalibratorError
 import pytest
 
 
@@ -56,13 +52,13 @@ OPTIONAL = [
 
 def test_peakfilter_base():
     """Test that the PeakFilter base class cannot be used."""
-    pf = PeakFilter(700, 20, fwhm_at_0=15)
+    pf = bq.PeakFilter(700, 20, fwhm_at_0=15)
     pf.fwhm(200)
     with pytest.raises(NotImplementedError):
         pf.kernel_matrix(1000)
 
 
-@pytest.mark.parametrize('cls', [BoxcarPeakFilter, GaussianPeakFilter])
+@pytest.mark.parametrize('cls', [bq.BoxcarPeakFilter, bq.GaussianPeakFilter])
 def test_peakfilter(cls):
     """Test basic functionality of PeakFilter."""
     pf = cls(700, 20, fwhm_at_0=15)
@@ -72,7 +68,7 @@ def test_peakfilter(cls):
 
 
 @pytest.mark.plottest
-@pytest.mark.parametrize('cls', [BoxcarPeakFilter, GaussianPeakFilter])
+@pytest.mark.parametrize('cls', [bq.BoxcarPeakFilter, bq.GaussianPeakFilter])
 def test_peakfilter_plot_matrix(cls):
     """Test PeakFilter.plot_matrix."""
     pf = cls(200, 20, fwhm_at_0=10)
@@ -83,8 +79,8 @@ def test_peakfilter_plot_matrix(cls):
 
 def test_peakfinder():
     """Test basic functionality of PeakFinder."""
-    kernel = GaussianPeakFilter(500, 50, fwhm_at_0=10)
-    finder = PeakFinder(spec1, kernel)
+    kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
+    finder = bq.PeakFinder(spec1, kernel)
     finder.find_peak(500, min_snr=3.)
     assert np.isclose(finder.channels[0], 485)
     finder.reset()
@@ -97,49 +93,49 @@ def test_peakfinder():
 
 def test_peakfinder_exceptions():
     """Test PeakFinder exceptions."""
-    kernel = GaussianPeakFilter(500, 50, fwhm_at_0=10)
-    finder = PeakFinder(spec1, kernel)
+    kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
+    finder = bq.PeakFinder(spec1, kernel)
     # find_peak
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peak(-1)
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peak(3000)
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peak(700, frac_range=(-0.1, 1.1))
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peak(700, frac_range=(1.1, 1.2))
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peak(700, frac_range=(0.8, 0.9))
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peak(700, frac_range=(1.2, 0.8))
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peak(700, min_snr=-3)
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peak(700, min_snr=10)
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peak(700, min_snr=100)
     # find_peaks
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peaks(min_chan=-1)
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peaks(min_chan=3000)
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peaks(max_chan=-1)
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peaks(max_chan=3000)
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peaks(min_chan=700, max_chan=600)
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peaks(min_snr=-3)
-    with pytest.raises(PeakFinderError):
+    with pytest.raises(bq.PeakFinderError):
         finder.find_peaks(min_snr=50)
 
 
 @pytest.mark.plottest
 def test_peakfinder_plot():
     """Test PeakFinder.plot."""
-    kernel = GaussianPeakFilter(500, 50, fwhm_at_0=10)
-    finder = PeakFinder(spec1, kernel)
+    kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
+    finder = bq.PeakFinder(spec1, kernel)
     # finder.find_peaks(min_snr=2, min_chan=50)
     finder.find_peaks(min_snr=0.5, min_chan=50, max_chan=1000, max_num=10)
 
@@ -150,9 +146,9 @@ def test_peakfinder_plot():
 
 def test_autocal_spec1():
     """Test basic functionality of AutoCalibrator."""
-    kernel = GaussianPeakFilter(500, 50, fwhm_at_0=10)
-    finder = PeakFinder(spec1, kernel)
-    cal = AutoCalibrator(finder)
+    kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
+    finder = bq.PeakFinder(spec1, kernel)
+    cal = bq.AutoCalibrator(finder)
     finder.find_peaks(min_snr=1, min_chan=50)
     assert len(cal.peakfinder.channels) == 10
     cal.fit(
@@ -167,9 +163,9 @@ def test_autocal_spec1():
 
 def test_autocal_one_line():
     """Test AutoCalibrator with one line."""
-    kernel = GaussianPeakFilter(500, 50, fwhm_at_0=10)
-    finder = PeakFinder(spec1, kernel)
-    cal = AutoCalibrator(finder)
+    kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
+    finder = bq.PeakFinder(spec1, kernel)
+    cal = bq.AutoCalibrator(finder)
     finder.find_peaks(min_snr=8, min_chan=50)
     assert len(cal.peakfinder.channels) == 1
     cal.fit(
@@ -183,13 +179,13 @@ def test_autocal_one_line():
 
 def test_autocal_exceptions():
     """Test AutoCalibrator exceptions."""
-    kernel = GaussianPeakFilter(500, 50, fwhm_at_0=10)
-    finder = PeakFinder(spec1, kernel)
-    cal = AutoCalibrator(finder)
+    kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
+    finder = bq.PeakFinder(spec1, kernel)
+    cal = bq.AutoCalibrator(finder)
     # only one peak found, but multiple energies required
     finder.find_peaks(min_snr=10, min_chan=50)
     assert len(cal.peakfinder.channels) == 1
-    with pytest.raises(AutoCalibratorError):
+    with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             REQUIRED,
             gain_range=[2.5, 4.],
@@ -199,7 +195,7 @@ def test_autocal_exceptions():
     finder.reset()
     finder.find_peaks(min_snr=1, min_chan=50)
     assert len(cal.peakfinder.channels) == 10
-    with pytest.raises(AutoCalibratorError):
+    with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             [1460.82],
             gain_range=[2.5, 4.],
@@ -209,7 +205,7 @@ def test_autocal_exceptions():
     finder.reset()
     finder.find_peaks(min_snr=4, min_chan=50)
     assert len(cal.peakfinder.channels) == 3
-    with pytest.raises(AutoCalibratorError):
+    with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             [238.63, 351.93, 609.32, 1460.82, 2614.3],
             gain_range=[2.5, 4.],
@@ -219,12 +215,12 @@ def test_autocal_exceptions():
 
 def test_autocal_no_fit():
     """Test AutoCalibrator with no valid fit found."""
-    kernel = GaussianPeakFilter(500, 50, fwhm_at_0=10)
-    finder = PeakFinder(spec1, kernel)
-    cal = AutoCalibrator(finder)
+    kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
+    finder = bq.PeakFinder(spec1, kernel)
+    cal = bq.AutoCalibrator(finder)
     finder.find_peaks(min_snr=2, min_chan=50)
     assert len(cal.peakfinder.channels) == 8
-    with pytest.raises(AutoCalibratorError):
+    with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             REQUIRED,
             optional=OPTIONAL,
@@ -236,9 +232,9 @@ def test_autocal_no_fit():
 @pytest.mark.plottest
 def test_autocal_plot():
     """Test AutoCalibrator.plot."""
-    kernel = GaussianPeakFilter(500, 50, fwhm_at_0=10)
-    finder = PeakFinder(spec1, kernel)
-    cal = AutoCalibrator(finder)
+    kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
+    finder = bq.PeakFinder(spec1, kernel)
+    cal = bq.AutoCalibrator(finder)
     finder.find_peaks(min_snr=1, min_chan=50)
     assert len(cal.peakfinder.channels) == 10
     cal.fit(
@@ -254,9 +250,9 @@ def test_autocal_plot():
 
 def test_autocal_spec2():
     """Test AutoCalibrator on spectrum 2."""
-    kernel = GaussianPeakFilter(3700, 10, 5)
-    finder = PeakFinder(spec2, kernel)
-    cal = AutoCalibrator(finder)
+    kernel = bq.GaussianPeakFilter(3700, 10, 5)
+    finder = bq.PeakFinder(spec2, kernel)
+    cal = bq.AutoCalibrator(finder)
     cal.peakfinder.find_peaks(min_snr=15, min_chan=1000)
     assert len(cal.peakfinder.channels) == 12
     cal.fit(
@@ -271,9 +267,9 @@ def test_autocal_spec2():
 
 def test_autocal_spec3():
     """Test AutoCalibrator on spectrum 3."""
-    kernel = GaussianPeakFilter(700, 50, 10)
-    finder = PeakFinder(spec3, kernel)
-    cal = AutoCalibrator(finder)
+    kernel = bq.GaussianPeakFilter(700, 50, 10)
+    finder = bq.PeakFinder(spec3, kernel)
+    cal = bq.AutoCalibrator(finder)
     cal.peakfinder.find_peaks(min_snr=3, min_chan=100)
     assert len(cal.peakfinder.channels) == 7
     # this fit succeeds but misidentifies the lines
@@ -298,9 +294,9 @@ def test_autocal_spec3():
 
 def test_autocal_spec4():
     """Test AutoCalibrator on spectrum 4."""
-    kernel = GaussianPeakFilter(2400, 120, 30)
-    finder = PeakFinder(spec4, kernel)
-    cal = AutoCalibrator(finder)
+    kernel = bq.GaussianPeakFilter(2400, 120, 30)
+    finder = bq.PeakFinder(spec4, kernel)
+    cal = bq.AutoCalibrator(finder)
     cal.peakfinder.find_peaks(min_snr=3, min_chan=100)
     assert len(cal.peakfinder.channels) == 7
     cal.fit(
