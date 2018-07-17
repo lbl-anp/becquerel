@@ -70,6 +70,18 @@ def cal_spec(spec_data):
     return bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
 
 
+def linear_regression(x, y):
+    """Perform a linear regression manually"""
+
+    x = np.array(x)
+    y = np.array(y)
+    n = len(x)
+    sx = np.sum(x)
+    sy = np.sum(y)
+    b = float(n*np.sum(x*y)-sx*sy)/float(n*np.sum(x**2)-sx*sx)
+    a = 1.0/n*(sy-b*sx)
+    return [a, b]
+
 # ----------------------------------------------------
 #        Construction tests
 # ----------------------------------------------------
@@ -108,7 +120,7 @@ def test_construction_bad_coefficients(slope, offset):
         bq.LinearEnergyCal.from_coeffs(coeffs)
 
 
-def test_construction_bad_points(chlist, kevlist):
+def test_construction_wrong_length(chlist, kevlist):
     """Test from_points with bad input"""
 
     with pytest.raises(bq.BadInput) as excinfo:
@@ -116,9 +128,43 @@ def test_construction_bad_points(chlist, kevlist):
             chlist=chlist, kevlist=kevlist[:-1])
     excinfo.match('Channels and energies must be same length')
 
+
+@pytest.mark.parametrize('cl, kl, io', [
+    (32, 661.7, False),
+    (32, 661.7, True),
+    ({"val": 32}, {"ene": 661.7}, False),
+    ({"val": 32}, {"ene": 661.7}, True),
+    ([[32, 64], [72, 108]], [[661.7, 1172.7], [1332.5, 2614.5]], False),
+    ([[32, 64], [72, 108]], [[661.7, 1172.7], [1332.5, 2614.5]], True)])
+def test_construction_bad_points(cl, kl, io):
+    """Test errors of from_points with bad input"""
+
     with pytest.raises(bq.BadInput) as excinfo:
-        bq.LinearEnergyCal.from_points(chlist=32, kevlist=661.7)
-    excinfo.match('Inputs should be vector iterables, not scalars')
+        bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
+    excinfo.match('Inputs must be one dimensional iterables')
+
+
+@pytest.mark.parametrize('cl, kl, io', [
+    ([], [], False),
+    ([], [], True),
+    ((32,), (661.7,), False),
+    ([32], [661.7], False)])
+def test_construction_empty_points(cl, kl, io):
+    """Test errors of from_points with empty/insufficient input"""
+
+    with pytest.raises(bq.EnergyCalError) as excinfo:
+        bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
+
+
+@pytest.mark.parametrize('cl, kl, io', [
+    (None, 661.7, False),
+    (32, None, False)])
+def test_construction_None_points(cl, kl, io):
+    """Test errors if input to from_points is None"""
+
+    with pytest.raises(bq.EnergyCalError) as excinfo:
+        bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
+    excinfo.match('Channel list and energy list are required')
 
 
 # ----------------------------------------------------
@@ -212,30 +258,56 @@ def test_linear_construction_coefficients(slope, offset):
     assert cal.offset == offset
 
 
-def test_linear_fitting(chlist, kevlist):
-    """Test fitting"""
+def test_linear_fitting_simple():
+    """Test linear fitting of known slope and offset"""
+
+    cal = bq.LinearEnergyCal.from_points(chlist=[0.0, 1.0], kevlist=[1.0, 3.0])
+    assert np.allclose([1.0, 2.0], [cal.offset, cal.slope])
+
+    cal = bq.LinearEnergyCal.from_points(chlist=[1.0], kevlist=[2.0], include_origin=True)
+    assert np.allclose([0.0, 2.0], [cal.offset, cal.slope])
+
+
+def test_linear_fitting_with_fit(chlist, kevlist):
+    """Test linear fitting with calling update_fit function"""
 
     cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
     cal.update_fit()
+    assert np.allclose(linear_regression(chlist, kevlist), [cal.offset, cal.slope])
+
+
+def test_linear_fitting_without_fit(chlist, kevlist):
+    """Test linear fitting without calling update_fit function"""
+
+    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
+    assert np.allclose(linear_regression(chlist, kevlist), [cal.offset, cal.slope])
+
+
+def test_linear_fitting_with_origin(chlist, kevlist):
+    """Test linear fitting that includes the origin"""
+
+    c = np.append(0, chlist)
+    k = np.append(0, kevlist)
+    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist, include_origin=True)
+    assert np.allclose(linear_regression(c, k), [cal.offset, cal.slope])
 
 
 def test_linear_bad_fitting():
-    """Test fitting - too few calpoints (EnergyCalBase.update_fit())"""
-
-    chlist = (67, 133)
-    kevlist = (661.7, 1460.83)
-    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
-    cal.update_fit()
+    """Test linear fitting - too few calpoints (EnergyCalBase.update_fit())"""
 
     cal = bq.LinearEnergyCal()
     with pytest.raises(bq.EnergyCalError):
         cal.update_fit()
 
-    chlist, kevlist = (67,), (661.7,)
-    cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
-    with pytest.raises(bq.EnergyCalError):
-        cal.update_fit()
 
+def test_bad_access_error(uncal_spec):
+    """Test trying to access coeffs not yet supplied"""
+
+    cal = bq.LinearEnergyCal()
+    with pytest.raises(bq.EnergyCalError):
+        cal.slope
+    with pytest.raises(bq.EnergyCalError):
+        cal.offset
 
 # ----------------------------------------------------
 #        Spectrum calibration methods tests
@@ -245,7 +317,6 @@ def test_apply_calibration(uncal_spec, chlist, kevlist):
     """Apply calibration on an uncalibrated spectrum"""
 
     cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
-    cal.update_fit()
     uncal_spec.apply_calibration(cal)
     assert uncal_spec.is_calibrated
     assert np.allclose(
@@ -256,7 +327,6 @@ def test_apply_calibration_recal(cal_spec, chlist, kevlist):
     """Apply calibration over an existing calibration"""
 
     cal = bq.LinearEnergyCal.from_points(chlist=chlist, kevlist=kevlist)
-    cal.update_fit()
     old_bin_edges = cal_spec.bin_edges_kev
     cal_spec.apply_calibration(cal)
     assert not np.any(old_bin_edges == cal_spec.bin_edges_kev)
@@ -276,3 +346,10 @@ def test_rm_calibration_error(uncal_spec):
     assert not uncal_spec.is_calibrated
     uncal_spec.rm_calibration()
     assert not uncal_spec.is_calibrated
+
+def test_calibration_not_initialized_error(uncal_spec):
+    """Test that calling apply_calibration on empty calibration causes an error"""
+
+    cal = bq.LinearEnergyCal()
+    with pytest.raises(bq.EnergyCalError):
+        uncal_spec.apply_calibration(cal)
