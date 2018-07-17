@@ -534,7 +534,7 @@ class Spectrum(object):
 
         return self._mul_div(other, div=False)
 
-    # This line will allow the right multiplication to work	
+    # This line will allow the right multiplication to work
     __rmul__ = __mul__
 
     def __div__(self, other):
