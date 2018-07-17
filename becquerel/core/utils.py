@@ -3,11 +3,24 @@
 from __future__ import print_function
 import datetime
 from dateutil.parser import parse as dateutil_parse
-from six import string_types
 from uncertainties import UFloat, unumpy
 import numpy as np
 
 VECTOR_TYPES = (list, tuple, np.ndarray)
+
+try:
+
+    isinstance("", basestring)
+
+    def isstring(s):
+        """Test for strings in python2 and 3"""
+        return isinstance(s, basestring)
+
+except NameError:
+
+    def isstring(s):
+        """Test for strings in python2 and 3"""
+        return isinstance(s, str)
 
 
 class UncertaintiesError(Exception):
@@ -94,7 +107,7 @@ def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
 
     if isinstance(input_time, datetime.datetime):
         return input_time
-    elif isinstance(input_time, string_types):
+    elif isstring(input_time):
         return dateutil_parse(input_time)
     elif input_time is None and allow_none:
         return None

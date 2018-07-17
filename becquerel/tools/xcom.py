@@ -13,9 +13,8 @@ from __future__ import print_function
 from collections import Iterable
 import requests
 import pandas as pd
-from six import string_types
 from . import element
-
+from ..core.utils import isstring
 
 # Dry air relative weights taken from:
 # http://www.engineeringtoolbox.com/air-composition-d_212.html
@@ -203,7 +202,7 @@ class _XCOMQuery(object):
     @staticmethod
     def _argument_type(arg):
         """Determine if argument is a symbol, Z, compound, or mixture."""
-        if isinstance(arg, string_types):
+        if isstring(arg):
             if arg.isdigit():
                 return {'z': arg}
             elif arg.lower() in [s.lower() for s in element.SYMBOLS]:

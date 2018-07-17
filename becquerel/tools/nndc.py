@@ -12,9 +12,8 @@ from builtins import super
 import numpy as np
 import requests
 import pandas as pd
-from six import string_types
 import uncertainties
-
+from ..core.utils import isstring
 
 PARITIES = ['+', '-', 'ANY']
 
@@ -201,9 +200,9 @@ def _parse_float_uncertainty(x, dx):
 
     """
 
-    if not isinstance(x, string_types):
+    if not isstring(x):
         raise NNDCRequestError('Value must be a string: {}'.format(x))
-    if not isinstance(dx, string_types):
+    if not isstring(dx):
         raise NNDCRequestError('Uncertainty must be a string: {}'.format(dx))
     # ignore percents
     if '%' in x:
