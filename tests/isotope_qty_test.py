@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 import datetime
 from dateutil.parser import parse as dateutil_parse
 from six import string_types

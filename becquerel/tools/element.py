@@ -396,7 +396,7 @@ class Element(object):
         """
 
         str0 = str(formatstr)
-        if len(str0) == 0:
+        if not str0:
             str0 = '%n(%s) Z=%z'
         str0 = str0.replace('%s', self.symbol)
         str0 = str0.replace('%n', self.name)
@@ -409,5 +409,5 @@ class Element(object):
             return (
                 self.name == other.name and self.symbol == other.symbol and
                 self.Z == other.Z)
-        except:
+        except AttributeError:
             raise ElementError('Cannot determine equality')

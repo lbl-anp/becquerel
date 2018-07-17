@@ -1,11 +1,12 @@
 """Nuclear isotopes and isomers."""
 
 from __future__ import print_function
-from builtins import super
+from future.builtins import super
 import numpy as np
 import uncertainties
 from . import element
 from .wallet_cache import wallet_cache
+from ..core.utils import isstring
 
 
 # pylint: disable=no-self-use
@@ -77,7 +78,7 @@ def _split_element_mass(arg):
                 continue
             element_ids.append(p_element)
             mass_isomers.append(p_mass)
-        if len(element_ids) == 0:
+        if not element_ids:
             raise IsotopeError(
                 'Could not find element for isotope: {}'.format(arg))
         # if multiple element IDs were found, choose the longest
@@ -128,7 +129,7 @@ def _split_mass_isomer(arg):
                 'Mass number cannot be converted to int: {} {}'.format(
                     tokens[0], arg))
         mm = 'm'
-        if len(tokens[1]) > 0:
+        if tokens[1]:
             if not tokens[1].isdigit():
                 raise IsotopeError(
                     'Metastable level must be a number: {} {}'.format(
@@ -206,20 +207,21 @@ class Isotope(element.Element):
         self.A = 0
         self.m = ''
         self.M = 0
-        if len(args) == 1:
-            if not isinstance(args[0], str):
+        arglen = len(args)
+        if arglen == 1:
+            if not isstring(args[0]):
                 raise IsotopeError('Single argument must be a string')
             symbol, aa, mm = parse_isotope(args[0])
             super().__init__(symbol)
             self._init_A(aa)
             self._init_m(mm)
-        elif len(args) == 2 or len(args) == 3:
+        elif arglen == 2 or arglen == 3:
             try:
                 super().__init__(args[0])
             except element.ElementError:
                 raise IsotopeError('Unable to create Isotope: {}'.format(args))
             self._init_A(args[1])
-            if len(args) == 3:
+            if arglen == 3:
                 self._init_m(args[2])
         else:
             raise IsotopeError('One, two, or three arguments required')
@@ -256,7 +258,7 @@ class Isotope(element.Element):
                 else:
                     raise IsotopeError(
                         'Metastable level must be >= 0: {}'.format(arg))
-            elif isinstance(arg, str):
+            elif isstring(arg):
                 self.m = arg.lower()
                 if self.m[0] != 'm':
                     raise IsotopeError(
@@ -291,7 +293,7 @@ class Isotope(element.Element):
         """
 
         str0 = str(formatstr)
-        if len(str0) == 0:
+        if not str0:
             str0 = '%s-%a%m'
         str0 = str0.replace('%s', self.symbol)
         str0 = str0.replace('%n', self.name)
@@ -326,7 +328,7 @@ class Isotope(element.Element):
             (wallet_cache.df['A'] == self.A) & \
             (wallet_cache.df['M'] == self.M)
         df = wallet_cache.df[this_isotope]
-        if len(df) == 0:
+        if df.empty:
             raise IsotopeError(
                 'No wallet card data found for isotope {}'.format(self))
         return df

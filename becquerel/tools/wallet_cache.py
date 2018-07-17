@@ -1,9 +1,9 @@
 """A cache of all NNDC wallet card data."""
 
 from __future__ import print_function
-from builtins import super
+from future.builtins import super
+from ..core.utils import isstring
 import pandas as pd
-from six import string_types
 import uncertainties
 from . import nndc
 from . import df_cache
@@ -18,7 +18,7 @@ def convert_float_ufloat(x):
       x: a string giving the number
     """
 
-    if isinstance(x, string_types):
+    if isstring(x):
         if '+/-' in x:
             tokens = x.split('+/-')
             return uncertainties.ufloat(float(tokens[0]), float(tokens[1]))

@@ -1,7 +1,7 @@
 """"Energy calibration classes"""
 
 from abc import ABCMeta, abstractmethod, abstractproperty
-from builtins import dict, super, zip  # pylint: disable=redefined-builtin
+from future.builtins import dict, super, zip
 from future.utils import viewitems
 import numpy as np
 

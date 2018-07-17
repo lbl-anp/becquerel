@@ -13,7 +13,6 @@ from __future__ import print_function
 from collections import Iterable
 import requests
 import pandas as pd
-from six import string_types
 from . import element
 
 
@@ -179,10 +178,8 @@ class _XCOMQuery(object):
         """Pass-through to use DataFrame len()."""
         if self.df is None:
             return 0
-        elif len(self.df.keys()) == 0:
-            return 0
-        else:
-            return len(self.df[self.df.keys()[0]])
+
+        return len(self.df.index)
 
     def keys(self):
         """Pass-through for DataFrame keys method."""
@@ -203,7 +200,7 @@ class _XCOMQuery(object):
     @staticmethod
     def _argument_type(arg):
         """Determine if argument is a symbol, Z, compound, or mixture."""
-        if isinstance(arg, string_types):
+        if isstring(arg):
             if arg.isdigit():
                 return {'z': arg}
             elif arg.lower() in [s.lower() for s in element.SYMBOLS]:

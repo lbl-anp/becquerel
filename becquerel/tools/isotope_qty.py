@@ -2,7 +2,6 @@
 
 from __future__ import print_function
 import datetime
-from six import string_types
 import copy
 import numpy as np
 from .isotope import Isotope
@@ -34,7 +33,7 @@ def handle_isotope(isotope, error_name=None):
 
     if isinstance(isotope, Isotope):
         return isotope
-    elif isinstance(isotope, string_types):
+    elif utils.isstring(isotope):
         return Isotope(isotope)
     else:
         raise TypeError(
@@ -149,15 +148,15 @@ class IsotopeQuantity(object):
         """
 
         if 'atoms' in kwargs:
-            return self._check_positive_qty(kwargs['atoms'])
+            return check_positive_qty(kwargs['atoms'])
         elif 'g' in kwargs:
-            return (self._check_positive_qty(kwargs['g']) /
+            return (check_positive_qty(kwargs['g']) /
                     self.isotope.A * N_AV)
         elif 'bq' in kwargs and not self.is_stable:
-            return (self._check_positive_qty(kwargs['bq']) /
+            return (check_positive_qty(kwargs['bq']) /
                     self.decay_const)
         elif 'uci' in kwargs and not self.is_stable:
-            return (self._check_positive_qty(kwargs['uci']) *
+            return (check_positive_qty(kwargs['uci']) *
                     UCI_TO_BQ / self.decay_const)
         elif 'bq' in kwargs or 'uci' in kwargs:
             raise IsotopeQuantityError(
@@ -166,19 +165,6 @@ class IsotopeQuantity(object):
             pass
         else:
             raise IsotopeQuantityError('Missing arg for isotope activity')
-
-    def _check_positive_qty(self, val):
-        """Check that the quantity value is a nonnegative float or ufloat.
-
-        Raises:
-          ValueError: if val is negative
-        """
-
-        val *= 1.   # convert to float, or preserve ufloat, as appropriate
-        if val < 0:
-            raise ValueError(
-                'Mass or activity must be a positive quantity: {}'.format(val))
-        return val
 
     @classmethod
     def from_decays(cls, isotope, n_decays, start_time, stop_time):
@@ -477,9 +463,9 @@ class IsotopeQuantity(object):
 
         if not isinstance(other, IsotopeQuantity):
             return False
-        else:
-            return (self.isotope == other.isotope and
-                    np.isclose(self.ref_atoms, other.atoms_at(self.ref_date)))
+
+        return (self.isotope == other.isotope and
+                np.isclose(self.ref_atoms, other.atoms_at(self.ref_date)))
 
 
 class NeutronIrradiationError(Exception):
@@ -529,7 +515,7 @@ class NeutronIrradiation(object):
                 self.start_time, self.stop_time))
         self.duration = (self.stop_time - self.start_time).total_seconds()
 
-        if not ((n_cm2 is None) ^ (n_cm2_s is None)):
+        if not (n_cm2 is None) ^ (n_cm2_s is None):
             raise ValueError('Must specify either n_cm2 or n_cm2_s, not both')
         elif n_cm2 is None:
             self.n_cm2_s = n_cm2_s
@@ -549,9 +535,9 @@ class NeutronIrradiation(object):
 
         if self.duration == 0:
             return '{} neutrons/cm2 at {}'.format(self.n_cm2, self.start_time)
-        else:
-            return '{} n/cm2/s from {} to {}'.format(
-                self.n_cm2_s, self.start_time, self.stop_time)
+
+        return '{} n/cm2/s from {} to {}'.format(
+            self.n_cm2_s, self.start_time, self.stop_time)
 
     def activate(self, barns, initial, activated):
         """
@@ -723,3 +709,17 @@ def decay_normalize_spectra(isotope, spec1, spec2):
     return decay_normalize(isotope,
                            (spec1.start_time, spec1.stop_time),
                            (spec2.start_time, spec2.stop_time))
+
+
+def check_positive_qty(val):
+    """Check that the quantity value is a nonnegative float or ufloat.
+
+    Raises:
+      ValueError: if val is negative
+    """
+
+    val *= 1.   # convert to float, or preserve ufloat, as appropriate
+    if val < 0:
+        raise ValueError(
+            'Mass or activity must be a positive quantity: {}'.format(val))
+    return val

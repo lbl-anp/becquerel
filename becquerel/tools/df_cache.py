@@ -90,7 +90,7 @@ class DataFrameCache(object):
             raise CacheError('Cache has not been fetched or loaded')
         try:
             self.df.to_csv(self.filename, float_format='%.12f')
-        except:
+        except Exception:
             raise CacheError(
                 'Problem writing cache to file {}'.format(self.filename))
         self.check_file()
@@ -105,7 +105,7 @@ class DataFrameCache(object):
         self.check_file()
         try:
             self.df = pd.read_csv(self.filename)
-        except:
+        except Exception:
             raise CacheError(
                 'Problem reading cache from file {}'.format(self.filename))
         self.loaded = True
@@ -120,7 +120,7 @@ class DataFrameCache(object):
         self.check_file()
         try:
             os.remove(self.filename)
-        except:
+        except Exception:
             raise CacheError(
                 'Problem deleting cache file {}'.format(self.filename))
         try:

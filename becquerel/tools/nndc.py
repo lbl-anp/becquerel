@@ -9,10 +9,10 @@ References:
 
 from __future__ import print_function
 from builtins import super
+from ..core.utils import isstring
 import numpy as np
 import requests
 import pandas as pd
-from six import string_types
 import uncertainties
 
 
@@ -155,7 +155,7 @@ def _parse_table(text):
         text = text.split('</pre>')[0]
         text = text.split('To save this output')[0]
         lines = text.split('\n')
-    except:
+    except IndexError:
         raise NNDCRequestError('Unable to parse text:\n' + text)
     table = {}
     headers = None
@@ -201,9 +201,9 @@ def _parse_float_uncertainty(x, dx):
 
     """
 
-    if not isinstance(x, string_types):
+    if not isstring(x):
         raise NNDCRequestError('Value must be a string: {}'.format(x))
-    if not isinstance(dx, string_types):
+    if not isstring(dx):
         raise NNDCRequestError('Uncertainty must be a string: {}'.format(dx))
     # ignore percents
     if '%' in x:
@@ -370,13 +370,11 @@ class _NNDCQuery(object):
             self.perform()
 
     def __len__(self):
-        """Length of any one of the data lists."""
+        """Pass-through to use DataFrame len()."""
         if self.df is None:
             return 0
-        elif len(self.df.keys()) == 0:
-            return 0
-        else:
-            return len(self.df[self.df.keys()[0]])
+
+        return len(self.df.index)
 
     def keys(self):
         """Return the data keys."""
@@ -459,7 +457,7 @@ class _NNDCQuery(object):
             self._text = self._request()
         except NoDataFound:
             self._text = self._DUMMY_TEXT
-        if len(self._text) == 0:
+        if not self._text:
             raise NNDCRequestError('NNDC returned no text')
         # package the output into a dictionary of arrays
         data = _parse_table(self._text)
@@ -565,7 +563,7 @@ class _NNDCQuery(object):
         """Convert column from string to another type."""
         col_new = []
         for x in self[col]:
-            if x == '':
+            if not x:
                 col_new.append(None)
             else:
                 col_new.append(function(x))
