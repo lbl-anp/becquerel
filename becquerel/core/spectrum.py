@@ -9,17 +9,7 @@ from uncertainties import UFloat, unumpy
 from .. import parsers
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
 from .rebin import rebin
-
-
-def bin_edges_and_heights_to_steps(bin_edges, heights):
-    assert len(bin_edges) == len(heights) + 1
-    x = np.zeros(len(bin_edges) * 2)
-    y = np.zeros_like(x)
-    x[::2] = bin_edges.astype(float)
-    x[1::2] = bin_edges.astype(float)
-    y[1:-1:2] = heights.astype(float)
-    y[2:-1:2] = heights.astype(float)
-    return x, y
+from . import plotting
 
 
 class SpectrumError(Exception):
@@ -790,6 +780,82 @@ class Spectrum(object):
 
     def rebin_like(self, other, **kwargs):
         return self.rebin(other.bin_edges_kev, **kwargs)
+
+
+    def plot(self, *fmt, **kwargs):
+        """Plot a spectrum with matplotlib's plot command.
+
+        Args:
+          fmt:    matplotlib like plot format string
+          xmode:  define what is plotted on x axis ('energy' or 'channel'),
+                  defaults to energy if available
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'),
+                  defaults to counts
+          xlim:   set x axes limits, if set to 'default' use special scales
+          ylim:   set y axes limits, if set to 'default' use special scales
+          ax:     matplotlib axes object, if not provided one is created
+          yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
+          title:  costum plot title
+          xlabel: costum xlabel value
+          ylabel: costum ylabel value
+          emode:  can be 'band' for adding an erroband or 'bars' for adding
+                  error bars, default is 'none'. It herits the color from
+                  matplotlib plot and can not be configured. For better plotting
+                  control use SpectrumPlotter and its errorband and errorbars
+                  functions.
+          kwargs: arguments that are directly passed to matplotlib's plot command.
+                  In addition it is possible to pass linthreshy if ylim='default'
+                  and ymode='symlog'
+
+        Returns:
+          matplotlib axes object
+        """
+
+        emode = 'none'
+        alpha = 1
+        if 'emode' in kwargs:
+            emode = kwargs.pop('emode')
+        if 'alpha' in kwargs:
+            alpha = kwargs['alpha']
+
+        plotter = plotting.SpectrumPlotter(self, *fmt, **kwargs)
+        ax = plotter.plot()
+        color = ax.get_lines()[-1].get_color()
+        if emode == 'band':
+            plotter.errorband(color=color, alpha=alpha*0.5, label='_nolegend_')
+        elif emode == 'bars' or emode == 'bar':
+            plotter.errorbar(color=color, label='_nolegend_')
+        elif emode != 'none':
+            raise SpectrumError("Unknown error mode '{}', use 'bars' "
+                                "or 'band'".format(emode))
+        return ax
+
+
+    def fill_between(self, **kwargs):
+        """Plot a spectrum with matplotlib's fill_between command
+
+        Args:
+          xmode:  define what is plotted on x axis ('energy' or 'channel'),
+                  defaults to energy if available
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'),
+                  defaults to counts
+          xlim:   set x axes limits, if set to 'default' use special scales
+          ylim:   set y axes limits, if set to 'default' use special scales
+          ax:     matplotlib axes object, if not provided one is created
+          yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
+          title:  costum plot title
+          xlabel: costum xlabel value
+          ylabel: costum ylabel value
+          kwargs: arguments that are directly passed to matplotlib's fill_between
+                  command. In addition it is possible to pass linthreshy if
+                  ylim='default' and ymode='symlog'.
+
+        Returns:
+          matplotlib axes object
+        """
+
+        plotter = plotting.SpectrumPlotter(self, **kwargs)
+        return plotter.fill_between()
 
 
 def _get_file_object(infilename):
