@@ -68,6 +68,13 @@ def cal_spec_2(spec_data):
     return bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
 
 
+@pytest.fixture
+def cal_spec_cps(spec_data):
+    """Generate a calibrated spectrum with cps data."""
+
+    return bq.Spectrum(cps=spec_data, bin_edges_kev=TEST_EDGES_KEV)
+
+
 class TestSpectrumFromFile(object):
     """Test Spectrum.from_file() class method."""
 
@@ -398,6 +405,8 @@ def get_spectrum(t, lt=None):
     elif t == 'cal_new':
         edges = np.arange(TEST_DATA_LENGTH + 1) * 0.67
         spec = bq.Spectrum(spec_data(), bin_edges_kev=edges)
+    elif t == 'cal_cps':
+        spec = cal_spec_cps(spec_data())
     elif t == 'uncal_long':
         spec = uncal_spec_long(spec_data())
     elif t == 'uncal_cps':
@@ -823,3 +832,92 @@ def test_copy_cal(cal_spec):
     assert cal2.counts is not cal_spec.counts
     assert cal2.counts[0] is not cal_spec.counts[0]
     assert cal2.bin_edges_kev is not cal_spec.bin_edges_kev
+
+
+# ----------------------------------------------
+#         Test Spectrum.rebin
+# ----------------------------------------------
+
+@pytest.fixture(
+    params=[
+        TEST_EDGES_KEV.copy(),
+        TEST_EDGES_KEV.copy()[1:-2],
+        np.linspace(
+            TEST_EDGES_KEV.min(),
+            TEST_EDGES_KEV.max(),
+            len(TEST_EDGES_KEV) + 10)],
+    ids=[
+        "same edges",
+        "subset of edges",
+        "same bounds more bins"])
+def rebin_new_edges(request):
+    return request.param.astype(np.float)
+
+
+@pytest.fixture(
+    params=[
+        'interpolation',
+        'listmode'],
+    ids=[
+        "interpolation method",
+        "listmode method"])
+def rebin_method(request):
+    return request.param
+
+
+@pytest.fixture(
+    params=[
+        ('uncal', 300),
+        ('uncal', None),
+        ('cal_cps', None),
+        # TODO #122 change this to the success test
+        ('cal_cps', 300)],
+    ids=[
+        "uncalibrated spectrum with livetime",
+        "uncalibrated spectrum without livetime",
+        "calibrated spectrum with cps",
+        "calibrated spectrum with cps and livetime"])
+def rebin_spectrum_failure(request):
+    return get_spectrum(request.param[0], lt=request.param[1])
+
+
+def test_spectrum_rebin_failure(rebin_spectrum_failure, rebin_new_edges,
+                                rebin_method):
+    with pytest.raises(bq.SpectrumError):
+        rebin_spectrum_failure.rebin(rebin_new_edges, method=rebin_method)
+
+
+@pytest.fixture(
+    params=[
+        ('cal', 300),
+        ('cal', None)],
+    ids=[
+        "calibrated spectrum with livetime",
+        "calibrated spectrum without livetime"])
+def rebin_spectrum_success(request):
+    return get_spectrum(request.param[0], lt=request.param[1])
+
+
+def test_spectrum_rebin_success(rebin_spectrum_success, rebin_new_edges,
+                                rebin_method):
+    spec = rebin_spectrum_success.rebin(rebin_new_edges, method=rebin_method)
+    assert np.isclose(rebin_spectrum_success.counts_vals.sum(),
+                      spec.counts_vals.sum())
+    if rebin_spectrum_success.livetime is None:
+        assert spec.livetime is None
+    else:
+        assert np.isclose(rebin_spectrum_success.livetime, spec.livetime)
+
+
+# ----------------------------------------------
+#         Test Spectrum.rebin_like
+# ----------------------------------------------
+
+
+def test_spectrum_rebin_like():
+    spec1 = get_spectrum('cal')
+    spec2 = get_spectrum('cal_new')
+    assert np.any(~np.isclose(spec1.bin_edges_kev, spec2.bin_edges_kev))
+    spec2_rebin = spec2.rebin_like(spec1)
+    assert np.all(np.isclose(spec1.bin_edges_kev, spec2_rebin.bin_edges_kev))
+    assert np.isclose(spec2.counts_vals.sum(), spec2_rebin.counts_vals.sum())
