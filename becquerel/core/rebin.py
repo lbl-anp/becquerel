@@ -142,7 +142,7 @@ def _rebin_interpolation(in_spectrum, in_edges, out_edges, slopes):
         for out_idx in range(out_idx, len(out_spectrum)):
             out_left_edge = out_edges[out_idx]
             out_right_edge = out_edges[out_idx + 1]
-            if out_left_edge >= in_right_edge:
+            if out_left_edge > in_right_edge:
                 out_idx -= 1  # rewind back to previous out_bin; not done yet
                 break  # break out of out_bins loop, move on to next in_bin
             # Low edge for interpolation
