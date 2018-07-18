@@ -126,7 +126,7 @@ def _rebin_interpolation(in_spectrum, in_edges, out_edges, slopes):
     in_idx = max(0, np.searchsorted(in_edges, out_edges[0]) - 1)
     # Under-flow handling: Put all counts from in_bins that are completely to
     # the left of the 0th out_bin into the 0th out_bin
-    out_spectrum[0] = np.sum(in_spectrum[:in_idx])
+    out_spectrum[0] += np.sum(in_spectrum[:in_idx])
     # out_idx: output bin or left edge
     #          init to the first out_bin which overlaps the 0th in_bin
     out_idx = max(0, np.searchsorted(out_edges, in_edges[0]) - 1)
