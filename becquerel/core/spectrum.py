@@ -772,19 +772,21 @@ class Spectrum(object):
         else:
             in_edges = self.bin_edges_kev
         if self.counts is None:
-            # TODO Update this?
+            # NOTE @jccurtis this will be deprecated when closing #122
             raise SpectrumError('Cannot rebin method without `counts` data')
-        key = 'counts'
-        in_spec = getattr(self, '{}_vals'.format(key))
+        if method.lower() == 'interpolation':
+            in_spec = self.counts_vals.astype(np.float)
+        elif method.lower() == 'listmode':
+            in_spec = self.counts_vals.astype(np.int)
+        else:
+            raise SpectrumError('Unknown rebining method: {}'.format(method))
         out_spec = rebin(in_spec, in_edges, out_edges, method=method,
                          slopes=slopes)
-        kwargs = {key: out_spec,
-                  'uncs': np.sqrt(out_spec),
-                  'bin_edges_kev': out_edges,
-                  'input_file_object': self._infileobject,
-                  'livetime': self.livetime}
-        obj = Spectrum(**kwargs)
-        return obj
+        return Spectrum(counts=out_spec,
+                        uncs=np.sqrt(out_spec),
+                        bin_edges_kev=out_edges,
+                        input_file_object=self._infileobject,
+                        livetime=self.livetime)
 
     def rebin_like(self, other, **kwargs):
         return self.rebin(other.bin_edges_kev, **kwargs)
