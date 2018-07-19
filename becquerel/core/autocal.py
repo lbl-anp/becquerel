@@ -93,7 +93,7 @@ def fom_gain(channels, snrs, energies):
 
 def find_best_gain(
         channels, snrs, required_energies, optional=(),
-        gain_range=(1e-3, 1e3), de_max=10.):
+        gain_range=(1e-3, 1e3), de_max=10., verbose=False):
     """Find the gain that gives the best match of peaks to energies."""
     assert len(channels) == len(snrs)
     assert len(channels) >= 2
@@ -112,6 +112,8 @@ def find_best_gain(
     best_snrs = None
     best_ergs = None
     while n_set >= n_req:
+        if verbose:
+            print('Searching groups of {}'.format(n_set))
         # cycle through energy combinations
         for comb_erg in combinations(optional, n_set - n_req):
             comb_erg = np.array(comb_erg)
@@ -142,12 +144,15 @@ def find_best_gain(
                     continue
                 # calculate figure of merit
                 fom = fom_gain(comb_chan, comb_snr, comb_erg)
-                # s0 = 'FOM: {:15.9f}'.format(fom)
-                # s0 += '  gain: {:6.3f}'.format(gain)
-                # s0 += '  ergs: {:50s}'.format(str(comb_erg))
-                # # s0 += '  de: {:50s}'.format(str(de))
-                # s0 += '  chans: {:40s}'.format(str(comb_chan))
-                # print(s0)
+                if verbose:
+                    print('v')
+                    s0 = 'Valid calibration found:\n'
+                    s0 += 'FOM: {:15.9f}'.format(fom)
+                    s0 += '  gain: {:6.3f}'.format(gain)
+                    s0 += '  ergs: {:50s}'.format(str(comb_erg))
+                    s0 += '  de: {:50s}'.format(str(de))
+                    s0 += '  chans: {:40s}'.format(str(comb_chan))
+                    print(s0)
                 if best_fom is None:
                     best_fom = fom + 1.
                 if fom < best_fom:
@@ -156,12 +161,14 @@ def find_best_gain(
                     best_chans = comb_chan
                     best_snrs = comb_snr
                     best_ergs = comb_erg
-                    # s0 = 'FOM: {:15.9f}'.format(best_fom)
-                    # s0 += '  gain: {:6.3f}'.format(best_gain)
-                    # s0 += '  ergs: {:50s}'.format(str(best_ergs))
-                    # # s0 += '  de: {:50s}'.format(str(de))
-                    # s0 += '  chans: {:40s}'.format(str(best_chans))
-                    # print(s0)
+                    if verbose:
+                        s0 = 'Best calibration so far:\n'
+                        s0 += 'FOM: {:15.9f}'.format(best_fom)
+                        s0 += '  gain: {:6.3f}'.format(best_gain)
+                        s0 += '  ergs: {:50s}'.format(str(best_ergs))
+                        s0 += '  de: {:50s}'.format(str(de))
+                        s0 += '  chans: {:40s}'.format(str(best_chans))
+                        print(s0)
         n_set -= 1
     if best_gain is None:
         return None
@@ -214,7 +221,7 @@ class AutoCalibrator(object):
             plt.plot(chan, snr, 'go')
 
     def fit(self, required_energies, optional=(),
-            gain_range=(1e-3, 1e3), de_max=10.):
+            gain_range=(1e-3, 1e3), de_max=10., verbose=False):
         """Find the gain that gives the best match of peaks to energies."""
         if len(self.peakfinder.channels) == 1 and \
                 len(required_energies) == 1:
@@ -243,7 +250,7 @@ class AutoCalibrator(object):
         fit = find_best_gain(
             self.peakfinder.channels, self.peakfinder.snrs,
             required_energies, optional=optional, gain_range=gain_range,
-            de_max=de_max)
+            de_max=de_max, verbose=verbose)
         if fit is None:
             self.fit_energies = []
             self.fit_snrs = []

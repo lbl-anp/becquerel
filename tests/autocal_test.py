@@ -156,6 +156,7 @@ def test_autocal_spec1():
         optional=OPTIONAL,
         gain_range=[2.5, 4.],
         de_max=20.,
+        verbose=True,
     )
     assert len(cal.fit_channels) == 6
     assert np.isclose(cal.gain, 3.01, rtol=1e-3)
