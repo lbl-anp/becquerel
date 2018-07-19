@@ -75,9 +75,6 @@ class Spectrum(object):
       copy: return a deep copy of this Spectrum object
     """
 
-    # This line will allow the right multiplication to work
-    __rmul__ = __mul__
-
     def __init__(self, counts=None, cps=None, uncs=None, bin_edges_kev=None,
                  input_file_object=None, livetime=None, realtime=None,
                  start_time=None, stop_time=None):
@@ -537,6 +534,9 @@ class Spectrum(object):
 
         return self._mul_div(other, div=False)
 
+    # This line will allow the right multiplication to work
+    __rmul__ = __mul__
+
     def __div__(self, other):
         """Return a new Spectrum object with counts (or CPS) scaled down.
 
@@ -738,7 +738,6 @@ class Spectrum(object):
         obj = Spectrum(**kwargs)
         return obj
 
-
     def plot(self, *fmt, **kwargs):
         """Plot a spectrum with matplotlib's plot command.
 
@@ -786,7 +785,6 @@ class Spectrum(object):
             raise SpectrumError("Unknown error mode '{}', use 'bars' "
                                 "or 'band'".format(emode))
         return ax
-
 
     def fill_between(self, **kwargs):
         """Plot a spectrum with matplotlib's fill_between command
