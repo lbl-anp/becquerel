@@ -18,7 +18,10 @@ For a feature request, please create an issue and label it as a `new feature`.
   - [ ] Write tests to cover all use cases
   - [ ] Ensure all tests pass (`python setup.py test`)
   - [ ] Ensure test coverage is >95%
-  - [ ] Ensure there are no linter issues (`flake8`, `pylint`, and `pydocstyle`)
+  - [ ] Ensure there are no linter issues:
+    - `flake8 becquerel tests`
+    - `pydocstyle becquerel tests`
+    - `pylint becquerel tests`
   - [ ] Spellcheck your code and docstrings
   - [ ] Check style is [consistent with Google Python style guide](https://github.com/google/styleguide/blob/gh-pages/pyguide.md)
   - [ ] Push branch to GitHub and create a pull request
