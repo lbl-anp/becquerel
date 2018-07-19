@@ -54,7 +54,7 @@ pytest --cov-report html:htmlcov
 
 ## Dependencies
 
-External dependencies are listed in `requirements.txt` and can be installed with `pip` as outlined in the [Installation instructions](#installation-instructions) or manually. The dependencies on `beautifulsoup4`, `lxml` and `html5lib` are necessary for [`pandas`](https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies).
+External dependencies are listed in `requirements.txt` and can be installed with `pip` as outlined in the [Installation instructions](#installation-instructions) or manually. The dependencies on `beautifulsoup4`, `lxml` and `html5lib` are necessary for [`pandas`](https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies). Developers need additionally [`pytest`](https://docs.pytest.org) and are encouraged to use tools such as [`pylint`](https://pylint.readthedocs.io), [`pycodestyle`](http://pycodestyle.pycqa.org) [`pydocstyle`](http://www.pydocstyle.org) and [`yapf`](https://github.com/google/yapf) for proper code formatting.
 
 ## Code Style Guide
 

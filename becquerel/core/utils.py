@@ -13,13 +13,13 @@ try:
     isinstance("", basestring)
 
     def isstring(s):
-        """Test for strings in python2 and 3"""
+        """Test for strings in python2"""
         return isinstance(s, basestring)
 
 except NameError:
 
     def isstring(s):
-        """Test for strings in python2 and 3"""
+        """Test for strings in python3"""
         return isinstance(s, str)
 
 
