@@ -54,7 +54,20 @@ pytest --cov-report html:htmlcov
 
 ## Dependencies
 
-External dependencies are listed in `requirements.txt` and can be installed with `pip` as outlined in the [Installation instructions](#installation-instructions) or manually. The dependencies on `beautifulsoup4`, `lxml` and `html5lib` are necessary for [`pandas`](https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies). Developers additionally need [`pytest`](https://docs.pytest.org) and are encouraged to use tools such as [`pylint`](https://pylint.readthedocs.io), [`pycodestyle`](http://pycodestyle.pycqa.org) [`pydocstyle`](http://www.pydocstyle.org) and [`yapf`](https://github.com/google/yapf) for proper code formatting.
+External dependencies are listed in `requirements.txt` and can be installed
+with `pip` (see [Installation instructions][0]) or manually. The dependencies
+on `beautifulsoup4`, `lxml` and `html5lib` are necessary for [`pandas`][1]. 
+Developers additionally need [`pytest`][2] and are encouraged to use 
+[`pylint`][3], [`pycodestyle`][4], [`pydocstyle`][5] and [`yapf`][6] for
+proper code formatting.
+
+[0]: #installation-instructions
+[1]: https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies
+[2]: https://docs.pytest.org
+[3]: https://pylint.readthedocs.io
+[4]: http://pycodestyle.pycqa.org
+[5]: http://www.pydocstyle.org
+[6]: https://github.com/google/yapf
 
 ## Code Style Guide
 
@@ -66,7 +79,16 @@ Use [google standards](https://google.github.io/styleguide/pyguide.html)
 * Use `pylint` from command line (as in style guide)
 
 ## Copyright Notice
-Becquerel v. 0.1, Copyright (c) 2017, The Regents of the University of California (UC), through Lawrence Berkeley National Laboratory, and the UC Berkeley campus (subject to receipt of any required approvals from the U.S. Dept. of Energy). All rights reserved.
-If you have questions about your rights to use or distribute this software, please contact Berkeley Lab's Innovation & Partnerships Office at  IPO@lbl.gov.
+Becquerel v. 0.1, Copyright (c) 2017, The Regents of the University of
+California (UC), through Lawrence Berkeley National Laboratory, and the UC
+Berkeley campus (subject to receipt of any required approvals from the U.S.
+Dept. of Energy). All rights reserved. If you have questions about your rights
+to use or distribute this software, please contact Berkeley Lab's Innovation &
+Partnerships Office at  IPO@lbl.gov.
 
-NOTICE.  This Software was developed under funding from the U.S. Department of Energy and the U.S. Government consequently retains certain rights.  As such, the U.S. Government has been granted for itself and others acting on its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software to reproduce, distribute copies to the public, prepare derivative works, and perform publicly and display publicly, and to permit other to do so.
+NOTICE.  This Software was developed under funding from the U.S. Department of
+Energy and the U.S. Government consequently retains certain rights.  As such,
+the U.S. Government has been granted for itself and others acting on its
+behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software
+to reproduce, distribute copies to the public, prepare derivative works, and
+perform publicly and display publicly, and to permit other to do so.
