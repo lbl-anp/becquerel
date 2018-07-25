@@ -3,8 +3,8 @@
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-import becquerel as bq
 import pytest
+import becquerel as bq
 
 
 # read in spectra

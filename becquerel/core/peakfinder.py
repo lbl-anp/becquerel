@@ -251,7 +251,7 @@ class PeakFinder(object):
         self.reset()
 
     def add_peak(self, chan):
-        """Add a peak at the channelto the list if it is not already there."""
+        """Add a peak at the channel to list if it is not already there."""
         new_channel = True
         for chan2 in self.channels:
             if abs(chan - chan2) <= self.min_sep:
