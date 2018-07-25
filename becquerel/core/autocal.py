@@ -29,6 +29,12 @@ MAJOR_BACKGROUND_LINES = [
 ]
 
 
+class AutoCalibratorError(Exception):
+    """Base class for errors in AutoCalibrator."""
+
+    pass
+
+
 def fit_gain(channels, snrs, energies):
     """Calculate the mean gain to relate channels to energies.
 
@@ -44,8 +50,14 @@ def fit_gain(channels, snrs, energies):
         g = sum(snr^2 * y) / sum(snr^2 * x)
 
     """
-    assert len(channels) == len(energies)
-    assert len(channels) == len(snrs)
+    if len(channels) != len(energies):
+        raise AutoCalibratorError(
+            'Number of channels ({}) must equal # of energies ({})'.format(
+                len(channels), len(energies)))
+    if len(channels) != len(snrs):
+        raise AutoCalibratorError(
+            'Number of channels ({}) must equal # of SNRs ({})'.format(
+                len(channels), len(snrs)))
     x = np.asarray(channels)
     s = np.asarray(snrs)
     y = np.asarray(energies)
@@ -79,8 +91,14 @@ def fom_gain(channels, snrs, energies):
     = sum_j(snr_j^2 (s2y x_j - s2x y_j)^2 / (s2x - snr_j^2 x_j)^2 / x_j) / N
 
     """
-    assert len(channels) == len(energies)
-    assert len(channels) == len(snrs)
+    if len(channels) != len(energies):
+        raise AutoCalibratorError(
+            'Number of channels ({}) must equal # of energies ({})'.format(
+                len(channels), len(energies)))
+    if len(channels) != len(snrs):
+        raise AutoCalibratorError(
+            'Number of channels ({}) must equal # of SNRs ({})'.format(
+                len(channels), len(snrs)))
     x = np.asarray(channels)
     s = np.asarray(snrs)
     y = np.asarray(energies)
@@ -95,10 +113,21 @@ def find_best_gain(
         channels, snrs, required_energies, optional=(),
         gain_range=(1e-3, 1e3), de_max=10., verbose=False):
     """Find the gain that gives the best match of peaks to energies."""
-    assert len(channels) == len(snrs)
-    assert len(channels) >= 2
-    assert len(required_energies) >= 2
-    assert len(channels) >= len(required_energies)
+    if len(channels) != len(snrs):
+        raise AutoCalibratorError(
+            'Number of channels ({}) must equal # of SNRs ({})'.format(
+                len(channels), len(snrs)))
+    if len(channels) < 2:
+        raise AutoCalibratorError(
+            'Number of channels ({}) must at least 2'.format(len(channels)))
+    if len(required_energies) < 2:
+        raise AutoCalibratorError(
+            'Number of required energies ({}) must at least 2'.format(
+                len(required_energies)))
+    if len(channels) < len(required_energies):
+        raise AutoCalibratorError(
+            'Number of channels ({}) must be > required energies ({})'.format(
+                len(channels), len(required_energies)))
     channels = np.array(channels)
     snrs = np.array(snrs)
     n_req = len(required_energies)
@@ -181,12 +210,6 @@ def find_best_gain(
         }
 
 
-class AutoCalibratorError(Exception):
-    """Base class for errors in AutoCalibrator."""
-
-    pass
-
-
 class AutoCalibrator(object):
     """Automatically calibrate a spectrum by convolving it with a filter."""
 
@@ -210,7 +233,10 @@ class AutoCalibrator(object):
 
     def set_peaks(self, peakfinder):
         """Use the peaks found by the PeakFinder."""
-        assert isinstance(peakfinder, PeakFinder)
+        if not isinstance(peakfinder, PeakFinder):
+            raise AutoCalibratorError(
+                'Argument must be a PeakFinder, not {}'.format(
+                    type(peakfinder)))
         self.peakfinder = peakfinder
 
     def plot(self, **kwargs):

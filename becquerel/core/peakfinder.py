@@ -8,6 +8,12 @@ import numpy as np
 from .spectrum import Spectrum
 
 
+class PeakFilterError(Exception):
+    """Base class for errors in PeakFilter."""
+
+    pass
+
+
 class PeakFilter(object):
     """An energy-dependent kernel that can be convolved with a spectrum.
 
@@ -31,8 +37,12 @@ class PeakFilter(object):
 
     def __init__(self, ref_channel, ref_fwhm, fwhm_at_0=1.):
         """Initialize with a reference line position and FWHM in channels."""
-        assert ref_channel > 0
-        assert ref_fwhm > 0
+        if ref_channel <= 0:
+            raise PeakFilterError('Reference channel must be positive')
+        if ref_fwhm <= 0:
+            raise PeakFilterError('Reference FWHM must be positive')
+        if fwhm_at_0 < 0:
+            raise PeakFilterError('FWHM at 0 must be non-negative')
         self.ref_channel = float(ref_channel)
         self.ref_fwhm = float(ref_fwhm)
         self.fwhm_at_0 = float(fwhm_at_0)
@@ -119,7 +129,6 @@ class BoxcarPeakFilter(PeakFilter):
         kernel = np.zeros(2 * n_side + n_channels)
         kernel[channel:channel + len(kernel0)] = kernel0[:]
         kernel = kernel[n_side:-n_side]
-        assert len(kernel) == n_channels
         positive = kernel > 0
         negative = kernel < 0
         kernel[positive] /= sum(kernel[positive])
@@ -175,7 +184,9 @@ class PeakFinder(object):
 
     def __init__(self, spectrum, kernel, min_sep=5, fwhm_tol=(0.5, 1.5)):
         """Initialize with a spectrum and kernel."""
-        assert min_sep > 0
+        if min_sep <= 0:
+            raise PeakFinderError(
+                'Minimum channel separation must be positive')
         self.min_sep = min_sep
         self.fwhm_tol = tuple(fwhm_tol)
         self.spectrum = None
@@ -202,7 +213,10 @@ class PeakFinder(object):
 
     def sort_by(self, arr):
         """Sort peaks by the provided array."""
-        assert len(arr) == len(self.channels)
+        if len(arr) != len(self.channels):
+            raise PeakFinderError(
+                'Sorting array has length {} but must have length {}'.format(
+                    len(arr), len(self.channels)))
         self.channels = np.array(self.channels)
         self.snrs = np.array(self.snrs)
         self.fwhms = np.array(self.fwhms)
@@ -217,8 +231,12 @@ class PeakFinder(object):
 
     def calculate(self, spectrum, kernel):
         """Calculate the convolution of the spectrum with the kernel."""
-        assert isinstance(spectrum, Spectrum)
-        assert isinstance(kernel, PeakFilter)
+        if not isinstance(spectrum, Spectrum):
+            raise PeakFinderError(
+                'Argument must be a Spectrum, not {}'.format(type(spectrum)))
+        if not isinstance(kernel, PeakFilter):
+            raise PeakFinderError(
+                'Argument must be a PeakFilter, not {}'.format(type(kernel)))
         self.spectrum = spectrum
         self.kernel = kernel
         self.snr = np.zeros(len(self.spectrum))
@@ -337,8 +355,10 @@ class PeakFinder(object):
             raise PeakFinderError(
                 'SNR threshold is {:.3f} but maximum SNR is {:.3f}'.format(
                     min_snr, self.snr.max()))
-        assert isinstance(max_num, int)
-        assert max_num >= 2
+        max_num = int(max_num)
+        if max_num < 1:
+            raise PeakFinderError(
+                'Must keep at least 1 peak, not {}'.format(max_num))
         # calculate the first derivative and second derivatives of the SNR
         d1 = (self.snr[2:] - self.snr[:-2]) / 2
         d1 = np.append(0, d1)

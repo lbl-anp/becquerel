@@ -58,6 +58,16 @@ def test_peakfilter_base():
         pf.kernel_matrix(1000)
 
 
+def test_peakfilter_exceptions():
+    """Test PeakFilter base class exceptions."""
+    with pytest.raises(bq.PeakFilterError):
+        bq.PeakFilter(-700, 20, fwhm_at_0=15)
+    with pytest.raises(bq.PeakFilterError):
+        bq.PeakFilter(700, -20, fwhm_at_0=15)
+    with pytest.raises(bq.PeakFilterError):
+        bq.PeakFilter(700, 20, fwhm_at_0=-15)
+
+
 @pytest.mark.parametrize('cls', [bq.BoxcarPeakFilter, bq.GaussianPeakFilter])
 def test_peakfilter(cls):
     """Test basic functionality of PeakFilter."""
@@ -94,7 +104,17 @@ def test_peakfinder():
 def test_peakfinder_exceptions():
     """Test PeakFinder exceptions."""
     kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
+    # init
+    with pytest.raises(bq.PeakFinderError):
+        finder = bq.PeakFinder(spec1, kernel, min_sep=-10)
+    with pytest.raises(bq.PeakFinderError):
+        finder = bq.PeakFinder(None, kernel)
+    with pytest.raises(bq.PeakFinderError):
+        finder = bq.PeakFinder(spec1, None)
     finder = bq.PeakFinder(spec1, kernel)
+    # sort_by
+    with pytest.raises(bq.PeakFinderError):
+        finder.sort_by([1, 2, 3])
     # find_peak
     with pytest.raises(bq.PeakFinderError):
         finder.find_peak(-1)
@@ -129,6 +149,8 @@ def test_peakfinder_exceptions():
         finder.find_peaks(min_snr=-3)
     with pytest.raises(bq.PeakFinderError):
         finder.find_peaks(min_snr=50)
+    with pytest.raises(bq.PeakFinderError):
+        finder.find_peaks(max_num=0)
 
 
 @pytest.mark.plottest
@@ -142,6 +164,26 @@ def test_peakfinder_plot():
     plt.figure()
     finder.plot(linecolor='k')
     plt.show()
+
+
+def test_fit_function_exceptions():
+    """Test exceptions in the fit functions."""
+    with pytest.raises(bq.AutoCalibratorError):
+        bq.core.autocal.fit_gain([0], [], [2])
+    with pytest.raises(bq.AutoCalibratorError):
+        bq.core.autocal.fit_gain([0], [1], [])
+    with pytest.raises(bq.AutoCalibratorError):
+        bq.core.autocal.fom_gain([0], [], [2])
+    with pytest.raises(bq.AutoCalibratorError):
+        bq.core.autocal.fom_gain([0], [1], [])
+    with pytest.raises(bq.AutoCalibratorError):
+        bq.core.autocal.find_best_gain([0, 1, 2], [2, 4], [300, 400, 500])
+    with pytest.raises(bq.AutoCalibratorError):
+        bq.core.autocal.find_best_gain([0], [2], [300, 400, 500])
+    with pytest.raises(bq.AutoCalibratorError):
+        bq.core.autocal.find_best_gain([0, 1, 2], [2, 4, 6], [300])
+    with pytest.raises(bq.AutoCalibratorError):
+        bq.core.autocal.find_best_gain([0, 1], [2, 4], [300, 400, 500])
 
 
 def test_autocal_spec1():
@@ -182,6 +224,9 @@ def test_autocal_exceptions():
     """Test AutoCalibrator exceptions."""
     kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
     finder = bq.PeakFinder(spec1, kernel)
+    # init error
+    with pytest.raises(bq.AutoCalibratorError):
+        cal = bq.AutoCalibrator(None)
     cal = bq.AutoCalibrator(finder)
     # only one peak found, but multiple energies required
     finder.find_peaks(min_snr=10, min_chan=50)
