@@ -252,6 +252,12 @@ class PeakFinder(object):
 
     def add_peak(self, chan):
         """Add a peak at the channel to list if it is not already there."""
+        chan_min = self.spectrum.channels.min()
+        chan_max = self.spectrum.channels.max()
+        if chan < chan_min or chan > chan_max:
+            raise PeakFinderError(
+                'Channel {} is outside of range {}-{}'.format(
+                    chan, chan_min, chan_max))
         new_channel = True
         for chan2 in self.channels:
             if abs(chan - chan2) <= self.min_sep:
@@ -267,7 +273,9 @@ class PeakFinder(object):
             d2 = (1 * self.snr[chan - h]
                   - 2 * self.snr[chan]
                   + 1 * self.snr[chan + h]) / h**2
-            assert d2 < 0
+            if d2 >= 0:
+                raise PeakFinderError(
+                    'Second derivative must be negative at peak')
             d2 *= -1
             fwhm = 2 * np.sqrt(self.snr[chan] / d2)
             self.fwhms.append(fwhm)
@@ -303,12 +311,12 @@ class PeakFinder(object):
 
     def find_peak(self, channel, frac_range=(0.8, 1.2), min_snr=2):
         """Find the highest SNR peak within f0*channel and f1*channel."""
-        if channel < self.spectrum.channels.min() or \
-                channel > self.spectrum.channels.max():
+        chan_min = self.spectrum.channels.min()
+        chan_max = self.spectrum.channels.max()
+        if channel < chan_min or channel > chan_max:
             raise PeakFinderError(
                 'Channel {} is outside of range {}-{}'.format(
-                    channel, self.spectrum.channels.min(),
-                    self.spectrum.channels.max()))
+                    channel, chan_min, chan_max))
         if frac_range[0] < 0 or frac_range[0] > 1 or frac_range[1] < 1 or \
                 frac_range[0] > frac_range[1]:
             raise PeakFinderError(

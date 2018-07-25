@@ -115,6 +115,11 @@ def test_peakfinder_exceptions():
     # sort_by
     with pytest.raises(bq.PeakFinderError):
         finder.sort_by([1, 2, 3])
+    # add_peak
+    with pytest.raises(bq.PeakFinderError):
+        finder.add_peak(-10)
+    with pytest.raises(bq.PeakFinderError):
+        finder.add_peak(5)  # below threshold so no peak here
     # find_peak
     with pytest.raises(bq.PeakFinderError):
         finder.find_peak(-1)
