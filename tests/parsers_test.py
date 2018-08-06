@@ -99,3 +99,14 @@ class TestSpectrumFilePlot(object):
     def test_cnf(self):
         """Test parsers.CnfFile............................................"""
         self.run_parser(bq.parsers.CnfFile, '.cnf', write=False)
+
+
+def test_spe_presets_warning():
+    with pytest.warns(UserWarning) as record:
+        bq.parsers.SpeFile(
+            os.path.join(SAMPLES_PATH, 'digibase_5min_30_1.spe'))
+    assert len(record) == 2
+    assert record[0].message.args[0] == \
+        'SpeFile has $PRESETS field, skipping 3 lines'
+    assert record[1].message.args[0] == \
+        'Ignoring calibration; energies not monotonically increasing'
