@@ -116,8 +116,10 @@ class N42File(SpectrumFile):
                 tag = thing.tag.split(N42_NAMESPACE)[-1]
                 if tag == 'CoefficientValues':
                     coefs = [float(x) for x in thing.text.split(' ')]
-                    if 'PHD' in self.detector_description['RadInstrumentManufacturerName']:
-                        coefs[1] *= 2.
+                    # TODO This was introduced based on a Fulcrum n42, but
+                    # looks like it isn't needed.  Should be removed on merge.
+                    # if 'PHD' in self.detector_description['RadInstrumentManufacturerName']:
+                    #     coefs[1] *= 2.
                     energy_cals[tag] = np.array(coefs)
                     self.cal_coeff = energy_cals[tag]
                 else:
