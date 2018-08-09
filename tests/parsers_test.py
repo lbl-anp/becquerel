@@ -3,7 +3,7 @@
 from __future__ import print_function
 import glob
 import os
-import unittest
+import pytest
 import matplotlib.pyplot as plt
 import becquerel as bq
 
@@ -21,8 +21,41 @@ for extension in ['.spe', '.spc', '.cnf']:
     SAMPLES[extension] = filenames_filtered
 
 
-class SpectrumFileTests(unittest.TestCase):
+class TestSpectrumFile(object):
     """Test spectrum file parsers."""
+
+    def run_parser(self, cls, extension, write=False):
+        """Run the test for the given class and file extension."""
+        filenames = SAMPLES.get(extension, [])
+        assert len(filenames) >= 1
+        for filename in filenames:
+            fname, ext = os.path.splitext(filename)
+            path, fname = os.path.split(fname)
+            print('')
+            print(filename)
+            spec = cls(filename)
+            print(spec)
+            if write:
+                writename = os.path.join('.', fname + '_copy' + ext)
+                spec.write(writename)
+                os.remove(writename)
+
+    def test_spe(self):
+        """Test parsers.SpeFile............................................"""
+        self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
+
+    def test_spc(self):
+        """Test parsers.SpcFile............................................"""
+        self.run_parser(bq.parsers.SpcFile, '.spc', write=False)
+
+    def test_cnf(self):
+        """Test parsers.CnfFile............................................"""
+        self.run_parser(bq.parsers.CnfFile, '.cnf', write=False)
+
+
+@pytest.mark.plottest
+class TestSpectrumFilePlot(object):
+    """Test spectrum file parsers and plot the spectra."""
 
     def run_parser(self, cls, extension, write=False):
         """Run the test for the given class and file extension."""
@@ -33,7 +66,7 @@ class SpectrumFileTests(unittest.TestCase):
             return
         plt.title('Testing ' + cls.__name__)
         filenames = SAMPLES.get(extension, [])
-        self.assertTrue(len(filenames) >= 1)
+        assert len(filenames) >= 1
         for filename in filenames:
             fname, ext = os.path.splitext(filename)
             path, fname = os.path.split(fname)
@@ -66,12 +99,3 @@ class SpectrumFileTests(unittest.TestCase):
     def test_cnf(self):
         """Test parsers.CnfFile............................................"""
         self.run_parser(bq.parsers.CnfFile, '.cnf', write=False)
-
-
-def main():
-    """Run unit tests."""
-    unittest.main()
-
-
-if __name__ == '__main__':
-    main()

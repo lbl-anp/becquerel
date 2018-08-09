@@ -1,9 +1,13 @@
-coverage
+beautifulsoup4
+future
+html5lib
 lxml
 matplotlib
-nose
 numpy
+pandas
 python-dateutil
 requests
 scipy
 setuptools
+six
+uncertainties
