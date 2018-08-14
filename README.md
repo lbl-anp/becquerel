@@ -1,12 +1,23 @@
 # becquerel
 
+Becquerel is a Python package for analyzing nuclear spectroscopic
+measurements. The core functionalities are reading and writing different
+spectrum file types, fitting spectral features, performing detector
+calibrations, and interpreting measurement results. It includes tools for
+plotting radiation spectra as well as convenient access to tabulated nuclear
+data, and it will include fits of different spectral features. It relies
+heavily on the standard scientific Python stack of numpy, scipy, matplotlib,
+and pandas. It is intended to be general-purpose enough that it can be useful
+to anyone from an undergraduate taking a laboratory course to the advanced
+researcher.
+
 ## Installation instructions
 
 ### As a user
 
 ```
 pip install -r requirements.txt
-python setup.py install
+python setup.py install --user
 ```
 
 Before reinstalling, be sure to either remove the ```build``` directory
@@ -56,8 +67,8 @@ pytest --cov-report html:htmlcov
 
 External dependencies are listed in `requirements.txt` and can be installed
 with `pip` (see [Installation instructions][0]) or manually. The dependencies
-`beautifulsoup4`, `lxml` and `html5lib` are necessary for [`pandas`][1]. 
-Developers additionally need [`pytest`][2] and are encouraged to use 
+`beautifulsoup4`, `lxml` and `html5lib` are necessary for [`pandas`][1].
+Developers additionally need [`pytest`][2] and are encouraged to use
 [`pylint`][3], [`pycodestyle`][4], [`pydocstyle`][5] and [`yapf`][6] for
 proper code formatting.
 
