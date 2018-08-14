@@ -1,7 +1,7 @@
 """Nuclear isotopes and isomers."""
 
 from __future__ import print_function
-from builtins import super
+from future.builtins import super
 import numpy as np
 import uncertainties
 from . import element
