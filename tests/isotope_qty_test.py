@@ -2,7 +2,6 @@
 from __future__ import print_function
 import datetime
 from dateutil.parser import parse as dateutil_parse
-from six import string_types
 import copy
 import numpy as np
 from uncertainties import ufloat
@@ -13,6 +12,7 @@ from becquerel.tools.isotope_qty import NeutronIrradiationError
 from becquerel.tools.isotope_qty import decay_normalize
 from becquerel.tools.isotope_qty import decay_normalize_spectra
 from becquerel import Spectrum
+import becquerel as bq
 import pytest
 
 
@@ -128,7 +128,7 @@ def test_isotopequantity_ref_date_rad(radioisotope, iq_date):
     iq = IsotopeQuantity(radioisotope, date=iq_date, atoms=1e24)
     if isinstance(iq_date, datetime.datetime):
         assert iq.ref_date == iq_date
-    elif isinstance(iq_date, string_types):
+    elif bq.core.utils.isstring(iq_date):
         assert iq.ref_date == dateutil_parse(iq_date)
     else:
         assert (datetime.datetime.now() - iq.ref_date).total_seconds() < 5
@@ -140,7 +140,7 @@ def test_isotopequantity_ref_date_stable(stable_isotope, iq_date):
     iq = IsotopeQuantity(stable_isotope, date=iq_date, atoms=1e24)
     if isinstance(iq_date, datetime.datetime):
         assert iq.ref_date == iq_date
-    elif isinstance(iq_date, string_types):
+    elif bq.core.utils.isstring(iq_date):
         assert iq.ref_date == dateutil_parse(iq_date)
     else:
         assert (datetime.datetime.now() - iq.ref_date).total_seconds() < 5
