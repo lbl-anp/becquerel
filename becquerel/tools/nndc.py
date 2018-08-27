@@ -19,44 +19,6 @@ from ..core.utils import isstring
 PARITIES = ['+', '-', 'any']
 
 
-WALLET_DECAY_MODE = {
-    'any': 'ANY',
-    'internal transition': 'IT',
-    'it': 'IT',
-    'beta-': 'B-',
-    'b-': 'B-',
-    'electron capture beta+': 'ECBP',
-    'ecbp': 'ECBP',
-    'ecb+': 'ECBP',
-    'ec+b+': 'ECBP',
-    'e+b+': 'ECBP',
-    'neutron': 'N',
-    'n': 'N',
-    'proton': 'P',
-    'p': 'P',
-    'alpha': 'A',
-    'a': 'A',
-    'cluster': 'C',
-    'c': 'C',
-    'spontaneous fission': 'SF',
-    'sf': 'SF',
-    'double beta': 'DB',
-    'bb': 'DB',
-    'beta-delayed neutron': 'DN',
-    'b-delayed n': 'DN',
-    'bdn': 'DN',
-    'beta-delayed proton': 'DP',
-    'b-delayed p': 'DP',
-    'bdp': 'DP',
-    'beta-delayed alpha': 'DA',
-    'b-delayed a': 'DA',
-    'bda': 'DA',
-    'beta-delayed fission': 'DF',
-    'b-delayed f': 'DF',
-    'bdf': 'DF',
-}
-
-
 DECAYRAD_DECAY_MODE = {
     'any': 'ANY',
     'internal transition': 'IT',
@@ -77,6 +39,27 @@ DECAYRAD_DECAY_MODE = {
     'spontaneous fission': 'SF',
     'sf': 'SF',
 }
+
+
+WALLET_DECAY_MODE = dict(DECAYRAD_DECAY_MODE)
+WALLET_DECAY_MODE.update({
+    'double beta': 'DB',
+    'bb': 'DB',
+    'cluster': 'C',
+    'c': 'C',
+    'beta-delayed neutron': 'DN',
+    'b-delayed n': 'DN',
+    'bdn': 'DN',
+    'beta-delayed proton': 'DP',
+    'b-delayed p': 'DP',
+    'bdp': 'DP',
+    'beta-delayed alpha': 'DA',
+    'b-delayed a': 'DA',
+    'bda': 'DA',
+    'beta-delayed fission': 'DF',
+    'b-delayed f': 'DF',
+    'bdf': 'DF',
+})
 
 
 DECAYRAD_RADIATION_TYPE = {
