@@ -446,6 +446,18 @@ class NNDCQueryTests(object):
         assert ((5 <= d.Z) & (d.Z <= 10)).all()
         assert (d['T1/2 (s)'] >= 1e9).all()
 
+    def test_query_nuc_Pu239_decay_ANY(self):
+        """Test NNDCQuery: nuc='Pu-239', decay='ANY'......................."""
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'ANY']
+        assert len(kwargs) > 0
+        ds = [self.fetch(nuc='Pu-239', decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert (d.Z == 94).all()
+            assert (d.A == 239).all()
+            assert len(d) == len(ds[0])
+
     def test_query_nuc_Pu239_decay_A(self):
         """Test NNDCQuery: nuc='Pu-239', decay='Alpha'....................."""
         kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
@@ -480,6 +492,40 @@ class NNDCQueryTests(object):
             assert len(d) > 0
             assert (d.Z == 11).all()
             assert (d.A == 22).all()
+            assert len(d) == len(ds[0])
+
+    def test_query_nuc_Tc99_decay_IT(self):
+        """Test NNDCQuery: nuc='Tc-99', decay='IT'........................."""
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'IT']
+        assert len(kwargs) > 0
+        ds = [self.fetch(nuc='Tc-99', decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert (d.Z == 43).all()
+            assert (d.A == 99).all()
+            assert len(d) == len(ds[0])
+
+    def test_query_nuc_zrange_1_50_decay_N(self):
+        """Test NNDCQuery: z_range=(1, 50), decay='N'......................"""
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'N']
+        assert len(kwargs) > 0
+        ds = [self.fetch(z_range=(1, 50), decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert (d.Z <= 50).all()
+            assert len(d) == len(ds[0])
+
+    def test_query_nuc_zrange_1_50_decay_P(self):
+        """Test NNDCQuery: z_range=(1, 50), decay='P'......................"""
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'P']
+        assert len(kwargs) > 0
+        ds = [self.fetch(z_range=(1, 50), decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert (d.Z <= 50).all()
             assert len(d) == len(ds[0])
 
     def test_query_exception_bad_decay(self):
@@ -590,6 +636,16 @@ class TestNuclearWalletCard(NNDCQueryTests):
         with pytest.raises(nndc.NNDCRequestError):
             d = self.fetch(j='10')
             assert len(d) > 0
+
+    def test_wallet_decay_SF(self):
+        """Test fetch_wallet_card: decay='SF'.............................."""
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'SF']
+        assert len(kwargs) > 0
+        ds = [self.fetch(decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert len(d) == len(ds[0])
 
     def test_wallet_decay_cluster(self):
         """Test fetch_wallet_card: decay='Cluster'........................."""
