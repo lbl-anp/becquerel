@@ -597,6 +597,51 @@ class TestNuclearWalletCard(NNDCQueryTests):
             assert len(d) > 0
             assert len(d) == len(ds[0])
 
+    def test_wallet_decay_DB(self):
+        """Test fetch_wallet_card: decay='DB'.............................."""
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'DB']
+        ds = [self.fetch(decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert len(d) == len(ds[0])
+
+    def test_wallet_decay_DN(self):
+        """Test fetch_wallet_card: decay='DN'.............................."""
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'DN']
+        ds = [self.fetch(decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert len(d) == len(ds[0])
+
+    def test_wallet_decay_DP(self):
+        """Test fetch_wallet_card: decay='DP'.............................."""
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'DP']
+        ds = [self.fetch(decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert len(d) == len(ds[0])
+
+    def test_wallet_decay_DA(self):
+        """Test fetch_wallet_card: decay='DA'.............................."""
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'DA']
+        ds = [self.fetch(decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert len(d) == len(ds[0])
+
+    def test_wallet_decay_DF(self):
+        """Test fetch_wallet_card: decay='DF'.............................."""
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'DF']
+        ds = [self.fetch(decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert len(d) == len(ds[0])
+
     def test_wallet_exception_too_many(self):
         """Test fetch_wallet_card: exception if too many results..........."""
         with pytest.raises(nndc.NNDCRequestError):
