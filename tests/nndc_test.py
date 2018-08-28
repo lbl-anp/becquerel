@@ -448,55 +448,36 @@ class NNDCQueryTests(object):
 
     def test_query_nuc_Pu239_decay_A(self):
         """Test NNDCQuery: nuc='Pu-239', decay='Alpha'....................."""
-        d1 = self.fetch(nuc='Pu-239', decay='Alpha')
-        assert len(d1) > 0
-        assert (d1.Z == 94).all()
-        assert (d1.A == 239).all()
-        d2 = self.fetch(nuc='Pu-239', decay='alpha')
-        assert len(d2) > 0
-        assert (d2.Z == 94).all()
-        assert (d2.A == 239).all()
-        d3 = self.fetch(nuc='Pu-239', decay='a')
-        assert len(d3) > 0
-        assert (d3.Z == 94).all()
-        assert (d3.A == 239).all()
-        assert len(d1) == len(d2) == len(d3)
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'A']
+        ds = [self.fetch(nuc='Pu-239', decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert (d.Z == 94).all()
+            assert (d.A == 239).all()
+            assert len(d) == len(ds[0])
 
     def test_query_nuc_Co60_decay_BM(self):
         """Test NNDCQuery: nuc='Co-60', decay='B-'........................."""
-        d1 = self.fetch(nuc='Co-60', decay='B-')
-        assert len(d1) > 0
-        assert (d1.Z == 27).all()
-        assert (d1.A == 60).all()
-        d2 = self.fetch(nuc='Co-60', decay='beta-')
-        assert len(d2) > 0
-        assert (d2.Z == 27).all()
-        assert (d2.A == 60).all()
-        d3 = self.fetch(nuc='Co-60', decay='b-')
-        assert len(d3) > 0
-        assert (d3.Z == 27).all()
-        assert (d3.A == 60).all()
-        assert len(d1) == len(d2) == len(d3)
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'B-']
+        ds = [self.fetch(nuc='Co-60', decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert (d.Z == 27).all()
+            assert (d.A == 60).all()
+            assert len(d) == len(ds[0])
 
     def test_query_nuc_Na22_decay_ECBP(self):
         """Test NNDCQuery: nuc='Na-22', decay='EC+B+'......................"""
-        d1 = self.fetch(nuc='Na-22', decay='EC+B+')
-        assert len(d1) > 0
-        assert (d1.Z == 11).all()
-        assert (d1.A == 22).all()
-        d2 = self.fetch(nuc='Na-22', decay='electron capture beta+')
-        assert len(d2) > 0
-        assert (d2.Z == 11).all()
-        assert (d2.A == 22).all()
-        d3 = self.fetch(nuc='Na-22', decay='ecbp')
-        assert len(d3) > 0
-        assert (d3.Z == 11).all()
-        assert (d3.A == 22).all()
-        d4 = self.fetch(nuc='Na-22', decay='e+b+')
-        assert len(d4) > 0
-        assert (d4.Z == 11).all()
-        assert (d4.A == 22).all()
-        assert len(d1) == len(d2) == len(d3) == len(d4)
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'ECBP']
+        ds = [self.fetch(nuc='Na-22', decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert (d.Z == 11).all()
+            assert (d.A == 22).all()
+            assert len(d) == len(ds[0])
 
     def test_query_exception_bad_decay(self):
         """Test NNDCQuery raises exception for an invalid decay mode......."""
@@ -571,13 +552,12 @@ class TestNuclearWalletCard(NNDCQueryTests):
 
     def test_wallet_zrange_9_10_parity_any(self):
         """Test fetch_wallet_card: z_range=(9, 10), parity='any'..........."""
-        d1 = self.fetch(z_range=(9, 10), parity='ANY')
-        assert len(d1) > 0
-        assert ((9 <= d1.Z) & (d1.Z <= 10)).all()
-        d2 = self.fetch(z_range=(9, 10), parity='any')
-        assert len(d2) > 0
-        assert ((9 <= d2.Z) & (d2.Z <= 10)).all()
-        assert len(d1) == len(d2)
+        kwargs = ['any', 'ANY']
+        ds = [self.fetch(z_range=(9, 10), parity=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert ((9 <= d.Z) & (d.Z <= 10)).all()
+            assert len(d) == len(ds[0])
 
     def test_wallet_zrange_9_10_parity_p(self):
         """Test fetch_wallet_card: z_range=(9, 10), parity='+'............."""
@@ -610,13 +590,12 @@ class TestNuclearWalletCard(NNDCQueryTests):
 
     def test_wallet_decay_cluster(self):
         """Test fetch_wallet_card: decay='Cluster'........................."""
-        d1 = self.fetch(decay='Cluster')
-        assert len(d1) > 0
-        d2 = self.fetch(decay='cluster')
-        assert len(d2) > 0
-        d3 = self.fetch(decay='c')
-        assert len(d3) > 0
-        assert len(d1) == len(d2) == len(d3)
+        kwargs = [kw for kw, val in nndc.WALLET_DECAY_MODE.items()
+                  if val == 'C']
+        ds = [self.fetch(decay=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert len(d) == len(ds[0])
 
     def test_wallet_exception_too_many(self):
         """Test fetch_wallet_card: exception if too many results..........."""
@@ -651,19 +630,14 @@ class TestDecayRadiationQuery(NNDCQueryTests):
 
     def test_decay_nuc_Pu239_type_G(self):
         """Test fetch_decay_radiation: nuc='Pu-239', type='Gamma'.........."""
-        d1 = self.fetch(nuc='Pu-239', type='Gamma')
-        assert len(d1) > 0
-        assert (d1.Z == 94).all()
-        assert (d1.A == 239).all()
-        d2 = self.fetch(nuc='Pu-239', type='gamma')
-        assert len(d2) > 0
-        assert (d2.Z == 94).all()
-        assert (d2.A == 239).all()
-        d3 = self.fetch(nuc='Pu-239', type='g')
-        assert len(d3) > 0
-        assert (d3.Z == 94).all()
-        assert (d3.A == 239).all()
-        assert len(d1) == len(d2) == len(d3)
+        kwargs = [kw for kw, val in nndc.DECAYRAD_RADIATION_TYPE.items()
+                  if val == 'G']
+        ds = [self.fetch(nuc='Pu-239', type=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert (d.Z == 94).all()
+            assert (d.A == 239).all()
+            assert len(d) == len(ds[0])
 
     def test_decay_exception_bad_type(self):
         """Test fetch_decay_radiation raises except. for invalid rad type.."""
@@ -672,26 +646,23 @@ class TestDecayRadiationQuery(NNDCQueryTests):
 
     def test_decay_zrange_100_102_type_ANY(self):
         """Test fetch_decay_radiation: z_range=(100, 102), type='ANY'......"""
-        d1 = self.fetch(z_range=(100, 102), type='ANY')
-        assert len(d1) > 0
-        assert ((100 <= d1.Z) & (d1.Z <= 102)).all()
-        d2 = self.fetch(z_range=(100, 102), type='any')
-        assert len(d2) > 0
-        assert ((100 <= d2.Z) & (d2.Z <= 102)).all()
-        assert len(d1) == len(d2)
+        kwargs = [kw for kw, val in nndc.DECAYRAD_RADIATION_TYPE.items()
+                  if val == 'ANY']
+        ds = [self.fetch(z_range=(100, 102), type=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert ((100 <= d.Z) & (d.Z <= 102)).all()
+            assert len(d) == len(ds[0])
 
     def test_decay_zrange_100_102_type_G(self):
         """Test fetch_decay_radiation: z_range=(100, 102), type='Gamma'...."""
-        d1 = self.fetch(z_range=(100, 102), type='Gamma')
-        assert len(d1) > 0
-        assert ((100 <= d1.Z) & (d1.Z <= 102)).all()
-        d2 = self.fetch(z_range=(100, 102), type='gamma')
-        assert len(d2) > 0
-        assert ((100 <= d2.Z) & (d2.Z <= 102)).all()
-        d3 = self.fetch(z_range=(100, 102), type='g')
-        assert len(d3) > 0
-        assert ((100 <= d3.Z) & (d3.Z <= 102)).all()
-        assert len(d1) == len(d2) == len(d3)
+        kwargs = [kw for kw, val in nndc.DECAYRAD_RADIATION_TYPE.items()
+                  if val == 'G']
+        ds = [self.fetch(z_range=(100, 102), type=x) for x in kwargs]
+        for d in ds:
+            assert len(d) > 0
+            assert ((100 <= d.Z) & (d.Z <= 102)).all()
+            assert len(d) == len(ds[0])
 
     def test_decay_nuc_Ba133_erange_300_400(self):
         """Test fetch_decay_radiation: nuc='Ba-133', e_range=(300, 400)...."""
