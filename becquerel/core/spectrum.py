@@ -9,9 +9,17 @@ from uncertainties import UFloat, unumpy
 from .. import parsers
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
 from . import plotting
+import warnings
+
 
 class SpectrumError(Exception):
     """Exception raised by Spectrum."""
+
+    pass
+
+
+class SpectrumWarning(UserWarning):
+    """Warnings displayed by Spectrum."""
 
     pass
 
@@ -123,27 +131,23 @@ class Spectrum(object):
 
         if not (counts is None) ^ (cps is None):
             raise SpectrumError('Must specify one of counts or CPS')
+
         if counts is not None:
             if len(counts) == 0:
                 raise SpectrumError('Empty spectrum counts')
             self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
-            if livetime is None:
-                self.livetime = None
-            else:
-                self.livetime = float(livetime)
             self._cps = None
         else:
-            self._counts = None
-            if livetime is None:
-                self.livetime = np.nan  # default for CPS-based spectra
-            else:
-                self.livetime = livetime
-                # TODO should this be allowed?
-                #   all calculations with CPS return livetime=np.nan anyway...
             if len(cps) == 0:
                 raise SpectrumError('Empty spectrum counts')
             self._cps = handle_uncs(cps, uncs, lambda x: np.nan)
+            self._counts = None
+
+        if livetime is None:
+            self.livetime = None
+        else:
+            self.livetime = float(livetime)
 
         if bin_edges_kev is None:
             self.bin_edges_kev = None
@@ -212,40 +216,44 @@ class Spectrum(object):
     def counts(self):
         """Counts in each channel, with uncertainty.
 
-        Some spectra, including subtraction results, have cps but no counts,
-        in which case counts is None.
+        If cps is defined, counts is calculated from cps and livetime.
+        Otherwise, it is an independent data property.
+
+        Raises:
+          SpectrumError: if cps is defined, but not livetime
 
         Returns:
-          an np.array of uncertainties.ufloats, or None
+          an np.array of uncertainties.ufloats
         """
 
-        return self._counts
+        if self._counts is not None:
+            return self._counts
+        else:
+            try:
+                return self.cps * self.livetime
+            except TypeError:
+                raise SpectrumError(
+                    'Unknown livetime; cannot calculate counts from CPS')
 
     @property
     def counts_vals(self):
         """Counts in each channel, no uncertainties.
 
         Returns:
-          an np.array of floats, or None
+          an np.array of floats
         """
 
-        if self.counts is None:
-            return None
-        else:
-            return unumpy.nominal_values(self._counts)
+        return unumpy.nominal_values(self.counts)
 
     @property
     def counts_uncs(self):
         """Uncertainties on the counts in each channel.
 
         Returns:
-          an np.array of floats, or None
+          an np.array of floats
         """
 
-        if self.counts is None:
-            return None
-        else:
-            return unumpy.std_devs(self._counts)
+        return unumpy.std_devs(self.counts)
 
     @property
     def cps(self):
@@ -418,9 +426,9 @@ class Spectrum(object):
           an int
         """
 
-        if self.counts is not None:
+        try:
             return len(self.counts)
-        else:
+        except SpectrumError:
             return len(self.cps)
 
     def __add__(self, other):
@@ -438,7 +446,8 @@ class Spectrum(object):
         Raises:
           TypeError: if other is not a Spectrum
           SpectrumError: if spectra are different lengths,
-            or if only one is calibrated
+            if only one is calibrated or if specra have not both
+            been initialized with counts or CPS, respectively.
           NotImplementedError: if spectra are calibrated differently
 
         Returns:
@@ -446,8 +455,13 @@ class Spectrum(object):
         """
 
         self._add_sub_error_checking(other)
+        if (self._counts is None) ^ (other._counts is None):
+            raise SpectrumError(
+                'Spectrum addition with a mix of counts and CPS is ' +
+                'ambiguous, use Spectrum(counts=specA.counts+specB.counts)' +
+                ' or Spectrum(cps=specA.cps+specB.cps) instead.')
 
-        if self.counts is not None and other.counts is not None:
+        if self._counts is not None and other._counts is not None:
             kwargs = {'counts': self.counts + other.counts}
             if self.livetime and other.livetime:
                 kwargs['livetime'] = self.livetime + other.livetime
@@ -458,7 +472,7 @@ class Spectrum(object):
         return spect_obj
 
     def __sub__(self, other):
-        """Normalize spectra and subtract.
+        """Normalize spectra (if possible) and subtract.
 
         The resulting spectrum does not have a meaningful livetime or
         counts vector, and is NOT Poisson-distributed.
@@ -471,19 +485,32 @@ class Spectrum(object):
 
         Raises:
           TypeError: if other is not a Spectrum
-          SpectrumError: if spectra are different lengths,
-            or if only one is calibrated
+          SpectrumError: if spectra are different lengths or
+            if only one is calibrated.
           NotImplementedError: if spectra are calibrated differently
+
+        Warns:
+          SpectrumWarning: If both spectrum have been initiated with
+            counts, or if one of them has been converted to CPS.
 
         Returns:
           a subtracted Spectrum object
         """
 
         self._add_sub_error_checking(other)
-
-        cps = self.cps - other.cps
-        spect_obj = Spectrum(cps=cps, bin_edges_kev=self.bin_edges_kev)
-
+        try:
+            kwargs = {'cps': self.cps - other.cps}
+            if (self._cps is None) or (other._cps is None):
+                warnings.warn('Spectrum subtraction of counts, spectra ' +
+                              'have been converted to CPS', SpectrumWarning)
+        except:
+            kwargs = {'counts': self.counts_vals - other.counts_vals}
+            kwargs['uncs'] = [np.nan]*len(self)
+            warnings.warn('Spectrum subtraction of counts, livetimes' +
+                          'have been ignored.', SpectrumWarning)
+            pass
+        spect_obj = Spectrum(
+            bin_edges_kev=self.bin_edges_kev, **kwargs)
         return spect_obj
 
     def _add_sub_error_checking(self, other):
@@ -494,8 +521,8 @@ class Spectrum(object):
 
         Raises:
           TypeError: if other is not a Spectrum
-          SpectrumError: if spectra are different lengths,
-            or if only one is calibrated
+          SpectrumError: if spectra are different lengths or
+            if only one is calibrated.
           NotImplementedError: if spectra are calibrated differently
         """
 
@@ -602,7 +629,7 @@ class Spectrum(object):
         else:
             multiplier = scaling_factor
 
-        if self.counts is not None:
+        if self._counts is not None:
             data_arg = {'counts': self.counts * multiplier}
         else:
             data_arg = {'cps': self.cps * multiplier}
@@ -636,7 +663,7 @@ class Spectrum(object):
           a new Spectrum instance, downsampled from this spectrum
         """
 
-        if self.counts is None:
+        if self._counts is None:
             raise SpectrumError('Cannot downsample from CPS')
         if f < 1:
             raise ValueError('Cannot upsample a spectrum; f must be > 1')
@@ -710,7 +737,7 @@ class Spectrum(object):
         """
 
         f = int(f)
-        if self.counts is None:
+        if self._counts is None:
             key = 'cps'
         else:
             key = 'counts'

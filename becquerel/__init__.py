@@ -7,6 +7,7 @@ from .__metadata__ import __description__, __url__
 from .__metadata__ import __version__, __license__, __copyright__
 
 from .core.spectrum import Spectrum, SpectrumError, UncalibratedError
+from .core.spectrum import SpectrumWarning
 from .core.energycal import LinearEnergyCal, EnergyCalError, BadInput
 from .core.utils import UncertaintiesError
 from .core.plotting import SpectrumPlotter, PlottingError
@@ -15,9 +16,9 @@ from .core.peakfinder import (PeakFilter, PeakFilterError, BoxcarPeakFilter,
 from .core.autocal import AutoCalibrator, AutoCalibratorError
 
 __all__ = ['core', 'parsers', 'tools',
-           'Spectrum', 'SpectrumError', 'SpectrumPlotter', 'PlottingError',
-           'UncalibratedError', 'LinearEnergyCal', 'EnergyCalError',
-           'BadInput', 'UncertaintiesError',
+           'Spectrum', 'SpectrumError', 'SpectrumWarning', 'SpectrumPlotter',
+           'PlottingError', 'UncalibratedError', 'LinearEnergyCal',
+           'EnergyCalError', 'BadInput', 'UncertaintiesError',
            'PeakFilter', 'PeakFilterError', 'BoxcarPeakFilter',
            'GaussianPeakFilter', 'PeakFinder', 'PeakFinderError',
            'AutoCalibrator', 'AutoCalibratorError',
