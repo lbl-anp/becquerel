@@ -156,8 +156,8 @@ def test_uncalibrated_exception(uncal_spec):
 
 
 def test_negative_input(spec_data):
-    """Make sure negative values in counts cause an error,
-       and that with uncs provided no error appears."""
+    """Make sure negative values in counts throw an exception,
+       and exception is not raised if uncs are provided."""
 
     neg_spec = spec_data[:]
     neg_spec[::2] *= -1
@@ -511,6 +511,7 @@ def test_add_sub_cps(type1, type2, lt1, lt2):
     assert diff.livetime is None
     assert np.all(diff.cps_vals == spec1.cps_vals - spec2.cps_vals)
 
+
 @pytest.mark.parametrize('type1, type2, lt1, lt2', [
     ('uncal', 'uncal_cps', None, None),
     ('uncal_cps', 'uncal', None, None),
@@ -526,6 +527,7 @@ def test_adddition_errors(type1, type2, lt1, lt2):
 
     with pytest.raises(bq.SpectrumError):
         tot = spec1 + spec2
+
 
 @pytest.mark.parametrize('lt1, lt2', [
     (300, 600),
@@ -555,7 +557,7 @@ def test_subtract_counts(type1, type2, lt1, lt2):
     ('uncal', 'uncal_cps', 300, None),
     ('uncal_cps', 'uncal', None, 300)])
 def test_subtract_errors(type1, type2, lt1, lt2):
-    """Test errors/warings during subtract of mixed spectra"""
+    """Test errors/warnings during subtraction of mixed spectra"""
 
     spec1, spec2 = (get_spectrum(type1, lt=lt1),
                     get_spectrum(type2, lt=lt2))
@@ -566,7 +568,7 @@ def test_subtract_errors(type1, type2, lt1, lt2):
         with pytest.warns(bq.SpectrumWarning):
             diff = spec1 - spec2
         assert diff.livetime is None
-        #assert np.all(diff.cps_vals == spec1.cps_vals - spec2.cps_vals)
+
 
 # ----------------------------------------------
 #  Test multiplication and division of spectra
