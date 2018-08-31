@@ -135,8 +135,13 @@ class Spectrum(object):
         if counts is not None:
             if len(counts) == 0:
                 raise SpectrumError('Empty spectrum counts')
+            if uncs is None and np.any(counts < 0):
+                raise SpectrumError('Negative values in counts, most likely ' +
+                                    'non-Poissonian uncertainties. Please' +
+                                    'provide uncs to force initializiation.')
             self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
+
             self._cps = None
         else:
             if len(cps) == 0:

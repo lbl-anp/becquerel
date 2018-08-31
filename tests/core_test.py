@@ -155,6 +155,22 @@ def test_uncalibrated_exception(uncal_spec):
         uncal_spec.energies_kev
 
 
+def test_negative_input(spec_data):
+    """Make sure negative values in counts cause an error,
+       and that with uncs provided no error appears."""
+
+    neg_spec = spec_data[:]
+    neg_spec[::2] *= -1
+    neg_uncs = np.where(neg_spec < 0, np.nan, 1)
+
+    with pytest.raises(bq.SpectrumError):
+        spec = bq.Spectrum(neg_spec)
+
+    spec = bq.Spectrum(neg_spec, uncs=neg_uncs)
+    assert np.any(spec.counts_vals < 0)
+    assert np.any(np.isnan(spec.counts_uncs))
+
+
 # ----------------------------------------------
 #      Test Spectrum livetime properties
 # ----------------------------------------------
