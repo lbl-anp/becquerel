@@ -128,11 +128,11 @@ class Spectrum(object):
         if counts is not None:
             if len(counts) == 0:
                 raise SpectrumError('Empty spectrum counts')
-            if uncs is None and np.any(np.array(counts) < 0):
-                raise SpectrumError('Negative values encountered in counts. ' +
-                                    'Uncertainties are most likely not' +
-                                    'Poisson-distributed. Provide uncs to ' +
-                                    'force initialization.')
+            if uncs is None and np.any(np.asarray(counts) < 0):
+                raise SpectrumError(
+                    'Negative values encountered in counts. Uncertainties ' +
+                    'are most likely not Poisson-distributed. Provide uncs ' +
+                    'to force initialization.')
             self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
 
@@ -464,6 +464,9 @@ class Spectrum(object):
             kwargs = {'counts': self.counts + other.counts}
             if self.livetime and other.livetime:
                 kwargs['livetime'] = self.livetime + other.livetime
+            else:
+                warnings.warn('Addition of counts with missing livetimes, ' +
+                              'livetime was set to None.', SpectrumWarning)
         else:
             kwargs = {'cps': self.cps + other.cps}
         spect_obj = Spectrum(
@@ -503,11 +506,15 @@ class Spectrum(object):
                 warnings.warn('Subtraction of counts-based specta, spectra ' +
                               'have been converted to CPS', SpectrumWarning)
         except SpectrumError:
-            kwargs = {'counts': self.counts_vals - other.counts_vals}
-            kwargs['uncs'] = [np.nan]*len(self)
-            warnings.warn('Subtraction of counts-based spectra, livetimes ' +
-                          'have been ignored.', SpectrumWarning)
-
+            try:
+                kwargs = {'counts': self.counts_vals - other.counts_vals}
+                kwargs['uncs'] = [np.nan]*len(self)
+                warnings.warn('Subtraction of counts-based spectra, ' +
+                              'livetimes have been ignored.', SpectrumWarning)
+            except SpectrumError:
+                raise SpectrumError(
+                    'Subtraction of counts and CPS-based spectra without' +
+                    'livetimes not possible')
         spect_obj = Spectrum(
             bin_edges_kev=self.bin_edges_kev, **kwargs)
         return spect_obj
@@ -560,7 +567,7 @@ class Spectrum(object):
 
         return self._mul_div(other, div=False)
 
-    # This line will allow the right multiplication to work
+    # This line adds the right multiplication
     __rmul__ = __mul__
 
     def __div__(self, other):
@@ -579,21 +586,8 @@ class Spectrum(object):
 
         return self._mul_div(other, div=True)
 
-    def __truediv__(self, other):
-        """Return a new Spectrum object with counts (or CPS) scaled down.
-
-        Args:
-          factor: factor to divide by. May be a ufloat.
-
-        Raises:
-          TypeError: if factor is not a scalar value
-          SpectrumError: if factor is 0 or infinite
-
-        Returns:
-          a new Spectrum object
-        """
-
-        return self._mul_div(other, div=True)
+    # This line adds true division
+    __truediv__ = __div__
 
     def _mul_div(self, scaling_factor, div=False):
         """Multiply or divide a spectrum by a scalar. Handle errors.

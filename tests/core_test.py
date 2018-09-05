@@ -136,7 +136,11 @@ def test_init_exceptions(spec_data):
     with pytest.raises(bq.SpectrumError):
         bq.Spectrum([])
     with pytest.raises(bq.SpectrumError):
+        bq.Spectrum(cps=[])
+    with pytest.raises(bq.SpectrumError):
         bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV[:-1])
+    with pytest.raises(bq.SpectrumError):
+        bq.Spectrum(cps=spec_data, bin_edges_kev=TEST_EDGES_KEV[:-1])
     with pytest.raises(bq.SpectrumError):
         bq.Spectrum(spec_data, cps=spec_data)
     with pytest.raises(bq.SpectrumError):
@@ -448,14 +452,16 @@ def test_add(type1, type2, lt1, lt2):
     spec1, spec2 = (get_spectrum(type1, lt=lt1),
                     get_spectrum(type2, lt=lt2))
 
-    tot = spec1 + spec2
+    if lt1 and lt2:
+        tot = spec1 + spec2
+        assert tot.livetime == lt1 + lt2
+    else:
+        with pytest.warns(bq.SpectrumWarning):
+            tot = spec1 + spec2
+        assert tot.livetime is None
     assert np.all(tot.counts == spec1.counts + spec2.counts)
     assert np.all(tot.counts_vals ==
                   spec1.counts_vals + spec2.counts_vals)
-    if lt1 and lt2:
-        assert tot.livetime == lt1 + lt2
-    else:
-        assert tot.livetime is None
 
 
 @pytest.mark.parametrize('type1, type2, expected_error', [
@@ -488,7 +494,9 @@ def test_add_uncs(type1, type2):
 
     spec1, spec2 = get_spectrum(type1), get_spectrum(type2)
 
-    tot = spec1 + spec2
+    with pytest.warns(bq.SpectrumWarning):
+        tot = spec1 + spec2
+
     uncs = np.sqrt(spec1.counts_uncs**2 + spec2.counts_uncs**2)
     assert np.allclose(tot.counts_uncs, uncs)
 
