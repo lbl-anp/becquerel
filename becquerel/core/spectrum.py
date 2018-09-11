@@ -202,6 +202,10 @@ class Spectrum(object):
                 self.stop_time = input_file_object.collection_stop
         else:
             self.infilename = None
+        # These two lines make sure operators between a Spectrum
+        # and a numpy arrays are forbidden and cause a TypeError
+        self.__array_ufunc__ = None
+        self.__array_priority__ = 1
 
     def __str__(self):
         lines = ['becquerel.Spectrum']
@@ -556,6 +560,9 @@ class Spectrum(object):
 
         return self._mul_div(other, div=False)
 
+    # This line will allow the right multiplication to work
+    __rmul__ = __mul__
+
     def __div__(self, other):
         """Return a new Spectrum object with counts (or CPS) scaled down.
 
@@ -757,7 +764,6 @@ class Spectrum(object):
         obj = Spectrum(**kwargs)
         return obj
 
-
     def plot(self, *fmt, **kwargs):
         """Plot a spectrum with matplotlib's plot command.
 
@@ -805,7 +811,6 @@ class Spectrum(object):
             raise SpectrumError("Unknown error mode '{}', use 'bars' "
                                 "or 'band'".format(emode))
         return ax
-
 
     def fill_between(self, **kwargs):
         """Plot a spectrum with matplotlib's fill_between command

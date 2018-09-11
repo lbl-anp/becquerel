@@ -2,7 +2,6 @@
 
 from __future__ import print_function
 import datetime
-from six import string_types
 import copy
 import numpy as np
 from .isotope import Isotope
@@ -34,7 +33,7 @@ def handle_isotope(isotope, error_name=None):
 
     if isinstance(isotope, Isotope):
         return isotope
-    elif isinstance(isotope, string_types):
+    elif utils.isstring(isotope):
         return Isotope(isotope)
     else:
         raise TypeError(
