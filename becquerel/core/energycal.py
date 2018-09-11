@@ -390,3 +390,47 @@ class LinearEnergyCal(EnergyCalBase):
         b, c = np.polyfit(self.channels, self.energies, 1)
         self._set_coeff('b', b)
         self._set_coeff('c', c)
+
+
+class QuadraticEnergyCal(EnergyCalBase):
+    """
+    kev = a*ch^2 + b*ch + c
+    """
+
+    @property
+    def valid_coeffs(self):
+        """A list of valid coefficients for the calibration curve.
+        Returns:
+          a tuple of strings, the names of the coefficients for this curve
+        """
+        return ('a', 'b', 'c')
+
+    def _ch2kev(self, ch):
+        """Convert scalar OR np.array of channel(s) to energies.
+        Should use numpy ufuncs so that the input dtype doesn't matter.
+        Args:
+          ch: an np.array, float, or int of channel values
+        Returns:
+          energy values, the same size/type as ch [keV]
+        """
+        return (self._coeffs['a'] * ch ** 2 +
+                self._coeffs['b'] * ch +
+                self._coeffs['c'])
+
+    def _kev2ch(self, kev):
+        """Convert energy value(s) to channel(s).
+        Args:
+          kev: an np.array, float, or int of energy values [keV]
+        Returns:
+          the channel value(s) corresponding to the input energies.
+            a float if input is scalar. an np.array if input is iterable
+        """
+        # TODO: address with the quadratic inverse formula
+        raise NotImplementedError('Sorry')
+
+    def _perform_fit(self):
+        """Do the actual curve fitting."""
+        a, b, c = np.polyfit(self.channels, self.energies, 2)
+        self._set_coeff('a', a)
+        self._set_coeff('b', b)
+        self._set_coeff('c', c)
