@@ -82,7 +82,7 @@ class TestSpectrumFromFile(object):
 
     def test_spe(self):
         """Test Spectrum.from_file for SPE file........................."""
-        with pytest.warns(UserWarning):
+        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
             self.run_from_file('.spe')
 
     def test_spc(self):

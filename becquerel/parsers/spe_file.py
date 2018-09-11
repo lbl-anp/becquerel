@@ -6,7 +6,8 @@ import os
 import warnings
 import dateutil.parser
 import numpy as np
-from .spectrum_file import SpectrumFile, SpectrumFileParsingError
+from .spectrum_file import (SpectrumFile, SpectrumFileParsingError,
+                            SpectrumFileParsingWarning)
 
 
 class SpeFileParsingError(SpectrumFileParsingError):
@@ -143,7 +144,8 @@ class SpeFile(SpectrumFile):
                         print(self.shape_cal)
                 elif lines[i] == '$PRESETS:':
                     warnings.warn(
-                        'SpeFile has $PRESETS field, skipping 3 lines')
+                        'SpeFile has $PRESETS field, skipping 3 lines',
+                        SpectrumFileParsingWarning)
                     self.presets = []
                     for _ in range(3):
                         self.presets.append(lines[i])

@@ -42,7 +42,7 @@ class TestSpectrumFile(object):
 
     def test_spe(self):
         """Test parsers.SpeFile............................................"""
-        with pytest.warns(UserWarning):
+        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
             self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
 
     def test_spc(self):
@@ -91,7 +91,7 @@ class TestSpectrumFilePlot(object):
 
     def test_spe(self):
         """Test parsers.SpeFile............................................"""
-        with pytest.warns(UserWarning):
+        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
             self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
 
     def test_spc(self):
@@ -104,6 +104,6 @@ class TestSpectrumFilePlot(object):
 
 
 def test_spe_presets_warning():
-    with pytest.warns(UserWarning) as record:
+    with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
         bq.parsers.SpeFile(
             os.path.join(SAMPLES_PATH, 'digibase_5min_30_1.spe'))
