@@ -203,7 +203,7 @@ class Spectrum(object):
         else:
             self.infilename = None
 
-    def __repr__(self):
+    def __str__(self):
         lines = ['becquerel.Spectrum']
         ltups = []
         for k in ['start_time', 'stop_time', 'realtime', 'livetime',
@@ -228,8 +228,7 @@ class Spectrum(object):
                 lt[1]))
         return '\n'.join(lines)
 
-    def __str__(self):
-        return self.__repr__()
+    __repr__ = __str__
 
     @property
     def counts(self):
