@@ -155,6 +155,18 @@ def test_uncalibrated_exception(uncal_spec):
 
 
 # ----------------------------------------------
+#      Test Spectrum repr behavior
+# ----------------------------------------------
+
+def test_repr(cal_spec):
+    repr(cal_spec)
+
+
+def test_str(cal_spec):
+    str(cal_spec)
+
+
+# ----------------------------------------------
 #      Test Spectrum livetime properties
 # ----------------------------------------------
 
