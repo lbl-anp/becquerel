@@ -205,11 +205,37 @@ class Spectrum(object):
                 self.stop_time = input_file_object.collection_stop
         else:
             self.infilename = None
-
         # These two lines make sure operators between a Spectrum
         # and a numpy arrays are forbidden and cause a TypeError
         self.__array_ufunc__ = None
         self.__array_priority__ = 1
+
+    def __str__(self):
+        lines = ['becquerel.Spectrum']
+        ltups = []
+        for k in ['start_time', 'stop_time', 'realtime', 'livetime',
+                  'is_calibrated']:
+            ltups.append((k, getattr(self, k)))
+        ltups.append(('num_channels', len(self.channels)))
+        if self._counts is None:
+            ltups.append(('gross_counts', None))
+        else:
+            ltups.append(('gross_counts', self.counts.sum()))
+        try:
+            ltups.append(('gross_cps', self.cps.sum()))
+        except SpectrumError:
+            ltups.append(('gross_cps', None))
+        if hasattr(self, 'infilename'):
+            ltups.append(('filename', self.infilename))
+        else:
+            ltups.append(('filename', None))
+        for lt in ltups:
+            lines.append('    {:15} {}'.format(
+                '{}:'.format(lt[0]),
+                lt[1]))
+        return '\n'.join(lines)
+
+    __repr__ = __str__
 
     @property
     def counts(self):
