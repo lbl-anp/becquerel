@@ -82,8 +82,8 @@ class TestSpectrumFromFile(object):
 
     def test_spe(self):
         """Test Spectrum.from_file for SPE file........................."""
-
-        self.run_from_file('.spe')
+        with pytest.warns(UserWarning):
+            self.run_from_file('.spe')
 
     def test_spc(self):
         """Test Spectrum.from_file for SPC file........................."""

@@ -42,7 +42,8 @@ class TestSpectrumFile(object):
 
     def test_spe(self):
         """Test parsers.SpeFile............................................"""
-        self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
+        with pytest.warns(UserWarning):
+            self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
 
     def test_spc(self):
         """Test parsers.SpcFile............................................"""
@@ -90,7 +91,8 @@ class TestSpectrumFilePlot(object):
 
     def test_spe(self):
         """Test parsers.SpeFile............................................"""
-        self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
+        with pytest.warns(UserWarning):
+            self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
 
     def test_spc(self):
         """Test parsers.SpcFile............................................"""
