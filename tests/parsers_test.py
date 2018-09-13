@@ -6,10 +6,12 @@ import os
 import pytest
 import matplotlib.pyplot as plt
 import becquerel as bq
+import warnings
 
+# Always raise warnings for testing
+warnings.simplefilter('always')
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'samples')
-
 SAMPLES = {}
 for extension in ['.spe', '.spc', '.cnf']:
     filenames = glob.glob(os.path.join(SAMPLES_PATH, '*.*'))
