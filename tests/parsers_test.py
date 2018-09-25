@@ -3,10 +3,10 @@
 from __future__ import print_function
 import glob
 import os
+import warnings
 import pytest
 import matplotlib.pyplot as plt
 import becquerel as bq
-import warnings
 
 # Always raise warnings for testing
 warnings.simplefilter('always')
@@ -106,6 +106,8 @@ class TestSpectrumFilePlot(object):
 
 
 def test_spe_presets_warning():
-    with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
-        bq.parsers.SpeFile(
-            os.path.join(SAMPLES_PATH, 'digibase_5min_30_1.spe'))
+        with pytest.warns(
+                bq.parsers.SpectrumFileParsingWarning,
+                match='SpeFile has \$PRESETS field, skipping 3 lines'):
+            bq.parsers.SpeFile(
+                os.path.join(SAMPLES_PATH, 'digibase_5min_30_1.spe'))
