@@ -3,13 +3,10 @@
 from __future__ import print_function
 import glob
 import os
-import warnings
 import pytest
 import matplotlib.pyplot as plt
 import becquerel as bq
 
-# Always raise warnings for testing
-warnings.simplefilter('always')
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'samples')
 SAMPLES = {}

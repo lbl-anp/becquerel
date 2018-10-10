@@ -7,10 +7,6 @@ import numpy as np
 from uncertainties import ufloat, UFloat, unumpy
 import becquerel as bq
 from parsers_test import SAMPLES
-import warnings
-
-# Always raise warnings for testing
-warnings.simplefilter('always')
 
 TEST_DATA_LENGTH = 256
 TEST_COUNTS = 4
