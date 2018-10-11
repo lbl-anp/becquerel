@@ -26,7 +26,8 @@ with open(filename1, 'r') as f:
             counts.append(float(tokens[1]))
 spec1 = bq.Spectrum(counts=counts)
 
-spec2 = bq.Spectrum.from_file(filename2)
+with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
+    spec2 = bq.Spectrum.from_file(filename2)
 
 counts = []
 with open(filename3, 'r') as f:

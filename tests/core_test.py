@@ -5,9 +5,7 @@ import pytest
 import datetime
 import numpy as np
 from uncertainties import ufloat, UFloat, unumpy
-
 import becquerel as bq
-
 from parsers_test import SAMPLES
 
 TEST_DATA_LENGTH = 256
@@ -128,8 +126,7 @@ class TestSpectrumFromFile(object):
 
     def test_spe(self):
         """Test Spectrum.from_file for SPE file........................."""
-
-        with pytest.warns(UserWarning):
+        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
             self.run_from_file('.spe')
 
     def test_spc(self):

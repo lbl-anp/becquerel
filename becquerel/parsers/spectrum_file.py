@@ -7,6 +7,12 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
+class SpectrumFileParsingWarning(UserWarning):
+    """Warnings displayed by SpectrumFile."""
+
+    pass
+
+
 class SpectrumFileParsingError(Exception):
     """Failed while parsing a spectrum file."""
 
