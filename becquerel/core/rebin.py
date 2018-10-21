@@ -20,23 +20,20 @@ def _check_ndim(arr, ndim, arr_name='array'):
 
 
 def _check_nonneg_monotonic_increasing(arr, arr_name='array'):
-    """Check that a numpy array is non-negative and monotonically increasing
+    """Check that a numpy array is monotonically increasing
 
     Args:
       arr: numpy array for checking
       arr_name: name of array, just for use in the AssertionError message
 
     Raises:
-      AssertionError: if arr has negative values or
-                      is not monotonically increasing
+      AssertionError: if arr is not monotonically increasing
     """
     # Check that elements along the last axis are increasing or
     # neighboring elements are equal
-    assert np.all((np.diff(arr) > 0) | np.isclose(np.diff(arr), 0)), \
+    tmp = np.diff(arr)
+    assert np.all((tmp > 0) | np.isclose(tmp, 0)), \
         "{} is not monotonically increasing: {}".format(arr_name, arr)
-    # Check that first bin is nonnegative
-    assert np.all((arr[..., 0] > 0) | np.isclose(arr[..., 0], 0)), \
-        "{} has negative values: {}".format(arr_name, arr)
 
 
 @nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
