@@ -957,14 +957,11 @@ def rebin_method(request):
     params=[
         ('uncal', 300),
         ('uncal', None),
-        ('cal_cps', None),
-        # TODO #122 change this to the success test
-        ('cal_cps', 300)],
+        ('cal_cps', None)],
     ids=[
         "uncalibrated spectrum with livetime",
         "uncalibrated spectrum without livetime",
-        "calibrated spectrum with cps",
-        "calibrated spectrum with cps and livetime"])
+        "calibrated spectrum with cps"])
 def rebin_spectrum_failure(request):
     return get_spectrum(request.param[0], lt=request.param[1])
 
@@ -978,10 +975,12 @@ def test_spectrum_rebin_failure(rebin_spectrum_failure, rebin_new_edges,
 @pytest.fixture(
     params=[
         ('cal', 300),
-        ('cal', None)],
+        ('cal', None),
+        ('cal_cps', 300)],
     ids=[
         "calibrated spectrum with livetime",
-        "calibrated spectrum without livetime"])
+        "calibrated spectrum without livetime",
+        "calibrated spectrum with cps and livetime"])
 def rebin_spectrum_success(request):
     return get_spectrum(request.param[0], lt=request.param[1])
 
