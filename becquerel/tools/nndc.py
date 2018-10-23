@@ -15,47 +15,70 @@ import pandas as pd
 import uncertainties
 from ..core.utils import isstring
 
-PARITIES = ['+', '-', 'ANY']
 
-
-WALLET_DECAY_MODE = {
-    'ANY': 'ANY',
-    'IT': 'IT',
-    'B-': 'B-',
-    'EC+B+': 'ECBP',
-    'Double Beta': 'DB',
-    'Neutron': 'N',
-    'Proton': 'P',
-    'Alpha': 'A',
-    'Cluster': 'C',
-    'SF': 'SF',
-    'B-delayed n': 'DN',
-    'B-delayed p': 'DP',
-    'B-delayed a': 'DA',
-    'B-delayed F': 'DF',
-}
+PARITIES = ['+', '-', 'any']
 
 
 DECAYRAD_DECAY_MODE = {
-    'ANY': 'ANY',
-    'IT': 'IT',
-    'B-': 'B-',
-    'EC+B+': 'ECBP',
-    'Neutron': 'N',
-    'Proton': 'P',
-    'Alpha': 'A',
-    'SF': 'SF',
+    'any': 'ANY',
+    'internal transition': 'IT',
+    'it': 'IT',
+    'beta-': 'B-',
+    'b-': 'B-',
+    'electron capture beta+': 'ECBP',
+    'ecbp': 'ECBP',
+    'ecb+': 'ECBP',
+    'ec+b+': 'ECBP',
+    'electron capture': 'ECBP',
+    'ec': 'ECBP',
+    'beta+': 'ECBP',
+    'b+': 'ECBP',
+    'neutron': 'N',
+    'n': 'N',
+    'proton': 'P',
+    'p': 'P',
+    'alpha': 'A',
+    'a': 'A',
+    'spontaneous fission': 'SF',
+    'sf': 'SF',
 }
 
 
+WALLET_DECAY_MODE = dict(DECAYRAD_DECAY_MODE)
+WALLET_DECAY_MODE.update({
+    'double beta': 'DB',
+    'bb': 'DB',
+    'cluster': 'C',
+    'c': 'C',
+    'beta-delayed neutron': 'DN',
+    'b-delayed n': 'DN',
+    'bdn': 'DN',
+    'beta-delayed proton': 'DP',
+    'b-delayed p': 'DP',
+    'bdp': 'DP',
+    'beta-delayed alpha': 'DA',
+    'b-delayed a': 'DA',
+    'bda': 'DA',
+    'beta-delayed fission': 'DF',
+    'b-delayed f': 'DF',
+    'bdf': 'DF',
+})
+
+
 DECAYRAD_RADIATION_TYPE = {
-    'ANY': 'ANY',
-    'Gamma': 'G',
-    'B-': 'BM',
-    'B+': 'BP',
-    'Electron': 'E',
-    'Proton': 'P',
-    'Alpha': 'A',
+    'any': 'ANY',
+    'gamma': 'G',
+    'g': 'G',
+    'beta-': 'BM',
+    'b-': 'BM',
+    'beta+': 'BP',
+    'b+': 'BP',
+    'electron': 'E',
+    'e': 'E',
+    'proton': 'P',
+    'p': 'P',
+    'alpha': 'A',
+    'a': 'A',
 }
 
 
@@ -666,12 +689,12 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
         super().update(**kwargs)
         # handle decay mode
         if 'decay' in kwargs:
-            if kwargs['decay'] not in WALLET_DECAY_MODE:
+            if kwargs['decay'].lower() not in WALLET_DECAY_MODE:
                 raise NNDCInputError(
                     'Decay mode must be one of {}, not {}'.format(
-                        WALLET_DECAY_MODE.keys(), kwargs['decay']))
+                        WALLET_DECAY_MODE.keys(), kwargs['decay'].lower()))
             self._data['dmed'] = 'enabled'
-            self._data['dmn'] = WALLET_DECAY_MODE[kwargs['decay']]
+            self._data['dmn'] = WALLET_DECAY_MODE[kwargs['decay'].lower()]
         # handle energy level condition
         if 'elevel_range' in kwargs:
             self._data['eled'] = 'enabled'
@@ -684,12 +707,12 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
             self._data['jled'] = 'enabled'
             self._data['jlv'] = kwargs['j']
         if 'parity' in kwargs:
-            if kwargs['parity'] not in PARITIES:
+            if kwargs['parity'].lower() not in PARITIES:
                 raise NNDCInputError(
                     'Parity must be one of {}, not {}'.format(
-                        PARITIES, kwargs['parity']))
+                        PARITIES, kwargs['parity'].lower()))
             self._data['jled'] = 'enabled'
-            self._data['plv'] = kwargs['parity']
+            self._data['plv'] = kwargs['parity'].upper()
 
 
 def fetch_wallet_card(**kwargs):
@@ -805,20 +828,21 @@ To save this output into a local File, clik on "File" in your browser menu and s
         super().update(**kwargs)
         # handle decay mode
         if 'decay' in kwargs:
-            if kwargs['decay'] not in DECAYRAD_DECAY_MODE:
+            if kwargs['decay'].lower() not in DECAYRAD_DECAY_MODE:
                 raise NNDCInputError(
                     'Decay mode must be one of {}, not {}'.format(
-                        DECAYRAD_DECAY_MODE.keys(), kwargs['decay']))
+                        DECAYRAD_DECAY_MODE.keys(), kwargs['decay'].lower()))
             self._data['dmed'] = 'enabled'
-            self._data['dmn'] = DECAYRAD_DECAY_MODE[kwargs['decay']]
+            self._data['dmn'] = DECAYRAD_DECAY_MODE[kwargs['decay'].lower()]
         # handle radiation type
         if 'type' in kwargs:
-            if kwargs['type'] not in DECAYRAD_RADIATION_TYPE:
+            if kwargs['type'].lower() not in DECAYRAD_RADIATION_TYPE:
                 raise NNDCInputError(
                     'Radiation type must be one of {}, not {}'.format(
-                        DECAYRAD_RADIATION_TYPE.keys(), kwargs['type']))
+                        DECAYRAD_RADIATION_TYPE.keys(),
+                        kwargs['type'].lower()))
             self._data['rted'] = 'enabled'
-            self._data['rtn'] = DECAYRAD_RADIATION_TYPE[kwargs['type']]
+            self._data['rtn'] = DECAYRAD_RADIATION_TYPE[kwargs['type'].lower()]
         # handle energy level condition
         self.elevel_range = (0, 1e9)
         if 'elevel_range' in kwargs:

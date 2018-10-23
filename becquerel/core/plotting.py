@@ -166,12 +166,12 @@ class SpectrumPlotter(object):
         """
 
         if mode is None:
-            if self.spec.counts is not None:
+            if self.spec._counts is not None:
                 self._ymode = 'counts'
             else:
                 self._ymode = 'cps'
         elif mode.lower() in ('count', 'counts', 'cnt', 'cnts'):
-            if self.spec.counts is None:
+            if self.spec._counts is None:
                 raise PlottingError('Spectrum has counts not defined')
             self._ymode = 'counts'
         elif mode.lower() == 'cps':

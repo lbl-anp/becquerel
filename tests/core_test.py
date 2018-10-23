@@ -5,9 +5,7 @@ import pytest
 import datetime
 import numpy as np
 from uncertainties import ufloat, UFloat, unumpy
-
 import becquerel as bq
-
 from parsers_test import SAMPLES
 
 TEST_DATA_LENGTH = 256
@@ -89,8 +87,8 @@ class TestSpectrumFromFile(object):
 
     def test_spe(self):
         """Test Spectrum.from_file for SPE file........................."""
-
-        self.run_from_file('.spe')
+        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
+            self.run_from_file('.spe')
 
     def test_spc(self):
         """Test Spectrum.from_file for SPC file........................."""
@@ -142,7 +140,11 @@ def test_init_exceptions(spec_data):
     with pytest.raises(bq.SpectrumError):
         bq.Spectrum([])
     with pytest.raises(bq.SpectrumError):
+        bq.Spectrum(cps=[])
+    with pytest.raises(bq.SpectrumError):
         bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV[:-1])
+    with pytest.raises(bq.SpectrumError):
+        bq.Spectrum(cps=spec_data, bin_edges_kev=TEST_EDGES_KEV[:-1])
     with pytest.raises(bq.SpectrumError):
         bq.Spectrum(spec_data, cps=spec_data)
     with pytest.raises(bq.SpectrumError):
@@ -159,6 +161,34 @@ def test_uncalibrated_exception(uncal_spec):
 
     with pytest.raises(bq.UncalibratedError):
         uncal_spec.energies_kev
+
+
+def test_negative_input(spec_data):
+    """Make sure negative values in counts throw an exception,
+       and exception is not raised if uncs are provided."""
+
+    neg_spec = spec_data[:]
+    neg_spec[::2] *= -1
+    neg_uncs = np.where(neg_spec < 0, np.nan, 1)
+
+    with pytest.raises(bq.SpectrumError):
+        spec = bq.Spectrum(neg_spec)
+
+    spec = bq.Spectrum(neg_spec, uncs=neg_uncs)
+    assert np.any(spec.counts_vals < 0)
+    assert np.any(np.isnan(spec.counts_uncs))
+
+
+# ----------------------------------------------
+#      Test Spectrum repr behavior
+# ----------------------------------------------
+
+def test_repr(cal_spec):
+    repr(cal_spec)
+
+
+def test_str(cal_spec):
+    str(cal_spec)
 
 
 # ----------------------------------------------
@@ -192,7 +222,7 @@ def test_no_livetime(spec_data):
     assert spec.livetime is None
 
     cps_spec = bq.Spectrum(cps=spec_data / 300.6)
-    assert np.isnan(cps_spec.livetime)
+    assert cps_spec.livetime is None
 
 
 # ----------------------------------------------
@@ -356,12 +386,15 @@ def test_cps_cpsspec(spec_data, livetime):
     """Test cps property of CPS-style spectrum."""
 
     spec = bq.Spectrum(cps=spec_data / float(livetime))
-    spec.cps
+    assert spec.cps is not None
     assert np.all(spec.cps_vals == spec_data / float(livetime))
     assert np.all(np.isnan(spec.cps_uncs))
-    assert spec.counts is None
-    assert spec.counts_vals is None
-    assert spec.counts_uncs is None
+    with pytest.raises(bq.SpectrumError):
+        spec.counts
+    with pytest.raises(bq.SpectrumError):
+        spec.counts_vals
+    with pytest.raises(bq.SpectrumError):
+        spec.counts_uncs
 
 
 def test_cps_errors(uncal_spec):
@@ -437,14 +470,16 @@ def test_add(type1, type2, lt1, lt2):
     spec1, spec2 = (get_spectrum(type1, lt=lt1),
                     get_spectrum(type2, lt=lt2))
 
-    tot = spec1 + spec2
+    if lt1 and lt2:
+        tot = spec1 + spec2
+        assert tot.livetime == lt1 + lt2
+    else:
+        with pytest.warns(bq.SpectrumWarning):
+            tot = spec1 + spec2
+        assert tot.livetime is None
     assert np.all(tot.counts == spec1.counts + spec2.counts)
     assert np.all(tot.counts_vals ==
                   spec1.counts_vals + spec2.counts_vals)
-    if lt1 and lt2:
-        assert tot.livetime == lt1 + lt2
-    else:
-        assert tot.livetime is None
 
 
 @pytest.mark.parametrize('type1, type2, expected_error', [
@@ -477,7 +512,9 @@ def test_add_uncs(type1, type2):
 
     spec1, spec2 = get_spectrum(type1), get_spectrum(type2)
 
-    tot = spec1 + spec2
+    with pytest.warns(bq.SpectrumWarning):
+        tot = spec1 + spec2
+
     uncs = np.sqrt(spec1.counts_uncs**2 + spec2.counts_uncs**2)
     assert np.allclose(tot.counts_uncs, uncs)
 
@@ -485,8 +522,7 @@ def test_add_uncs(type1, type2):
 @pytest.mark.parametrize('type1, type2, lt1, lt2', [
     ('uncal_cps', 'uncal_cps', 300, 12.6),
     ('uncal_cps', 'uncal_cps', None, 12.6),
-    ('uncal_cps', 'uncal_cps', None, None),
-    ('uncal_cps', 'uncal', None, 300)])
+    ('uncal_cps', 'uncal_cps', None, None)])
 def test_add_sub_cps(type1, type2, lt1, lt2):
     """Test addition and subtraction of CPS spectra"""
 
@@ -494,13 +530,29 @@ def test_add_sub_cps(type1, type2, lt1, lt2):
                     get_spectrum(type2, lt=lt2))
 
     tot = spec1 + spec2
-    assert tot.counts is None
     assert np.all(tot.cps_vals == spec1.cps_vals + spec2.cps_vals)
-    assert np.isnan(tot.livetime)
+    assert tot.livetime is None
 
     diff = spec1 - spec2
-    assert diff.counts is None
-    assert np.allclose(diff.cps_vals, spec1.cps_vals - spec2.cps_vals)
+    assert diff.livetime is None
+    assert np.all(diff.cps_vals == spec1.cps_vals - spec2.cps_vals)
+
+
+@pytest.mark.parametrize('type1, type2, lt1, lt2', [
+    ('uncal', 'uncal_cps', None, None),
+    ('uncal_cps', 'uncal', None, None),
+    ('uncal', 'uncal_cps', 300, None),
+    ('uncal_cps', 'uncal', None, 300),
+    ('uncal', 'uncal_cps', 300, 600),
+    ('uncal_cps', 'uncal', 600, 300)])
+def test_adddition_errors(type1, type2, lt1, lt2):
+    """Test errors during addition of mixed spectra"""
+
+    spec1, spec2 = (get_spectrum(type1, lt=lt1),
+                    get_spectrum(type2, lt=lt2))
+
+    with pytest.raises(bq.SpectrumError):
+        tot = spec1 + spec2
 
 
 @pytest.mark.parametrize('lt1, lt2', [
@@ -510,28 +562,38 @@ def test_add_sub_cps(type1, type2, lt1, lt2):
 @pytest.mark.parametrize('type1, type2', [
     ('uncal', 'uncal'),
     ('cal', 'cal')])
-def test_subtract(type1, type2, lt1, lt2):
-    """Test Spectrum subtraction"""
+def test_subtract_counts(type1, type2, lt1, lt2):
+    """Test Spectrum subtraction with counts"""
 
     spec1, spec2 = (get_spectrum(type1, lt=lt1),
                     get_spectrum(type2, lt=lt2))
-    diff = spec1 - spec2
-    assert diff.counts is None
+    with pytest.warns(bq.SpectrumWarning):
+        diff = spec1 - spec2
+    assert diff.livetime is None
     assert np.allclose(diff.cps_vals, spec1.cps_vals - spec2.cps_vals)
     assert np.all(diff.cps_uncs > spec1.cps_uncs)
     assert np.all(diff.cps_uncs > spec2.cps_uncs)
 
 
 @pytest.mark.parametrize('type1, type2, lt1, lt2', [
-    ('uncal', 'uncal', 300, None),
-    ('cal', 'cal', None, None)])
+    ('uncal', 'uncal_cps', None, None),
+    ('uncal_cps', 'uncal', None, None),
+    ('uncal', 'uncal_cps', None, 300),
+    ('uncal_cps', 'uncal', 300, None),
+    ('uncal', 'uncal_cps', 300, None),
+    ('uncal_cps', 'uncal', None, 300)])
 def test_subtract_errors(type1, type2, lt1, lt2):
-    """Test errors in Spectrum subtract with no livetime"""
+    """Test errors/warnings during subtraction of mixed spectra"""
 
     spec1, spec2 = (get_spectrum(type1, lt=lt1),
                     get_spectrum(type2, lt=lt2))
-    with pytest.raises(bq.SpectrumError):
-        spec1 - spec2
+    if lt1 is None and lt2 is None:
+        with pytest.raises(bq.SpectrumError):
+            diff = spec1 - spec2
+    else:
+        with pytest.warns(bq.SpectrumWarning):
+            diff = spec1 - spec2
+        assert diff.livetime is None
 
 
 # ----------------------------------------------
@@ -569,15 +631,15 @@ def test_cps_mul_div(uncal_spec_cps, factor):
 
     mult_left = uncal_spec_cps * factor
     assert np.allclose(mult_left.cps_vals, factor * uncal_spec_cps.cps_vals)
-    assert np.isnan(mult_left.livetime)
+    assert mult_left.livetime is None
 
     mult_right = factor * uncal_spec_cps
     assert np.allclose(mult_right.cps_vals, factor * uncal_spec_cps.cps_vals)
-    assert np.isnan(mult_right.livetime)
+    assert mult_right.livetime is None
 
     div = uncal_spec_cps / factor
     assert np.allclose(div.cps_vals, uncal_spec_cps.cps_vals / factor)
-    assert np.isnan(div.livetime)
+    assert div.livetime is None
 
 
 @pytest.mark.parametrize('factor', [
@@ -694,7 +756,7 @@ def test_combine_bins(spectype):
     combined = spec.combine_bins(f)
 
     assert len(combined) == TEST_DATA_LENGTH / f
-    if spec.counts is not None:
+    if spec._counts is not None:
         assert combined.counts_vals[0] == np.sum(spec.counts_vals[:f])
         assert np.sum(combined.counts_vals) == np.sum(spec.counts_vals)
     else:
@@ -711,7 +773,7 @@ def test_combine_bins_padding(spectype):
     f = 10
     combined = spec.combine_bins(f)
     assert len(combined) == np.ceil(float(TEST_DATA_LENGTH) / f)
-    if spec.counts is not None:
+    if spec._counts is not None:
         assert combined.counts_vals[0] == np.sum(spec.counts_vals[:f])
         assert np.sum(combined.counts_vals) == np.sum(spec.counts_vals)
     else:

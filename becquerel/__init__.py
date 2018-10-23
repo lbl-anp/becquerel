@@ -8,13 +8,20 @@ from .__metadata__ import __version__, __license__, __copyright__
 
 from .core.rebin import rebin
 from .core.spectrum import Spectrum, SpectrumError, UncalibratedError
+from .core.spectrum import SpectrumWarning
 from .core.energycal import LinearEnergyCal, EnergyCalError, BadInput
 from .core.utils import UncertaintiesError
 from .core.plotting import SpectrumPlotter, PlottingError
+from .core.peakfinder import (PeakFilter, PeakFilterError, BoxcarPeakFilter,
+                              GaussianPeakFilter, PeakFinder, PeakFinderError)
+from .core.autocal import AutoCalibrator, AutoCalibratorError
 
-__all__ = ['core', 'parsers', 'tools', 'rebin'
-           'Spectrum', 'SpectrumError', 'SpectrumPlotter', 'PlottingError',
-           'UncalibratedError', 'LinearEnergyCal', 'EnergyCalError',
-           'BadInput', 'UncertaintiesError',
+__all__ = ['core', 'parsers', 'tools', 'rebin',
+           'Spectrum', 'SpectrumError', 'SpectrumWarning', 'SpectrumPlotter',
+           'PlottingError', 'UncalibratedError', 'LinearEnergyCal',
+           'EnergyCalError', 'BadInput', 'UncertaintiesError',
+           'PeakFilter', 'PeakFilterError', 'BoxcarPeakFilter',
+           'GaussianPeakFilter', 'PeakFinder', 'PeakFinderError',
+           'AutoCalibrator', 'AutoCalibratorError',
            '__description__', '__url__', '__version__', '__license__',
            '__copyright__']

@@ -78,7 +78,7 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
     ufloats = all_ufloats(x_array)
 
     if ufloats and x_uncs is None:
-        return np.array(x_array)
+        return np.asarray(x_array)
     elif ufloats:
         raise UncertaintiesError('Specify uncertainties with UFloats or ' +
                                  'by separate argument, but not both')

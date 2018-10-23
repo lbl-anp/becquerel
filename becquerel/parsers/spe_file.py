@@ -3,9 +3,11 @@
 from __future__ import print_function
 import datetime
 import os
+import warnings
 import dateutil.parser
 import numpy as np
-from .spectrum_file import SpectrumFile, SpectrumFileParsingError
+from .spectrum_file import (SpectrumFile, SpectrumFileParsingError,
+                            SpectrumFileParsingWarning)
 
 
 class SpeFileParsingError(SpectrumFileParsingError):
@@ -140,6 +142,14 @@ class SpeFile(SpectrumFile):
                         self.shape_cal.append(float(lines[i].split(' ')[j]))
                     if verbose:
                         print(self.shape_cal)
+                elif lines[i] == '$PRESETS:':
+                    warnings.warn(
+                        'SpeFile has $PRESETS field, skipping 3 lines',
+                        SpectrumFileParsingWarning)
+                    self.presets = []
+                    for _ in range(3):
+                        self.presets.append(lines[i])
+                        i += 1
                 else:
                     print('Line {} unknown: '.format(i + 1), lines[i])
                 i += 1
