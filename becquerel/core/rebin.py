@@ -337,7 +337,13 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
         assert in_spectra.shape[0] == in_edges.shape[0], (
             "Number of in_spectra({}) differs from number of in_edges({})"
         ).format(in_spectra.shape, in_edges.shape)
+    # Update dtypes if necessary
+    in_edges = np.asarray(in_edges, dtype=np.float64)
+    out_edges = np.asarray(out_edges, dtype=np.float64)
+    slopes = np.asarray(slopes, dtype=np.float64)
+    # Specific calls to different rebining methods
     if method == "interpolation":
+        in_spectra = np.asarray(in_spectra, dtype=np.float64)
         if in_spectra.ndim == 2:
             return _rebin2d_interpolation(
                 in_spectra, in_edges, out_edges, slopes)
@@ -345,6 +351,7 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
             return _rebin_interpolation(
                 in_spectra, in_edges, out_edges, slopes)
     elif method == "listmode":
+        in_spectra = np.asarray(in_spectra, dtype=np.int64)
         if in_spectra.ndim == 2:
             return _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes)
         elif in_spectra.ndim == 1:
