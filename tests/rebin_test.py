@@ -131,6 +131,15 @@ class TestRebin(object):
                                          method=method)
         return (old_counts, new_counts)
 
+    def test_subset_bin_edges(self, lam, old_edges):
+        old_counts = make_fake_spec_array(lam, len(old_edges) - 1,
+                                          dtype=float)
+        new_counts = bq.core.rebin.rebin(old_counts, old_edges,
+                                         old_edges[1:-1],
+                                         method="interpolation")
+        assert np.isclose(np.sum(old_counts), np.sum(new_counts))
+        assert np.allclose(old_counts[2:-2], new_counts[1:-1])
+
     @pytest.mark.plottest
     def test_uncal_spectrum_counts(self, uncal_spec):
         """Plot the old and new spectrum bins as a sanity check"""
