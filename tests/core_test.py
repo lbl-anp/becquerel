@@ -14,56 +14,102 @@ TEST_GAIN = 8.23
 TEST_EDGES_KEV = np.arange(TEST_DATA_LENGTH + 1) * TEST_GAIN
 
 
+def make_data(lam=TEST_COUNTS, size=TEST_DATA_LENGTH):
+    """Build a vector of random counts."""
+
+    floatdata = np.random.poisson(lam=lam, size=size)
+    return floatdata.astype(np.int)
+
+
+def make_spec(t, lt=None, lam=TEST_COUNTS):
+    """Get spectrum to use in parameterized tests.
+
+    Pytest Note:
+        one might think you could do:
+        @pytest.mark.parametrize('spec1, spec2', [
+            (uncal_spec, uncal_spec),
+            (cal_spec, cal_spec)
+        ])
+        def test_add(spec1, spec2):
+            ...
+
+        but you can't put fixtures inside parametrize(). Thus the fixtures
+        call this function for simplicity.
+
+    """
+
+    if t == 'uncal':
+        return bq.Spectrum(make_data(lam=lam), livetime=lt)
+    elif t == 'cal':
+        return bq.Spectrum(
+            make_data(lam=lam), bin_edges_kev=TEST_EDGES_KEV, livetime=lt)
+    elif t == 'cal_new':
+        return bq.Spectrum(
+            make_data(lam=lam), livetime=lt,
+            bin_edges_kev=np.arange(TEST_DATA_LENGTH + 1) * 0.67)
+    elif t == 'uncal_long':
+        return bq.Spectrum(
+            make_data(lam=lam, size=TEST_DATA_LENGTH * 2), livetime=lt)
+    elif t == 'uncal_cps':
+        return bq.Spectrum(cps=make_data(lam=lam), livetime=lt)
+    elif t == 'data':
+        return make_data()
+    else:
+        return t
+
+
 @pytest.fixture
 def spec_data():
     """Build a vector of random counts."""
 
-    floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH)
-    return floatdata.astype(np.int)
+    return make_data()
 
 
 @pytest.fixture
 def uncal_spec(spec_data):
     """Generate an uncalibrated spectrum."""
 
-    return bq.Spectrum(spec_data)
+    return make_spec('uncal')
 
 
 @pytest.fixture
 def uncal_spec_2(spec_data):
     """Generate an uncalibrated spectrum (2nd instance)."""
 
-    return bq.Spectrum(spec_data)
+    return make_spec('uncal')
 
 
 @pytest.fixture
 def uncal_spec_cps(spec_data):
     """Generate an uncalibrated spectrum with cps data."""
 
-    return bq.Spectrum(cps=spec_data)
+    return make_spec('uncal_cps')
 
 
 @pytest.fixture
 def uncal_spec_long(spec_data):
     """Generate an uncalibrated spectrum, of longer length."""
 
-    floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH * 2)
-    uncal = bq.Spectrum(floatdata.astype(np.int))
-    return uncal
+    return make_spec('uncal_long')
 
 
 @pytest.fixture
 def cal_spec(spec_data):
     """Generate a calibrated spectrum."""
 
-    return bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
+    return make_spec('cal')
 
 
 @pytest.fixture
 def cal_spec_2(spec_data):
     """Generate a calibrated spectrum (2nd instance)."""
 
-    return bq.Spectrum(spec_data, bin_edges_kev=TEST_EDGES_KEV)
+    return make_spec('cal')
+
+
+# -----------------------------------------------------------------------------
+# File IO
+# -----------------------------------------------------------------------------
 
 
 class TestSpectrumFromFile(object):
@@ -409,42 +455,6 @@ def test_cpskev_errors(spec_data):
 #   Test addition and subtraction of spectra
 # ----------------------------------------------
 
-def get_spectrum(t, lt=None):
-    """Get spectrum to use in parameterized tests.
-
-    Pytest Note:
-      one might think you could do:
-        @pytest.mark.parametrize('spec1, spec2', [
-            (uncal_spec, uncal_spec),
-            (cal_spec, cal_spec)
-        ])
-        def test_add(spec1, spec2):
-          ...
-
-      but you can't put fixtures inside parametrize().
-    """
-
-    if t == 'uncal':
-        spec = uncal_spec(spec_data())
-    elif t == 'cal':
-        spec = cal_spec(spec_data())
-    elif t == 'cal_new':
-        edges = np.arange(TEST_DATA_LENGTH + 1) * 0.67
-        spec = bq.Spectrum(spec_data(), bin_edges_kev=edges)
-    elif t == 'uncal_long':
-        spec = uncal_spec_long(spec_data())
-    elif t == 'uncal_cps':
-        spec = uncal_spec_cps(spec_data())
-    elif t == 'data':
-        spec = spec_data()
-    else:
-        return t
-    try:
-        spec.livetime = lt
-    except AttributeError:
-        pass
-    return spec
-
 
 @pytest.mark.parametrize('lt1, lt2', [
     (300, 600),
@@ -458,8 +468,8 @@ def get_spectrum(t, lt=None):
 def test_add(type1, type2, lt1, lt2):
     """Test addition of spectra"""
 
-    spec1, spec2 = (get_spectrum(type1, lt=lt1),
-                    get_spectrum(type2, lt=lt2))
+    spec1, spec2 = (make_spec(type1, lt=lt1),
+                    make_spec(type2, lt=lt2))
 
     if lt1 and lt2:
         tot = spec1 + spec2
@@ -488,7 +498,7 @@ def test_add(type1, type2, lt1, lt2):
 def test_add_sub_errors(type1, type2, expected_error):
     """Test addition and subtraction that causes errors"""
 
-    spec1, spec2 = get_spectrum(type1), get_spectrum(type2)
+    spec1, spec2 = make_spec(type1), make_spec(type2)
     with pytest.raises(expected_error):
         spec1 + spec2
     with pytest.raises(expected_error):
@@ -501,7 +511,7 @@ def test_add_sub_errors(type1, type2, expected_error):
 def test_add_uncs(type1, type2):
     """Test uncertainties on addition of uncal spectra"""
 
-    spec1, spec2 = get_spectrum(type1), get_spectrum(type2)
+    spec1, spec2 = make_spec(type1), make_spec(type2)
 
     with pytest.warns(bq.SpectrumWarning):
         tot = spec1 + spec2
@@ -517,8 +527,8 @@ def test_add_uncs(type1, type2):
 def test_add_sub_cps(type1, type2, lt1, lt2):
     """Test addition and subtraction of CPS spectra"""
 
-    spec1, spec2 = (get_spectrum(type1, lt=lt1),
-                    get_spectrum(type2, lt=lt2))
+    spec1, spec2 = (make_spec(type1, lt=lt1),
+                    make_spec(type2, lt=lt2))
 
     tot = spec1 + spec2
     assert np.all(tot.cps_vals == spec1.cps_vals + spec2.cps_vals)
@@ -539,11 +549,11 @@ def test_add_sub_cps(type1, type2, lt1, lt2):
 def test_adddition_errors(type1, type2, lt1, lt2):
     """Test errors during addition of mixed spectra"""
 
-    spec1, spec2 = (get_spectrum(type1, lt=lt1),
-                    get_spectrum(type2, lt=lt2))
+    spec1, spec2 = (make_spec(type1, lt=lt1),
+                    make_spec(type2, lt=lt2))
 
     with pytest.raises(bq.SpectrumError):
-        tot = spec1 + spec2
+        spec1 + spec2
 
 
 @pytest.mark.parametrize('lt1, lt2', [
@@ -556,8 +566,8 @@ def test_adddition_errors(type1, type2, lt1, lt2):
 def test_subtract_counts(type1, type2, lt1, lt2):
     """Test Spectrum subtraction with counts"""
 
-    spec1, spec2 = (get_spectrum(type1, lt=lt1),
-                    get_spectrum(type2, lt=lt2))
+    spec1, spec2 = (make_spec(type1, lt=lt1),
+                    make_spec(type2, lt=lt2))
     with pytest.warns(bq.SpectrumWarning):
         diff = spec1 - spec2
     assert diff.livetime is None
@@ -576,8 +586,8 @@ def test_subtract_counts(type1, type2, lt1, lt2):
 def test_subtract_errors(type1, type2, lt1, lt2):
     """Test errors/warnings during subtraction of mixed spectra"""
 
-    spec1, spec2 = (get_spectrum(type1, lt=lt1),
-                    get_spectrum(type2, lt=lt2))
+    spec1, spec2 = (make_spec(type1, lt=lt1),
+                    make_spec(type2, lt=lt2))
     if lt1 is None and lt2 is None:
         with pytest.raises(bq.SpectrumError):
             diff = spec1 - spec2
@@ -598,7 +608,7 @@ def test_basic_mul_div(spectype, factor):
     Basic multiplication/division of uncalibrated spectrum by a scalar.
     """
 
-    spec = get_spectrum(spectype)
+    spec = make_spec(spectype)
 
     mult_left = spec * factor
     assert np.allclose(mult_left.counts_vals, factor * spec.counts_vals)
@@ -643,7 +653,7 @@ def test_uncal_mul_div_uncertainties(spectype, factor):
     Multiplication/division of uncal spectrum by a scalar with uncertainty.
     """
 
-    spec = get_spectrum(spectype)
+    spec = make_spec(spectype)
 
     mult_left = spec * factor
     assert np.allclose(
@@ -682,7 +692,7 @@ def test_uncal_mul_div_uncertainties(spectype, factor):
 def test_mul_div_errors(type1, type2, error):
     """Multiplication/division errors."""
 
-    spec, bad_factor = get_spectrum(type1), get_spectrum(type2)
+    spec, bad_factor = make_spec(type1), make_spec(type2)
 
     with pytest.raises(error):
         spec * bad_factor
@@ -709,7 +719,7 @@ def test_calibrate_like(uncal_spec, cal_spec):
 def test_recalibrate_like(cal_spec):
     """Test calibrate_like with an already calibrated spectrum."""
 
-    cal_new = get_spectrum('cal_new')
+    cal_new = make_spec('cal_new')
     edges1 = cal_spec.bin_edges_kev
     cal_spec.calibrate_like(cal_new)
     assert cal_spec.is_calibrated
@@ -741,7 +751,7 @@ def test_calibrate_like_copy(uncal_spec, cal_spec):
 def test_combine_bins(spectype):
     """Test combine_bins with no padding."""
 
-    spec = get_spectrum(spectype)
+    spec = make_spec(spectype)
 
     f = 8
     combined = spec.combine_bins(f)
@@ -759,7 +769,7 @@ def test_combine_bins(spectype):
 def test_combine_bins_padding(spectype):
     """Test combine_bins with padding (an uneven factor)."""
 
-    spec = get_spectrum(spectype)
+    spec = make_spec(spectype)
 
     f = 10
     combined = spec.combine_bins(f)
@@ -778,23 +788,12 @@ def test_combine_bins_padding(spectype):
 #         Test Spectrum.downsample
 # ----------------------------------------------
 
-@pytest.fixture
-def many_counts_data():
-    floatdata = np.random.poisson(lam=1000, size=TEST_DATA_LENGTH)
-    return floatdata.astype(int)
-
-
-@pytest.mark.parametrize('spec, f', [
-    (uncal_spec(many_counts_data()), 2),
-    (cal_spec(many_counts_data()), 2),
-    (uncal_spec(many_counts_data()), 1.5),
-    (cal_spec(many_counts_data()), 1.5),
-    (uncal_spec(many_counts_data()), 999.99),
-    (cal_spec(many_counts_data()), 999.99)
-])
-def test_downsample(spec, f):
+@pytest.mark.parametrize('spectype', ['uncal', 'cal'])
+@pytest.mark.parametrize('f', [2, 1.5, 999.99])
+def test_downsample(spectype, f):
     """Test Spectrum.downsample on uncalibrated and calibrated spectra"""
 
+    spec = make_spec(spectype, lam=1000)
     s1 = np.sum(spec.counts_vals)
     spec2 = spec.downsample(f)
     s2 = np.sum(spec2.counts_vals)
