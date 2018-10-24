@@ -19,7 +19,7 @@ def _check_ndim(arr, ndim, arr_name='array'):
         '{}({}) is not {}D'.format(arr_name, arr.shape, ndim)
 
 
-def _check_nonneg_monotonic_increasing(arr, arr_name='array'):
+def _check_monotonic_increasing(arr, arr_name='array'):
     """Check that a numpy array is monotonically increasing
 
     Args:
@@ -315,8 +315,8 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
                 in_edges,
                 (in_spectra.shape[0], in_edges.shape[-1])))
     _check_ndim(out_edges, 1, 'out_edges')
-    _check_nonneg_monotonic_increasing(in_edges, 'in_edges')
-    _check_nonneg_monotonic_increasing(out_edges, 'out_edges')
+    _check_monotonic_increasing(in_edges, 'in_edges')
+    _check_monotonic_increasing(out_edges, 'out_edges')
     # Init slopes
     if slopes is None:
         slopes = np.zeros_like(in_spectra, dtype=np.float)
