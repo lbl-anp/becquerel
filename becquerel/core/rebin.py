@@ -1,5 +1,19 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import numba as nb
+import warnings
+
+
+class RebinError(Exception):
+    """Exception raised by rebin operations."""
+
+    pass
+
+
+class RebinWarning(UserWarning):
+    """Warnings displayed by rebin operations."""
+
+    pass
 
 
 def _check_ndim(arr, ndim, arr_name='array'):
@@ -34,6 +48,60 @@ def _check_monotonic_increasing(arr, arr_name='array'):
     tmp = np.diff(arr)
     assert np.all((tmp > 0) | np.isclose(tmp, 0)), \
         "{} is not monotonically increasing: {}".format(arr_name, arr)
+
+
+def _check_partial_overlap(in_edges, out_edges):
+    """
+    Args:
+        in_edges (np.ndarray): an array of the input bin edges (1D or 2D)
+            [num_spectra, num_channels_in + 1] or [num_channels_in + 1]
+        out_edges (np.ndarray): an array of the output bin edges
+            [num_channels_out]
+
+    Raises:
+        RebinWarning: for the following cases:
+
+            old:   └┴┴ ...
+            new: └┴┴┴┴ ...
+
+            old: ... ┴┴┴┘
+            new: ... ┴┴┴┴┴┘
+
+    """
+    if np.any(in_edges[..., 0] > out_edges[0]):
+        warnings.warn(
+            'The first input edge is larger than the first output edge, ' +
+            'zeros will padded on the left side of the new spectrum',
+            RebinWarning)
+    if np.any(in_edges[..., -1] < out_edges[-1]):
+        warnings.warn(
+            'The last input edge is smaller than the last output edge, ' +
+            'zeros will padded on the right side of the new spectrum',
+            RebinWarning)
+
+
+def _check_any_overlap(in_edges, out_edges):
+    """
+    Args:
+        in_edges (np.ndarray): an array of the input bin edges (1D or 2D)
+            [num_spectra, num_channels_in + 1] or [num_channels_in + 1]
+        out_edges (np.ndarray): an array of the output bin edges
+            [num_channels_out]
+
+    Raises:
+
+        RebinError: for the following cases:
+
+            old:   └┴┴┴┴┘
+            new:             └┴┴┴┘
+
+            old:           └┴┴┴┴┘
+            new:   └┴┴┴┘
+    """
+    if np.any(in_edges[..., -1] <= out_edges[0]):
+        raise RebinError('Input edges are all smaller than output edges')
+    if np.any(in_edges[..., 0] >= out_edges[-1]):
+        raise RebinError('Input edges are all larger than output edges')
 
 
 @nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
@@ -264,7 +332,7 @@ def _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes):
 
 
 def rebin(in_spectra, in_edges, out_edges, method="interpolation",
-          slopes=None):
+          slopes=None, zero_pad_warnings=True):
     """
     Spectra rebining via deterministic or stochastic methods.
 
@@ -284,6 +352,8 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
             quadratic interpolation (1D or 2D)
             (only applies for "interpolation" method)
             [num_spectra, num_channels_in + 1] or [num_channels_in + 1]
+        zero_pad_warnings (boolean): warn when edge overlap results in
+            appending empty bins
 
     Raises:
         AssertionError: for bad input arguments
@@ -317,6 +387,9 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     _check_ndim(out_edges, 1, 'out_edges')
     _check_monotonic_increasing(in_edges, 'in_edges')
     _check_monotonic_increasing(out_edges, 'out_edges')
+    _check_any_overlap(in_edges, out_edges)
+    if zero_pad_warnings:
+        _check_partial_overlap(in_edges, out_edges)
     # Init slopes
     if slopes is None:
         slopes = np.zeros_like(in_spectra, dtype=np.float)

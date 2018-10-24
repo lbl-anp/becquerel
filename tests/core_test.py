@@ -968,7 +968,8 @@ def rebin_spectrum_failure(request):
 def test_spectrum_rebin_failure(rebin_spectrum_failure, rebin_new_edges,
                                 rebin_method):
     with pytest.raises(bq.SpectrumError):
-        rebin_spectrum_failure.rebin(rebin_new_edges, method=rebin_method)
+        rebin_spectrum_failure.rebin(rebin_new_edges, method=rebin_method,
+                                     zero_pad_warnings=False)
 
 
 @pytest.fixture(
@@ -986,7 +987,8 @@ def rebin_spectrum_success(request):
 
 def test_spectrum_rebin_success(rebin_spectrum_success, rebin_new_edges,
                                 rebin_method):
-    spec = rebin_spectrum_success.rebin(rebin_new_edges, method=rebin_method)
+    spec = rebin_spectrum_success.rebin(rebin_new_edges, method=rebin_method,
+                                        zero_pad_warnings=False)
     assert np.isclose(rebin_spectrum_success.counts_vals.sum(),
                       spec.counts_vals.sum())
     if rebin_spectrum_success.livetime is None:

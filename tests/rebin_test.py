@@ -43,6 +43,12 @@ def lam(request):
     return request.param
 
 
+@pytest.fixture
+def old_spec_float(lam, old_edges):
+    counts = np.random.poisson(lam=lam, size=len(old_edges) - 1).astype(float)
+    return old_edges, counts
+
+
 # Tests for either methods are separated for now, because listmode requires
 # ints as input for counts
 # @pytest.fixture(params=["interpolation", "listmode"],
@@ -78,7 +84,7 @@ class TestRebin(object):
             # because make_fake_spec_array uses poisson => always ints
             old_counts[0] + .3
             bq.core.rebin.rebin(old_counts, old_edges, new_edges,
-                                method="listmode")
+                                method="listmode", zero_pad_warnings=False)
 
     def _test_total_counts(self, lam, old_edges, new_edges, method, dtype):
         """Check total counts in spectrum data before and after rebin"""
@@ -106,7 +112,8 @@ class TestRebin(object):
         new_counts_2d = bq.core.rebin.rebin(old_counts_2d,
                                             old_edges_2d,
                                             new_edges,
-                                            method=method)
+                                            method=method,
+                                            zero_pad_warnings=False)
         assert np.allclose(old_counts_2d.sum(axis=1),
                            new_counts_2d.sum(axis=1))
 
@@ -128,7 +135,8 @@ class TestRebin(object):
         """ generate old and new counts (1D)"""
         old_counts = make_fake_spec_array(lam, len(old_edges) - 1, dtype=dtype)
         new_counts = bq.core.rebin.rebin(old_counts, old_edges, new_edges,
-                                         method=method)
+                                         method=method,
+                                         zero_pad_warnings=False)
         return (old_counts, new_counts)
 
     def test_subset_bin_edges(self, lam, old_edges):
@@ -140,6 +148,32 @@ class TestRebin(object):
         assert np.isclose(np.sum(old_counts), np.sum(new_counts))
         assert np.allclose(old_counts[2:-2], new_counts[1:-1])
 
+    def test_overlap_warnings(self, old_spec_float):
+        old_edges, old_counts = old_spec_float
+        new_edges_left = np.linspace(old_edges[0] - 1., old_edges[-1], 10)
+        new_edges_right = np.linspace(old_edges[0], old_edges[-1] + 1, 10)
+        new_edges_both = np.linspace(old_edges[0] - 1., old_edges[-1] + 1, 10)
+        with pytest.warns(bq.RebinWarning):
+            bq.rebin(old_counts, old_edges, new_edges_left,
+                     zero_pad_warnings=True)
+        with pytest.warns(bq.RebinWarning):
+            bq.rebin(old_counts, old_edges, new_edges_right,
+                     zero_pad_warnings=True)
+        with pytest.warns(bq.RebinWarning):
+            bq.rebin(old_counts, old_edges, new_edges_both,
+                     zero_pad_warnings=True)
+
+    def test_overlap_errors(self, old_spec_float):
+        old_edges, old_counts = old_spec_float
+        new_edges_left = np.linspace(old_edges[0] - 10, old_edges[0] - 1, 10,
+                                     dtype=float)
+        new_edges_right = np.linspace(old_edges[-1] + 1, old_edges[-1] + 10,
+                                      10, dtype=float)
+        with pytest.raises(bq.RebinError):
+            bq.rebin(old_counts, old_edges, new_edges_left)
+        with pytest.raises(bq.RebinError):
+            bq.rebin(old_counts, old_edges, new_edges_right)
+
     @pytest.mark.plottest
     def test_uncal_spectrum_counts(self, uncal_spec):
         """Plot the old and new spectrum bins as a sanity check"""
@@ -148,7 +182,8 @@ class TestRebin(object):
             uncal_spec.channels.astype('float') - 0.5,
             np.array([uncal_spec.channels[-1] + 0.5])])
         new_edges = old_edges + 0.3
-        new_data = bq.core.rebin(uncal_spec.data, old_edges, new_edges)
+        new_data = bq.core.rebin(uncal_spec.data, old_edges, new_edges,
+                                 zero_pad_warnings=False)
         plt.figure()
         plt.plot(*bq.core.bin_edges_and_heights_to_steps(old_edges,
                                                          uncal_spec.data),

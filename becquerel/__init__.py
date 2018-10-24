@@ -6,7 +6,7 @@ from . import tools
 from .__metadata__ import __description__, __url__
 from .__metadata__ import __version__, __license__, __copyright__
 
-from .core.rebin import rebin
+from .core.rebin import rebin, RebinError, RebinWarning
 from .core.spectrum import Spectrum, SpectrumError, UncalibratedError
 from .core.spectrum import SpectrumWarning
 from .core.energycal import LinearEnergyCal, EnergyCalError, BadInput
@@ -16,7 +16,8 @@ from .core.peakfinder import (PeakFilter, PeakFilterError, BoxcarPeakFilter,
                               GaussianPeakFilter, PeakFinder, PeakFinderError)
 from .core.autocal import AutoCalibrator, AutoCalibratorError
 
-__all__ = ['core', 'parsers', 'tools', 'rebin',
+__all__ = ['core', 'parsers', 'tools',
+           'rebin', 'RebinError', 'RebinWarning',
            'Spectrum', 'SpectrumError', 'SpectrumWarning', 'SpectrumPlotter',
            'PlottingError', 'UncalibratedError', 'LinearEnergyCal',
            'EnergyCalError', 'BadInput', 'UncertaintiesError',

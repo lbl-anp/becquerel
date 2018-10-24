@@ -786,7 +786,8 @@ class Spectrum(object):
         obj = Spectrum(**kwargs)
         return obj
 
-    def rebin(self, out_edges, method="interpolation", slopes=None):
+    def rebin(self, out_edges, method="interpolation", slopes=None,
+              zero_pad_warnings=True):
         """
         Spectra rebining via deterministic or stochastic methods.
 
@@ -802,6 +803,8 @@ class Spectrum(object):
                 for quadratic interpolation
                 (only applies for "interpolation" method)
                 [len(spectrum) + 1]
+        zero_pad_warnings (boolean): warn when edge overlap results in
+            appending empty bins
 
         Raises:
             SpectrumError: for bad input arguments
@@ -825,7 +828,7 @@ class Spectrum(object):
         else:
             raise SpectrumError('Unknown rebining method: {}'.format(method))
         out_spec = rebin(in_spec, in_edges, out_edges, method=method,
-                         slopes=slopes)
+                         slopes=slopes, zero_pad_warnings=zero_pad_warnings)
         return Spectrum(counts=out_spec,
                         uncs=np.sqrt(out_spec),
                         bin_edges_kev=out_edges,
