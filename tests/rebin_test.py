@@ -11,9 +11,11 @@ import becquerel as bq
 
 
 @pytest.fixture(params=[np.linspace(0, 30, 31),
+                        np.linspace(-1, 30, 31),
                         np.linspace(0, 30, 11),
                         np.linspace(0, 30, 40)],
                 ids=["1 keV bins",
+                     "1 keV bins with negative starting edge",
                      "3 keV bins",
                      ".75 keV bins"])
 def old_edges(request):
@@ -21,9 +23,11 @@ def old_edges(request):
 
 
 @pytest.fixture(params=[np.linspace(0, 30, 31),
+                        np.linspace(-1, 30, 31),
                         np.linspace(0, 30, 7),
                         np.linspace(0, 30, 45)],
                 ids=["1 keV bins",
+                     "1 keV bins with negative starting edge",
                      "5 keV bins",
                      ".66 keV bins"])
 def new_edges(request):
@@ -81,7 +85,6 @@ class TestRebin(object):
         old_counts, new_counts = self._gen_old_new_counts(
             lam, old_edges, new_edges, method, dtype)
         assert np.isclose(old_counts.sum(), new_counts.sum())
-
 
     def test_rebin2d_counts(self, lam, old_edges, new_edges):
         """Check total counts in spectrum data before and after rebin
