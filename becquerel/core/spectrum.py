@@ -402,7 +402,7 @@ class Spectrum(object):
 
     @property
     def bin_edges_kev(self):
-        """Get the bin edges energies of a spectrum
+        """Get the bin edge energies of a spectrum
 
         Returns:
           np.array of floats or None
@@ -412,7 +412,7 @@ class Spectrum(object):
 
     @bin_edges_kev.setter
     def bin_edges_kev(self, bin_edges_kev):
-        """Set the bin edges energies of a spectrum
+        """Set the bin edge energies of a spectrum
 
         Args:
           bin_edges_kev: an iterable of bin edge energies
