@@ -415,7 +415,7 @@ class Spectrum(object):
         """Set the bin edges energies of a spectrum
 
         Args:
-          bin_edges_kev (optional): an iterable of bin edge energies
+          bin_edges_kev: an iterable of bin edge energies
             If not none, should have length of (len(counts) + 1)
 
         Raises:
