@@ -429,7 +429,7 @@ class Spectrum(object):
             raise ValueError(
                 'Bin edge energies must be strictly increasing')
         else:
-            self._bin_edges_kev = np.asarray(bin_edges_kev, dtype=float)
+            self._bin_edges_kev = np.array(bin_edges_kev, dtype=float)
 
     @classmethod
     def from_file(cls, infilename):
