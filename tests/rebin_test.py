@@ -49,13 +49,10 @@ def old_spec_float(lam, old_edges):
     return old_edges, counts
 
 
-# Tests for either methods are separated for now, because listmode requires
-# ints as input for counts
-# @pytest.fixture(params=["interpolation", "listmode"],
-#                 ids=["deterministic interpolation",
-#                      "stochastic via listmode"])
-# def rebin_methods(request):
-#     return request.param
+@pytest.fixture
+def old_spec_int(lam, old_edges):
+    counts = np.random.poisson(lam=lam, size=len(old_edges) - 1).astype(int)
+    return old_edges, counts
 
 
 def make_fake_spec_array(lam, size, dtype=np.float):
@@ -175,20 +172,20 @@ class TestRebin(object):
             bq.rebin(old_counts, old_edges, new_edges_right)
 
     @pytest.mark.plottest
-    def test_uncal_spectrum_counts(self, uncal_spec):
+    def test_uncal_spectrum_counts(self, old_spec_float):
         """Plot the old and new spectrum bins as a sanity check"""
 
-        old_edges = np.concatenate([
-            uncal_spec.channels.astype('float') - 0.5,
-            np.array([uncal_spec.channels[-1] + 0.5])])
+        old_edges, old_counts = old_spec_float
         new_edges = old_edges + 0.3
-        new_data = bq.core.rebin(uncal_spec.data, old_edges, new_edges,
-                                 zero_pad_warnings=False)
+        new_counts = bq.rebin(old_counts, old_edges, new_edges,
+                              zero_pad_warnings=False)
         plt.figure()
-        plt.plot(*bq.core.bin_edges_and_heights_to_steps(old_edges,
-                                                         uncal_spec.data),
-                 color='dodgerblue', label='original')
-        plt.plot(*bq.core.bin_edges_and_heights_to_steps(new_edges,
-                                                         new_data),
-                 color='firebrick', label='rebinned')
+        plt.plot(
+            *bq.core.plotting.SpectrumPlotter.bin_edges_and_heights_to_steps(
+                old_edges, old_counts),
+            color='dodgerblue', label='original')
+        plt.plot(
+            *bq.core.plotting.SpectrumPlotter.bin_edges_and_heights_to_steps(
+                new_edges, new_counts),
+            color='firebrick', label='rebinned')
         plt.show()
