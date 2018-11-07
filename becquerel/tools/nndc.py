@@ -659,7 +659,7 @@ class _NuclearWalletCardQuery(_NNDCQuery):
 
     """
 
-    _URL = 'http://www.nndc.bnl.gov/nudat2/sigma_searchi.jsp'
+    _URL = 'https://www.nndc.bnl.gov/nudat2/sigma_searchi.jsp'
     _DATA = dict(_NNDCQuery._DATA)
     _DATA.update({
         'eled': 'disabled',    # E(level) condition on/off
@@ -796,7 +796,7 @@ class _DecayRadiationQuery(_NNDCQuery):
 
     """
 
-    _URL = 'http://www.nndc.bnl.gov/nudat2/dec_searchi.jsp'
+    _URL = 'https://www.nndc.bnl.gov/nudat2/dec_searchi.jsp'
     _DATA = dict(_NNDCQuery._DATA)
     _DATA.update({
         'rted': 'enabled',     # radiation type condition on/off
