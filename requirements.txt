@@ -1,6 +1,7 @@
 beautifulsoup4
 future
 html5lib
+lmfit
 lxml
 matplotlib
 numpy
