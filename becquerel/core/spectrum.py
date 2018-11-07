@@ -830,8 +830,9 @@ class Spectrum(object):
                         input_file_object=self._infileobject,
                         livetime=self.livetime)
 
-    def rebin_like(self, other, **kwargs):
-        return self.rebin(other.bin_edges_kev, **kwargs)
+    def rebin_like(self, other, zero_pad_warnings=False, **kwargs):
+        return self.rebin(other.bin_edges_kev,
+                          zero_pad_warnings=zero_pad_warnings, **kwargs)
 
     def plot(self, *fmt, **kwargs):
         """Plot a spectrum with matplotlib's plot command.
