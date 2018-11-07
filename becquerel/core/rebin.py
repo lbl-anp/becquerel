@@ -363,13 +363,13 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     """
     method = method.lower()
     if method == "listmode":
-        try:
-            in_spectra = np.asarray(in_spectra, dtype=np.int64)
-        except TypeError:
-            raise ValueError(
-                "in_spectrum can only contain ints for method listmode")
+        if np.issubdtype(in_spectra.dtype.type, np.floating):
+            warnings.warn(
+                'Converting in_spectra to integers for rebin method listmode',
+                RebinWarning)
+        in_spectra = np.asarray(in_spectra, dtype=np.int64)
     else:
-        in_spectra = np.asarray(in_spectra, np.float)
+        in_spectra = np.asarray(in_spectra, dtype=np.float)
     in_edges = np.asarray(in_edges, np.float)
     out_edges = np.asarray(out_edges, np.float)
     # Check inputs
