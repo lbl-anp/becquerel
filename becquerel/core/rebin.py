@@ -334,7 +334,7 @@ def _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes):
 def rebin(in_spectra, in_edges, out_edges, method="interpolation",
           slopes=None, zero_pad_warnings=True):
     """
-    Spectra rebining via deterministic or stochastic methods.
+    Spectra rebinning via deterministic or stochastic methods.
 
     Args:
         in_spectrum (np.ndarray): an array of input spectrum counts (1D or 2D)
@@ -414,7 +414,7 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     in_edges = np.asarray(in_edges, dtype=np.float64)
     out_edges = np.asarray(out_edges, dtype=np.float64)
     slopes = np.asarray(slopes, dtype=np.float64)
-    # Specific calls to different rebining methods
+    # Specific calls to different rebinning methods
     if method == "interpolation":
         in_spectra = np.asarray(in_spectra, dtype=np.float64)
         if in_spectra.ndim == 2:

@@ -789,7 +789,7 @@ class Spectrum(object):
     def rebin(self, out_edges, method="interpolation", slopes=None,
               zero_pad_warnings=True):
         """
-        Spectra rebining via deterministic or stochastic methods.
+        Spectra rebinning via deterministic or stochastic methods.
 
         Args:
             out_edges (np.ndarray): an array of the output bin edges
@@ -826,7 +826,7 @@ class Spectrum(object):
         elif method.lower() == 'listmode':
             in_spec = self.counts_vals.astype(np.int)
         else:
-            raise SpectrumError('Unknown rebining method: {}'.format(method))
+            raise SpectrumError('Unknown rebinning method: {}'.format(method))
         out_spec = rebin(in_spec, in_edges, out_edges, method=method,
                          slopes=slopes, zero_pad_warnings=zero_pad_warnings)
         return Spectrum(counts=out_spec,
