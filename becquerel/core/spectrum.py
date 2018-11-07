@@ -811,20 +811,19 @@ class Spectrum(object):
         Returns:
             A new Spectrum object with the rebinned data.
         """
-        # TODO @jccurtis handle this differently?
         if self.bin_edges_kev is None:
             raise SpectrumError('Cannot rebin spectrum without energy '
                                 'calibration')
-        else:
-            in_edges = self.bin_edges_kev
-        if method.lower() == 'interpolation':
-            in_spec = self.counts_vals.astype(np.float)
-        elif method.lower() == 'listmode':
-            in_spec = self.counts_vals.astype(np.int)
-        else:
-            raise SpectrumError('Unknown rebinning method: {}'.format(method))
-        out_spec = rebin(in_spec, in_edges, out_edges, method=method,
-                         slopes=slopes, zero_pad_warnings=zero_pad_warnings)
+        if ((method.lower() == 'listmode') and
+                (self._counts is None) and
+                (self.livetime is not None)):
+            warnings.warn(
+                'Rebinning by listmode method without explicit counts ' +
+                'provided in Spectrum object',
+                SpectrumWarning)
+        out_spec = rebin(self.counts_vals, self.bin_edges_kev, out_edges,
+                         method=method, slopes=slopes,
+                         zero_pad_warnings=zero_pad_warnings)
         return Spectrum(counts=out_spec,
                         uncs=np.sqrt(out_spec),
                         bin_edges_kev=out_edges,

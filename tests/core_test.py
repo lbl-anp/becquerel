@@ -987,8 +987,14 @@ def rebin_spectrum_success(request):
 
 def test_spectrum_rebin_success(rebin_spectrum_success, rebin_new_edges,
                                 rebin_method):
-    spec = rebin_spectrum_success.rebin(rebin_new_edges, method=rebin_method,
-                                        zero_pad_warnings=False)
+    kwargs = dict(out_edges=rebin_new_edges, method=rebin_method,
+                  zero_pad_warnings=False)
+    if ((rebin_spectrum_success._counts is None) and
+            (rebin_method == 'listmode')):
+        with pytest.warns(bq.SpectrumWarning):
+            spec = rebin_spectrum_success.rebin(**kwargs)
+    else:
+        spec = rebin_spectrum_success.rebin(**kwargs)
     assert np.isclose(rebin_spectrum_success.counts_vals.sum(),
                       spec.counts_vals.sum())
     if rebin_spectrum_success.livetime is None:
