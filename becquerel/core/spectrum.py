@@ -13,7 +13,6 @@ from . import plotting
 import warnings
 
 
-
 class SpectrumError(Exception):
     """Exception raised by Spectrum."""
 
@@ -818,9 +817,6 @@ class Spectrum(object):
                                 'calibration')
         else:
             in_edges = self.bin_edges_kev
-        if self.counts is None:
-            # NOTE @jccurtis this will be deprecated when closing #122
-            raise SpectrumError('Cannot rebin method without `counts` data')
         if method.lower() == 'interpolation':
             in_spec = self.counts_vals.astype(np.float)
         elif method.lower() == 'listmode':
