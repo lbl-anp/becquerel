@@ -373,7 +373,11 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     in_edges = np.asarray(in_edges, np.float)
     out_edges = np.asarray(out_edges, np.float)
     # Check inputs
-    # TODO check that in_spectrum are all >= 0
+    if method == 'listmode':
+        if not np.all(in_spectra >= 0.):
+            raise RebinError('Cannot rebin spectra with negative values with '
+                             'listmode method')
+    # check that in_spectrum are all >= 0
     _check_ndim(in_spectra, {1, 2}, 'in_spectra')
     # broadcast in_edges out to the dimensions of in_spectra
     # specifically for the case 1D -> 2D

@@ -169,6 +169,13 @@ class TestRebin(object):
         with pytest.raises(bq.RebinError):
             bq.rebin(old_counts, old_edges, new_edges_right)
 
+    def test_negative_input_listmode(self, old_spec_int, new_edges):
+        old_edges, old_counts = old_spec_int
+        old_counts[0] = -1
+        with pytest.raises(bq.RebinError):
+            bq.rebin(old_counts, old_edges, new_edges,
+                     method='listmode', zero_pad_warnings=False)
+
     @pytest.mark.plottest
     def test_uncal_spectrum_counts(self, old_spec_float):
         """Plot the old and new spectrum bins as a sanity check"""
