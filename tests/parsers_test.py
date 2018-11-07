@@ -9,7 +9,6 @@ import becquerel as bq
 
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'samples')
-
 SAMPLES = {}
 for extension in ['.spe', '.spc', '.cnf']:
     filenames = glob.glob(os.path.join(SAMPLES_PATH, '*.*'))
@@ -42,7 +41,8 @@ class TestSpectrumFile(object):
 
     def test_spe(self):
         """Test parsers.SpeFile............................................"""
-        self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
+        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
+            self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
 
     def test_spc(self):
         """Test parsers.SpcFile............................................"""
@@ -90,7 +90,8 @@ class TestSpectrumFilePlot(object):
 
     def test_spe(self):
         """Test parsers.SpeFile............................................"""
-        self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
+        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
+            self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
 
     def test_spc(self):
         """Test parsers.SpcFile............................................"""
@@ -99,3 +100,11 @@ class TestSpectrumFilePlot(object):
     def test_cnf(self):
         """Test parsers.CnfFile............................................"""
         self.run_parser(bq.parsers.CnfFile, '.cnf', write=False)
+
+
+def test_spe_presets_warning():
+        with pytest.warns(
+                bq.parsers.SpectrumFileParsingWarning,
+                match='SpeFile has \$PRESETS field, skipping 3 lines'):
+            bq.parsers.SpeFile(
+                os.path.join(SAMPLES_PATH, 'digibase_5min_30_1.spe'))
