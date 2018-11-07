@@ -126,6 +126,12 @@ class Spectrum(object):
         if not (counts is None) ^ (cps is None):
             raise SpectrumError('Must specify one of counts or CPS')
 
+        self._counts = None
+        self._cps = None
+        self._bin_edges_kev = None
+        self.livetime = None
+        self.realtime = None
+
         if counts is not None:
             if len(counts) == 0:
                 raise SpectrumError('Empty spectrum counts')
@@ -136,32 +142,17 @@ class Spectrum(object):
                     'to force initialization.')
             self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
-
-            self._cps = None
         else:
             if len(cps) == 0:
                 raise SpectrumError('Empty spectrum counts')
             self._cps = handle_uncs(cps, uncs, lambda x: np.nan)
-            self._counts = None
 
-        if livetime is None:
-            self.livetime = None
-        else:
+        self.bin_edges_kev = bin_edges_kev
+
+        if livetime is not None:
             self.livetime = float(livetime)
 
-        if bin_edges_kev is None:
-            self.bin_edges_kev = None
-        elif len(bin_edges_kev) != len(self) + 1:
-            raise SpectrumError('Bad length of bin edges vector')
-        elif np.any(np.diff(bin_edges_kev) <= 0):
-            raise ValueError(
-                'Bin edge energies must be strictly increasing')
-        else:
-            self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
-
-        if realtime is None:
-            self.realtime = None
-        else:
+        if realtime is not None:
             self.realtime = float(realtime)
             if self.livetime is not None:
                 if self.livetime > self.realtime:
@@ -409,6 +400,37 @@ class Spectrum(object):
         """
 
         return self.bin_edges_kev is not None
+
+    @property
+    def bin_edges_kev(self):
+        """Get the bin edge energies of a spectrum
+
+        Returns:
+          np.array of floats or None
+        """
+
+        return self._bin_edges_kev
+
+    @bin_edges_kev.setter
+    def bin_edges_kev(self, bin_edges_kev):
+        """Set the bin edge energies of a spectrum
+
+        Args:
+          bin_edges_kev: an iterable of bin edge energies
+            If not none, should have length of (len(counts) + 1)
+
+        Raises:
+          SpectrumError: for bad input length
+        """
+        if bin_edges_kev is None:
+            self._bin_edges_kev = None
+        elif len(bin_edges_kev) != len(self) + 1:
+            raise SpectrumError('Bad length of bin edges vector')
+        elif np.any(np.diff(bin_edges_kev) <= 0):
+            raise ValueError(
+                'Bin edge energies must be strictly increasing')
+        else:
+            self._bin_edges_kev = np.array(bin_edges_kev, dtype=float)
 
     @classmethod
     def from_file(cls, infilename):
