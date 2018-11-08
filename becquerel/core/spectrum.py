@@ -836,14 +836,16 @@ class Spectrum(object):
         if self.bin_edges_kev is None:
             raise SpectrumError('Cannot rebin spectrum without energy '
                                 'calibration')
-        if ((method.lower() == 'listmode') and
-                (self._counts is None) and
-                (self.livetime is not None)):
-            warnings.warn(
-                'Rebinning by listmode method without explicit counts ' +
-                'provided in Spectrum object',
-                SpectrumWarning)
-        out_spec = rebin(self.counts_vals, self.bin_edges_kev, out_edges,
+        in_spec = self.counts_vals
+        if method.lower() == 'listmode':
+            if (self._counts is None) and (self.livetime is not None):
+                warnings.warn(
+                    'Rebinning by listmode method without explicit counts ' +
+                    'provided in Spectrum object',
+                    SpectrumWarning)
+            # NOTE: @jccurtis asks: why are the counts not integers already?
+            in_spec = in_spec.astype(np.int64)
+        out_spec = rebin(in_spec, self.bin_edges_kev, out_edges,
                          method=method, slopes=slopes,
                          zero_pad_warnings=zero_pad_warnings)
         return Spectrum(counts=out_spec,
