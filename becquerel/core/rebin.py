@@ -29,8 +29,9 @@ def _check_ndim(arr, ndim, arr_name='array'):
     Raises:
       AssertionError: if arr does not have dimension ndim
     """
-    assert arr.ndim == ndim or arr.ndim in ndim, \
-        '{}({}) is not {}D'.format(arr_name, arr.shape, ndim)
+    if (arr.ndim != ndim) and (arr.ndim not in ndim):
+        raise RebinError('{}({}) is not {}D'.format(
+            arr_name, arr.shape, ndim))
 
 
 def _check_monotonic_increasing(arr, arr_name='array'):
@@ -46,8 +47,9 @@ def _check_monotonic_increasing(arr, arr_name='array'):
     # Check that elements along the last axis are increasing or
     # neighboring elements are equal
     tmp = np.diff(arr)
-    assert np.all((tmp > 0) | np.isclose(tmp, 0)), \
-        "{} is not monotonically increasing: {}".format(arr_name, arr)
+    if not np.all((tmp > 0) | np.isclose(tmp, 0)):
+        raise RebinError('{} is not monotonically increasing: {}'.format(
+            arr_name, arr))
 
 
 def _check_partial_overlap(in_edges, out_edges):
@@ -102,6 +104,33 @@ def _check_any_overlap(in_edges, out_edges):
         raise RebinError('Input edges are all smaller than output edges')
     if np.any(in_edges[..., 0] >= out_edges[-1]):
         raise RebinError('Input edges are all larger than output edges')
+
+
+def _broadcast(arr, shape):
+    """
+    broadcast arr out to the first dimension in shape
+    specifically for the case 1D -> 2D
+    copy req'd: the readonly array doesn't work w/ numba
+    """
+    if (arr.ndim == 1) and (len(shape) == 2):
+        return np.copy(np.broadcast_to(arr, (shape[0], arr.shape[0])))
+    else:
+        return arr
+
+
+def _check_shape(arr0, arr1, arr0_name='array0', arr1_name='array1',
+                 edges=False):
+    arr0_shape = arr0.shape
+    arr1_shape = arr1.shape
+    if edges:
+        if len(arr1_shape) == 1:
+            arr1_shape = (arr1_shape[0] - 1,)
+        else:
+            arr1_shape = (arr1_shape[0], arr1_shape[1] - 1,)
+    if arr0_shape != arr1_shape:
+        raise RebinError(
+            '{}{} does not have a shape compatible with {}{}'.format(
+                arr0_name, arr0_shape, arr1_name, arr1_shape))
 
 
 @nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
@@ -362,62 +391,43 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
         The rebinned spectrum/a
     """
     method = method.lower()
+    # Cast data types and check listmode input
     if method == "listmode":
+        if not np.all(in_spectra >= 0.):
+            raise RebinError('Cannot rebin spectra with negative values with '
+                             'listmode method')
         if np.issubdtype(in_spectra.dtype.type, np.floating):
             warnings.warn(
                 'Converting in_spectra to integers for rebin method listmode',
                 RebinWarning)
         in_spectra = np.asarray(in_spectra, dtype=np.int64)
     else:
-        in_spectra = np.asarray(in_spectra, dtype=np.float)
+        in_spectra = np.asarray(in_spectra, dtype=np.float64)
     in_edges = np.asarray(in_edges, np.float)
     out_edges = np.asarray(out_edges, np.float)
-    # Check inputs
-    if method == 'listmode':
-        if not np.all(in_spectra >= 0.):
-            raise RebinError('Cannot rebin spectra with negative values with '
-                             'listmode method')
-    # check that in_spectrum are all >= 0
+    if slopes is None:
+        slopes = np.zeros_like(in_spectra, dtype=np.float64)
+    else:
+        slopes = np.asarray(slopes, dtype=np.float64)
+    # Broadcast 1D -> 2D if necessary
+    in_edges = _broadcast(in_edges, in_spectra.shape)
+    slopes = _broadcast(slopes, in_spectra.shape)
+    # Check dimensions
     _check_ndim(in_spectra, {1, 2}, 'in_spectra')
-    # broadcast in_edges out to the dimensions of in_spectra
-    # specifically for the case 1D -> 2D
-    if (in_spectra.ndim == 2) and (in_edges.ndim == 1):
-        # copy req'd: the readonly array doesn't work w/ numba
-        in_edges = np.copy(
-            np.broadcast_to(
-                in_edges,
-                (in_spectra.shape[0], in_edges.shape[-1])))
+    _check_ndim(in_edges, {1, 2}, 'in_edges')
+    _check_ndim(slopes, {1, 2}, 'slopes')
     _check_ndim(out_edges, 1, 'out_edges')
+    # Check shape
+    _check_shape(in_spectra, in_edges, 'in_spectra', 'in_edges', edges=True)
+    _check_shape(in_spectra, slopes, 'in_spectra', 'slopes')
+    # Check for increasing bin structure
     _check_monotonic_increasing(in_edges, 'in_edges')
     _check_monotonic_increasing(out_edges, 'out_edges')
+    # Check for bin structure overlap
     _check_any_overlap(in_edges, out_edges)
     if zero_pad_warnings:
         _check_partial_overlap(in_edges, out_edges)
-    # Init slopes
-    if slopes is None:
-        slopes = np.zeros_like(in_spectra, dtype=np.float)
-    else:
-        slopes = np.asarray(slopes, np.float)
-    # Check slopes
-    assert slopes.shape == in_spectra.shape, \
-        "shape of slopes({}) differs from in_spectra({})".format(
-            slopes.shape, in_spectra.shape)
-    # Check len of spectra
-    assert in_spectra.shape[-1] == in_edges.shape[-1] - 1, (
-        "The last axis of in_spectra({}) is not"
-        "1 channel shorter than in_edges({})"
-    ).format(in_spectra.shape, in_edges.shape)
-    # do rebinning by calling numba JIT-ed functions
-    if in_spectra.ndim == 2:
-        # Check number of spectra
-        assert in_spectra.shape[0] == in_edges.shape[0], (
-            "Number of in_spectra({}) differs from number of in_edges({})"
-        ).format(in_spectra.shape, in_edges.shape)
-    # Update dtypes if necessary
-    in_edges = np.asarray(in_edges, dtype=np.float64)
-    out_edges = np.asarray(out_edges, dtype=np.float64)
-    slopes = np.asarray(slopes, dtype=np.float64)
-    # Specific calls to different rebinning methods
+    # Specific calls to different JIT-ed rebinning methods
     if method == "interpolation":
         in_spectra = np.asarray(in_spectra, dtype=np.float64)
         if in_spectra.ndim == 2:
