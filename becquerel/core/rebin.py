@@ -429,7 +429,6 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
         _check_partial_overlap(in_edges, out_edges)
     # Specific calls to different JIT-ed rebinning methods
     if method == "interpolation":
-        in_spectra = np.asarray(in_spectra, dtype=np.float64)
         if in_spectra.ndim == 2:
             return _rebin2d_interpolation(
                 in_spectra, in_edges, out_edges, slopes)
@@ -437,7 +436,6 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
             return _rebin_interpolation(
                 in_spectra, in_edges, out_edges, slopes)
     elif method == "listmode":
-        in_spectra = np.asarray(in_spectra, dtype=np.int64)
         if in_spectra.ndim == 2:
             return _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes)
         elif in_spectra.ndim == 1:
