@@ -72,11 +72,12 @@ class TestRebin(object):
         self._test_total_counts(lam, old_edges, new_edges,
                                 "listmode", int)
 
-    def test_total_counts_listmode_int(self, lam, old_edges, new_edges):
-        """Check that listmode rebinning raises a warning if counts are floats,
-        since listmode requires ints"""
+    def test_total_counts_listmode_float(self, lam, old_edges, new_edges):
+        """Check that listmode rebinning raises a warning if counts are floats
+        and have non-zero decimal residuals"""
         old_counts = make_fake_spec_array(lam, len(old_edges) - 1,
                                           dtype=float)
+        old_counts += 0.1
         with pytest.warns(bq.RebinWarning):
             bq.core.rebin.rebin(old_counts, old_edges, new_edges,
                                 method="listmode", zero_pad_warnings=False)

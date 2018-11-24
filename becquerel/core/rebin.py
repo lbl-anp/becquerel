@@ -376,7 +376,10 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
             "interpolation"
                 Deterministic interpolation
             "listmode"
-                Stochastic rebinning via conversion to listmode of energies
+                Stochastic rebinning via conversion to listmode of energies.
+                This method will internally convert input spectrum values to
+                integers (if necessary) and raise a RebinWarning if the
+                conversion results in a decimal precision loss.
         slopes (np.ndarray|None): (optional) an array of input bin slopes for
             quadratic interpolation (1D or 2D)
             (only applies for "interpolation" method)
@@ -396,15 +399,24 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
         if not np.all(in_spectra >= 0.):
             raise RebinError('Cannot rebin spectra with negative values with '
                              'listmode method')
+        if np.all(in_spectra < 1):
+            raise RebinError('Cannot rebin spectra with all values less than '
+                             'one with listmode method')
         if np.issubdtype(in_spectra.dtype.type, np.floating):
-            warnings.warn(
-                'Converting in_spectra to integers for rebin method listmode',
-                RebinWarning)
-        in_spectra = np.asarray(in_spectra, dtype=np.int64)
+            if np.allclose(in_spectra, np.round(in_spectra)):
+                # Don't warn in the case of floats which round to integers
+                pass
+            else:
+                warnings.warn(
+                    'Argument in_spectra contains float value(s) which ' +
+                    'will have decimal precision loss when converting to ' +
+                    'integers for rebin method listmode.',
+                    RebinWarning)
+            in_spectra = np.asarray(np.round(in_spectra), dtype=np.int64)
     else:
         in_spectra = np.asarray(in_spectra, dtype=np.float64)
-    in_edges = np.asarray(in_edges, np.float)
-    out_edges = np.asarray(out_edges, np.float)
+    in_edges = np.asarray(in_edges, np.float64)
+    out_edges = np.asarray(out_edges, np.float64)
     if slopes is None:
         slopes = np.zeros_like(in_spectra, dtype=np.float64)
     else:

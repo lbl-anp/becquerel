@@ -843,8 +843,6 @@ class Spectrum(object):
                     'Rebinning by listmode method without explicit counts ' +
                     'provided in Spectrum object',
                     SpectrumWarning)
-            # NOTE: @jccurtis asks: why are the counts not integers already?
-            in_spec = in_spec.astype(np.int64)
         out_spec = rebin(in_spec, self.bin_edges_kev, out_edges,
                          method=method, slopes=slopes,
                          zero_pad_warnings=zero_pad_warnings)
