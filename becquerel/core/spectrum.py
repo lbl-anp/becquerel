@@ -8,6 +8,7 @@ import numpy as np
 from uncertainties import UFloat, unumpy
 from .. import parsers
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
+from .rebin import rebin
 from . import plotting
 import warnings
 
@@ -805,6 +806,55 @@ class Spectrum(object):
                   'livetime': self.livetime}
         obj = Spectrum(**kwargs)
         return obj
+
+    def rebin(self, out_edges, method="interpolation", slopes=None,
+              zero_pad_warnings=True):
+        """
+        Spectra rebinning via deterministic or stochastic methods.
+
+        Args:
+            out_edges (np.ndarray): an array of the output bin edges
+                [num_channels_out]
+            method (str): rebinning method
+                "interpolation"
+                    Deterministic interpolation
+                "listmode"
+                    Stochastic rebinning via conversion to listmode of energies
+            slopes (np.ndarray|None): (optional) an array of input bin slopes
+                for quadratic interpolation
+                (only applies for "interpolation" method)
+                [len(spectrum) + 1]
+        zero_pad_warnings (boolean): warn when edge overlap results in
+            appending empty bins
+
+        Raises:
+            SpectrumError: for bad input arguments
+
+        Returns:
+            A new Spectrum object with the rebinned data.
+        """
+        if self.bin_edges_kev is None:
+            raise SpectrumError('Cannot rebin spectrum without energy '
+                                'calibration')
+        in_spec = self.counts_vals
+        if method.lower() == 'listmode':
+            if (self._counts is None) and (self.livetime is not None):
+                warnings.warn(
+                    'Rebinning by listmode method without explicit counts ' +
+                    'provided in Spectrum object',
+                    SpectrumWarning)
+        out_spec = rebin(in_spec, self.bin_edges_kev, out_edges,
+                         method=method, slopes=slopes,
+                         zero_pad_warnings=zero_pad_warnings)
+        return Spectrum(counts=out_spec,
+                        uncs=np.sqrt(out_spec),
+                        bin_edges_kev=out_edges,
+                        input_file_object=self._infileobject,
+                        livetime=self.livetime)
+
+    def rebin_like(self, other, zero_pad_warnings=False, **kwargs):
+        return self.rebin(other.bin_edges_kev,
+                          zero_pad_warnings=zero_pad_warnings, **kwargs)
 
     def plot(self, *fmt, **kwargs):
         """Plot a spectrum with matplotlib's plot command.
