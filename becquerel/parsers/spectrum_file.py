@@ -7,6 +7,12 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
+class SpectrumFileParsingWarning(UserWarning):
+    """Warnings displayed by SpectrumFile."""
+
+    pass
+
+
 class SpectrumFileParsingError(Exception):
     """Failed while parsing a spectrum file."""
 
@@ -42,6 +48,8 @@ class SpectrumFile(object):
         self.realtime = 0.0
         self.livetime = 0.0
         self.num_channels = 0
+        # miscellaneous metadata
+        self.metadata = {}
         # arrays to be read from file
         self.channels = np.array([], dtype=np.float)
         self.data = np.array([], dtype=np.float)
@@ -75,6 +83,10 @@ class SpectrumFile(object):
             s += 'Collection Stop:       None\n'
         s += 'Livetime:              {:.2f} sec\n'.format(self.livetime)
         s += 'Realtime:              {:.2f} sec\n'.format(self.realtime)
+        if len(self.metadata.keys()) > 0:
+            s += 'Metadata:\n'
+            for key in self.metadata:
+                s += '    {} : {}\n'.format(key, self.metadata[key])
         s += 'Number of channels:    {:d}\n'.format(self.num_channels)
         if len(self.cal_coeff) > 0:
             s += 'Calibration coeffs:    '
