@@ -150,8 +150,18 @@ class SpeFile(SpectrumFile):
                     for _ in range(3):
                         self.presets.append(lines[i])
                         i += 1
+                elif lines[i].startswith('$'):
+                    key = lines[i][1:-1]
+                    i += 1
+                    if i < len(lines):
+                        value = lines[i]
+                    else:
+                        value = ''
+                    self.metadata[key] = value
                 else:
-                    print('Line {} unknown: '.format(i + 1), lines[i])
+                    warnings.warn(
+                        'Line {} unknown: '.format(i + 1) + lines[i],
+                        SpectrumFileParsingWarning)
                 i += 1
         if self.realtime <= 0.0:
             raise SpeFileParsingError(
@@ -204,6 +214,11 @@ class SpeFile(SpectrumFile):
             for j in range(1, n_coeff):
                 s += ' {:E}'.format(self.shape_cal[j])
             s += '\n'
+        if len(self.metadata.keys()) > 0:
+            for key, value in self.metadata.items():
+                s += '$' + key + ':\n'
+                if len(value) > 0:
+                    s += value + '\n'
         return s[:-1]
 
     def write(self, filename):
