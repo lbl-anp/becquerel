@@ -151,7 +151,9 @@ class SpeFile(SpectrumFile):
                         self.presets.append(lines[i])
                         i += 1
                 else:
-                    print('Line {} unknown: '.format(i + 1), lines[i])
+                    warnings.warn(
+                        'Line {} unknown: '.format(i + 1) + lines[i],
+                        SpectrumFileParsingWarning)
                 i += 1
         if self.realtime <= 0.0:
             raise SpeFileParsingError(
