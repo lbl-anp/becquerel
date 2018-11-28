@@ -142,21 +142,19 @@ class SpeFile(SpectrumFile):
                         self.shape_cal.append(float(lines[i].split(' ')[j]))
                     if verbose:
                         print(self.shape_cal)
-                elif lines[i] == '$PRESETS:':
-                    warnings.warn(
-                        'SpeFile has $PRESETS field, skipping 3 lines',
-                        SpectrumFileParsingWarning)
-                    self.presets = []
-                    for _ in range(3):
-                        self.presets.append(lines[i])
-                        i += 1
                 elif lines[i].startswith('$'):
                     key = lines[i][1:-1]
                     i += 1
-                    if i < len(lines):
-                        value = lines[i]
+                    if key == 'PRESETS':
+                        value = []
+                        for _ in range(3):
+                            value.append(lines[i])
+                            i += 1
                     else:
-                        value = ''
+                        if i < len(lines):
+                            value = lines[i]
+                        else:
+                            value = ''
                     self.metadata[key] = value
                 else:
                     warnings.warn(
@@ -217,8 +215,12 @@ class SpeFile(SpectrumFile):
         if len(self.metadata.keys()) > 0:
             for key, value in self.metadata.items():
                 s += '$' + key + ':\n'
-                if len(value) > 0:
-                    s += value + '\n'
+                if key == 'PRESETS':
+                    for val in value:
+                        s += str(val) + '\n'
+                else:
+                    if len(value) > 0:
+                        s += str(value) + '\n'
         return s[:-1]
 
     def write(self, filename):
