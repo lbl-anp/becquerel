@@ -11,7 +11,7 @@ import becquerel as bq
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'samples')
 SAMPLES = {}
 for extension in ['.spe', '.spc', '.cnf']:
-    filenames = glob.glob(os.path.join(SAMPLES_PATH, '*.*'))
+    filenames = glob.glob(os.path.join(SAMPLES_PATH + '*', '*.*'))
     filenames_filtered = []
     for filename in filenames:
         fname, ext = os.path.splitext(filename)
