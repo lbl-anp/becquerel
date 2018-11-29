@@ -143,7 +143,7 @@ class SpeFile(SpectrumFile):
                     if verbose:
                         print(self.shape_cal)
                 elif lines[i].startswith('$'):
-                    key = lines[i][1:-1]
+                    key = lines[i][1:].rstrip(':')
                     i += 1
                     if key == 'PRESETS':
                         value = []
