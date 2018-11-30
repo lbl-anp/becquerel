@@ -1,4 +1,5 @@
 from __future__ import print_function
+import abc
 import numpy as np
 import pandas as pd
 import scipy.special
@@ -94,7 +95,6 @@ class ExpModel(Model):
 # TODO: add docs
 # TODO: add ability to override defaults
 # TODO: add ability to initialize and fit with Fitter.__init__
-# TODO: change to use ABC
 # TODO: include x_edges?
 # TODO: handle y normalization (i.e. cps vs cps/keV), needs x_edges
 # TODO: use set_param_hint to set global model defaults
@@ -102,6 +102,7 @@ class ExpModel(Model):
 
 
 class Fitter(object):
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self, x=None, y=None, y_unc=None, roi=None):
         # Model and parameters
@@ -200,13 +201,13 @@ class Fitter(object):
     def set_param(self, pname, ptype, pvalue):
         self.params[pname].set(**{ptype: pvalue})
 
+    @abc.abstractmethod
     def make_model(self):
-        # TODO: change to ABC
-        raise NotImplementedError()
+        return
 
+    @abc.abstractmethod
     def _guess_param_defaults(self, **kwargs):
-        # TODO: change to ABC
-        raise NotImplementedError()
+        return
 
     def guess_param_defaults(self, update=False, **kwargs):
         defaults = self._guess_param_defaults(**kwargs)
