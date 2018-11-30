@@ -146,9 +146,9 @@ def fake_high_stat(request):
     """Fake data with high count statistics"""
     out = deepcopy(request.param)
     out['fitter'] = out['cls']()
-    out['data'] = fake_data(y_func=out['fitter'].eval,
-                            **out['setup'],
-                            **out['params'])
+    tmp = out['setup'].copy()
+    tmp.update(out['params'])
+    out['data'] = fake_data(y_func=out['fitter'].eval, **tmp)
     return out
 
 
