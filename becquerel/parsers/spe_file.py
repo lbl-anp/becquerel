@@ -145,17 +145,14 @@ class SpeFile(SpectrumFile):
                 elif lines[i].startswith('$'):
                     key = lines[i][1:].rstrip(':')
                     i += 1
-                    if key == 'PRESETS':
-                        value = []
-                        for _ in range(3):
-                            value.append(lines[i])
-                            i += 1
-                    else:
-                        if i < len(lines):
-                            value = lines[i]
-                        else:
-                            value = ''
-                    self.metadata[key] = value
+                    values = []
+                    while i < len(lines) and not lines[i].startswith('$'):
+                        values.append(lines[i])
+                        i += 1
+                    if i < len(lines):
+                        if lines[i].startswith('$'):
+                            i -= 1
+                    self.metadata[key] = values
                 else:
                     warnings.warn(
                         'Line {} unknown: '.format(i + 1) + lines[i],
@@ -213,14 +210,10 @@ class SpeFile(SpectrumFile):
                 s += ' {:E}'.format(self.shape_cal[j])
             s += '\n'
         if len(self.metadata.keys()) > 0:
-            for key, value in self.metadata.items():
+            for key, values in self.metadata.items():
                 s += '$' + key + ':\n'
-                if key == 'PRESETS':
-                    for val in value:
-                        s += str(val) + '\n'
-                else:
-                    if len(value) > 0:
-                        s += str(value) + '\n'
+                for val in values:
+                    s += str(val) + '\n'
         return s[:-1]
 
     def write(self, filename):
