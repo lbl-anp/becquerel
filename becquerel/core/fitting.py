@@ -1,5 +1,5 @@
 from __future__ import print_function
-import abc
+from abc import ABCMeta, abstractmethod
 import numpy as np
 import pandas as pd
 import scipy.special
@@ -9,7 +9,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
 
 
-FWHM_SIG_RATIO = 2.35482
+FWHM_SIG_RATIO = np.sqrt(8*np.log(2))  # 2.35482
 
 
 class FittingError(Exception):
@@ -19,6 +19,7 @@ class FittingError(Exception):
 
 # -----------------------------------------------------------------------------
 # Base functions
+# TODO: Should these be replaced with lmfit.models???
 # -----------------------------------------------------------------------------
 
 
@@ -48,9 +49,21 @@ def exp(x, amp, lam):
 
 # -----------------------------------------------------------------------------
 # Fitting models
-# TODO: Add def guess to each class like here:
-# https://github.com/lmfit/lmfit-py/blob/master/lmfit/models.py
+# TODO: Should these be replaced with lmfit.models??? If so where do we define
+#       expr, min, max??? Maybe for composite models only.
 # -----------------------------------------------------------------------------
+
+# Helper functions for guessing
+def _xy_right(y, x=None, num=4):
+    if x is not None:
+        return np.mean(x[-num:]), np.mean(y[-num:])
+    return len(y)*0.5, np.mean(y[-num:])
+
+
+def _xy_left(y, x=None, num=4):
+    if x is not None:
+        return np.mean(x[:num]), np.mean(y[:num])
+    return len(y)*0.5, np.mean(y[:num])
 
 
 class ConstantModel(Model):
@@ -60,11 +73,21 @@ class ConstantModel(Model):
         # TODO: remove this min setting?
         self.set_param_hint('{}c'.format(self.prefix), min=0.)
 
+    def guess(self, y, x=None, num=2):
+        return []
+
 
 class LineModel(Model):
 
     def __init__(self, *args, **kwargs):
         super(LineModel, self).__init__(line, *args, **kwargs)
+
+    def guess(self, y, x=None, num=2):
+        _, b = _xy_left(y, x=x, num=num)
+        return [
+            ('{}m'.format(self.prefix), 'value', 0.),
+            ('{}b'.format(self.prefix), 'value', b),
+        ]
 
 
 class GaussModel(Model):
@@ -73,13 +96,46 @@ class GaussModel(Model):
         super(GaussModel, self).__init__(gauss, *args, **kwargs)
         self.set_param_hint(
             '{}fwhm'.format(self.prefix),
-            expr='2.354820 * {}sigma'.format(self.prefix))
+            expr='{} * {}sigma'.format(FWHM_SIG_RATIO, self.prefix))
+
+    def guess(self, y, x=None, center_ratio=0.5, width_ratio=0.5):
+        assert center_ratio < 1, \
+            'Center mask ratio cannot exceed 1: {}'.format(center_ratio)
+        assert width_ratio < 1, \
+            'Width mask ratio cannot exceed 1: {}'.format(width_ratio)
+        if x is None:
+            x = np.arange(0, len(y))
+        xspan = x[-1] - x[0]
+        mu = x[0] + xspan * center_ratio
+        msk = ((x >= (mu - xspan * width_ratio)) &
+               (x <= mu + xspan * width_ratio))
+        # NOTE: this integration assumes y is NOT normalized to dx
+        amp = np.sum(y[msk])
+        # TODO: update this, minimizer creates NaN's if default sigma used (0)
+        sigma = xspan * width_ratio / 10.
+        return [
+            ('{}amp'.format(self.prefix), 'value', amp),
+            ('{}amp'.format(self.prefix), 'min', 0.0),
+            ('{}mu'.format(self.prefix), 'value', mu),
+            ('{}mu'.format(self.prefix), 'min', x[0]),
+            ('{}mu'.format(self.prefix), 'max', x[-1]),
+            ('{}sigma'.format(self.prefix), 'value', sigma),
+            ('{}sigma'.format(self.prefix), 'min', 0.0),
+        ]
 
 
 class ErfModel(Model):
 
     def __init__(self, *args, **kwargs):
         super(ErfModel, self).__init__(erf, *args, **kwargs)
+
+    def guess(self, y, x=None):
+        return [
+            ('{}amp'.format(self.prefix), 'value', y[0] - y[-1]),
+            ('{}amp'.format(self.prefix), 'min', 0.),
+            ('{}mu'.format(self.prefix), 'expr', 'gauss_mu'),
+            ('{}sigma'.format(self.prefix), 'expr', 'gauss_sigma'),
+        ]
 
 
 class ExpModel(Model):
@@ -89,6 +145,18 @@ class ExpModel(Model):
         self.set_param_hint('{}amp'.format(self.prefix), min=0.)
         self.set_param_hint('{}lam'.format(self.prefix), max=0.)
 
+    def guess(self, y, x=None, num=1):
+        xl, yl = _xy_left(y, x=x, num=num)
+        xr, yr = _xy_right(y, x=x, num=num)
+        # TODO: update this hardcoded zero offset
+        lam = (xl - xr) / np.log(yl / (yr + 0.0001))
+        amp = yl / np.exp(xl / lam)
+        return [
+            ('{}lam'.format(self.prefix), 'value', lam),
+            ('{}lam'.format(self.prefix), 'max', -1e-3),
+            ('{}amp'.format(self.prefix), 'value', amp),
+            ('{}amp'.format(self.prefix), 'min', 0.0),
+        ]
 
 # -----------------------------------------------------------------------------
 # Fitters
@@ -102,7 +170,7 @@ class ExpModel(Model):
 
 
 class Fitter(object):
-    __metaclass__ = abc.ABCMeta
+    __metaclass__ = ABCMeta
 
     def __init__(self, x=None, y=None, y_unc=None, roi=None):
         # Model and parameters
@@ -201,13 +269,15 @@ class Fitter(object):
     def set_param(self, pname, ptype, pvalue):
         self.params[pname].set(**{ptype: pvalue})
 
-    @abc.abstractmethod
+    @abstractmethod
     def make_model(self):
         return
 
-    @abc.abstractmethod
     def _guess_param_defaults(self, **kwargs):
-        return
+        params = []
+        for comp in self.model.components:
+            params += comp.guess(self.y_roi, x=self.x_roi)
+        return params
 
     def guess_param_defaults(self, update=False, **kwargs):
         defaults = self._guess_param_defaults(**kwargs)
@@ -393,64 +463,6 @@ class Fitter(object):
         else:
             return fig
 
-    # Parameter guessing
-    def _xy_left(self, num=4):
-        return np.mean(self.x_roi[:num]), np.mean(self.y_roi[:num])
-
-    def _xy_right(self, num=4):
-        return np.mean(self.x_roi[-num:]), np.mean(self.y_roi[-num:])
-
-    def _guess_gauss_params(self, prefix='gauss_', center_ratio=0.5,
-                            width_ratio=0.5):
-        assert center_ratio < 1, \
-            'Center mask ratio cannot exceed 1: {}'.format(center_ratio)
-        assert width_ratio < 1, \
-            'Width mask ratio cannot exceed 1: {}'.format(width_ratio)
-        xspan = self.x_roi[-1] - self.x_roi[0]
-        mu = self.x_roi[0] + xspan * center_ratio
-        msk = ((self.x_roi >= (mu - xspan * width_ratio)) &
-               (self.x_roi <= mu + xspan * width_ratio))
-        # NOTE: this integration assumes y is NOT normalized to dx
-        amp = np.sum(self.y_roi[msk])
-        # TODO: update this, minimizer creates NaN's if default sigma used (0)
-        sigma = xspan * width_ratio / 10.
-        return [
-            ('{}amp'.format(prefix), 'value', amp),
-            ('{}amp'.format(prefix), 'min', 0.0),
-            ('{}mu'.format(prefix), 'value', mu),
-            ('{}mu'.format(prefix), 'min', self.x_roi[0]),
-            ('{}mu'.format(prefix), 'max', self.x_roi[-1]),
-            ('{}sigma'.format(prefix), 'value', sigma),
-            ('{}sigma'.format(prefix), 'min', 0.0),
-        ]
-
-    def _guess_erf_params(self, prefix='erf_'):
-        return [
-            ('{}amp'.format(prefix), 'value', self.y_roi[0] - self.y_roi[-1]),
-            ('{}amp'.format(prefix), 'min', 0.),
-            ('{}mu'.format(prefix), 'expr', 'gauss_mu'),
-            ('{}sigma'.format(prefix), 'expr', 'gauss_sigma'),
-        ]
-
-    def _guess_line_params(self, prefix='line_', num=2):
-        _, b = self._xy_left(num=num)
-        return [
-            ('{}m'.format(prefix), 'value', 0.),
-            ('{}b'.format(prefix), 'value', b),
-        ]
-
-    def _guess_exp_params(self, num=1, prefix='exp_'):
-        (xl, yl), (xr, yr) = self._xy_left(num), self._xy_right(num)
-        # TODO: update this hardcoded zero offset
-        lam = (xl - xr) / np.log(yl / (yr + 0.0001))
-        amp = yl / np.exp(xl / lam)
-        return [
-            ('{}lam'.format(prefix), 'value', lam),
-            ('{}lam'.format(prefix), 'max', -1e-3),
-            ('{}amp'.format(prefix), 'value', amp),
-            ('{}amp'.format(prefix), 'min', 0.0),
-        ]
-
 
 class FitterGaussExp(Fitter):
 
@@ -458,12 +470,6 @@ class FitterGaussExp(Fitter):
         self.model = \
             GaussModel(prefix='gauss_') + \
             ExpModel(prefix='exp_')
-
-    def _guess_param_defaults(self):
-        params = []
-        params += self._guess_gauss_params(prefix='gauss_')
-        params += self._guess_exp_params(prefix='exp_')
-        return params
 
 
 class FitterGaussErfLine(Fitter):
@@ -474,13 +480,6 @@ class FitterGaussErfLine(Fitter):
             ErfModel(prefix='erf_') + \
             LineModel(prefix='line_')
 
-    def _guess_param_defaults(self):
-        params = []
-        params += self._guess_gauss_params(prefix='gauss_')
-        params += self._guess_erf_params(prefix='erf_')
-        params += self._guess_line_params(prefix='line_')
-        return params
-
 
 class FitterGaussErfExp(Fitter):
 
@@ -489,13 +488,6 @@ class FitterGaussErfExp(Fitter):
             GaussModel(prefix='gauss_') + \
             ErfModel(prefix='erf_') + \
             ExpModel(prefix='exp_')
-
-    def _guess_param_defaults(self):
-        params = []
-        params += self._guess_gauss_params(prefix='gauss_')
-        params += self._guess_erf_params(prefix='erf_')
-        params += self._guess_exp_params(prefix='exp_')
-        return params
 
 
 class FitterGaussGaussLine(Fitter):
@@ -508,13 +500,15 @@ class FitterGaussGaussLine(Fitter):
 
     def _guess_param_defaults(self):
         params = []
-        params += self._guess_gauss_params(prefix='gauss0_',
-                                           center_ratio=0.33,
-                                           width_ratio=0.5)
-        params += self._guess_gauss_params(prefix='gauss1_',
-                                           center_ratio=0.66,
-                                           width_ratio=0.5)
-        params += self._guess_line_params(prefix='line_')
+        for comp in self.model.components:
+            if comp.prefix == 'gauss0_':
+                params += comp.guess(self.y_roi, x=self.x_roi,
+                                     center_ratio=0.33, width_ratio=0.5)
+            elif comp.prefix == 'gauss1_':
+                params += comp.guess(self.y_roi, x=self.x_roi,
+                                     center_ratio=0.66, width_ratio=0.5)
+            else:
+                params += comp.guess(self.y_roi, x=self.x_roi)
         return params
 
 
@@ -528,11 +522,13 @@ class FitterGaussGaussExp(Fitter):
 
     def _guess_param_defaults(self):
         params = []
-        params += self._guess_gauss_params(prefix='gauss0_',
-                                           center_ratio=0.33,
-                                           width_ratio=0.5)
-        params += self._guess_gauss_params(prefix='gauss1_',
-                                           center_ratio=0.66,
-                                           width_ratio=0.5)
-        params += self._guess_exp_params(prefix='exp_')
+        for comp in self.model.components:
+            if comp.prefix == 'gauss0_':
+                params += comp.guess(self.y_roi, x=self.x_roi,
+                                     center_ratio=0.33, width_ratio=0.5)
+            elif comp.prefix == 'gauss1_':
+                params += comp.guess(self.y_roi, x=self.x_roi,
+                                     center_ratio=0.66, width_ratio=0.5)
+            else:
+                params += comp.guess(self.y_roi, x=self.x_roi)
         return params
