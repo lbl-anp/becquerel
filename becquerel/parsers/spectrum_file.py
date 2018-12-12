@@ -85,8 +85,8 @@ class SpectrumFile(object):
         s += 'Realtime:              {:.2f} sec\n'.format(self.realtime)
         if len(self.metadata.keys()) > 0:
             s += 'Metadata:\n'
-            for key in self.metadata:
-                s += '    {} : {}\n'.format(key, self.metadata[key])
+            for key, value in self.metadata.items():
+                s += '    {} : {}\n'.format(key, value)
         s += 'Number of channels:    {:d}\n'.format(self.num_channels)
         if len(self.cal_coeff) > 0:
             s += 'Calibration coeffs:    '

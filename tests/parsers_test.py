@@ -100,11 +100,3 @@ class TestSpectrumFilePlot(object):
     def test_cnf(self):
         """Test parsers.CnfFile............................................"""
         self.run_parser(bq.parsers.CnfFile, '.cnf', write=False)
-
-
-def test_spe_presets_warning():
-        with pytest.warns(
-                bq.parsers.SpectrumFileParsingWarning,
-                match='SpeFile has \$PRESETS field, skipping 3 lines'):
-            bq.parsers.SpeFile(
-                os.path.join(SAMPLES_PATH, 'digibase_5min_30_1.spe'))
