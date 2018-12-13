@@ -25,6 +25,8 @@ class SpcFile(SpectrumFile):
         spec.channels
         spec.energies
         spec.bin_edges_kev
+        spec.energy_bin_widths
+        spec.energy_bin_edges (depricated)
 
     ORTEC's SPC file format is divided into records of 128 bytes each. The
     specifications for what each record should contain can be found on pages

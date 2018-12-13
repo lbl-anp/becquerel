@@ -30,6 +30,8 @@ class SpectrumFile(object):
         spec.channels
         spec.energies
         spec.bin_edges_kev
+        spec.energy_bin_widths
+        spec.energy_bin_edges (depricated)
 
     """
 
@@ -99,6 +101,17 @@ class SpectrumFile(object):
             s += '    [length {}]\n'.format(len(self.data))
         return s
 
+    @property
+    def energy_bin_edges(self):
+        warnings.warn('The use of energy_bin_edges is deprecated, ' +
+                      'use bin_edges_kev instead', DeprecationWarning)
+        return self.bin_edges_kev
+
+    @property
+    def energy_bin_widths(self):
+        """Retrieve the calibrated width of all the bins."""
+        return self.bin_width(self.channels)
+
     def read(self, verbose=False):
         """Read in the file."""
         raise NotImplementedError('read method not implemented')
@@ -134,3 +147,9 @@ class SpectrumFile(object):
         """Invert the energy calibration to find the channel(s)."""
         energy = np.array(energy, dtype=float)
         return interp1d(self.energies, self.channels)(energy)
+
+    def bin_width(self, channel):
+        """Calculate the width of the bin in keV at the channel(s)."""
+        en0 = self.channel_to_energy(channel - 0.5)
+        en1 = self.channel_to_energy(channel + 0.5)
+        return en1 - en0
