@@ -99,7 +99,7 @@ If you are interested in contributing, please see the guidelines in [`CONTRIBUTI
 
 ## Copyright Notice
 
-Becquerel v. 0.1, Copyright (c) 2017, The Regents of the University of
+Becquerel v. 0.2.0, Copyright (c) 2017, The Regents of the University of
 California (UC), through Lawrence Berkeley National Laboratory, and the UC
 Berkeley campus (subject to receipt of any required approvals from the U.S.
 Dept. of Energy). All rights reserved. If you have questions about your rights
