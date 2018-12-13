@@ -29,7 +29,7 @@ class SpectrumFile(object):
         spec.data [counts]
         spec.channels
         spec.energies
-        spec.energy_bin_widths
+        spec.bin_edges_kev
 
     """
 
@@ -56,8 +56,7 @@ class SpectrumFile(object):
         self.cal_coeff = []
         # arrays to be calculated using calibration
         self.energies = np.array([], dtype=np.float)
-        self.energy_bin_widths = np.array([], dtype=np.float)
-        self.energy_bin_edges = np.array([], dtype=np.float)
+        self.bin_edges_kev = None
 
     def __str__(self):
         """String form of the spectrum."""
@@ -111,16 +110,17 @@ class SpectrumFile(object):
     def apply_calibration(self):
         """Calculate energies corresponding to channels."""
         self.energies = self.channel_to_energy(self.channels)
-        self.energy_bin_widths = self.bin_width(self.channels)
         n_edges = len(self.energies) + 1
         channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
-        self.energy_bin_edges = self.channel_to_energy(channel_edges)
+        self.bin_edges_kev = self.channel_to_energy(channel_edges)
 
         # check that calibration makes sense, remove calibration if not
         if np.any(np.diff(self.energies) <= 0):
             warnings.warn(
-                'Ignoring calibration; energies not monotonically increasing')
-            self.cal_coeff = []
+                'Spectrum will be initated without an energy calibration;' +
+                'invalid calibration, energies not monotonically increasing.',
+                SpectrumFileParsingWarning)
+            self.bin_edges_kev = None
 
     def channel_to_energy(self, channel):
         """Apply energy calibration to the given channel(s)."""
@@ -134,9 +134,3 @@ class SpectrumFile(object):
         """Invert the energy calibration to find the channel(s)."""
         energy = np.array(energy, dtype=float)
         return interp1d(self.energies, self.channels)(energy)
-
-    def bin_width(self, channel):
-        """Calculate the width of the bin in keV at the channel(s)."""
-        en0 = self.channel_to_energy(channel - 0.5)
-        en1 = self.channel_to_energy(channel + 0.5)
-        return en1 - en0

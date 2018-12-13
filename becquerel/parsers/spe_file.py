@@ -32,7 +32,7 @@ class SpeFile(SpectrumFile):
         spec.data [counts]
         spec.channels
         spec.energies
-        spec.energy_bin_widths
+        spec.bin_edges_kev
 
     ORTEC's SPE file format is given on page 73 of this document:
         http://www.ortec-online.com/download/ortec-software-file-structure-manual.pdf

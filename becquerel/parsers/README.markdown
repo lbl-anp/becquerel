@@ -17,7 +17,7 @@ Other data available include:
 
 * `spec.livetime`
 * `spec.realtime`
-* `spec.energy_bin_widths`
+* `spec.bin_edges_kev`
 
 
 Some parsers extract more information than others either because of their
