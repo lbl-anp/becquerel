@@ -8,10 +8,19 @@ import numpy as np
 from uncertainties import UFloat, unumpy
 from .. import parsers
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
+from .rebin import rebin
+from . import plotting
+import warnings
 
 
 class SpectrumError(Exception):
     """Exception raised by Spectrum."""
+
+    pass
+
+
+class SpectrumWarning(UserWarning):
+    """Warnings displayed by Spectrum."""
 
     pass
 
@@ -29,15 +38,11 @@ class Spectrum(object):
     Initialize a Spectrum directly, or with Spectrum.from_file(filename).
 
     Note on livetime:
-      A livetime of None is the default for a counts-based spectrum, and
-        indicates a missing or unknown livetime.
-      A livetime of np.nan is the default for a CPS-based spectrum, and
-        indicates that livetime is not a meaningful quantity for this type of
-        spectrum.
-      Either of these types of spectrum may be initialized with a livetime
-        value. However, any operation that produces a CPS-based spectrum
-        (such as a spectrum subtraction) will discard the livetime and set it
-        to np.nan since livetime is then a meaningless quantity.
+      A livetime of None is the default for a spectrum, and indicates a
+        missing, unknown livetime or not meaningful quantity.
+      A spectrum may be initialized with a livetime value. However, any
+        operation that produces a CPS-based spectrum (such as a spectrum
+        subtraction) will discard the livetime and set it to None.
       Operations that produce a counts-based spectrum may or may not preserve a
         livetime value (for example, the sum of two spectra has a livetime
         equal to the sum of the two livetimes; but a scalar multiplication or
@@ -85,14 +90,11 @@ class Spectrum(object):
         these should be specified as arguments, and the third will be
         calculated from the other two.
 
-        See note on livetime in class docstring. As a reminder:
-          livetime = None indicates a missing or unknown livetime, and may
-            occur in a counts-based spectrum.
-          livetime = np.nan indicates that livetime is not meaningful, and may
-            occur in a CPS-based spectrum.
+        See note on livetime in class docstring.
 
         Args:
-          counts: counts per channel. array-like of ints, floats or UFloats
+          counts: counts per channel. array-like of ints, floats or UFloats,
+            if uncs is not provided all values must be positive
           cps: counts per second per channel. array-like of floats or UFloats
           uncs (optional): an iterable of uncertainty on the counts for each
             channel.
@@ -123,41 +125,34 @@ class Spectrum(object):
 
         if not (counts is None) ^ (cps is None):
             raise SpectrumError('Must specify one of counts or CPS')
+
+        self._counts = None
+        self._cps = None
+        self._bin_edges_kev = None
+        self.livetime = None
+        self.realtime = None
+
         if counts is not None:
             if len(counts) == 0:
                 raise SpectrumError('Empty spectrum counts')
+            if uncs is None and np.any(np.asarray(counts) < 0):
+                raise SpectrumError(
+                    'Negative values encountered in counts. Uncertainties ' +
+                    'are most likely not Poisson-distributed. Provide uncs ' +
+                    'to force initialization.')
             self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1))
-            if livetime is None:
-                self.livetime = None
-            else:
-                self.livetime = float(livetime)
-            self._cps = None
         else:
-            self._counts = None
-            if livetime is None:
-                self.livetime = np.nan  # default for CPS-based spectra
-            else:
-                self.livetime = livetime
-                # TODO should this be allowed?
-                #   all calculations with CPS return livetime=np.nan anyway...
             if len(cps) == 0:
                 raise SpectrumError('Empty spectrum counts')
             self._cps = handle_uncs(cps, uncs, lambda x: np.nan)
 
-        if bin_edges_kev is None:
-            self.bin_edges_kev = None
-        elif len(bin_edges_kev) != len(self) + 1:
-            raise SpectrumError('Bad length of bin edges vector')
-        elif np.any(np.diff(bin_edges_kev) <= 0):
-            raise ValueError(
-                'Bin edge energies must be strictly increasing')
-        else:
-            self.bin_edges_kev = np.array(bin_edges_kev, dtype=float)
+        self.bin_edges_kev = bin_edges_kev
 
-        if realtime is None:
-            self.realtime = None
-        else:
+        if livetime is not None:
+            self.livetime = float(livetime)
+
+        if realtime is not None:
             self.realtime = float(realtime)
             if self.livetime is not None:
                 if self.livetime > self.realtime:
@@ -170,9 +165,9 @@ class Spectrum(object):
         self.stop_time = handle_datetime(
             stop_time, 'stop_time', allow_none=True)
 
-        if (self.realtime is not None
-                and self.stop_time is not None
-                and self.start_time is not None):
+        if (self.realtime is not None and
+                self.stop_time is not None and
+                self.start_time is not None):
             raise SpectrumError(
                 'Specify no more than 2 out of 3 args: ' +
                 'realtime, stop_time, start_time')
@@ -202,45 +197,80 @@ class Spectrum(object):
                 self.stop_time = input_file_object.collection_stop
         else:
             self.infilename = None
+        # These two lines make sure operators between a Spectrum
+        # and a numpy arrays are forbidden and cause a TypeError
+        self.__array_ufunc__ = None
+        self.__array_priority__ = 1
+
+    def __str__(self):
+        lines = ['becquerel.Spectrum']
+        ltups = []
+        for k in ['start_time', 'stop_time', 'realtime', 'livetime',
+                  'is_calibrated']:
+            ltups.append((k, getattr(self, k)))
+        ltups.append(('num_channels', len(self.channels)))
+        if self._counts is None:
+            ltups.append(('gross_counts', None))
+        else:
+            ltups.append(('gross_counts', self.counts.sum()))
+        try:
+            ltups.append(('gross_cps', self.cps.sum()))
+        except SpectrumError:
+            ltups.append(('gross_cps', None))
+        if hasattr(self, 'infilename'):
+            ltups.append(('filename', self.infilename))
+        else:
+            ltups.append(('filename', None))
+        for lt in ltups:
+            lines.append('    {:15} {}'.format(
+                '{}:'.format(lt[0]),
+                lt[1]))
+        return '\n'.join(lines)
+
+    __repr__ = __str__
 
     @property
     def counts(self):
         """Counts in each channel, with uncertainty.
 
-        Some spectra, including subtraction results, have cps but no counts,
-        in which case counts is None.
+        If cps is defined, counts is calculated from cps and livetime.
+        Otherwise, it is an independent data property.
+
+        Raises:
+          SpectrumError: if cps is defined, but not livetime
 
         Returns:
-          an np.array of uncertainties.ufloats, or None
+          an np.array of uncertainties.ufloats
         """
 
-        return self._counts
+        if self._counts is not None:
+            return self._counts
+        else:
+            try:
+                return self.cps * self.livetime
+            except TypeError:
+                raise SpectrumError(
+                    'Unknown livetime; cannot calculate counts from CPS')
 
     @property
     def counts_vals(self):
         """Counts in each channel, no uncertainties.
 
         Returns:
-          an np.array of floats, or None
+          an np.array of floats
         """
 
-        if self.counts is None:
-            return None
-        else:
-            return unumpy.nominal_values(self._counts)
+        return unumpy.nominal_values(self.counts)
 
     @property
     def counts_uncs(self):
         """Uncertainties on the counts in each channel.
 
         Returns:
-          an np.array of floats, or None
+          an np.array of floats
         """
 
-        if self.counts is None:
-            return None
-        else:
-            return unumpy.std_devs(self._counts)
+        return unumpy.std_devs(self.counts)
 
     @property
     def cps(self):
@@ -371,6 +401,37 @@ class Spectrum(object):
 
         return self.bin_edges_kev is not None
 
+    @property
+    def bin_edges_kev(self):
+        """Get the bin edge energies of a spectrum
+
+        Returns:
+          np.array of floats or None
+        """
+
+        return self._bin_edges_kev
+
+    @bin_edges_kev.setter
+    def bin_edges_kev(self, bin_edges_kev):
+        """Set the bin edge energies of a spectrum
+
+        Args:
+          bin_edges_kev: an iterable of bin edge energies
+            If not none, should have length of (len(counts) + 1)
+
+        Raises:
+          SpectrumError: for bad input length
+        """
+        if bin_edges_kev is None:
+            self._bin_edges_kev = None
+        elif len(bin_edges_kev) != len(self) + 1:
+            raise SpectrumError('Bad length of bin edges vector')
+        elif np.any(np.diff(bin_edges_kev) <= 0):
+            raise ValueError(
+                'Bin edge energies must be strictly increasing')
+        else:
+            self._bin_edges_kev = np.array(bin_edges_kev, dtype=float)
+
     @classmethod
     def from_file(cls, infilename):
         """Construct a Spectrum object from a filename.
@@ -413,9 +474,9 @@ class Spectrum(object):
           an int
         """
 
-        if self.counts is not None:
+        try:
             return len(self.counts)
-        else:
+        except SpectrumError:
             return len(self.cps)
 
     def __add__(self, other):
@@ -433,7 +494,8 @@ class Spectrum(object):
         Raises:
           TypeError: if other is not a Spectrum
           SpectrumError: if spectra are different lengths,
-            or if only one is calibrated
+            if only one is calibrated or if spectra are not both
+            counts/CPS-based, respectively.
           NotImplementedError: if spectra are calibrated differently
 
         Returns:
@@ -441,11 +503,19 @@ class Spectrum(object):
         """
 
         self._add_sub_error_checking(other)
+        if (self._counts is None) ^ (other._counts is None):
+            raise SpectrumError(
+                'Addition of counts-based and CPS-based spectra is ' +
+                'ambiguous, use Spectrum(counts=specA.counts+specB.counts) ' +
+                'or Spectrum(cps=specA.cps+specB.cps) instead.')
 
-        if self.counts is not None and other.counts is not None:
+        if self._counts is not None and other._counts is not None:
             kwargs = {'counts': self.counts + other.counts}
             if self.livetime and other.livetime:
                 kwargs['livetime'] = self.livetime + other.livetime
+            else:
+                warnings.warn('Addition of counts with missing livetimes, ' +
+                              'livetime was set to None.', SpectrumWarning)
         else:
             kwargs = {'cps': self.cps + other.cps}
         spect_obj = Spectrum(
@@ -453,7 +523,7 @@ class Spectrum(object):
         return spect_obj
 
     def __sub__(self, other):
-        """Normalize spectra and subtract.
+        """Normalize spectra (if possible) and subtract.
 
         The resulting spectrum does not have a meaningful livetime or
         counts vector, and is NOT Poisson-distributed.
@@ -466,19 +536,36 @@ class Spectrum(object):
 
         Raises:
           TypeError: if other is not a Spectrum
-          SpectrumError: if spectra are different lengths,
-            or if only one is calibrated
+          SpectrumError: if spectra are different lengths or
+            if only one is calibrated.
           NotImplementedError: if spectra are calibrated differently
+
+        Warns:
+          SpectrumWarning: If both spectrum are counts-based, or if one
+            of them has been converted to CPS during the operation.
 
         Returns:
           a subtracted Spectrum object
         """
 
         self._add_sub_error_checking(other)
-
-        cps = self.cps - other.cps
-        spect_obj = Spectrum(cps=cps, bin_edges_kev=self.bin_edges_kev)
-
+        try:
+            kwargs = {'cps': self.cps - other.cps}
+            if (self._cps is None) or (other._cps is None):
+                warnings.warn('Subtraction of counts-based specta, spectra ' +
+                              'have been converted to CPS', SpectrumWarning)
+        except SpectrumError:
+            try:
+                kwargs = {'counts': self.counts_vals - other.counts_vals}
+                kwargs['uncs'] = [np.nan]*len(self)
+                warnings.warn('Subtraction of counts-based spectra, ' +
+                              'livetimes have been ignored.', SpectrumWarning)
+            except SpectrumError:
+                raise SpectrumError(
+                    'Subtraction of counts and CPS-based spectra without' +
+                    'livetimes not possible')
+        spect_obj = Spectrum(
+            bin_edges_kev=self.bin_edges_kev, **kwargs)
         return spect_obj
 
     def _add_sub_error_checking(self, other):
@@ -489,8 +576,8 @@ class Spectrum(object):
 
         Raises:
           TypeError: if other is not a Spectrum
-          SpectrumError: if spectra are different lengths,
-            or if only one is calibrated
+          SpectrumError: if spectra are different lengths or
+            if only one is calibrated.
           NotImplementedError: if spectra are calibrated differently
         """
 
@@ -529,6 +616,9 @@ class Spectrum(object):
 
         return self._mul_div(other, div=False)
 
+    # This line adds the right multiplication
+    __rmul__ = __mul__
+
     def __div__(self, other):
         """Return a new Spectrum object with counts (or CPS) scaled down.
 
@@ -545,21 +635,8 @@ class Spectrum(object):
 
         return self._mul_div(other, div=True)
 
-    def __truediv__(self, other):
-        """Return a new Spectrum object with counts (or CPS) scaled down.
-
-        Args:
-          factor: factor to divide by. May be a ufloat.
-
-        Raises:
-          TypeError: if factor is not a scalar value
-          SpectrumError: if factor is 0 or infinite
-
-        Returns:
-          a new Spectrum object
-        """
-
-        return self._mul_div(other, div=True)
+    # This line adds true division
+    __truediv__ = __div__
 
     def _mul_div(self, scaling_factor, div=False):
         """Multiply or divide a spectrum by a scalar. Handle errors.
@@ -594,7 +671,7 @@ class Spectrum(object):
         else:
             multiplier = scaling_factor
 
-        if self.counts is not None:
+        if self._counts is not None:
             data_arg = {'counts': self.counts * multiplier}
         else:
             data_arg = {'cps': self.cps * multiplier}
@@ -628,7 +705,7 @@ class Spectrum(object):
           a new Spectrum instance, downsampled from this spectrum
         """
 
-        if self.counts is None:
+        if self._counts is None:
             raise SpectrumError('Cannot downsample from CPS')
         if f < 1:
             raise ValueError('Cannot upsample a spectrum; f must be > 1')
@@ -702,7 +779,7 @@ class Spectrum(object):
         """
 
         f = int(f)
-        if self.counts is None:
+        if self._counts is None:
             key = 'cps'
         else:
             key = 'counts'
@@ -729,6 +806,129 @@ class Spectrum(object):
                   'livetime': self.livetime}
         obj = Spectrum(**kwargs)
         return obj
+
+    def rebin(self, out_edges, method="interpolation", slopes=None,
+              zero_pad_warnings=True):
+        """
+        Spectra rebinning via deterministic or stochastic methods.
+
+        Args:
+            out_edges (np.ndarray): an array of the output bin edges
+                [num_channels_out]
+            method (str): rebinning method
+                "interpolation"
+                    Deterministic interpolation
+                "listmode"
+                    Stochastic rebinning via conversion to listmode of energies
+            slopes (np.ndarray|None): (optional) an array of input bin slopes
+                for quadratic interpolation
+                (only applies for "interpolation" method)
+                [len(spectrum) + 1]
+        zero_pad_warnings (boolean): warn when edge overlap results in
+            appending empty bins
+
+        Raises:
+            SpectrumError: for bad input arguments
+
+        Returns:
+            A new Spectrum object with the rebinned data.
+        """
+        if self.bin_edges_kev is None:
+            raise SpectrumError('Cannot rebin spectrum without energy '
+                                'calibration')
+        in_spec = self.counts_vals
+        if method.lower() == 'listmode':
+            if (self._counts is None) and (self.livetime is not None):
+                warnings.warn(
+                    'Rebinning by listmode method without explicit counts ' +
+                    'provided in Spectrum object',
+                    SpectrumWarning)
+        out_spec = rebin(in_spec, self.bin_edges_kev, out_edges,
+                         method=method, slopes=slopes,
+                         zero_pad_warnings=zero_pad_warnings)
+        return Spectrum(counts=out_spec,
+                        uncs=np.sqrt(out_spec),
+                        bin_edges_kev=out_edges,
+                        input_file_object=self._infileobject,
+                        livetime=self.livetime)
+
+    def rebin_like(self, other, zero_pad_warnings=False, **kwargs):
+        return self.rebin(other.bin_edges_kev,
+                          zero_pad_warnings=zero_pad_warnings, **kwargs)
+
+    def plot(self, *fmt, **kwargs):
+        """Plot a spectrum with matplotlib's plot command.
+
+        Args:
+          fmt:    matplotlib like plot format string
+          xmode:  define what is plotted on x axis ('energy' or 'channel'),
+                  defaults to energy if available
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'),
+                  defaults to counts
+          xlim:   set x axes limits, if set to 'default' use special scales
+          ylim:   set y axes limits, if set to 'default' use special scales
+          ax:     matplotlib axes object, if not provided one is created
+          yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
+          title:  costum plot title
+          xlabel: costum xlabel value
+          ylabel: costum ylabel value
+          emode:  can be 'band' for adding an erroband or 'bars' for adding
+                  error bars, default is 'none'. It herits the color from
+                  matplotlib plot and can not be configured. For better
+                  plotting control use SpectrumPlotter and its errorband and
+                  errorbars functions.
+          kwargs: arguments that are directly passed to matplotlib's plot
+                  command. In addition it is possible to pass linthreshy if
+                  ylim='default' and ymode='symlog'
+
+        Returns:
+          matplotlib axes object
+        """
+
+        emode = 'none'
+        alpha = 1
+        if 'emode' in kwargs:
+            emode = kwargs.pop('emode')
+        if 'alpha' in kwargs:
+            alpha = kwargs['alpha']
+
+        plotter = plotting.SpectrumPlotter(self, *fmt, **kwargs)
+        ax = plotter.plot()
+        color = ax.get_lines()[-1].get_color()
+        if emode == 'band':
+            plotter.errorband(color=color, alpha=alpha*0.5, label='_nolegend_')
+        elif emode == 'bars' or emode == 'bar':
+            plotter.errorbar(color=color, label='_nolegend_')
+        elif emode != 'none':
+            raise SpectrumError("Unknown error mode '{}', use 'bars' "
+                                "or 'band'".format(emode))
+        return ax
+
+    def fill_between(self, **kwargs):
+        """Plot a spectrum with matplotlib's fill_between command
+
+        Args:
+          xmode:  define what is plotted on x axis ('energy' or 'channel'),
+                  defaults to energy if available
+          ymode:  define what is plotted on y axis ('counts', 'cps', 'cpskev'),
+                  defaults to counts
+          xlim:   set x axes limits, if set to 'default' use special scales
+          ylim:   set y axes limits, if set to 'default' use special scales
+          ax:     matplotlib axes object, if not provided one is created
+          yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
+          title:  costum plot title
+          xlabel: costum xlabel value
+          ylabel: costum ylabel value
+          kwargs: arguments that are directly passed to matplotlib's
+                  fill_between command. In addition it is possible to pass
+                  linthreshy if ylim='default' and ymode='symlog'.
+
+        Returns:
+          matplotlib axes object
+        """
+
+        plotter = plotting.SpectrumPlotter(self, **kwargs)
+        return plotter.fill_between()
 
 
 def _get_file_object(infilename):

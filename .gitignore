@@ -8,7 +8,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -20,9 +19,11 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -42,8 +43,9 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-*,cover
+*.cover
 .hypothesis/
+.pytest_cache/
 
 # Translations
 *.mo
@@ -52,6 +54,7 @@ coverage.xml
 # Django stuff:
 *.log
 local_settings.py
+db.sqlite3
 
 # Flask stuff:
 instance/
@@ -66,7 +69,7 @@ docs/_build/
 # PyBuilder
 target/
 
-# IPython Notebook
+# Jupyter Notebook
 .ipynb_checkpoints
 
 # pyenv
@@ -75,18 +78,102 @@ target/
 # celery beat schedule file
 celerybeat-schedule
 
-# dotenv
-.env
+# SageMath parsed files
+*.sage.py
 
-# virtualenv
+# Environments
+.env
+.venv
+env/
 venv/
 ENV/
+env.bak/
+venv.bak/
 
 # Spyder project settings
 .spyderproject
+.spyproject
 
 # Rope project settings
 .ropeproject
 
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+
+# Mac OSX
+
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+
+# Windows thumbnail cache files
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+
+# Dump file
+*.stackdump
+
+# Folder config file
+[Dd]esktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# Linux
+
+*~
+
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
 # Becquerel settings
 __df_cache_*.csv
+__metadata__.py

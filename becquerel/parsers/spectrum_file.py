@@ -2,8 +2,15 @@
 
 from __future__ import print_function
 import os
+import warnings
 import numpy as np
 from scipy.interpolate import interp1d
+
+
+class SpectrumFileParsingWarning(UserWarning):
+    """Warnings displayed by SpectrumFile."""
+
+    pass
 
 
 class SpectrumFileParsingError(Exception):
@@ -41,6 +48,8 @@ class SpectrumFile(object):
         self.realtime = 0.0
         self.livetime = 0.0
         self.num_channels = 0
+        # miscellaneous metadata
+        self.metadata = {}
         # arrays to be read from file
         self.channels = np.array([], dtype=np.float)
         self.data = np.array([], dtype=np.float)
@@ -74,6 +83,10 @@ class SpectrumFile(object):
             s += 'Collection Stop:       None\n'
         s += 'Livetime:              {:.2f} sec\n'.format(self.livetime)
         s += 'Realtime:              {:.2f} sec\n'.format(self.realtime)
+        if len(self.metadata.keys()) > 0:
+            s += 'Metadata:\n'
+            for key, value in self.metadata.items():
+                s += '    {} : {}\n'.format(key, value)
         s += 'Number of channels:    {:d}\n'.format(self.num_channels)
         if len(self.cal_coeff) > 0:
             s += 'Calibration coeffs:    '
@@ -102,6 +115,12 @@ class SpectrumFile(object):
         n_edges = len(self.energies) + 1
         channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
         self.energy_bin_edges = self.channel_to_energy(channel_edges)
+
+        # check that calibration makes sense, remove calibration if not
+        if np.any(np.diff(self.energies) <= 0):
+            warnings.warn(
+                'Ignoring calibration; energies not monotonically increasing')
+            self.cal_coeff = []
 
     def channel_to_energy(self, channel):
         """Apply energy calibration to the given channel(s)."""
