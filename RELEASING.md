@@ -12,7 +12,7 @@
 - [ ] Add release notes to the tag on GitHub with a list of changes
 - [ ] Upload new version to PyPI
   - `python3 -m pip install --user --upgrade setuptools wheel`
-  - `python3 setup.py sdist bdist_wheel`
+  - `python3 setup.py sdist bdist_wheel --universal`
   - `python3 -m pip install --user --upgrade twine`
   - `python3 -m twine upload dist/*`
 - [ ] Test new version installs from PyPI
