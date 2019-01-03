@@ -8,10 +8,14 @@
 - [ ] Update classifiers in `setup.py`
 - [ ] Verify that all tests pass (`python setup.py test`)
 - [ ] Commit the changes, push to GitHub, and start a pull request into `master`
-- [ ] After PR is accepted, create tagged version (`X.X.X`) on GitHub
+- [ ] Approve PR and merge it into master, but do not delete it yet
+- [ ] Create tagged version (`X.X.X`) on GitHub
 - [ ] Add release notes to the tag on GitHub with a list of changes
 - [ ] Create distribution
   ```bash
+  git pull
+  git checkout X.X.X
+  rm dist/*
   python3 -m pip install --user --upgrade setuptools wheel
   python3 setup.py sdist bdist_wheel --universal
   ```
@@ -23,7 +27,7 @@
 - [ ] Upload new version to PyPI
   ```bash
   python3 -m pip install --user --upgrade twine
-  python3 -m twine upload dist/becquerel-X.X.X*
+  python3 -m twine upload dist/*
   ```
 - [ ] Test new version installs from PyPI
   ```bash
