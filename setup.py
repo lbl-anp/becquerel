@@ -76,4 +76,5 @@ setup(
     install_requires=[_f for _f in REQUIREMENTS.split('\n') if _f],
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-cov'],
+    license="Other/Proprietary License (see LICENSE.txt)",
 )
