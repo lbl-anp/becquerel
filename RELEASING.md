@@ -17,13 +17,13 @@
   ```
 - [ ] Test distribution
   ```bash
-  python3 -m pip install dist/becquerel-<version>-py2.py3-none-any.whl
-  python3 -m pip install dist/becquerel-<version>.tar.gz
+  python3 -m pip install dist/becquerel-X.X.X-py2.py3-none-any.whl
+  python3 -m pip install dist/becquerel-X.X.X.tar.gz
   ```
 - [ ] Upload new version to PyPI
   ```bash
   python3 -m pip install --user --upgrade twine
-  python3 -m twine upload dist/becquerel-<version>*
+  python3 -m twine upload dist/becquerel-X.X.X*
   ```
 - [ ] Test new version installs from PyPI
   ```bash
