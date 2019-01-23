@@ -16,6 +16,13 @@ from .core.peakfinder import (PeakFilter, PeakFilterError, BoxcarPeakFilter,
                               GaussianPeakFilter, PeakFinder, PeakFinderError)
 from .core.autocal import AutoCalibrator, AutoCalibratorError
 
+from .tools import nndc
+from .tools.element import Element
+from .tools.isotope import Isotope
+from .tools.isotope_qty import IsotopeQuantity
+from .tools import xcom
+from .tools import materials
+
 __all__ = ['core', 'parsers', 'tools',
            'rebin', 'RebinError', 'RebinWarning',
            'Spectrum', 'SpectrumError', 'SpectrumWarning', 'SpectrumPlotter',

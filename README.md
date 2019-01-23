@@ -89,9 +89,17 @@ Use [google standards](https://google.github.io/styleguide/pyguide.html)
 * Use `flake8` in your IDE
 * Use `pylint` from command line (as in style guide)
 
+## Features in development (contributions welcome!)
+
+* Reading additional `Spectrum` file types (N42, CHN, CSV)
+* Writing `Spectrum` objects to various standard formats
+* Fitting spectral features (e.g., gaussian lines with different background models)
+
+If you are interested in contributing, please see the guidelines in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
 ## Copyright Notice
 
-Becquerel v. 0.1, Copyright (c) 2017, The Regents of the University of
+Becquerel v. 0.2.1, Copyright (c) 2017, The Regents of the University of
 California (UC), through Lawrence Berkeley National Laboratory, and the UC
 Berkeley campus (subject to receipt of any required approvals from the U.S.
 Dept. of Energy). All rights reserved. If you have questions about your rights
