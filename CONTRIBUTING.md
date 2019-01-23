@@ -4,13 +4,51 @@ Contributions to `becquerel` are welcome and encouraged, whether it is
 reporting bugs, requesting features, or contributing code.
 Please follow these guidelines when contributing to this project.
 
-### Reporting issues
+### Developer Instructions
 
-When reporting issues with `becquerel`, please provide a minimum working example to help identify the problem and tag the issue as a `bug`.
+```
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+python setup.py develop
+```
 
-### Feature requests
+(It is more convenient to use `develop` so that the code is soft-linked
+from the installation directory, and the installed package will always use
+the current version of code.)
 
-For a feature request, please create an issue and label it as a `new feature`.
+### Running the tests
+
+(Requires `requirements-dev.txt` to be installed)
+To run the tests using `pytest`, from the root directory of the repo:
+
+```
+pytest
+```
+
+(`python setup.py test` is still supported also.)
+By default, a code coverage report is printed to the terminal.
+Tests marked `webtest` or `plottest` are by default skipped for the sake of
+speed. To run all tests, clear the pre-configured markers option:
+
+```
+pytest -m ""
+```
+
+To produce an HTML code coverage report in directory `htmlcov`
+with line-by-line highlighting:
+
+```
+pytest --cov-report html:htmlcov
+```
+
+### Code Style Guide
+
+Use [google standards](https://google.github.io/styleguide/pyguide.html)
+
+### Linter
+
+* Use `flake8` in your IDE
+* Use `pylint` from command line (as in style guide)
 
 ### Checklist for code contributions:
   - [ ] Branch off of `develop` and name the branch `feature-XX` or `issue-XX`
