@@ -11,83 +11,11 @@ and pandas. It is intended to be general-purpose enough that it can be useful
 to anyone from an undergraduate taking a laboratory course to the advanced
 researcher.
 
-## Installation instructions
-
-### As a user
+## Installation
 
 ```
-pip install -r requirements.txt
-python setup.py install --user
+pip install becquerel
 ```
-
-Before reinstalling, be sure to either remove the ```build``` directory
-or run:
-
-```
-python setup.py clean --all
-```
-
-### As a developer
-
-```
-pip install -r requirements-dev.txt
-python setup.py develop
-```
-
-(It is more convenient to use `develop` so that the code is soft-linked
-from the installation directory, and the installed package will always use
-the current version of code.)
-
-## Running the tests
-
-(Requires `requirements-dev.txt` to be installed)
-To run the tests using `pytest`, from the root directory of the repo:
-
-```
-pytest
-```
-
-(`python setup.py test` is still supported also.)
-By default, a code coverage report is printed to the terminal.
-Tests marked `webtest` or `plottest` are by default skipped for the sake of
-speed. To run all tests, clear the pre-configured markers option:
-
-```
-pytest -m ""
-```
-
-To produce an HTML code coverage report in directory `htmlcov`
-with line-by-line highlighting:
-
-```
-pytest --cov-report html:htmlcov
-```
-
-## Dependencies
-
-External dependencies are listed in `requirements.txt` and can be installed
-with `pip` (see [Installation instructions][0]) or manually. The dependencies
-`beautifulsoup4`, `lxml` and `html5lib` are necessary for [`pandas`][1].
-Developers additionally need [`pytest`][2] and are encouraged to use
-[`pylint`][3], [`pycodestyle`][4], [`pydocstyle`][5] and [`yapf`][6] for
-proper code formatting.
-
-[0]: #installation-instructions
-[1]: https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies
-[2]: https://docs.pytest.org
-[3]: https://pylint.readthedocs.io
-[4]: http://pycodestyle.pycqa.org
-[5]: http://www.pydocstyle.org
-[6]: https://github.com/google/yapf
-
-## Code Style Guide
-
-Use [google standards](https://google.github.io/styleguide/pyguide.html)
-
-## Linter
-
-* Use `flake8` in your IDE
-* Use `pylint` from command line (as in style guide)
 
 ## Features in development (contributions welcome!)
 
@@ -95,7 +23,36 @@ Use [google standards](https://google.github.io/styleguide/pyguide.html)
 * Writing `Spectrum` objects to various standard formats
 * Fitting spectral features (e.g., gaussian lines with different background models)
 
-If you are interested in contributing, please see the guidelines in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+If you are interested in contributing or are want to install the package from 
+source, please see the instructions in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
+## Reporting issues
+
+When reporting issues with `becquerel`, please provide a minimum working example to help identify the problem and tag the issue as a `bug`.
+
+## Feature requests
+
+For a feature request, please create an issue and label it as a `new feature`.
+
+## Dependencies
+
+External dependencies are listed in `requirements.txt` and will be installed
+automatically with the standard `pip` installation. They can also be installed
+manually with the package manager of your choice (`pip`, `conda`, etc).
+The dependencies `beautifulsoup4`, `lxml` and `html5lib` are necessary for
+[`pandas`][1].
+
+Developers require additional requirements which are listed in
+`requirements-dev.txt`. We use [`pytest`][2] for unit testing and encourage
+contributors to use [`pylint`][3], [`pycodestyle`][4], [`pydocstyle`][5] and
+[`yapf`][6] for proper code formatting.
+
+[1]: https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies
+[2]: https://docs.pytest.org
+[3]: https://pylint.readthedocs.io
+[4]: http://pycodestyle.pycqa.org
+[5]: http://www.pydocstyle.org
+[6]: https://github.com/google/yapf
 
 ## Copyright Notice
 
