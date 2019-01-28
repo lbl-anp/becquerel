@@ -146,10 +146,16 @@ def fetch_compound_data():
 
     """
     req = _get_request(_URL_TABLE2)
-    # remove extra columns and replace <BR> symbols in composition lists
     text = req.text
+    # remove extra header columns
     text = text.replace('<TD ROWSPAN="2">&nbsp;</TD>', '')
+    # remove extra rows in header row
+    text = text.replace(' ROWSPAN="2"', '')
+    # remove extra columns in third header row
+    text = text.replace('<TD COLSPAN="9"><HR SIZE="1" NOSHADE></TD>', '')
+    # remove extra columns in the first material row
     text = text.replace('<TD ROWSPAN="50"> &nbsp; </TD>', '')
+    # replace <BR> symbols in composition lists with semicolons
     text = text.replace('<BR>', ';')
     # read HTML table into pandas DataFrame
     tables = pd.read_html(text, header=0, skiprows=[1, 2])
@@ -160,7 +166,11 @@ def fetch_compound_data():
     if len(df) != N_COMPOUNDS:
         raise NISTMaterialsRequestError(
             '{} compounds expected, but found {}'.format(N_COMPOUNDS, len(df)))
-    # set column names
+    if len(df.columns) != 5:
+        raise NISTMaterialsRequestError(
+            '5 columns expected, but found {} ({})'.format(
+                len(df.columns), df.columns))
+    # rename columns
     df.columns = ['Material', 'Z_over_A', 'I_eV', 'Density', 'Composition_Z']
     # clean up Z composition
     df['Composition_Z'] = [
