@@ -71,13 +71,9 @@ def fetch_element_data():
 
     """
     req = _get_request(_URL_TABLE1)
-    # remove extra columns in Hydrogen row and extra empty rows
     text = req.text
-    text = text.replace('<TD ROWSPAN="92">&nbsp;</TD>', '')
-    text = text.replace('TD>&nbsp;</TD>', '')
-    text = text.replace('</TD></TR><TR>', '</TD></TR>')
     # read HTML table into pandas DataFrame
-    tables = pd.read_html(text, header=0, skiprows=[1, 2])
+    tables = pd.read_html(text, header=0, skiprows=[1, 2, 95])
     if len(tables) != 1:
         raise NISTMaterialsRequestError(
             '1 HTML table expected, but found {}'.format(len(tables)))
@@ -85,7 +81,12 @@ def fetch_element_data():
     if len(df) != MAX_Z:
         raise NISTMaterialsRequestError(
             '{} elements expected, but found {}'.format(MAX_Z, len(df)))
-    # set column names
+    if len(df.columns) != 10:
+        raise NISTMaterialsRequestError(
+            '10 columns expected, but found {} ({})'.format(
+                len(df.columns), df.columns))
+    # rename columns
+    df = df[['Z', 'Z.1', 'Element', 'Z/A', 'I', 'Density']]
     df.columns = ['Z', 'Symbol', 'Element', 'Z_over_A', 'I_eV', 'Density']
     return df
 
