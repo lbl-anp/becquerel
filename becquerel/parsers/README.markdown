@@ -19,7 +19,7 @@ Other data available include:
 * `spec.realtime`
 * `spec.bin_edges_kev`
 * `spec.energy_bin_widths`
-* `spec.energy_bin_edges` (depricated)
+* `spec.energy_bin_edges` (deprecated)
 
 Some parsers extract more information than others either because of their
 stage of development or because the file format may not carry certain

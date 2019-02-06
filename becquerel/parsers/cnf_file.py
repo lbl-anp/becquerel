@@ -95,7 +95,7 @@ class CnfFile(SpectrumFile):
         spec.energies
         spec.bin_edges_kev
         spec.energy_bin_widths
-        spec.energy_bin_edges (depricated)
+        spec.energy_bin_edges (deprecated)
 
     """
 
