@@ -72,8 +72,22 @@ def fetch_element_data():
     """
     req = _get_request(_URL_TABLE1)
     text = req.text
+    # rename first two header columns
+    text = text.replace(
+        '<TH scope="col" COLSPAN="2"><I>Z</I></TH>',
+        '<TH scope="col">Z</TH><TH scope="col">Symbol</TH>')
+    # remove row that makes the table too wide
+    text = text.replace('<TD COLSPAN="10"><HR SIZE="1" NOSHADE></TD>', '')
+    # remove extra header columns
+    text = text.replace('<TD COLSPAN="2">', '<TD>')
+    text = text.replace('<TD COLSPAN="4">', '<TD>')
+    text = text.replace('TD>&nbsp;</TD>', '')
+    # remove extra columns in Hydrogen row
+    text = text.replace('<TD ROWSPAN="92">&nbsp;</TD>', '')
+    # remove open <TR> at the end of the table
+    text = text.replace('</TD></TR><TR>', '</TD></TR>')
     # read HTML table into pandas DataFrame
-    tables = pd.read_html(text, header=0, skiprows=[1, 2, 95])
+    tables = pd.read_html(text, header=0, skiprows=[1, 2])
     if len(tables) != 1:
         raise NISTMaterialsRequestError(
             '1 HTML table expected, but found {}'.format(len(tables)))
@@ -81,12 +95,11 @@ def fetch_element_data():
     if len(df) != MAX_Z:
         raise NISTMaterialsRequestError(
             '{} elements expected, but found {}'.format(MAX_Z, len(df)))
-    if len(df.columns) != 10:
+    if len(df.columns) != 6:
         raise NISTMaterialsRequestError(
             '10 columns expected, but found {} ({})'.format(
                 len(df.columns), df.columns))
     # rename columns
-    df = df[['Z', 'Z.1', 'Element', 'Z/A', 'I', 'Density']]
     df.columns = ['Z', 'Symbol', 'Element', 'Z_over_A', 'I_eV', 'Density']
     return df
 
