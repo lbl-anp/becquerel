@@ -93,7 +93,9 @@ class CnfFile(SpectrumFile):
         spec.data [counts]
         spec.channels
         spec.energies
+        spec.bin_edges_kev
         spec.energy_bin_widths
+        spec.energy_bin_edges (deprecated)
 
     """
 
