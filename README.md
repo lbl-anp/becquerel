@@ -23,7 +23,7 @@ pip install becquerel
 * Writing `Spectrum` objects to various standard formats
 * Fitting spectral features (e.g., gaussian lines with different background models)
 
-If you are interested in contributing or are want to install the package from 
+If you are interested in contributing or are want to install the package from
 source, please see the instructions in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Reporting issues
@@ -56,7 +56,7 @@ contributors to use [`pylint`][3], [`pycodestyle`][4], [`pydocstyle`][5] and
 
 ## Copyright Notice
 
-Becquerel v. 0.2.1, Copyright (c) 2017, The Regents of the University of
+Becquerel v. 0.2.2, Copyright (c) 2017, The Regents of the University of
 California (UC), through Lawrence Berkeley National Laboratory, and the UC
 Berkeley campus (subject to receipt of any required approvals from the U.S.
 Dept. of Energy). All rights reserved. If you have questions about your rights
