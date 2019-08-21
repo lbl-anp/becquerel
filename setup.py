@@ -7,8 +7,8 @@ from setuptools import setup, find_packages
 NAME = 'becquerel'
 
 MAJOR = 0
-MINOR = 1
-MICRO = 0
+MINOR = 2
+MICRO = 2
 VERSION = '{}.{}.{}'.format(MAJOR, MINOR, MICRO)
 
 DESCRIPTION = __doc__.split('\n')[0].split(': ')[-1]
@@ -76,4 +76,5 @@ setup(
     install_requires=[_f for _f in REQUIREMENTS.split('\n') if _f],
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-cov'],
+    license="Other/Proprietary License (see LICENSE.txt)",
 )

@@ -29,7 +29,9 @@ class SpectrumFile(object):
         spec.data [counts]
         spec.channels
         spec.energies
+        spec.bin_edges_kev
         spec.energy_bin_widths
+        spec.energy_bin_edges (deprecated)
 
     """
 
@@ -48,14 +50,15 @@ class SpectrumFile(object):
         self.realtime = 0.0
         self.livetime = 0.0
         self.num_channels = 0
+        # miscellaneous metadata
+        self.metadata = {}
         # arrays to be read from file
         self.channels = np.array([], dtype=np.float)
         self.data = np.array([], dtype=np.float)
         self.cal_coeff = []
         # arrays to be calculated using calibration
         self.energies = np.array([], dtype=np.float)
-        self.energy_bin_widths = np.array([], dtype=np.float)
-        self.energy_bin_edges = np.array([], dtype=np.float)
+        self.bin_edges_kev = None
 
     def __str__(self):
         """String form of the spectrum."""
@@ -81,6 +84,10 @@ class SpectrumFile(object):
             s += 'Collection Stop:       None\n'
         s += 'Livetime:              {:.2f} sec\n'.format(self.livetime)
         s += 'Realtime:              {:.2f} sec\n'.format(self.realtime)
+        if len(self.metadata.keys()) > 0:
+            s += 'Metadata:\n'
+            for key, value in self.metadata.items():
+                s += '    {} : {}\n'.format(key, value)
         s += 'Number of channels:    {:d}\n'.format(self.num_channels)
         if len(self.cal_coeff) > 0:
             s += 'Calibration coeffs:    '
@@ -94,6 +101,17 @@ class SpectrumFile(object):
             s += '    [length {}]\n'.format(len(self.data))
         return s
 
+    @property
+    def energy_bin_edges(self):
+        warnings.warn('The use of energy_bin_edges is deprecated, ' +
+                      'use bin_edges_kev instead', DeprecationWarning)
+        return self.bin_edges_kev
+
+    @property
+    def energy_bin_widths(self):
+        """Retrieve the calibrated width of all the bins."""
+        return self.bin_width(self.channels)
+
     def read(self, verbose=False):
         """Read in the file."""
         raise NotImplementedError('read method not implemented')
@@ -105,16 +123,17 @@ class SpectrumFile(object):
     def apply_calibration(self):
         """Calculate energies corresponding to channels."""
         self.energies = self.channel_to_energy(self.channels)
-        self.energy_bin_widths = self.bin_width(self.channels)
         n_edges = len(self.energies) + 1
         channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
-        self.energy_bin_edges = self.channel_to_energy(channel_edges)
+        self.bin_edges_kev = self.channel_to_energy(channel_edges)
 
         # check that calibration makes sense, remove calibration if not
         if np.any(np.diff(self.energies) <= 0):
             warnings.warn(
-                'Ignoring calibration; energies not monotonically increasing')
-            self.cal_coeff = []
+                'Spectrum will be initated without an energy calibration;' +
+                'invalid calibration, energies not monotonically increasing.',
+                SpectrumFileParsingWarning)
+            self.bin_edges_kev = None
 
     def channel_to_energy(self, channel):
         """Apply energy calibration to the given channel(s)."""

@@ -32,7 +32,9 @@ class SpeFile(SpectrumFile):
         spec.data [counts]
         spec.channels
         spec.energies
+        spec.bin_edges_kev
         spec.energy_bin_widths
+        spec.energy_bin_edges (deprecated)
 
     ORTEC's SPE file format is given on page 73 of this document:
         http://www.ortec-online.com/download/ortec-software-file-structure-manual.pdf
@@ -142,16 +144,21 @@ class SpeFile(SpectrumFile):
                         self.shape_cal.append(float(lines[i].split(' ')[j]))
                     if verbose:
                         print(self.shape_cal)
-                elif lines[i] == '$PRESETS:':
-                    warnings.warn(
-                        'SpeFile has $PRESETS field, skipping 3 lines',
-                        SpectrumFileParsingWarning)
-                    self.presets = []
-                    for _ in range(3):
-                        self.presets.append(lines[i])
+                elif lines[i].startswith('$'):
+                    key = lines[i][1:].rstrip(':')
+                    i += 1
+                    values = []
+                    while i < len(lines) and not lines[i].startswith('$'):
+                        values.append(lines[i])
                         i += 1
+                    if i < len(lines):
+                        if lines[i].startswith('$'):
+                            i -= 1
+                    self.metadata[key] = values
                 else:
-                    print('Line {} unknown: '.format(i + 1), lines[i])
+                    warnings.warn(
+                        'Line {} unknown: '.format(i + 1) + lines[i],
+                        SpectrumFileParsingWarning)
                 i += 1
         if self.realtime <= 0.0:
             raise SpeFileParsingError(
@@ -204,6 +211,11 @@ class SpeFile(SpectrumFile):
             for j in range(1, n_coeff):
                 s += ' {:E}'.format(self.shape_cal[j])
             s += '\n'
+        if len(self.metadata.keys()) > 0:
+            for key, values in self.metadata.items():
+                s += '$' + key + ':\n'
+                for val in values:
+                    s += str(val) + '\n'
         return s[:-1]
 
     def write(self, filename):

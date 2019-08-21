@@ -4,6 +4,7 @@ html5lib
 lmfit
 lxml
 matplotlib
+numba
 numpy
 pandas
 python-dateutil
