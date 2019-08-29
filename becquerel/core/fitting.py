@@ -49,8 +49,6 @@ def exp(x, amp, lam):
 
 # -----------------------------------------------------------------------------
 # Fitting models
-# TODO: Should these be replaced with lmfit.models??? If so where do we define
-#       expr, min, max??? Maybe for composite models only.
 # -----------------------------------------------------------------------------
 
 # Helper functions for guessing
