@@ -25,6 +25,36 @@ for extension in ['.spe', '.spc', '.cnf']:
 # TODO: discuss this 20% tol, maybe smaller tol for gauss?
 # -----------------------------------------------------------------------------
 
+HIGH_STAT_GAUSS = dict(
+    params=dict(
+        gauss_amp=1e5,
+        gauss_mu=100.,
+        gauss_sigma=5.),
+    setup=dict(
+        x_min=0.0,
+        x_max=200.0,
+        num_x=200),
+    roi=(25, 175),
+    cls=bq.fitting.FitterGauss,
+    rtol=2e-1,
+    name='FitterGauss')
+
+HIGH_STAT_GAUSS_LINE = dict(
+    params=dict(
+        gauss_amp=1e5,
+        gauss_mu=100.,
+        gauss_sigma=5.,
+        line_m=-10.,
+        line_b=1e4),
+    setup=dict(
+        x_min=0.0,
+        x_max=200.0,
+        num_x=200),
+    roi=(25, 175),
+    cls=bq.fitting.FitterGaussLine,
+    rtol=2e-1,
+    name='FitterGaussLine')
+
 HIGH_STAT_GAUSS_EXP = dict(
     params=dict(
         gauss_amp=1e5,
@@ -40,6 +70,23 @@ HIGH_STAT_GAUSS_EXP = dict(
     cls=bq.fitting.FitterGaussExp,
     rtol=2e-1,
     name='FitterGaussExp')
+
+HIGH_STAT_GAUSS_ERF = dict(
+    params=dict(
+        gauss_amp=1e5,
+        gauss_mu=100.,
+        gauss_sigma=5.,
+        erf_amp=1e4,
+        erf_mu=100.,
+        erf_sigma=5.),
+    setup=dict(
+        x_min=0.0,
+        x_max=200.0,
+        num_x=200),
+    roi=(25, 175),
+    cls=bq.fitting.FitterGaussErf,
+    rtol=2e-1,
+    name='FitterGaussErf')
 
 HIGH_STAT_GAUSS_ERF_LINE = dict(
     params=dict(
@@ -78,6 +125,23 @@ HIGH_STAT_GAUSS_ERF_EXP = dict(
     cls=bq.fitting.FitterGaussErfExp,
     rtol=2e-1,
     name='FitterGaussErfExp')
+
+HIGH_STAT_GAUSS_GAUSS = dict(
+    params=dict(
+        gauss0_amp=1e5,
+        gauss0_mu=60.,
+        gauss0_sigma=5.,
+        gauss1_amp=1e5,
+        gauss1_mu=120.,
+        gauss1_sigma=7.),
+    setup=dict(
+        x_min=0.0,
+        x_max=200.0,
+        num_x=200),
+    roi=(25, 175),
+    cls=bq.fitting.FitterGaussGauss,
+    rtol=2e-1,
+    name='FitterGaussGauss')
 
 HIGH_STAT_GAUSS_GAUSS_LINE = dict(
     params=dict(
@@ -136,9 +200,13 @@ def compare_params(true_params, fit_params, rtol):
 
 
 @pytest.fixture(
-    params=[HIGH_STAT_GAUSS_EXP,
+    params=[HIGH_STAT_GAUSS,
+            HIGH_STAT_GAUSS_LINE,
+            HIGH_STAT_GAUSS_EXP,
+            HIGH_STAT_GAUSS_ERF,
             HIGH_STAT_GAUSS_ERF_LINE,
             HIGH_STAT_GAUSS_ERF_EXP,
+            HIGH_STAT_GAUSS_GAUSS,
             HIGH_STAT_GAUSS_GAUSS_LINE,
             HIGH_STAT_GAUSS_GAUSS_EXP],
     ids=get_fitter_name)
@@ -157,6 +225,7 @@ def fake_high_stat(request):
 class TestFittingFakeData(object):
     """Test core.fitting Fitters with generated data"""
 
+    @pytest.mark.filterwarnings("ignore")
     def test_fake_high_stat_with_init(self, fake_high_stat):
         fitter = fake_high_stat['cls'](x=fake_high_stat['data']['x'],
                                        y=fake_high_stat['data']['y'],
@@ -168,6 +237,7 @@ class TestFittingFakeData(object):
                        rtol=fake_high_stat['rtol'])
         fitter.custom_plot()
 
+    @pytest.mark.filterwarnings("ignore")
     def test_fake_high_stat_no_roi(self, fake_high_stat):
         fitter = fake_high_stat['cls']()
         fitter.set_data(**fake_high_stat['data'])
@@ -177,6 +247,7 @@ class TestFittingFakeData(object):
                        rtol=fake_high_stat['rtol'])
         fitter.custom_plot()
 
+    @pytest.mark.filterwarnings("ignore")
     def test_fake_high_stat_with_roi(self, fake_high_stat):
         fitter = fake_high_stat['cls']()
         fitter.set_data(**fake_high_stat['data'])
