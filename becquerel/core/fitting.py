@@ -1,5 +1,6 @@
 from __future__ import print_function
 from abc import ABCMeta, abstractmethod
+import warnings
 import numpy as np
 import pandas as pd
 import scipy.special
@@ -15,6 +16,10 @@ FWHM_SIG_RATIO = np.sqrt(8*np.log(2))  # 2.35482
 class FittingError(Exception):
     """Exception raised by Fitters."""
     pass
+
+
+class FittingWarning(UserWarning):
+    """Warning raised by Fitters."""
 
 
 # -----------------------------------------------------------------------------
@@ -245,7 +250,10 @@ class Fitter(object):
                     len(self.x), len(self.y))
         # Handle y uncertainties
         if y_unc is None:
-            # TODO: add warning
+            warnings.warn(
+                'No y uncertainties (y_unc) provided. The fit will not be ' +
+                'weighted causing in poor results at low counting statistics.',
+                FittingWarning)
             self._y_unc = None
         else:
             self._y_unc = np.asarray(y_unc, dtype=np.float)
