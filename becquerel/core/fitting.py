@@ -52,6 +52,12 @@ def exp(x, amp, lam):
     return amp * np.exp(x / lam)
 
 
+def expgaussian(x, amplitude=1, center=0, sigma=1.0, gamma=1.0):
+    gss = gamma*sigma*sigma
+    arg1 = gamma*(center + gss/2.0 - x)
+    arg2 = (center + gss - x)/(s2*sigma)
+    return amplitude*(gamma/2) * exp(arg1) * erfc(arg2)
+
 # -----------------------------------------------------------------------------
 # Fitting models
 # -----------------------------------------------------------------------------
@@ -160,6 +166,33 @@ class ExpModel(Model):
             ('{}amp'.format(self.prefix), 'value', amp),
             ('{}amp'.format(self.prefix), 'min', 0.0),
         ]
+
+
+class ExponentialGaussianModel(Model):
+    """A model of an Exponentially modified Gaussian distribution
+    (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
+    """
+
+    fwhm_factor = 2*np.sqrt(2*np.log(2))
+
+    def __init__(self, *args, **kwargs):
+        super(ExponentialGaussianModel, self).__init__(expgaussian, **kwargs)
+        self._set_paramhints_prefix()
+
+    def _set_paramhints_prefix(self):
+        self.set_param_hint('sigma', min=0)
+        self.set_param_hint('gamma', min=0, max=20)
+        fmt = ("{prefix:s}amplitude*{prefix:s}gamma/2*"
+               "exp({prefix:s}gamma**2*{prefix:s}sigma**2/2)*"
+               "erfc({prefix:s}gamma*{prefix:s}sigma/sqrt(2))")
+        self.set_param_hint('height', expr=fmt.format(prefix=self.prefix))
+        self.set_param_hint('fwhm', expr=fwhm_expr(self))
+
+    def guess(self, data, x=None, negative=False, **kwargs):
+        """Estimate initial model parameter values from data."""
+        pars = guess_from_peak(self, data, x, negative)
+        return update_param_vals(pars, self.prefix, **kwargs)
+
 
 # -----------------------------------------------------------------------------
 # Fitters
