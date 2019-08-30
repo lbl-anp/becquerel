@@ -162,6 +162,7 @@ def sim_high_stat(request):
 class TestFittingHighStatSimData(object):
     """Test core.fitting.Fitter with high stat generated data"""
 
+    @pytest.mark.filterwarnings("ignore")
     def test_with_init(self, sim_high_stat):
         fitter = bq.Fitter(
             sim_high_stat['model'],
@@ -175,6 +176,7 @@ class TestFittingHighStatSimData(object):
                        rtol=sim_high_stat['rtol'])
         fitter.custom_plot()
 
+    @pytest.mark.filterwarnings("ignore")
     def test_no_roi(self, sim_high_stat):
         fitter = bq.Fitter(sim_high_stat['model'])
         fitter.set_data(**sim_high_stat['data'])
@@ -184,6 +186,7 @@ class TestFittingHighStatSimData(object):
                        rtol=sim_high_stat['rtol'])
         fitter.custom_plot()
 
+    @pytest.mark.filterwarnings("ignore")
     def test_with_roi(self, sim_high_stat):
         fitter = bq.Fitter(sim_high_stat['model'])
         fitter.set_data(**sim_high_stat['data'])

@@ -610,6 +610,25 @@ class FitterGaussGauss(Fitter):
         return params
 
 
+class FitterGaussGauss(Fitter):
+
+    def make_model(self):
+        self.model = \
+            GaussModel(prefix='gauss0_') + \
+            GaussModel(prefix='gauss1_')
+
+    def _guess_param_defaults(self):
+        params = []
+        for comp in self.model.components:
+            if comp.prefix == 'gauss0_':
+                params += comp.guess(self.y_roi, x=self.x_roi,
+                                     center_ratio=0.33, width_ratio=0.5)
+            elif comp.prefix == 'gauss1_':
+                params += comp.guess(self.y_roi, x=self.x_roi,
+                                     center_ratio=0.66, width_ratio=0.5)
+        return params
+
+
 class FitterGaussGaussLine(Fitter):
 
     def make_model(self):
