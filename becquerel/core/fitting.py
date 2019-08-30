@@ -1,6 +1,6 @@
 from __future__ import print_function
-from abc import ABCMeta, abstractmethod
 import warnings
+import inspect
 import numpy as np
 import pandas as pd
 import scipy.special
@@ -8,7 +8,7 @@ from lmfit.model import Model
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-
+from .utils import isstring
 
 FWHM_SIG_RATIO = np.sqrt(8*np.log(2))  # 2.35482
 
@@ -61,6 +61,7 @@ def expgaussian(x, amplitude=1, center=0, sigma=1.0, gamma=1.0):
 # -----------------------------------------------------------------------------
 # Fitting models
 # -----------------------------------------------------------------------------
+
 
 # Helper functions for guessing
 def _xy_right(y, x=None, num=4):
@@ -194,6 +195,16 @@ class ExponentialGaussianModel(Model):
         return update_param_vals(pars, self.prefix, **kwargs)
 
 
+MODEL_STR_TO_CLS = {
+    'constant': ConstantModel,
+    'line': LineModel,
+    'gauss': GaussModel,
+    'erf': ErfModel,
+    'exp': ExpModel,
+    'expgaussian': ExponentialGaussianModel
+}
+
+
 # -----------------------------------------------------------------------------
 # Fitters
 # TODO: add docs
@@ -206,30 +217,43 @@ class ExponentialGaussianModel(Model):
 
 
 class Fitter(object):
-    __metaclass__ = ABCMeta
 
-    def __init__(self, x=None, y=None, y_unc=None, roi=None):
-        # Model and parameters
-        self.make_model()
-        self.params = self.model.make_params()
-        # Empty fit result
+    def __init__(self, model, x=None, y=None, y_unc=None, roi=None):
+        # Initialize
+        self._model = None
+        self._name = None
+        self._x = None
+        self._y = None
+        self._y_unc = None
+        self._roi = None
+        self._roi_msk = None
         self.result = None
-        # Set data vectors
-        if y is None:
-            self._x = None
-            self._y = None
-            self._y_unc = None
-        else:
-            self.set_data(x=x, y=y, y_unc=y_unc, update_defaults=False)
-        # Set roi and roi_msk
-        if roi is None:
-            self._roi = None
-            self._roi_msk = None
-        else:
-            self.set_roi(*roi, update_defaults=False)
-        # Update parameter defaults if possible
-        if self.y is not None:
-            self.guess_param_defaults(update=True)
+        # Model and parameters
+        self._make_model(model)
+        self.params = self.model.make_params()
+        # Set data
+        self.set_data(x=x, y=y, y_unc=y_unc, roi=roi, update_defaults=True)
+
+    def __str__(self):
+        return (
+            'bq.Fitter instance\n' +
+            '     name: {}\n'.format(self.name) +
+            '    model: {}\n'.format(self.model) +
+            '        x: {}\n'.format(self.x) +
+            '        y: {}\n'.format(self.y) +
+            '    y_unc: {}\n'.format(self.y_unc) +
+            '      roi: {}'.format(self.roi)
+        )
+
+    __repr__ = __str__
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def model(self):
+        return self._model
 
     @property
     def x(self):
@@ -270,8 +294,10 @@ class Fitter(object):
     def param_names(self):
         return list(self.params.keys())
 
-    def set_data(self, y, x=None, y_unc=None, update_defaults=True):
-        # Set y data
+    def set_data(self, y, x=None, y_unc=None, roi=None, update_defaults=True):
+        # Set y data (skip if y is None)
+        if y is None:
+            return
         self._y = np.asarray(y)
         # Set x data
         if x is None:
@@ -287,14 +313,20 @@ class Fitter(object):
                 'No y uncertainties (y_unc) provided. The fit will not be ' +
                 'weighted causing in poor results at low counting statistics.',
                 FittingWarning)
-            self._y_unc = None
         else:
             self._y_unc = np.asarray(y_unc, dtype=np.float)
             assert len(self.x) == len(self._y_unc), \
                 'Fitting x (len {}) does not match y_unc (len {})'.format(
                     len(self.x), len(self._y_unc))
-            # TODO: revisit this non zero unc option
-            self._y_unc[self._y_unc <= 0.] = np.min(self._y_unc > 0.)
+            if np.any(self._y_unc <= 0.):
+                min_v = np.min(self._y_unc[self._y_unc > 0.])
+                warnings.warn(
+                    'Negative or zero uncertainty not supported. Changing ' +
+                    'them to {}. If you have Poisson data, '.format(min_v) +
+                    'this should be 1.')
+                self._y_unc[self._y_unc <= 0.] = min_v
+        if roi is not None:
+            self.set_roi(*roi)
         if update_defaults:
             self.guess_param_defaults(update=True)
 
@@ -308,9 +340,64 @@ class Fitter(object):
     def set_param(self, pname, ptype, pvalue):
         self.params[pname].set(**{ptype: pvalue})
 
-    @abstractmethod
-    def make_model(self):
-        return
+    def _translate_model(self, m):
+        if inspect.isclass(m):
+            if not issubclass(m, Model):
+                raise FittingError(
+                    'Input model is not a subclass of Model: {}'.format(m))
+            self._model_cls_cnt[m] = self._model_cls_cnt.get(m, 0) + 1
+            return m
+        elif isinstance(m, Model):
+            cls = m.__class__
+            self._model_cls_cnt[cls] = self._model_cls_cnt.get(cls, 0) + 1
+            return m
+        elif isstring(m):
+            cls = MODEL_STR_TO_CLS.get(m.lower(), None)
+            if cls is not None:
+                self._model_cls_cnt[cls] = self._model_cls_cnt.get(cls, 0) + 1
+                return cls
+        raise FittingError('Unknown model type: {}'.format(m))
+
+    def _make_model(self, model):
+        if isstring(model) or isinstance(model, Model):
+            model = [model]
+        # Convert the model(s) to a list of Model classes / Model instancess
+        self._model_cls_cnt = {}
+        model_translated = [self._translate_model(m) for m in model]
+        # Build complete model with appropriate prefixes
+        model_prefixes = set()
+        models = []
+        name = ''
+        for m in model_translated:
+            if inspect.isclass(m):
+                prefix_base = m.__name__.lower()
+                if prefix_base.endswith('model'):
+                    prefix_base = prefix_base[:-5]
+                if self._model_cls_cnt[m] == 1:
+                    prefix = '{}_'.format(prefix_base)
+                else:
+                    for i in range(self._model_cls_cnt[m]):
+                        prefix = '{}{}_'.format(prefix_base, i)
+                        if prefix not in model_prefixes:
+                            break
+                m_instance = m(prefix=prefix)
+            else:
+                m_instance = m
+            if m_instance.prefix in model_prefixes:
+                raise FittingError(
+                    'A model prefix is not unique: ' +
+                    '{} '.format(m_instance.prefix) +
+                    'All models: {}'.format(model_translated)
+                )
+            model_prefixes.add(m_instance.prefix)
+            models.append(m_instance)
+            name += m_instance._name.capitalize()
+        # Construct final model
+        self._name = name
+        if len(models) == 1:
+            self._model = models[0]
+        else:
+            self._model = sum(models[1:], models[0])
 
     def _guess_param_defaults(self, **kwargs):
         params = []
@@ -321,6 +408,7 @@ class Fitter(object):
     def guess_param_defaults(self, update=False, **kwargs):
         defaults = self._guess_param_defaults(**kwargs)
         if update:
+            # TODO: check this logic
             if defaults is not None:
                 for dp in defaults:
                     self.set_param(*dp)
@@ -501,54 +589,6 @@ class Fitter(object):
             plt.close(fig)
         else:
             return fig
-
-
-class FitterGauss(Fitter):
-
-    def make_model(self):
-        self.model = GaussModel(prefix='gauss_')
-
-
-class FitterGaussLine(Fitter):
-
-    def make_model(self):
-        self.model = \
-            GaussModel(prefix='gauss_') + \
-            LineModel(prefix='line_')
-
-
-class FitterGaussExp(Fitter):
-
-    def make_model(self):
-        self.model = \
-            GaussModel(prefix='gauss_') + \
-            ExpModel(prefix='exp_')
-
-
-class FitterGaussErf(Fitter):
-
-    def make_model(self):
-        self.model = \
-            GaussModel(prefix='gauss_') + \
-            ErfModel(prefix='erf_')
-
-
-class FitterGaussErfLine(Fitter):
-
-    def make_model(self):
-        self.model = \
-            GaussModel(prefix='gauss_') + \
-            ErfModel(prefix='erf_') + \
-            LineModel(prefix='line_')
-
-
-class FitterGaussErfExp(Fitter):
-
-    def make_model(self):
-        self.model = \
-            GaussModel(prefix='gauss_') + \
-            ErfModel(prefix='erf_') + \
-            ExpModel(prefix='exp_')
 
 
 class FitterGaussGauss(Fitter):
