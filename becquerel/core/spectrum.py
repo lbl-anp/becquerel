@@ -148,6 +148,7 @@ class Spectrum(object):
             self._cps = handle_uncs(cps, uncs, lambda x: np.nan)
 
         self.bin_edges_kev = bin_edges_kev
+        print(self.bin_edges_kev)
 
         if livetime is not None:
             self.livetime = float(livetime)
@@ -734,8 +735,14 @@ class Spectrum(object):
         """
 
         n_edges = len(self.channels) + 1
-        channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
+        if self.bin_edges_kev is not None:
+            # FIXME half binwidths
+            channel_edges = np.linspace(self.bin_edges_kev[0], self.bin_edges_kev[-1], num=n_edges)
+        else:
+            channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
+        print(channel_edges) # FIXME should not use 'channels' which are really bins!
         self.bin_edges_kev = cal.ch2kev(channel_edges)
+        print('self.bin_edges_kev =', self.bin_edges_kev)
 
     def calibrate_like(self, other):
         """Apply another Spectrum object's calibration (bin edges vector).
