@@ -270,7 +270,7 @@ class PeakFinder(object):
             # fwhm = 2 sqrt(snr0 / d2snr/dchan2)
             fwhm0 = self.kernel.fwhm(chan)
             h = int(max(1, 0.2 * fwhm0))
-            d2 = (1 * self.snr[chan - h]
+            d2 = (1 * self.snr[chan - h] # FIXME indexing by channel will break in update; find bin instead
                   - 2 * self.snr[chan]
                   + 1 * self.snr[chan + h]) / h**2
             if d2 >= 0:
@@ -281,7 +281,7 @@ class PeakFinder(object):
             self.fwhms.append(fwhm)
             # add the peak if it has a similar FWHM to the kernel's FWHM
             if self.fwhm_tol[0] * fwhm0 <= fwhm <= self.fwhm_tol[1] * fwhm0:
-                self.channels.append(chan)
+                self.channels.append(chan) # FIXME this is where it implicitly works in bin space, not channel space
                 self.snrs.append(self.snr[chan])
                 self.fwhms.append(fwhm)
                 self.integrals.append(self._signal[chan])
@@ -304,7 +304,7 @@ class PeakFinder(object):
                 plt.plot(
                     [chan - fwhm / 2, chan + fwhm / 2], [snr / 2] * 2,
                     'b-', lw=1.5)
-        plt.xlim(0, len(self.spectrum))
+        plt.xlim(0, len(self.spectrum)) # FIXME this will fail
         plt.ylim(0)
         plt.xlabel('Channels')
         plt.ylabel('SNR')
@@ -338,6 +338,7 @@ class PeakFinder(object):
             raise PeakFinderError(
                 'No peak found in range {}-{} with SNR > {}'.format(
                     chan0, chan1, min_snr))
+
         peak_chan = np.where((self.snr == peak_snr) & chan_range)[0][0]
         self.add_peak(peak_chan)
         return peak_chan

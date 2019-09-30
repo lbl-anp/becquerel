@@ -111,8 +111,7 @@ def fom_gain(channels, snrs, energies):
 
 def find_best_gain(
         channels, snrs, required_energies, optional=(),
-        gain_range=(1e-3, 1e3), de_max=10., verbose=False,
-        binwidth=1):
+        gain_range=(1e-3, 1e3), de_max=10., verbose=False):
     """Find the gain that gives the best match of peaks to energies."""
     if len(channels) != len(snrs):
         raise AutoCalibratorError(
@@ -120,19 +119,17 @@ def find_best_gain(
                 len(channels), len(snrs)))
     if len(channels) < 2:
         raise AutoCalibratorError(
-            'Number of channels ({}) must at least 2'.format(len(channels)))
+            'Number of channels ({}) must be at least 2'.format(len(channels)))
     if len(required_energies) < 2:
         raise AutoCalibratorError(
-            'Number of required energies ({}) must at least 2'.format(
+            'Number of required energies ({}) must be at least 2'.format(
                 len(required_energies)))
     if len(channels) < len(required_energies):
         raise AutoCalibratorError(
-            'Number of channels ({}) must be > required energies ({})'.format(
+            'Number of channels ({}) must be >= required energies ({})'.format(
                 len(channels), len(required_energies)))
-    print(channels)
-    print(binwidth, 'channels per bin')
-    channels = np.array(channels) #* binwidth # FIXME JV added. This was not quite the silver bullet I hoped
-    print(channels)
+
+    channels = np.array(channels)
     snrs = np.array(snrs)
     n_req = len(required_energies)
     # make sure the required and optional sets do not overlap
@@ -167,8 +164,6 @@ def find_best_gain(
                 comb_chan = comb_chan[ind]
                 comb_snr = comb_snr[ind]
                 # calculate gain
-                # FIXME I think this is where it goes wrong. We need to divide by binwidth
-                # of the spectrum in the general case. If binwidth = 1 channel per bin, all good
                 gain = fit_gain(comb_chan, comb_snr, comb_erg)
                 if gain < gain_range[0] or gain > gain_range[1]:
                     continue
@@ -208,7 +203,7 @@ def find_best_gain(
     if best_gain is None:
         return None
     else:
-        print('found best gain:', gain, 'keV/channel')
+        print('found best gain: %f keV/channel' % best_gain)
         return {
             'gain': best_gain,
             'channels': best_chans,
@@ -220,7 +215,7 @@ def find_best_gain(
 class AutoCalibrator(object):
     """Automatically calibrate a spectrum by convolving it with a filter."""
 
-    def __init__(self, peakfinder, binwidth=1):
+    def __init__(self, peakfinder):
         """Initialize the calibration with a spectrum and kernel."""
         self.set_peaks(peakfinder)
         self.gain = None
@@ -228,7 +223,6 @@ class AutoCalibrator(object):
         self.fit_channels = []
         self.fit_snrs = []
         self.fit_energies = []
-        self.binwidth = binwidth
         self.reset()
 
     def reset(self):
@@ -282,9 +276,9 @@ class AutoCalibrator(object):
                 'Require {} energies but only {} peaks are available'.format(
                     len(required_energies), len(self.peakfinder.channels)))
         fit = find_best_gain(
-            self.peakfinder.channels * self.binwidth, self.peakfinder.snrs, # FIXME or is it in peakfinder.channels?
+            self.peakfinder.channels, self.peakfinder.snrs,
             required_energies, optional=optional, gain_range=gain_range,
-            de_max=de_max, verbose=verbose, binwidth=self.binwidth)
+            de_max=de_max, verbose=verbose)
         if fit is None:
             self.fit_energies = [] # FIXME should be fit_channels?
             self.fit_snrs = []
@@ -298,4 +292,4 @@ class AutoCalibrator(object):
             self.fit_energies = fit['energies']
             self.gain = fit['gain']
             self.cal = LinearEnergyCal.from_coeffs(
-                {'offset': 0, 'slope': self.gain})
+                {'offset': 0, 'slope': self.gain}) # FIXME this probably should not assume zero offset

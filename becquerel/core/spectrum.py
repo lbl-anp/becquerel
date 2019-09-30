@@ -148,7 +148,6 @@ class Spectrum(object):
             self._cps = handle_uncs(cps, uncs, lambda x: np.nan)
 
         self.bin_edges_kev = bin_edges_kev
-        print(self.bin_edges_kev)
 
         if livetime is not None:
             self.livetime = float(livetime)
@@ -387,6 +386,7 @@ class Spectrum(object):
           UncalibratedError: if spectrum is not calibrated
         """
 
+        # FIXME bin_widths should exist even if not energy calibrated
         if not self.is_calibrated:
             raise UncalibratedError('Spectrum is not calibrated')
         else:
@@ -401,6 +401,7 @@ class Spectrum(object):
         """
 
         return self.bin_edges_kev is not None
+        # FIXME this fails for manual histogramming before energy calibration
 
     @property
     def bin_edges_kev(self):
@@ -727,6 +728,12 @@ class Spectrum(object):
                         bin_edges_kev=self.bin_edges_kev,
                         livetime=new_livetime)
 
+    # FIXME JV added
+    # FIXME double-check math
+    # could be useful to check for non-uniform binning
+    def find_bin(self, x):
+        return int((x - self.bin_edges_kev[0]) / self.bin_widths[0])
+
     def apply_calibration(self, cal):
         """Use an EnergyCal to generate bin edge energies for this spectrum.
 
@@ -740,9 +747,8 @@ class Spectrum(object):
             channel_edges = np.linspace(self.bin_edges_kev[0], self.bin_edges_kev[-1], num=n_edges)
         else:
             channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
-        print(channel_edges) # FIXME should not use 'channels' which are really bins!
+
         self.bin_edges_kev = cal.ch2kev(channel_edges)
-        print('self.bin_edges_kev =', self.bin_edges_kev)
 
     def calibrate_like(self, other):
         """Apply another Spectrum object's calibration (bin edges vector).
