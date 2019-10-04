@@ -3,6 +3,7 @@
 from __future__ import print_function
 import os
 from copy import deepcopy
+from bisect import bisect_left
 import datetime
 import numpy as np
 from uncertainties import UFloat, unumpy
@@ -11,6 +12,8 @@ from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
 from .rebin import rebin
 from . import plotting
 import warnings
+
+EPS = np.finfo(float).eps
 
 
 class SpectrumError(Exception):
@@ -728,11 +731,38 @@ class Spectrum(object):
                         bin_edges_kev=self.bin_edges_kev,
                         livetime=new_livetime)
 
+    # possibly the best way to test for uniform bins within float precision
+    # could set a flag at creation (that would have to be able to change with a
+    # non-linear calibration) and use this as a test
+    # this could also use self.bin_widths being defined even without calibration
+    # https://github.com/0cjs/py-allthesame
+    def has_uniform_bins(self):
+        iterator = iter(self.bin_widths)
+        x0 = next(iterator, None)
+        for x in iterator:
+            if abs(x/x0 - 1.0) > EPS:
+                return False
+        return True
+
     # FIXME JV added
     # FIXME double-check math
-    # could be useful to check for non-uniform binning
+    # FIXME untested in new form
+    # FIXME needs to work with uncal channels, too
     def find_bin(self, x):
-        return int((x - self.bin_edges_kev[0]) / self.bin_widths[0])
+        assert x >= self.bin_edges_kev[0]
+        assert x <= self.bin_edges_kev[-1]
+
+        if self.has_uniform_bins():
+            return int((x - self.bin_edges_kev[0]) / self.bin_widths[0])
+        else:
+            return bisect_left(self.bin_edges_kev, x)
+
+    # this can simplify to return len(self.bin_widths) if it works for uncal
+    def get_nbins(self):
+        if self.is_calibrated:
+            return len(self.bin_edges_kev) - 1
+        else:
+            return len(self.channels)
 
     def apply_calibration(self, cal):
         """Use an EnergyCal to generate bin edge energies for this spectrum.
