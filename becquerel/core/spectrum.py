@@ -492,18 +492,20 @@ class Spectrum(object):
         else:
             assert len(bins) > 1
 
-        bin_counts, bin_edges = np.histogram(listmode_data, bins=bins)
-        kwargs = {'counts': bin_counts}
+        bin_counts, bin_edges = np.histogram(listmode_data, bins=bins, range=(xmin, xmax))
+        kwargs = {'counts': bin_counts,
+                  'bin_edges_kev': bin_edges} # TODO: introduce bin_edges_adc
 
         if timestamps is not None:
             # TODO: How do we handle these? This isn't accurate ...
             # What are the timestamps: 'float', 'int',
             #   'datetime', epoch [nano][micro][milli]seconds?
             warnings.warn('Using first/last timestamps to approximate ' +
-                          'start_ and stop_time and livetime.', SpectrumWarning)
+                          'start_ and stop_time and realtime.', SpectrumWarning)
             kwargs['start_time'] = min(timestamps)
             kwargs['stop_time'] = max(timestamps)
-            kwargs['livetime'] = kwargs['stop_time'] - kwargs['start_time']
+            kwargs['realtime'] = kwargs['stop_time'] - kwargs['start_time']
+            kwargs['livetime'] = None
 
         return cls(**kwargs)
 
