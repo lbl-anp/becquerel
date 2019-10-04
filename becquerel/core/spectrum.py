@@ -458,6 +458,55 @@ class Spectrum(object):
 
         return cls(**kwargs)
 
+    @classmethod
+    def from_listmode(cls, listmode_data, timestamps=None, bins=None,
+                      xmin=None, xmax=None):
+        """Construct a Spectrum object from an array of (possibly timestamped)
+        listmode data.
+
+        Args:
+          listmode_data: the array containing the listmode data, e.g., the ADC
+            channels triggered or pulse integral values recorded
+          bins: integer number of bins OR array of bin_edges
+          xmin: minimum x of histogram; equals bin_edges[0]
+          xmax: maximum x of histogram; equals bin_edges[-1] + bin_widths[-1]
+          timestamps: array of timestamps associated with listmode_data
+
+        Returns:
+          A Spectrum object
+
+        Raises:
+          AssertionError: for xmin > xmax or nbins < 1
+        """
+
+        if xmin is None:
+            xmin = 0
+        if xmax is None:
+            xmax = np.ceil(max(listmode_data))
+        if bins is None:
+            bins = np.arange(xmin, xmax, dtype=np.int)
+
+        assert xmin < xmax
+        if isinstance(bins, int):
+            assert bins > 0
+        else:
+            assert len(bins) > 1
+
+        bin_counts, bin_edges = np.histogram(listmode_data, bins=bins)
+        kwargs = {'counts': bin_counts}
+
+        if timestamps is not None:
+            # TODO: How do we handle these? This isn't accurate ...
+            # What are the timestamps: 'float', 'int',
+            #   'datetime', epoch [nano][micro][milli]seconds?
+            warnings.warn('Using first/last timestamps to approximate ' +
+                          'start_ and stop_time and livetime.', SpectrumWarning)
+            kwargs['start_time'] = min(timestamps)
+            kwargs['stop_time'] = max(timestamps)
+            kwargs['livetime'] = kwargs['stop_time'] - kwargs['start_time']
+
+        return cls(**kwargs)
+
     def copy(self):
         """Make a deep copy of this Spectrum object.
 
