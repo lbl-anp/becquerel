@@ -153,7 +153,7 @@ def find_best_gain(
             min_chan = (comb_erg / gain_range[1]).min()
             max_chan = (comb_erg / gain_range[0]).max()
             # cycle through channel combinations
-            chan_inds = np.arange(len(channels))
+            chan_inds = np.arange(len(channels)) # FIXME these are really bins
             chan_inds = chan_inds[
                 (min_chan <= channels) & (channels <= max_chan)]
             for chan_indices in combinations(chan_inds, n_set):
