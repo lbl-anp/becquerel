@@ -482,7 +482,7 @@ class Spectrum(object):
           AssertionError: no listmode_data, or xmin >= xmax, or nbins < 1
         """
 
-        assert listmode_data
+        assert len(listmode_data) > 1
 
         if xmin is None:
             xmin = 0
