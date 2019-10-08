@@ -501,7 +501,7 @@ class Spectrum(object):
                                              bins=bins,
                                              range=(xmin, xmax))
         kwargs = {'counts': bin_counts,
-                  'bin_edges_kev': bin_edges} # TODO: introduce bin_edges_adc
+                  'bin_edges_kev': bin_edges}  # TODO: introduce bin_edges_adc
 
         if timestamps is not None:
             assert len(timestamps) == len(listmode_data)
@@ -509,7 +509,7 @@ class Spectrum(object):
             # What are the timestamps: 'float', 'int',
             #   'datetime', epoch [nano][micro][milli]seconds?
             warnings.warn('Using first/last timestamps to approximate ' +
-                          'start_ and stop_time and realtime.', SpectrumWarning)
+                          'start / stop_time and realtime.', SpectrumWarning)
             kwargs['start_time'] = min(timestamps)
             kwargs['stop_time'] = max(timestamps)
             kwargs['realtime'] = kwargs['stop_time'] - kwargs['start_time']
@@ -814,7 +814,9 @@ class Spectrum(object):
         If the Spectrum has uniform binning, then we just solve the linear
         equation between bins and x-axis values. Otherwise, we use bisect_left
         to solve for the insertion point where x would fit in a list of bin
-        edges, then subtract 1 to get the index of the low edge.
+        edges, then subtract 1 to get the index of the low edge. For an x
+        equal to the bin low edge, bisect_left returns 0, so take the max to
+        avoid a -1.
 
         TODO: ensure this works with uncal channels, too
 
@@ -822,18 +824,18 @@ class Spectrum(object):
           x: value whose bin to find
 
         Raises:
-          AssertionError: if x is outside the bin edges
+          AssertionError: if x is outside the bin edges or equal to up edge
 
         Returns:
           The integer bin number that contains x
         """
         assert x >= self.bin_edges_kev[0]
-        assert x <= self.bin_edges_kev[-1]
+        assert x < self.bin_edges_kev[-1]
 
         if self.has_uniform_bins():
             return int((x - self.bin_edges_kev[0]) / self.bin_widths[0])
         else:
-            return bisect_left(self.bin_edges_kev, x) - 1
+            return max(bisect_left(self.bin_edges_kev, x) - 1, 0)
 
     def get_nbins(self):
         """Get the number of bins in the Spectrum.

@@ -231,29 +231,39 @@ def test_negative_input(spec_data):
 #      Test Spectrum.from_listmode behavior
 # ----------------------------------------------
 
-
 def test_listmode():
     NBINS = 100
-    MEAN = 1000
-    STDDEV = 50
+    MEAN = 1000.
+    STDDEV = 50.
     NSAMPLES = 10000
-    XMIN, XMAX = 0, 2000
+    XMIN, XMAX = 0., 2000.
+    BW = (XMAX - XMIN) / (1.0 * NBINS)
     lmd = np.random.normal(MEAN, STDDEV, NSAMPLES)
 
     # test with args
     spec0 = bq.Spectrum.from_listmode(lmd, bins=NBINS, xmin=XMIN, xmax=XMAX)
     assert spec0.get_nbins() == NBINS
+    assert np.isclose(spec0.bin_widths[0], BW)
+    assert spec0.bin_edges_kev[0] == XMIN
+    assert spec0.bin_edges_kev[-1] == XMAX
+    assert len(spec0.bin_edges_kev) == NBINS + 1
     assert spec0.has_uniform_bins()
-    assert spec0.find_bin(0) == 0
-    assert spec0.find_bin(XMAX-1e-9) == NBINS - 1
+    assert spec0.find_bin(XMIN) == 0
+    assert spec0.find_bin(XMIN + BW/4.0) == 0
+    assert spec0.find_bin(XMAX - BW/4.0) == NBINS - 1
 
     # test without args
     spec1 = bq.Spectrum.from_listmode(lmd)
     assert spec1.get_nbins() == int(np.ceil(max(lmd)))
 
-    log_bins = np.logspace(1, 4)
+    # test non-uniform bins
+    NEDGES = NBINS + 1
+    log_bins = np.logspace(1, 4, num=NEDGES, base=10.0)
     spec2 = bq.Spectrum.from_listmode(lmd, bins=log_bins)
     assert spec2.has_uniform_bins() is False
+    assert spec2.find_bin(1e1) == 0
+    assert spec2.find_bin(1e1 + 1e-9) == 0
+    assert spec2.find_bin(1e4 - 1e-9) == NBINS - 1
 
 
 # ----------------------------------------------
