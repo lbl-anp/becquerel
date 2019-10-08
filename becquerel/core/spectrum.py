@@ -479,10 +479,10 @@ class Spectrum(object):
           A Spectrum object
 
         Raises:
-          AssertionError: len(listmode_data) < 0 or xmin >= xmax or nbins < 1
+          AssertionError: no listmode_data, or xmin >= xmax, or nbins < 1
         """
 
-        assert len(listmode_data) > 0
+        assert listmode_data
 
         if xmin is None:
             xmin = 0
@@ -862,11 +862,11 @@ class Spectrum(object):
 
         n_edges = len(self.channels) + 1
         if self.bin_edges_kev is not None:
-            # FIXME half binwidths ?
             channel_edges = np.linspace(self.bin_edges_kev[0],
                                         self.bin_edges_kev[-1],
                                         num=n_edges)
         else:
+            # FIXME why was there a half-bin offset here?
             channel_edges = np.linspace(-0.5,
                                         self.channels[-1] + 0.5,
                                         num=n_edges)

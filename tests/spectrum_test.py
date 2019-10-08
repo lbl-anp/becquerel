@@ -260,6 +260,7 @@ def test_listmode():
     NEDGES = NBINS + 1
     log_bins = np.logspace(1, 4, num=NEDGES, base=10.0)
     spec2 = bq.Spectrum.from_listmode(lmd, bins=log_bins)
+    assert spec2.get_nbins() == NBINS
     assert spec2.has_uniform_bins() is False
     assert spec2.find_bin(1e1) == 0
     assert spec2.find_bin(1e1 + 1e-9) == 0
