@@ -479,15 +479,17 @@ class Spectrum(object):
           A Spectrum object
 
         Raises:
-          AssertionError: for xmin > xmax or nbins < 1
+          AssertionError: len(listmode_data) < 0 or xmin >= xmax or nbins < 1
         """
+
+        assert len(listmode_data) > 0
 
         if xmin is None:
             xmin = 0
         if xmax is None:
             xmax = np.ceil(max(listmode_data))
         if bins is None:
-            bins = np.arange(xmin, xmax, dtype=np.int)
+            bins = np.arange(xmin, xmax + 1, dtype=np.int)
 
         assert xmin < xmax
         if isinstance(bins, int):
@@ -495,11 +497,14 @@ class Spectrum(object):
         else:
             assert len(bins) > 1
 
-        bin_counts, bin_edges = np.histogram(listmode_data, bins=bins, range=(xmin, xmax))
+        bin_counts, bin_edges = np.histogram(listmode_data,
+                                             bins=bins,
+                                             range=(xmin, xmax))
         kwargs = {'counts': bin_counts,
                   'bin_edges_kev': bin_edges} # TODO: introduce bin_edges_adc
 
         if timestamps is not None:
+            assert len(timestamps) == len(listmode_data)
             # TODO: How do we handle these? This isn't accurate ...
             # What are the timestamps: 'float', 'int',
             #   'datetime', epoch [nano][micro][milli]seconds?
@@ -855,10 +860,14 @@ class Spectrum(object):
 
         n_edges = len(self.channels) + 1
         if self.bin_edges_kev is not None:
-            # FIXME half binwidths
-            channel_edges = np.linspace(self.bin_edges_kev[0], self.bin_edges_kev[-1], num=n_edges)
+            # FIXME half binwidths ?
+            channel_edges = np.linspace(self.bin_edges_kev[0],
+                                        self.bin_edges_kev[-1],
+                                        num=n_edges)
         else:
-            channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
+            channel_edges = np.linspace(-0.5,
+                                        self.channels[-1] + 0.5,
+                                        num=n_edges)
 
         self.bin_edges_kev = cal.ch2kev(channel_edges)
 

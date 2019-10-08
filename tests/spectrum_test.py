@@ -127,7 +127,6 @@ class TestSpectrumFromFile(object):
 
     def run_from_file(self, extension):
         """Run the test of from_file() for files with the given extension."""
-
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
         for filename in filenames:
@@ -226,6 +225,35 @@ def test_negative_input(spec_data):
     spec = bq.Spectrum(neg_spec, uncs=neg_uncs)
     assert np.any(spec.counts_vals < 0)
     assert np.any(np.isnan(spec.counts_uncs))
+
+
+# ----------------------------------------------
+#      Test Spectrum.from_listmode behavior
+# ----------------------------------------------
+
+
+def test_listmode():
+    NBINS = 100
+    MEAN = 1000
+    STDDEV = 50
+    NSAMPLES = 10000
+    XMIN, XMAX = 0, 2000
+    lmd = np.random.normal(MEAN, STDDEV, NSAMPLES)
+
+    # test with args
+    spec0 = bq.Spectrum.from_listmode(lmd, bins=NBINS, xmin=XMIN, xmax=XMAX)
+    assert spec0.get_nbins() == NBINS
+    assert spec0.has_uniform_bins()
+    assert spec0.find_bin(0) == 0
+    assert spec0.find_bin(XMAX-1e-9) == NBINS - 1
+
+    # test without args
+    spec1 = bq.Spectrum.from_listmode(lmd)
+    assert spec1.get_nbins() == int(np.ceil(max(lmd)))
+
+    log_bins = np.logspace(1, 4)
+    spec2 = bq.Spectrum.from_listmode(lmd, bins=log_bins)
+    assert spec2.has_uniform_bins() is False
 
 
 # ----------------------------------------------
