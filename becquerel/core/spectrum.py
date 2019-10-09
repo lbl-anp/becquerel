@@ -472,7 +472,7 @@ class Spectrum(object):
             channels triggered or pulse integral values recorded
           bins: integer number of bins OR array of bin_edges
           xmin: minimum x of histogram; equals bin_edges[0]
-          xmax: maximum x of histogram; equals bin_edges[-1] + bin_widths[-1]
+          xmax: maximum x of histogram; equals bin_edges[-1]
           timestamps: array of timestamps associated with listmode_data
 
         Returns:
@@ -482,7 +482,7 @@ class Spectrum(object):
           AssertionError: no listmode_data, or xmin >= xmax, or nbins < 1
         """
 
-        assert len(listmode_data) > 1
+        assert len(listmode_data) > 0
 
         if xmin is None:
             xmin = 0
@@ -500,6 +500,12 @@ class Spectrum(object):
         bin_counts, bin_edges = np.histogram(listmode_data,
                                              bins=bins,
                                              range=(xmin, xmax))
+
+        warnings.warn('Initialized bin_edges_kev in from_listmode(). ' +
+                      'Bin edges may not be in keV, and is_calibrated ' +
+                      'will return True regardless of energy calibration.',
+                      SpectrumWarning)
+
         kwargs = {'counts': bin_counts,
                   'bin_edges_kev': bin_edges}  # TODO: introduce bin_edges_adc
 
