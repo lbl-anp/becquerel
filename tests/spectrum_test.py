@@ -251,6 +251,10 @@ def test_listmode():
     assert spec0.find_bin(XMIN) == 0
     assert spec0.find_bin(XMIN + BW/4.0) == 0
     assert spec0.find_bin(XMAX - BW/4.0) == NBINS - 1
+    with pytest.raises(AssertionError):
+        spec0.find_bin(XMAX)
+    with pytest.raises(AssertionError):
+        spec0.find_bin(XMIN - BW/4.0)
 
     # test without args
     spec1 = bq.Spectrum.from_listmode(lmd)

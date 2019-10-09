@@ -3,7 +3,6 @@
 from __future__ import print_function
 import os
 from copy import deepcopy
-from bisect import bisect_left
 import datetime
 import numpy as np
 from uncertainties import UFloat, unumpy
@@ -818,11 +817,9 @@ class Spectrum(object):
         """Find the Spectrum bin that contains a value x.
 
         If the Spectrum has uniform binning, then we just solve the linear
-        equation between bins and x-axis values. Otherwise, we use bisect_left
-        to solve for the insertion point where x would fit in a list of bin
-        edges, then subtract 1 to get the index of the low edge. For an x
-        equal to the bin low edge, bisect_left returns 0, so take the max to
-        avoid a -1.
+        equation between bins and x-axis values. Otherwise, we use searchsorted
+        to bisect for the insertion point where x would fit in a list of bin
+        edges, then subtract 1 to get the index of the low edge.
 
         TODO: ensure this works with uncal channels, too
 
@@ -841,7 +838,7 @@ class Spectrum(object):
         if self.has_uniform_bins():
             return int((x - self.bin_edges_kev[0]) / self.bin_widths[0])
         else:
-            return max(bisect_left(self.bin_edges_kev, x) - 1, 0)
+            return np.searchsorted(self.bin_edges_kev, x, 'right') - 1
 
     def get_nbins(self):
         """Get the number of bins in the Spectrum.
