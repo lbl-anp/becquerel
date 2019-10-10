@@ -840,22 +840,6 @@ class Spectrum(object):
         else:
             return np.searchsorted(self.bin_edges_kev, x, 'right') - 1
 
-    def get_nbins(self):
-        """Get the number of bins in the Spectrum.
-
-        Note that the rightmost value _is_ included in the bin_edges
-
-        TODO: simplify to return len(self.bin_widths) if they are defined for
-        uncalibrated spectra. Although, that recomputes the diff...
-
-        Returns:
-          The integer number of bins in the Spectrum
-        """
-        if self.is_calibrated:
-            return len(self.bin_edges_kev) - 1
-        else:
-            return len(self.channels)
-
     def apply_calibration(self, cal):
         """Use an EnergyCal to generate bin edge energies for this spectrum.
 
