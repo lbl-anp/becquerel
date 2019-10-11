@@ -466,6 +466,9 @@ class Spectrum(object):
         """Construct a Spectrum object from an array of (possibly timestamped)
         listmode data.
 
+        It is left to the user to set kwargs realtime, livetime, etc, based on
+        timestamps, rather than trying to cover all use cases here.
+
         Args:
           listmode_data: the array containing the listmode data, e.g., the ADC
             channels triggered or pulse integral values recorded
@@ -510,15 +513,6 @@ class Spectrum(object):
 
         if timestamps is not None:
             assert len(timestamps) == len(listmode_data)
-            # TODO: How do we handle these? This isn't accurate ...
-            # What are the timestamps: 'float', 'int',
-            #   'datetime', epoch [nano][micro][milli]seconds?
-            warnings.warn('Using first/last timestamps to approximate ' +
-                          'start / stop_time and realtime.', SpectrumWarning)
-            kwargs['start_time'] = min(timestamps)
-            kwargs['stop_time'] = max(timestamps)
-            kwargs['realtime'] = kwargs['stop_time'] - kwargs['start_time']
-            kwargs['livetime'] = None
 
         return cls(**kwargs)
 
