@@ -461,13 +461,11 @@ class Spectrum(object):
         return cls(**kwargs)
 
     @classmethod
-    def from_listmode(cls, listmode_data, timestamps=None, bins=None,
-                      xmin=None, xmax=None):
-        """Construct a Spectrum object from an array of (possibly timestamped)
-        listmode data.
+    def from_listmode(cls, listmode_data, bins=None, xmin=None, xmax=None):
+        """Construct a Spectrum object from an array of listmode data.
 
-        It is left to the user to set kwargs realtime, livetime, etc, based on
-        timestamps, rather than trying to cover all use cases here.
+        It is left to the user to set kwargs realtime, livetime, etc, rather
+        than trying to cover all use cases here.
 
         Args:
           listmode_data: the array containing the listmode data, e.g., the ADC
@@ -475,7 +473,6 @@ class Spectrum(object):
           bins: integer number of bins OR array of bin_edges
           xmin: minimum x of histogram; equals bin_edges[0]
           xmax: maximum x of histogram; equals bin_edges[-1]
-          timestamps: array of timestamps associated with listmode_data
 
         Returns:
           A Spectrum object
@@ -510,9 +507,6 @@ class Spectrum(object):
 
         kwargs = {'counts': bin_counts,
                   'bin_edges_kev': bin_edges}  # TODO: introduce bin_edges_adc
-
-        if timestamps is not None:
-            assert len(timestamps) == len(listmode_data)
 
         return cls(**kwargs)
 
