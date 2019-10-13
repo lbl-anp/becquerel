@@ -14,3 +14,4 @@ Then the data are in
 from .spe_file import SpeFile
 from .spc_file import SpcFile
 from .cnf_file import CnfFile
+from .spectrum_file import SpectrumFileParsingError, SpectrumFileParsingWarning

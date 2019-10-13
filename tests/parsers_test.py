@@ -9,10 +9,9 @@ import becquerel as bq
 
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'samples')
-
 SAMPLES = {}
 for extension in ['.spe', '.spc', '.cnf']:
-    filenames = glob.glob(os.path.join(SAMPLES_PATH, '*.*'))
+    filenames = glob.glob(os.path.join(SAMPLES_PATH + '*', '*.*'))
     filenames_filtered = []
     for filename in filenames:
         fname, ext = os.path.splitext(filename)
@@ -42,7 +41,8 @@ class TestSpectrumFile(object):
 
     def test_spe(self):
         """Test parsers.SpeFile............................................"""
-        self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
+        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
+            self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
 
     def test_spc(self):
         """Test parsers.SpcFile............................................"""
@@ -90,7 +90,8 @@ class TestSpectrumFilePlot(object):
 
     def test_spe(self):
         """Test parsers.SpeFile............................................"""
-        self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
+        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
+            self.run_parser(bq.parsers.SpeFile, '.spe', write=True)
 
     def test_spc(self):
         """Test parsers.SpcFile............................................"""
