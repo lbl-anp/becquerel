@@ -461,7 +461,8 @@ class Spectrum(object):
         return cls(**kwargs)
 
     @classmethod
-    def from_listmode(cls, listmode_data, bins=None, xmin=None, xmax=None):
+    def from_listmode(cls, listmode_data, bins=None, xmin=None, xmax=None,
+                      **kwargs):
         """Construct a Spectrum object from an array of listmode data.
 
         It is left to the user to set kwargs realtime, livetime, etc, rather
@@ -505,8 +506,8 @@ class Spectrum(object):
                       'will return True regardless of energy calibration.',
                       SpectrumWarning)
 
-        kwargs = {'counts': bin_counts,
-                  'bin_edges_kev': bin_edges}  # TODO: introduce bin_edges_adc
+        kwargs['counts'] = bin_counts
+        kwargs['bin_edges_kev'] = bin_edges  # TODO: introduce bin_edges_adc
 
         return cls(**kwargs)
 
