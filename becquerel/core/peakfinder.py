@@ -59,24 +59,26 @@ class PeakFilter(object):
         fwhm_sqr = f0**2 + (f1**2 - f0**2) * (channel / x1)**2
         return np.sqrt(fwhm_sqr)
 
-    def kernel(self, channel, n_channels):
-        """Generate the kernel for the given channel."""
+    def kernel(self, x, edges):
+        """Generate the kernel for the given x value."""
         raise NotImplementedError
 
-    def kernel_matrix(self, n_channels):
+    def kernel_matrix(self, edges):
         """Build a matrix of the kernel evaluated at each channel."""
+        n_channels = len(edges) - 1
         kern = np.zeros((n_channels, n_channels))
-        for j in range(n_channels):
-            kern[:, j] = self.kernel(j, n_channels)
+        for i, x in enumerate(edges[:-1]):
+            kern[:, i] = self.kernel(x, edges)
         kern_pos = +1 * kern.clip(0, np.inf)
         kern_neg = -1 * kern.clip(-np.inf, 0)
         # normalize negative part to be equal to the positive part
         kern_neg *= kern_pos.sum(axis=0) / kern_neg.sum(axis=0)
         return kern_pos - kern_neg
 
-    def plot_matrix(self, n_channels):
+    def plot_matrix(self, edges):
         """Plot the matrix of kernels evaluated across the channels."""
-        kern_mat = self.kernel_matrix(n_channels)
+        n_channels = len(edges) - 1
+        kern_mat = self.kernel_matrix(edges)
         kern_min = kern_mat.min()
         kern_max = kern_mat.max()
         kern_min = min(kern_min, -1 * kern_max)
@@ -91,9 +93,9 @@ class PeakFilter(object):
         plt.ylabel('Output channel')
         plt.gca().set_aspect('equal')
 
-    def convolve(self, data):
+    def convolve(self, edges, data):
         """Convolve this kernel with the data."""
-        kern_mat = self.kernel_matrix(len(data))
+        kern_mat = self.kernel_matrix(edges)  # FIXME
         kern_mat_pos = +1 * kern_mat.clip(0, np.inf)
         kern_mat_neg = -1 * kern_mat.clip(-np.inf, 0)
         peak_plus_bkg = np.dot(kern_mat_pos, data)
@@ -118,6 +120,7 @@ class BoxcarPeakFilter(PeakFilter):
     """
 
     def kernel(self, channel, n_channels):
+        raise NotImplementedError('JV needs to fix this')
         """Generate the kernel for the given channel."""
         n_center = int(np.ceil(self.fwhm(channel)))
         if n_center % 2 == 0:
@@ -127,7 +130,7 @@ class BoxcarPeakFilter(PeakFilter):
         kernel0 = np.append(kernel0, -0.5 * np.ones(n_center))
         n_side = len(kernel0) // 2
         kernel = np.zeros(2 * n_side + n_channels)
-        kernel[channel:channel + len(kernel0)] = kernel0[:]
+        kernel[channel:channel + len(kernel0)] = kernel0[:]  # FIXME
         kernel = kernel[n_side:-n_side]
         positive = kernel > 0
         negative = kernel < 0
@@ -162,13 +165,12 @@ class GaussianPeakFilter(PeakFilter):
 
     """
 
-    def kernel(self, channel, n_channels):
-        """Generate the kernel for the given channel."""
-        fwhm = self.fwhm(channel)
+    def kernel(self, x, edges):
+        """Generate the kernel for the given x value."""
+        fwhm = self.fwhm(x)
         sigma = fwhm / 2.355
-        edges = np.arange(n_channels + 1)
-        g1_x0 = _gaussian1(edges[:-1], channel + 0.5, sigma)
-        g1_x1 = _gaussian1(edges[1:], channel + 0.5, sigma)
+        g1_x0 = _gaussian1(edges[:-1], x, sigma)
+        g1_x1 = _gaussian1(edges[1:], x, sigma)
         kernel = g1_x0 - g1_x1
         return kernel
 
@@ -240,9 +242,12 @@ class PeakFinder(object):
         self.spectrum = spectrum
         self.kernel = kernel
         self.snr = np.zeros(len(self.spectrum))
+
+        bin_edges = self.spectrum.bin_edges_raw
+
         # calculate the convolution
         peak_plus_bkg, bkg, signal, noise, snr = \
-            self.kernel.convolve(self.spectrum.counts_vals)
+            self.kernel.convolve(bin_edges, self.spectrum.counts_vals)
         self._peak_plus_bkg = peak_plus_bkg
         self._bkg = bkg
         self._signal = signal
@@ -250,17 +255,20 @@ class PeakFinder(object):
         self.snr = snr.clip(0)
         self.reset()
 
-    def add_peak(self, chan):
-        """Add a peak at the channel to list if it is not already there."""
-        chan_min = self.spectrum.channels.min()
-        chan_max = self.spectrum.channels.max()
-        if chan < chan_min or chan > chan_max:
+    def add_peak(self, xpeak):
+        """Add a peak at xpeak to list if it is not already there."""
+        bin_edges = self.spectrum.bin_edges_raw
+
+        xmin = bin_edges.min()
+        xmax = bin_edges.max()
+
+        if xpeak < xmin or xpeak > xmax:
             raise PeakFinderError(
-                'Channel {} is outside of range {}-{}'.format(
-                    chan, chan_min, chan_max))
+                'Peak x {} is outside of range {}-{}'.format(
+                    xpeak, xmin, xmax))
         new_channel = True
         for chan2 in self.channels:
-            if abs(chan - chan2) <= self.min_sep:
+            if abs(xpeak - chan2) <= self.min_sep:
                 new_channel = False
         if new_channel:
             # estimate FWHM using the second derivative
@@ -268,11 +276,13 @@ class PeakFinder(object):
             # 0.5 = 1 - 0.5 d2snr/dchan2 (fwhm/2)^2 / snr0
             # 1 = d2snr/dchan2 (fwhm/2)^2 / snr0
             # fwhm = 2 sqrt(snr0 / d2snr/dchan2)
-            fwhm0 = self.kernel.fwhm(chan)
-            h = int(max(1, 0.2 * fwhm0))
+            chan = self.spectrum.find_bin(xpeak, use_kev=False)
+            fwhm0 = self.kernel.fwhm(xpeak)
+            bw = self.spectrum.bin_widths_raw[0]
+            h = int(max(1, 0.2 * fwhm0 / bw))
             d2 = (1 * self.snr[chan - h]
                   - 2 * self.snr[chan]
-                  + 1 * self.snr[chan + h]) / h**2
+                  + 1 * self.snr[chan + h]) / h**2 / bw**2
             if d2 >= 0:
                 raise PeakFinderError(
                     'Second derivative must be negative at peak')
@@ -281,22 +291,26 @@ class PeakFinder(object):
             self.fwhms.append(fwhm)
             # add the peak if it has a similar FWHM to the kernel's FWHM
             if self.fwhm_tol[0] * fwhm0 <= fwhm <= self.fwhm_tol[1] * fwhm0:
-                self.channels.append(chan) # FIXME this is where it implicitly works in bin space, not channel space
+                self.channels.append(xpeak)
                 self.snrs.append(self.snr[chan])
                 self.fwhms.append(fwhm)
                 self.integrals.append(self._signal[chan])
                 self.backgrounds.append(self._bkg[chan])
+            else:
+                print('bad fwhm')
         # sort the peaks by channel
         self.sort_by(self.channels)
 
     def plot(self, facecolor='red', linecolor='red', alpha=0.5, peaks=True):
         """Plot the peak signal-to-noise ratios calculated using the kernel."""
+        bin_edges = self.spectrum.bin_edges_raw
+
         if facecolor is not None:
             plt.fill_between(
-                self.spectrum.channels, self.snr, 0,
+                bin_edges[:-1], self.snr, 0,
                 color=facecolor, alpha=alpha)
         if linecolor is not None:
-            plt.plot(self.spectrum.channels, self.snr, '-', color=linecolor)
+            plt.plot(bin_edges[:-1], self.snr, '-', color=linecolor)
         if peaks:
             for chan, snr, fwhm in zip(self.channels, self.snrs, self.fwhms):
                 plt.plot([chan] * 2, [0, snr], 'b-', lw=1.5)
@@ -304,19 +318,21 @@ class PeakFinder(object):
                 plt.plot(
                     [chan - fwhm / 2, chan + fwhm / 2], [snr / 2] * 2,
                     'b-', lw=1.5)
-        plt.xlim(0, len(self.spectrum)) # FIXME this will fail
+        plt.xlim(0, bin_edges.max())
         plt.ylim(0)
         plt.xlabel('Channels')
         plt.ylabel('SNR')
 
-    def find_peak(self, channel, frac_range=(0.8, 1.2), min_snr=2):
-        """Find the highest SNR peak within f0*channel and f1*channel."""
-        chan_min = self.spectrum.channels.min()
-        chan_max = self.spectrum.channels.max()
-        if channel < chan_min or channel > chan_max:
+    def find_peak(self, xpeak, frac_range=(0.8, 1.2), min_snr=2):
+        """Find the highest SNR peak within f0*xpeak and f1*xpeak."""
+        bin_edges = self.spectrum.bin_edges_raw
+        xmin = bin_edges.min()
+        xmax = bin_edges.max()
+
+        if xpeak < xmin or xpeak > xmax:
             raise PeakFinderError(
-                'Channel {} is outside of range {}-{}'.format(
-                    channel, chan_min, chan_max))
+                'Guess xpeak {} is outside of range {}-{}'.format(
+                    xpeak, xmin, xmax))
         if frac_range[0] < 0 or frac_range[0] > 1 or frac_range[1] < 1 or \
                 frac_range[0] > frac_range[1]:
             raise PeakFinderError(
@@ -328,35 +344,39 @@ class PeakFinder(object):
             raise PeakFinderError(
                 'SNR threshold is {:.3f} but maximum SNR is {:.3f}'.format(
                     min_snr, self.snr.max()))
-        chan0 = frac_range[0] * channel
-        chan1 = frac_range[1] * channel
-        chan_range = \
-            (chan0 <= self.spectrum.channels) & \
-            (self.spectrum.channels <= chan1)
-        peak_snr = self.snr[chan_range].max()
+        x0 = frac_range[0] * xpeak
+        x1 = frac_range[1] * xpeak
+        x_range = \
+            (x0 <= bin_edges[:-1]) & \
+            (bin_edges[:-1] <= x1)  # FIXME maybe bin centers
+        peak_snr = self.snr[x_range].max()
         if peak_snr < min_snr:
             raise PeakFinderError(
                 'No peak found in range {}-{} with SNR > {}'.format(
-                    chan0, chan1, min_snr))
+                    x0, x1, min_snr))
 
-        peak_chan = np.where((self.snr == peak_snr) & chan_range)[0][0]
-        self.add_peak(peak_chan)
-        return peak_chan
+        peak_index = np.where((self.snr == peak_snr) & x_range)[0][0]
+        peak_x = bin_edges[peak_index]
+        print('peak_x =', peak_x)
+        print('peak_index =', peak_index)
+        self.add_peak(peak_x)
+        return peak_x
 
-    def find_peaks(
-            self, min_chan=None, max_chan=None, min_snr=2, max_num=40):
+    def find_peaks(self, xmin=None, xmax=None, min_snr=2, max_num=40):
         """Find the highest SNR peaks in the data."""
-        if min_chan is None:
-            min_chan = self.spectrum.channels.min()
-        if max_chan is None:
-            max_chan = self.spectrum.channels.max()
-        if min_chan < self.spectrum.channels.min() or \
-                min_chan > self.spectrum.channels.max() or \
-                max_chan > self.spectrum.channels.max() or \
-                max_chan < self.spectrum.channels.min() or \
-                min_chan > max_chan:
+        bin_edges = self.spectrum.bin_edges_raw
+
+        if xmin is None:
+            xmin = bin_edges.min()
+        if xmax is None:
+            xmax = bin_edges.max()
+        if xmin < bin_edges.min() or \
+                xmin > bin_edges.max() or \
+                xmax > bin_edges.max() or \
+                xmax < bin_edges.min() or \
+                xmin > xmax:
             raise PeakFinderError(
-                'Channel range {}-{} is invalid'.format(min_chan, max_chan))
+                'Channel range {}-{} is invalid'.format(xmin, xmax))
         if min_snr < 0:
             raise PeakFinderError(
                 'Minimum SNR {:.3f} must be > 0'.format(min_snr))
@@ -381,9 +401,9 @@ class PeakFinder(object):
         peak = np.append(peak, False)
         # select peaks using SNR and channel criteria
         peak &= (min_snr <= self.snr)
-        peak &= (min_chan <= self.spectrum.channels)
-        peak &= (self.spectrum.channels <= max_chan)
-        for chan in self.spectrum.channels[peak]:
+        peak &= (xmin <= bin_edges[:-1])
+        peak &= (bin_edges[:-1] <= xmax)
+        for chan in bin_edges[:-1][peak]:
             self.add_peak(chan)
         # reduce number of channels to a maximum number max_n of highest SNR
         self.sort_by(np.array(self.snrs))
