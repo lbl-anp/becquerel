@@ -60,16 +60,16 @@ class Spectrum(object):
       stop_time: a datetime.datetime object representing the acquisition end
 
     Properties (read-only):
-      counts: counts in each channel, with uncertainty
-      counts_vals: counts in each channel, no uncertainty
-      counts_uncs: uncertainties on counts in each channel
-      cps: counts per second in each channel, with uncertainty
-      cps_vals: counts per second in each channel, no uncertainty
-      cps_uncs: uncertainties on counts per second in each channel
-      cpskev: CPS/keV in each channel, with uncertainty
-      cpskev_vals: CPS/keV in each channel, no uncertainty
-      cpskev_uncs: uncertainties on CPS/keV in each channel
-      channels: np.array of channel index as integers
+      counts: counts in each bin, with uncertainty
+      counts_vals: counts in each bin, no uncertainty
+      counts_uncs: uncertainties on counts in each bin
+      cps: counts per second in each bin, with uncertainty
+      cps_vals: counts per second in each bin, no uncertainty
+      cps_uncs: uncertainties on counts per second in each bin
+      cpskev: CPS/keV in each bin, with uncertainty
+      cpskev_vals: CPS/keV in each bin, no uncertainty
+      cpskev_uncs: uncertainties on CPS/keV in each bin
+      bins: np.array of bin index as integers
       is_calibrated: bool indicating calibration status
       energies_kev: np.array of energy bin centers, if calibrated (deprecated)
       bin_centers_raw: np.array of raw bin centers
@@ -99,11 +99,10 @@ class Spectrum(object):
         See note on livetime in class docstring.
 
         Args:
-          counts: counts per channel. array-like of ints, floats or UFloats,
-            if uncs is not provided all values must be positive
-          cps: counts per second per channel. array-like of floats or UFloats
-          uncs (optional): an iterable of uncertainty on the counts for each
-            channel.
+          counts: counts per bin. array-like of ints, floats or UFloats, if
+            uncs is not provided all values must be positive
+          cps: counts per second per bin. array-like of floats or UFloats
+          uncs (optional): iterable of uncertainty on the counts for each bin.
             If counts is given, is NOT a UFloat type, and uncs is not given,
             the uncertainties are assumed to be sqrt(N), with a minimum
             uncertainty of 1 (e.g. for 0 counts).
@@ -218,7 +217,7 @@ class Spectrum(object):
         for k in ['start_time', 'stop_time', 'realtime', 'livetime',
                   'is_calibrated']:
             ltups.append((k, getattr(self, k)))
-        ltups.append(('num_channels', len(self.channels)))
+        ltups.append(('num_bins', len(self.bins)))
         if self._counts is None:
             ltups.append(('gross_counts', None))
         else:
@@ -241,7 +240,7 @@ class Spectrum(object):
 
     @property
     def counts(self):
-        """Counts in each channel, with uncertainty.
+        """Counts in each bin, with uncertainty.
 
         If cps is defined, counts is calculated from cps and livetime.
         Otherwise, it is an independent data property.
@@ -264,7 +263,7 @@ class Spectrum(object):
 
     @property
     def counts_vals(self):
-        """Counts in each channel, no uncertainties.
+        """Counts in each bin, no uncertainties.
 
         Returns:
           an np.array of floats
@@ -274,7 +273,7 @@ class Spectrum(object):
 
     @property
     def counts_uncs(self):
-        """Uncertainties on the counts in each channel.
+        """Uncertainties on the counts in each bin.
 
         Returns:
           an np.array of floats
@@ -284,7 +283,7 @@ class Spectrum(object):
 
     @property
     def cps(self):
-        """Counts per second in each channel, with uncertainty.
+        """Counts per second in each bin, with uncertainty.
 
         If counts is defined, cps is calculated from counts and livetime.
         Otherwise, it is an independent data property.
@@ -307,7 +306,7 @@ class Spectrum(object):
 
     @property
     def cps_vals(self):
-        """Counts per second in each channel, no uncertainties.
+        """Counts per second in each bin, no uncertainties.
 
         Returns:
           an np.array of floats
@@ -317,7 +316,7 @@ class Spectrum(object):
 
     @property
     def cps_uncs(self):
-        """Uncertainties on the counts per second in each channel.
+        """Uncertainties on the counts per second in each bin.
 
         Returns:
           an np.array of floats
@@ -327,7 +326,7 @@ class Spectrum(object):
 
     @property
     def cpskev(self):
-        """Counts per second per keV in each channel, with uncertainty.
+        """Counts per second per keV in each bin, with uncertainty.
 
         Raises:
           SpectrumError: if cps is not defined due to missing livetime
@@ -341,7 +340,7 @@ class Spectrum(object):
 
     @property
     def cpskev_vals(self):
-        """Counts per second per keV in each channel, no uncertainties.
+        """Counts per second per keV in each bin, no uncertainties.
 
         Returns:
           an np.array of floats
@@ -351,7 +350,7 @@ class Spectrum(object):
 
     @property
     def cpskev_uncs(self):
-        """Uncertainties on the counts per second per keV in each channel.
+        """Uncertainties on the counts per second per keV in each bin.
 
         Returns:
           an np.array of floats
@@ -360,8 +359,8 @@ class Spectrum(object):
         return unumpy.std_devs(self.cpskev)
 
     @property
-    def channels(self):
-        """Channel index.
+    def bins(self):
+        """Bin indexes.
 
         Returns:
           np.array of int's from 0 to (len(self.counts) - 1)
@@ -546,7 +545,7 @@ class Spectrum(object):
 
         Args:
           listmode_data: the array containing the listmode data, e.g., the ADC
-            channels triggered or pulse integral values recorded
+            values triggered or pulse integral values recorded
           bins: integer number of bins OR array of bin_edges
           xmin: minimum x of histogram; equals bin_edges[0] if int # of bins
           xmax: maximum x of histogram; equals bin_edges[-1] if int # of bins
@@ -592,7 +591,7 @@ class Spectrum(object):
         return deepcopy(self)
 
     def __len__(self):
-        """The number of channels in the spectrum.
+        """The number of bins in the spectrum.
 
         Returns:
           an int
@@ -974,8 +973,8 @@ class Spectrum(object):
     def combine_bins(self, f):
         """Make a new Spectrum with counts combined into bigger bins.
 
-        If f is not a factor of the number of channels, the counts from the
-        first spectrum will be padded with zeros.
+        If f is not a factor of the number of bins, the counts from the first
+        spectrum will be padded with zeros.
 
         len(new.counts) == np.ceil(float(len(self.counts)) / f)
 
@@ -1023,7 +1022,7 @@ class Spectrum(object):
 
         Args:
             out_edges (np.ndarray): an array of the output bin edges
-                [num_channels_out]
+                [num_bins_out]
             method (str): rebinning method
                 "interpolation"
                     Deterministic interpolation
