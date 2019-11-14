@@ -18,7 +18,7 @@ class PeakFilter(object):
     """An energy-dependent kernel that can be convolved with a spectrum.
 
     To detect lines, a kernel should have a positive component in the center
-    and negative wings to subtract the continuum, e.g., a boxcar:
+    and negative wings to subtract the continuum, e.g., a Gaussian or a boxcar:
 
     +2|     ┌───┐     |
       |     │   │     |
@@ -105,38 +105,6 @@ class PeakFilter(object):
         snr = np.zeros_like(signal)
         snr[noise > 0] = signal[noise > 0] / noise[noise > 0]
         return peak_plus_bkg, bkg, signal, noise, snr
-
-
-class BoxcarPeakFilter(PeakFilter):
-    """A spectral kernel that is a boxcar with negative wings.
-
-    The kernel is proportional to this form:
-
-    +2|     ┌───┐     |
-      |     │   │     |
-     0|─┬───┼───┼───┬─|
-    -1| └───┘   └───┘ |
-
-    """
-
-    def kernel(self, channel, n_channels):
-        raise NotImplementedError('JV needs to fix this')
-        """Generate the kernel for the given channel."""
-        n_center = int(np.ceil(self.fwhm(channel)))
-        if n_center % 2 == 0:
-            n_center += 1
-        kernel0 = -0.5 * np.ones(n_center)
-        kernel0 = np.append(kernel0, np.ones(n_center))
-        kernel0 = np.append(kernel0, -0.5 * np.ones(n_center))
-        n_side = len(kernel0) // 2
-        kernel = np.zeros(2 * n_side + n_channels)
-        kernel[channel:channel + len(kernel0)] = kernel0[:]  # FIXME
-        kernel = kernel[n_side:-n_side]
-        positive = kernel > 0
-        negative = kernel < 0
-        kernel[positive] /= sum(kernel[positive])
-        kernel[negative] /= -1 * sum(kernel[negative])
-        return kernel
 
 
 def _gaussian0(x, mean, sigma):

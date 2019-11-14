@@ -68,7 +68,7 @@ def test_peakfilter_exceptions():
         bq.PeakFilter(700, 20, fwhm_at_0=-15)
 
 
-@pytest.mark.parametrize('cls', [bq.BoxcarPeakFilter, bq.GaussianPeakFilter])
+@pytest.mark.parametrize('cls', [bq.GaussianPeakFilter])
 def test_peakfilter(cls):
     """Test basic functionality of PeakFilter."""
     pf = cls(700, 20, fwhm_at_0=15)
@@ -78,7 +78,7 @@ def test_peakfilter(cls):
 
 
 @pytest.mark.plottest
-@pytest.mark.parametrize('cls', [bq.BoxcarPeakFilter, bq.GaussianPeakFilter])
+@pytest.mark.parametrize('cls', [bq.GaussianPeakFilter])
 def test_peakfilter_plot_matrix(cls):
     """Test PeakFilter.plot_matrix."""
     pf = cls(200, 20, fwhm_at_0=10)
