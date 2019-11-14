@@ -270,7 +270,7 @@ class PeakFinder(object):
             # fwhm = 2 sqrt(snr0 / d2snr/dchan2)
             fwhm0 = self.kernel.fwhm(chan)
             h = int(max(1, 0.2 * fwhm0))
-            d2 = (1 * self.snr[chan - h] # FIXME indexing by channel will break in update; find bin instead
+            d2 = (1 * self.snr[chan - h]
                   - 2 * self.snr[chan]
                   + 1 * self.snr[chan + h]) / h**2
             if d2 >= 0:

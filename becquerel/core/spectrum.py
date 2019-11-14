@@ -452,6 +452,25 @@ class Spectrum(object):
             return np.diff(self.bin_edges_kev)
 
     @property
+    def bin_widths(self):
+        """The width of each bin, in keV.
+
+        Returns:
+          np.array of floats, same length as self.counts
+
+        Raises:
+          UncalibratedError: if spectrum is not calibrated
+        """
+
+        warnings.warn('bin_widths is deprecated and will be removed in a '
+                      'future release. Use bin_widths_kev instead.')
+
+        if not self.is_calibrated:
+            raise UncalibratedError('Spectrum is not calibrated')
+        else:
+            return np.diff(self.bin_edges_kev)
+
+    @property
     def is_calibrated(self):
         """Is the spectrum calibrated?
 
