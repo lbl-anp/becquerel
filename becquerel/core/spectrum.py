@@ -416,7 +416,7 @@ class Spectrum(object):
           UncalibratedError: if spectrum is not calibrated
         """
 
-        warnings.warn('energies_kev is deprecated and will be removed in a'
+        warnings.warn('energies_kev is deprecated and will be removed in a '
                       'future release. Use bin_centers_kev instead.')
 
         if not self.is_calibrated:
