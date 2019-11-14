@@ -369,6 +369,18 @@ class Spectrum(object):
         return np.arange(len(self), dtype=int)
 
     @property
+    def channels(self):
+        """Bin indexes.
+
+        Returns:
+          np.array of int's from 0 to (len(self.counts) - 1)
+        """
+
+        warnings.warn('channels is deprecated terminology and will be removed '
+                      'in a future release. Use the property `bins` instead.')
+        return np.arange(len(self), dtype=int)
+
+    @property
     def bin_centers_raw(self):
         """Convenience function for accessing the raw values of bin centers.
 

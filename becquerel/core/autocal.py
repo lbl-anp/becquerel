@@ -280,7 +280,7 @@ class AutoCalibrator(object):
             required_energies, optional=optional, gain_range=gain_range,
             de_max=de_max, verbose=verbose)
         if fit is None:
-            self.fit_energies = [] # FIXME should be fit_channels?
+            self.fit_channels = []
             self.fit_snrs = []
             self.fit_energies = []
             self.gain = None
@@ -292,4 +292,4 @@ class AutoCalibrator(object):
             self.fit_energies = fit['energies']
             self.gain = fit['gain']
             self.cal = LinearEnergyCal.from_coeffs(
-                {'offset': 0, 'slope': self.gain}) # FIXME this probably should not assume zero offset
+                {'offset': 0, 'slope': self.gain})
