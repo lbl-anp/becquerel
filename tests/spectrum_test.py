@@ -178,7 +178,7 @@ def test_cal(cal_spec):
 
     assert len(cal_spec.counts) == TEST_DATA_LENGTH
     assert len(cal_spec.bin_edges_kev) == TEST_DATA_LENGTH + 1
-    assert len(cal_spec.energies_kev) == TEST_DATA_LENGTH
+    assert len(cal_spec.bin_centers_kev) == TEST_DATA_LENGTH
     assert cal_spec.is_calibrated
 
 
@@ -208,7 +208,7 @@ def test_uncalibrated_exception(uncal_spec):
     """Test UncalibratedError."""
 
     with pytest.raises(bq.UncalibratedError):
-        uncal_spec.energies_kev
+        uncal_spec.bin_centers_kev
 
 
 def test_negative_input(spec_data):
@@ -245,18 +245,18 @@ def test_listmode():
     # test with args
     spec0 = bq.Spectrum.from_listmode(lmd, bins=NBINS, xmin=XMIN, xmax=XMAX)
     assert len(spec0) == NBINS
-    assert np.isclose(spec0.bin_widths[0], BW)
-    assert spec0.bin_edges_kev[0] == XMIN
-    assert spec0.bin_edges_kev[-1] == XMAX
-    assert len(spec0.bin_edges_kev) == NBINS + 1
-    assert spec0.has_uniform_bins()
-    assert spec0.find_bin(XMIN) == 0
-    assert spec0.find_bin(XMIN + BW/4.0) == 0
-    assert spec0.find_bin(XMAX - BW/4.0) == NBINS - 1
+    assert np.isclose(spec0.bin_widths_raw[0], BW)
+    assert spec0.bin_edges_raw[0] == XMIN
+    assert spec0.bin_edges_raw[-1] == XMAX
+    assert len(spec0.bin_edges_raw) == NBINS + 1
+    assert spec0.has_uniform_bins(use_kev=False)
+    assert spec0.find_bin(XMIN, use_kev=False) == 0
+    assert spec0.find_bin(XMIN + BW/4.0, use_kev=False) == 0
+    assert spec0.find_bin(XMAX - BW/4.0, use_kev=False) == NBINS - 1
     with pytest.raises(AssertionError):
-        spec0.find_bin(XMAX)
+        spec0.find_bin(XMAX, use_kev=False)
     with pytest.raises(AssertionError):
-        spec0.find_bin(XMIN - BW/4.0)
+        spec0.find_bin(XMIN - BW/4.0, use_kev=False)
 
     # test without args
     spec1 = bq.Spectrum.from_listmode(lmd)
@@ -267,10 +267,10 @@ def test_listmode():
     log_bins = np.logspace(1, 4, num=NEDGES, base=10.0)
     spec2 = bq.Spectrum.from_listmode(lmd, bins=log_bins)
     assert len(spec2) == NBINS
-    assert spec2.has_uniform_bins() is False
-    assert spec2.find_bin(1e1) == 0
-    assert spec2.find_bin(1e1 + 1e-9) == 0
-    assert spec2.find_bin(1e4 - 1e-9) == NBINS - 1
+    assert spec2.has_uniform_bins(use_kev=False) is False
+    assert spec2.find_bin(1e1, use_kev=False) == 0
+    assert spec2.find_bin(1e1 + 1e-9, use_kev=False) == 0
+    assert spec2.find_bin(1e4 - 1e-9, use_kev=False) == NBINS - 1
 
 
 # ----------------------------------------------
@@ -426,19 +426,19 @@ def test_properties(spec_data):
 #         Test Spectrum.bin_widths
 # ----------------------------------------------
 
-def test_bin_widths(cal_spec):
-    """Test Spectrum.bin_widths"""
+def test_bin_widths_kev(cal_spec):
+    """Test Spectrum.bin_widths_kev"""
 
-    cal_spec.bin_widths
-    assert len(cal_spec.bin_widths) == len(cal_spec.counts)
-    assert np.allclose(cal_spec.bin_widths, TEST_GAIN)
+    cal_spec.bin_widths_kev
+    assert len(cal_spec.bin_widths_kev) == len(cal_spec.counts)
+    assert np.allclose(cal_spec.bin_widths_kev, TEST_GAIN)
 
 
-def test_bin_width_error(uncal_spec):
-    """Test Spectrum.bin_widths error"""
+def test_bin_widths_uncal(uncal_spec):
+    """Test Spectrum.bin_widths_raw"""
 
-    with pytest.raises(bq.UncalibratedError):
-        uncal_spec.bin_widths
+    uncal_spec.bin_widths_raw
+    assert len(uncal_spec.bin_widths_raw) == len(uncal_spec.counts)
 
 
 # ----------------------------------------------
@@ -471,9 +471,10 @@ def test_cpskev(spec_data, livetime):
     spec.cpskev_vals
     spec.cpskev_uncs
     assert np.allclose(
-        spec.cpskev_vals, spec_data / spec.bin_widths / float(livetime))
+        spec.cpskev_vals, spec_data / spec.bin_widths_kev / float(livetime))
     assert np.allclose(
-        spec.cpskev_uncs, spec.counts_uncs / spec.bin_widths / float(livetime))
+        spec.cpskev_uncs,
+        spec.counts_uncs / spec.bin_widths_kev / float(livetime))
 
 
 def test_cps_cpsspec(spec_data, livetime):
