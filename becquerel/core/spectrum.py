@@ -71,7 +71,7 @@ class Spectrum(object):
       cpskev_uncs: uncertainties on CPS/keV in each channel
       channels: np.array of channel index as integers
       is_calibrated: bool indicating calibration status
-      energies_kev: np.array of energy bin centers, if calibrated
+      energies_kev: np.array of energy bin centers, if calibrated (deprecated)
       bin_centers_raw: np.array of raw bin centers
       bin_centers_kev: np.array of energy bin centers, if calibrated
       bin_widths_raw: np.array of raw bin widths
@@ -399,6 +399,25 @@ class Spectrum(object):
         Raises:
           UncalibratedError: if spectrum is not calibrated
         """
+
+        if not self.is_calibrated:
+            raise UncalibratedError('Spectrum is not calibrated')
+        else:
+            return bin_centers_from_edges(self.bin_edges_kev)
+
+    @property
+    def energies_kev(self):
+        """Convenience function for accessing the energies of bin centers.
+
+        Returns:
+          np.array of floats, same length as self.counts
+
+        Raises:
+          UncalibratedError: if spectrum is not calibrated
+        """
+
+        warnings.warn('energies_kev is deprecated and will be removed in a'
+                      'future release. Use bin_centers_kev instead.')
 
         if not self.is_calibrated:
             raise UncalibratedError('Spectrum is not calibrated')
