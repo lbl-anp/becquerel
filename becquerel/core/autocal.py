@@ -257,32 +257,32 @@ class AutoCalibrator(object):
     def fit(self, required_energies, optional=(),
             gain_range=(1e-3, 1e3), de_max=10., verbose=False):
         """Find the gain that gives the best match of peaks to energies."""
-        if len(self.peakfinder.channels) == 1 and \
+        if len(self.peakfinder.centroids) == 1 and \
                 len(required_energies) == 1:
             # special case: only one line identified
-            self.fit_channels = list(self.peakfinder.channels)
+            self.fit_channels = list(self.peakfinder.centroids)
             self.fit_snrs = list(self.peakfinder.snrs)
             self.fit_energies = list(required_energies)
-            gain = required_energies[0] / self.peakfinder.channels[0]
+            gain = required_energies[0] / self.peakfinder.centroids[0]
             self.gain = gain
             self.cal = LinearEnergyCal.from_coeffs(
                 {'offset': 0, 'slope': self.gain})
             return
         # handle the usual case: multiple lines to match
-        if len(self.peakfinder.channels) < 2:
+        if len(self.peakfinder.centroids) < 2:
             raise AutoCalibratorError(
                 'Need more than {} peaks to fit'.format(
-                    len(self.peakfinder.channels)))
+                    len(self.peakfinder.centroids)))
         if len(required_energies) < 2:
             raise AutoCalibratorError(
                 'Need more than {} energies to fit'.format(
                     len(required_energies)))
-        if len(self.peakfinder.channels) < len(required_energies):
+        if len(self.peakfinder.centroids) < len(required_energies):
             raise AutoCalibratorError(
                 'Require {} energies but only {} peaks are available'.format(
-                    len(required_energies), len(self.peakfinder.channels)))
+                    len(required_energies), len(self.peakfinder.centroids)))
         fit = find_best_gain(
-            self.peakfinder.channels, self.peakfinder.snrs,
+            self.peakfinder.centroids, self.peakfinder.snrs,
             required_energies, optional=optional, gain_range=gain_range,
             de_max=de_max, verbose=verbose)
         if fit is None:
