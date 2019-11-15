@@ -379,9 +379,9 @@ class Spectrum(object):
           np.array of int's from 0 to (len(self.counts) - 1)
         """
 
-        raise DeprecationWarning('channels is deprecated terminology and will '
-                                 'be removed in a future release. Use the '
-                                 'property `bins` instead.')
+        warnings.warn('channels is deprecated terminology and will be removed '
+                      'in a future release. Use bins instead.',
+                      DeprecationWarning)
         return np.arange(len(self), dtype=int)
 
     @property
@@ -431,9 +431,9 @@ class Spectrum(object):
           UncalibratedError: if spectrum is not calibrated
         """
 
-        raise DeprecationWarning('energies_kev is deprecated and will be '
-                                 'removed in a future release. Use property '
-                                 'bin_centers_kev instead.')
+        warnings.warn('energies_kev is deprecated and will be removed in a '
+                      'future release. Use bin_centers_kev instead.',
+                      DeprecationWarning)
 
         if not self.is_calibrated:
             raise UncalibratedError('Spectrum is not calibrated')
@@ -467,9 +467,9 @@ class Spectrum(object):
           UncalibratedError: if spectrum is not calibrated
         """
 
-        raise DeprecationWarning('bin_widths is deprecated and will be '
-                                 'removed in a future release. Use property '
-                                 'bin_widths_kev (or bin_widths_raw) instead.')
+        warnings.warn('bin_widths is deprecated and will be removed in a '
+                      'future release. Use bin_widths_kev (or bin_widths_raw) '
+                      'instead.', DeprecationWarning)
 
         if not self.is_calibrated:
             raise UncalibratedError('Spectrum is not calibrated')
