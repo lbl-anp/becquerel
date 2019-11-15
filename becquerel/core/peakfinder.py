@@ -31,19 +31,20 @@ class PeakFilter(object):
     The kernel should sum to 0.
 
     The width of the kernel scales proportionally to the square root
-    of the channels, with a minimum value set by 'fwhm_at_0'.
+    of the x values (which could be energy, ADC channels, fC of charge
+    collected, etc.), with a minimum value set by 'fwhm_at_0'.
 
     """
 
-    def __init__(self, ref_channel, ref_fwhm, fwhm_at_0=1.):
-        """Initialize with a reference line position and FWHM in channels."""
-        if ref_channel <= 0:
-            raise PeakFilterError('Reference channel must be positive')
+    def __init__(self, ref_x, ref_fwhm, fwhm_at_0=1.):
+        """Initialize with a reference line position and FWHM in x-values."""
+        if ref_x <= 0:
+            raise PeakFilterError('Reference x must be positive')
         if ref_fwhm <= 0:
             raise PeakFilterError('Reference FWHM must be positive')
         if fwhm_at_0 < 0:
             raise PeakFilterError('FWHM at 0 must be non-negative')
-        self.ref_channel = float(ref_channel)
+        self.ref_x = float(ref_x)
         self.ref_fwhm = float(ref_fwhm)
         self.fwhm_at_0 = float(fwhm_at_0)
 
@@ -55,7 +56,7 @@ class PeakFilter(object):
         # f(x)^2 = f0^2 + (f1^2 - f0^2) (x/x1)^2
         f0 = self.fwhm_at_0
         f1 = self.ref_fwhm
-        x1 = self.ref_channel
+        x1 = self.ref_x
         fwhm_sqr = f0**2 + (f1**2 - f0**2) * (x / x1)**2
         return np.sqrt(fwhm_sqr)
 
@@ -166,7 +167,7 @@ class PeakFinder(object):
         self._bkg = []
         self._signal = []
         self._noise = []
-        self.channels = []
+        self.centroids = []
         self.snrs = []
         self.fwhms = []
         self.integrals = []
@@ -175,7 +176,7 @@ class PeakFinder(object):
 
     def reset(self):
         """Restore peak finder to pristine starting condition."""
-        self.channels = []
+        self.centroids = []
         self.snrs = []
         self.fwhms = []
         self.integrals = []
@@ -183,17 +184,17 @@ class PeakFinder(object):
 
     def sort_by(self, arr):
         """Sort peaks by the provided array."""
-        if len(arr) != len(self.channels):
+        if len(arr) != len(self.centroids):
             raise PeakFinderError(
                 'Sorting array has length {} but must have length {}'.format(
-                    len(arr), len(self.channels)))
-        self.channels = np.array(self.channels)
+                    len(arr), len(self.centroids)))
+        self.centroids = np.array(self.centroids)
         self.snrs = np.array(self.snrs)
         self.fwhms = np.array(self.fwhms)
         self.integrals = np.array(self.integrals)
         self.backgrounds = np.array(self.backgrounds)
         i = np.argsort(arr)
-        self.channels = list(self.channels[i])
+        self.centroids = list(self.centroids[i])
         self.snrs = list(self.snrs[i])
         self.fwhms = list(self.fwhms[i])
         self.integrals = list(self.integrals[i])
@@ -235,15 +236,15 @@ class PeakFinder(object):
                 'Peak x {} is outside of range {}-{}'.format(
                     xpeak, xmin, xmax))
         is_new_x = True
-        for chan2 in self.channels:
-            if abs(xpeak - chan2) <= self.min_sep:
+        for cent in self.centroids:
+            if abs(xpeak - cent) <= self.min_sep:
                 is_new_x = False
         if is_new_x:
             # estimate FWHM using the second derivative
-            # snr(chan) = snr(chan0) - 0.5 d2snr/dchan2(chan0) (chan-chan0)^2
-            # 0.5 = 1 - 0.5 d2snr/dchan2 (fwhm/2)^2 / snr0
-            # 1 = d2snr/dchan2 (fwhm/2)^2 / snr0
-            # fwhm = 2 sqrt(snr0 / d2snr/dchan2)
+            # snr(x) = snr(x0) - 0.5 d2snr/dx2(x0) (x-x0)^2
+            # 0.5 = 1 - 0.5 d2snr/dx2 (fwhm/2)^2 / snr0
+            # 1 = d2snr/dx2 (fwhm/2)^2 / snr0
+            # fwhm = 2 sqrt(snr0 / d2snr/dx2)
             xbin = self.spectrum.find_bin(xpeak, use_kev=False)
             fwhm0 = self.kernel.fwhm(xpeak)
             bw = self.spectrum.bin_widths_raw[0]
@@ -259,13 +260,13 @@ class PeakFinder(object):
             self.fwhms.append(fwhm)
             # add the peak if it has a similar FWHM to the kernel's FWHM
             if self.fwhm_tol[0] * fwhm0 <= fwhm <= self.fwhm_tol[1] * fwhm0:
-                self.channels.append(xpeak)
+                self.centroids.append(xpeak)
                 self.snrs.append(self.snr[xbin])
                 self.fwhms.append(fwhm)
                 self.integrals.append(self._signal[xbin])
                 self.backgrounds.append(self._bkg[xbin])
-        # sort the peaks by channel
-        self.sort_by(self.channels)
+        # sort the peaks by centroid
+        self.sort_by(self.centroids)
 
     def plot(self, facecolor='red', linecolor='red', alpha=0.5, peaks=True):
         """Plot the peak signal-to-noise ratios calculated using the kernel."""
@@ -278,15 +279,15 @@ class PeakFinder(object):
         if linecolor is not None:
             plt.plot(bin_edges[:-1], self.snr, '-', color=linecolor)
         if peaks:
-            for chan, snr, fwhm in zip(self.channels, self.snrs, self.fwhms):
-                plt.plot([chan] * 2, [0, snr], 'b-', lw=1.5)
-                plt.plot(chan, snr, 'bo')
+            for cent, snr, fwhm in zip(self.centroids, self.snrs, self.fwhms):
+                plt.plot([cent] * 2, [0, snr], 'b-', lw=1.5)
+                plt.plot(cent, snr, 'bo')
                 plt.plot(
-                    [chan - fwhm / 2, chan + fwhm / 2], [snr / 2] * 2,
+                    [cent - fwhm / 2, cent + fwhm / 2], [snr / 2] * 2,
                     'b-', lw=1.5)
         plt.xlim(0, bin_edges.max())
         plt.ylim(0)
-        plt.xlabel('Channels')
+        plt.xlabel('x')
         plt.ylabel('SNR')
 
     def find_peak(self, xpeak, frac_range=(0.8, 1.2), min_snr=2):
@@ -363,18 +364,18 @@ class PeakFinder(object):
         peak = (d1[2:] < 0) & (d1[:-2] > 0) & (d2[1:-1] < 0)
         peak = np.append(False, peak)
         peak = np.append(peak, False)
-        # select peaks using SNR and channel criteria
+        # select peaks using SNR and centroid criteria
         peak &= (min_snr <= self.snr)
         peak &= (xmin <= bin_edges[:-1])
         peak &= (bin_edges[:-1] <= xmax)
         for x in bin_edges[:-1][peak]:
             self.add_peak(x)
-        # reduce number of channels to a maximum number max_n of highest SNR
+        # reduce number of centroids to a maximum number max_n of highest SNR
         self.sort_by(np.array(self.snrs))
-        self.channels = self.channels[-max_num:]
+        self.centroids = self.centroids[-max_num:]
         self.snrs = self.snrs[-max_num:]
         self.fwhms = self.fwhms[-max_num:]
         self.integrals = self.integrals[-max_num:]
         self.backgrounds = self.backgrounds[-max_num:]
-        # sort by channel
-        self.sort_by(self.channels)
+        # sort by centroid
+        self.sort_by(self.centroids)
