@@ -12,6 +12,8 @@ from .rebin import rebin
 from . import plotting
 import warnings
 
+warnings.simplefilter('always', DeprecationWarning)
+
 EPS = np.finfo(float).eps
 
 
