@@ -47,8 +47,8 @@ class PeakFilter(object):
         self.ref_fwhm = float(ref_fwhm)
         self.fwhm_at_0 = float(fwhm_at_0)
 
-    def fwhm(self, channel):
-        """Calculate the expected FWHM at the given channel."""
+    def fwhm(self, x):
+        """Calculate the expected FWHM at the given x value."""
         # f(x)^2 = f0^2 + k x^2
         # f1^2 = f0^2 + k x1^2
         # k = (f1^2 - f0^2) / x1^2
@@ -56,7 +56,7 @@ class PeakFilter(object):
         f0 = self.fwhm_at_0
         f1 = self.ref_fwhm
         x1 = self.ref_channel
-        fwhm_sqr = f0**2 + (f1**2 - f0**2) * (channel / x1)**2
+        fwhm_sqr = f0**2 + (f1**2 - f0**2) * (x / x1)**2
         return np.sqrt(fwhm_sqr)
 
     def kernel(self, x, edges):
@@ -64,7 +64,7 @@ class PeakFilter(object):
         raise NotImplementedError
 
     def kernel_matrix(self, edges):
-        """Build a matrix of the kernel evaluated at each channel."""
+        """Build a matrix of the kernel evaluated at each x value."""
         n_channels = len(edges) - 1
         kern = np.zeros((n_channels, n_channels))
         for i, x in enumerate(edges[:-1]):
@@ -76,7 +76,7 @@ class PeakFilter(object):
         return kern_pos - kern_neg
 
     def plot_matrix(self, edges):
-        """Plot the matrix of kernels evaluated across the channels."""
+        """Plot the matrix of kernels evaluated across the x values."""
         n_channels = len(edges) - 1
         kern_mat = self.kernel_matrix(edges)
         kern_min = kern_mat.min()
@@ -89,13 +89,13 @@ class PeakFilter(object):
             vmin=kern_min, vmax=kern_max,
             extent=[n_channels, 0, 0, n_channels])
         plt.colorbar()
-        plt.xlabel('Input channel')
-        plt.ylabel('Output channel')
+        plt.xlabel('Input x')
+        plt.ylabel('Output x')
         plt.gca().set_aspect('equal')
 
     def convolve(self, edges, data):
         """Convolve this kernel with the data."""
-        kern_mat = self.kernel_matrix(edges)  # FIXME
+        kern_mat = self.kernel_matrix(edges)
         kern_mat_pos = +1 * kern_mat.clip(0, np.inf)
         kern_mat_neg = -1 * kern_mat.clip(-np.inf, 0)
         peak_plus_bkg = np.dot(kern_mat_pos, data)
@@ -156,7 +156,7 @@ class PeakFinder(object):
         """Initialize with a spectrum and kernel."""
         if min_sep <= 0:
             raise PeakFinderError(
-                'Minimum channel separation must be positive')
+                'Minimum x separation must be positive')
         self.min_sep = min_sep
         self.fwhm_tol = tuple(fwhm_tol)
         self.spectrum = None
@@ -234,36 +234,36 @@ class PeakFinder(object):
             raise PeakFinderError(
                 'Peak x {} is outside of range {}-{}'.format(
                     xpeak, xmin, xmax))
-        new_channel = True
+        is_new_x = True
         for chan2 in self.channels:
             if abs(xpeak - chan2) <= self.min_sep:
-                new_channel = False
-        if new_channel:
+                is_new_x = False
+        if is_new_x:
             # estimate FWHM using the second derivative
             # snr(chan) = snr(chan0) - 0.5 d2snr/dchan2(chan0) (chan-chan0)^2
             # 0.5 = 1 - 0.5 d2snr/dchan2 (fwhm/2)^2 / snr0
             # 1 = d2snr/dchan2 (fwhm/2)^2 / snr0
             # fwhm = 2 sqrt(snr0 / d2snr/dchan2)
-            chan = self.spectrum.find_bin(xpeak, use_kev=False)
+            xbin = self.spectrum.find_bin(xpeak, use_kev=False)
             fwhm0 = self.kernel.fwhm(xpeak)
             bw = self.spectrum.bin_widths_raw[0]
             h = int(max(1, 0.2 * fwhm0 / bw))
-            d2 = (1 * self.snr[chan - h]
-                  - 2 * self.snr[chan]
-                  + 1 * self.snr[chan + h]) / h**2 / bw**2
+            d2 = (1 * self.snr[xbin - h]
+                  - 2 * self.snr[xbin]
+                  + 1 * self.snr[xbin + h]) / h**2 / bw**2
             if d2 >= 0:
                 raise PeakFinderError(
                     'Second derivative must be negative at peak')
             d2 *= -1
-            fwhm = 2 * np.sqrt(self.snr[chan] / d2)
+            fwhm = 2 * np.sqrt(self.snr[xbin] / d2)
             self.fwhms.append(fwhm)
             # add the peak if it has a similar FWHM to the kernel's FWHM
             if self.fwhm_tol[0] * fwhm0 <= fwhm <= self.fwhm_tol[1] * fwhm0:
                 self.channels.append(xpeak)
-                self.snrs.append(self.snr[chan])
+                self.snrs.append(self.snr[xbin])
                 self.fwhms.append(fwhm)
-                self.integrals.append(self._signal[chan])
-                self.backgrounds.append(self._bkg[chan])
+                self.integrals.append(self._signal[xbin])
+                self.backgrounds.append(self._bkg[xbin])
         # sort the peaks by channel
         self.sort_by(self.channels)
 
@@ -340,7 +340,7 @@ class PeakFinder(object):
                 xmax < bin_edges.min() or \
                 xmin > xmax:
             raise PeakFinderError(
-                'Channel range {}-{} is invalid'.format(xmin, xmax))
+                'x-axis range {}-{} is invalid'.format(xmin, xmax))
         if min_snr < 0:
             raise PeakFinderError(
                 'Minimum SNR {:.3f} must be > 0'.format(min_snr))
@@ -367,8 +367,8 @@ class PeakFinder(object):
         peak &= (min_snr <= self.snr)
         peak &= (xmin <= bin_edges[:-1])
         peak &= (bin_edges[:-1] <= xmax)
-        for chan in bin_edges[:-1][peak]:
-            self.add_peak(chan)
+        for x in bin_edges[:-1][peak]:
+            self.add_peak(x)
         # reduce number of channels to a maximum number max_n of highest SNR
         self.sort_by(np.array(self.snrs))
         self.channels = self.channels[-max_num:]
