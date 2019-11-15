@@ -37,7 +37,8 @@ class Spectrum(object):
     """
     Represents an energy spectrum.
 
-    Initialize a Spectrum directly, or with Spectrum.from_file(filename).
+    Initialize a Spectrum directly, or with Spectrum.from_file(filename), or
+    with Spectrum.from_listmode(listmode_data).
 
     Note on livetime:
       A livetime of None is the default for a spectrum, and indicates a
