@@ -5,6 +5,7 @@
 from __future__ import print_function
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
 from .spectrum import Spectrum
 
 
@@ -173,6 +174,12 @@ class PeakFinder(object):
         self.integrals = []
         self.backgrounds = []
         self.calculate(spectrum, kernel)
+
+    @property
+    def channels(self):
+        warnings.warn('channels is deprecated and will be removed in a future '
+                      'release. Use centroids instead.', DeprecationWarning)
+        return self.centroids
 
     def reset(self):
         """Restore peak finder to pristine starting condition."""
