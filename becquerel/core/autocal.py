@@ -213,7 +213,13 @@ def find_best_gain(
 
 
 class AutoCalibrator(object):
-    """Automatically calibrate a spectrum by convolving it with a filter."""
+    """Automatically calibrate a spectrum by convolving it with a filter.
+
+    A note on nomenclature: for historic reasons, 'channels' is used in
+    autocal.py for generic uncalibrated x-axis values. A 'channel' is no longer
+    necessarily an integer channel number (i.e., bin) from a multi-channel
+    analyzer, but could for instance be a float-type fC of charge collected.
+    """
 
     def __init__(self, peakfinder):
         """Initialize the calibration with a spectrum and kernel."""

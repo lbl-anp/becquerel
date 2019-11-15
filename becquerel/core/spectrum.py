@@ -71,10 +71,12 @@ class Spectrum(object):
       cpskev_vals: CPS/keV in each bin, no uncertainty
       cpskev_uncs: uncertainties on CPS/keV in each bin
       bins: np.array of bin index as integers
+      channels: np.array of bin index as integers (deprecated)
       is_calibrated: bool indicating calibration status
       energies_kev: np.array of energy bin centers, if calibrated (deprecated)
       bin_centers_raw: np.array of raw bin centers
       bin_centers_kev: np.array of energy bin centers, if calibrated
+      bin_widths: np.array of energy bin widths, if calibrated (deprecated)
       bin_widths_raw: np.array of raw bin widths
       bin_widths_kev: np.array of energy bin widths, if calibrated
 
@@ -361,7 +363,7 @@ class Spectrum(object):
 
     @property
     def bins(self):
-        """Bin indexes.
+        """Bin indices.
 
         Returns:
           np.array of int's from 0 to (len(self.counts) - 1)
@@ -371,14 +373,15 @@ class Spectrum(object):
 
     @property
     def channels(self):
-        """Bin indexes.
+        """Bin indices.
 
         Returns:
           np.array of int's from 0 to (len(self.counts) - 1)
         """
 
-        warnings.warn('channels is deprecated terminology and will be removed '
-                      'in a future release. Use the property `bins` instead.')
+        raise DeprecationWarning('channels is deprecated terminology and will '
+                                 'be removed in a future release. Use the '
+                                 'property `bins` instead.')
         return np.arange(len(self), dtype=int)
 
     @property
@@ -428,8 +431,9 @@ class Spectrum(object):
           UncalibratedError: if spectrum is not calibrated
         """
 
-        warnings.warn('energies_kev is deprecated and will be removed in a '
-                      'future release. Use bin_centers_kev instead.')
+        raise DeprecationWarning('energies_kev is deprecated and will be '
+                                 'removed in a future release. Use property '
+                                 'bin_centers_kev instead.')
 
         if not self.is_calibrated:
             raise UncalibratedError('Spectrum is not calibrated')
@@ -463,8 +467,9 @@ class Spectrum(object):
           UncalibratedError: if spectrum is not calibrated
         """
 
-        warnings.warn('bin_widths is deprecated and will be removed in a '
-                      'future release. Use bin_widths_kev instead.')
+        raise DeprecationWarning('bin_widths is deprecated and will be '
+                                 'removed in a future release. Use property '
+                                 'bin_widths_kev (or bin_widths_raw) instead.')
 
         if not self.is_calibrated:
             raise UncalibratedError('Spectrum is not calibrated')
