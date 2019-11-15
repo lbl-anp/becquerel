@@ -264,8 +264,6 @@ class PeakFinder(object):
                 self.fwhms.append(fwhm)
                 self.integrals.append(self._signal[chan])
                 self.backgrounds.append(self._bkg[chan])
-            else:
-                print('bad fwhm')
         # sort the peaks by channel
         self.sort_by(self.channels)
 
@@ -325,8 +323,6 @@ class PeakFinder(object):
 
         peak_index = np.where((self.snr == peak_snr) & x_range)[0][0]
         peak_x = bin_edges[peak_index]
-        print('peak_x =', peak_x)
-        print('peak_index =', peak_index)
         self.add_peak(peak_x)
         return peak_x
 
