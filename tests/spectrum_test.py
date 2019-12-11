@@ -250,13 +250,13 @@ def test_listmode():
     assert spec0.bin_edges_raw[-1] == XMAX
     assert len(spec0.bin_edges_raw) == NBINS + 1
     assert spec0.has_uniform_bins(use_kev=False)
-    assert spec0.find_bin(XMIN, use_kev=False) == 0
-    assert spec0.find_bin(XMIN + BW/4.0, use_kev=False) == 0
-    assert spec0.find_bin(XMAX - BW/4.0, use_kev=False) == NBINS - 1
+    assert spec0.find_bin_index(XMIN, use_kev=False) == 0
+    assert spec0.find_bin_index(XMIN + BW/4.0, use_kev=False) == 0
+    assert spec0.find_bin_index(XMAX - BW/4.0, use_kev=False) == NBINS - 1
     with pytest.raises(AssertionError):
-        spec0.find_bin(XMAX, use_kev=False)
+        spec0.find_bin_index(XMAX, use_kev=False)
     with pytest.raises(AssertionError):
-        spec0.find_bin(XMIN - BW/4.0, use_kev=False)
+        spec0.find_bin_index(XMIN - BW/4.0, use_kev=False)
 
     # test without args
     spec1 = bq.Spectrum.from_listmode(lmd)
@@ -268,9 +268,9 @@ def test_listmode():
     spec2 = bq.Spectrum.from_listmode(lmd, bins=log_bins)
     assert len(spec2) == NBINS
     assert spec2.has_uniform_bins(use_kev=False) is False
-    assert spec2.find_bin(1e1, use_kev=False) == 0
-    assert spec2.find_bin(1e1 + 1e-9, use_kev=False) == 0
-    assert spec2.find_bin(1e4 - 1e-9, use_kev=False) == NBINS - 1
+    assert spec2.find_bin_index(1e1, use_kev=False) == 0
+    assert spec2.find_bin_index(1e1 + 1e-9, use_kev=False) == 0
+    assert spec2.find_bin_index(1e4 - 1e-9, use_kev=False) == NBINS - 1
 
 
 # ----------------------------------------------

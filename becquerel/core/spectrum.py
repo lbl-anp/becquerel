@@ -12,7 +12,7 @@ from .rebin import rebin
 from . import plotting
 import warnings
 
-warnings.simplefilter('always', DeprecationWarning)
+warnings.simplefilter('default', DeprecationWarning)
 
 EPS = np.finfo(float).eps
 
@@ -942,13 +942,13 @@ class Spectrum(object):
                 return False
         return True
 
-    def find_bin(self, x, use_kev=True):
-        """Find the Spectrum bin that contains a value x.
+    def find_bin_index(self, x, use_kev=True):
+        """Find the Spectrum bin index that contains an x-axis value x.
 
         If the Spectrum has uniform binning, then we just solve the linear
-        equation between bins and x-axis values. Otherwise, we use searchsorted
-        to bisect for the insertion point where x would fit in a list of bin
-        edges, then subtract 1 to get the index of the low edge.
+        equation between bin indices and x-axis values. Otherwise, we use
+        searchsorted to bisect for the insertion point where x would fit in a
+        list of bin edges, then subtract 1 to get the index of the low edge.
 
         Args:
           x: value whose bin to find
@@ -959,7 +959,7 @@ class Spectrum(object):
           SpectrumError: if use_kev=True but Spectrum is not calibrated
 
         Returns:
-          The integer bin number that contains x
+          The integer bin index that contains x
         """
 
         if use_kev and not self.is_calibrated:

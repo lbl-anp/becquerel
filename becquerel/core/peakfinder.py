@@ -254,7 +254,7 @@ class PeakFinder(object):
             # 0.5 = 1 - 0.5 d2snr/dx2 (fwhm/2)^2 / snr0
             # 1 = d2snr/dx2 (fwhm/2)^2 / snr0
             # fwhm = 2 sqrt(snr0 / d2snr/dx2)
-            xbin = self.spectrum.find_bin(xpeak, use_kev=False)
+            xbin = self.spectrum.find_bin_index(xpeak, use_kev=False)
             fwhm0 = self.kernel.fwhm(xpeak)
             bw = self.spectrum.bin_widths_raw[0]
             h = int(max(1, 0.2 * fwhm0 / bw))
@@ -302,8 +302,9 @@ class PeakFinder(object):
     def find_peak(self, xpeak, frac_range=(0.8, 1.2), min_snr=2):
         """Find the highest SNR peak within f0*xpeak and f1*xpeak."""
         bin_edges = self.spectrum.bin_edges_raw
-        xmin = bin_edges.min()
-        xmax = bin_edges.max()
+        bin_centers = self.spectrum.bin_centers_raw
+        xmin = bin_edges[0]
+        xmax = bin_edges[-1]
 
         if xpeak < xmin or xpeak > xmax:
             raise PeakFinderError(
@@ -322,9 +323,7 @@ class PeakFinder(object):
                     min_snr, self.snr.max()))
         x0 = frac_range[0] * xpeak
         x1 = frac_range[1] * xpeak
-        x_range = \
-            (x0 <= bin_edges[:-1]) & \
-            (bin_edges[:-1] <= x1)  # FIXME maybe bin centers
+        x_range = (x0 <= bin_edges[:-1]) & (bin_edges[:-1] <= x1)
         peak_snr = self.snr[x_range].max()
         if peak_snr < min_snr:
             raise PeakFinderError(
@@ -332,13 +331,14 @@ class PeakFinder(object):
                     x0, x1, min_snr))
 
         peak_index = np.where((self.snr == peak_snr) & x_range)[0][0]
-        peak_x = bin_edges[peak_index]
+        peak_x = bin_centers[peak_index]
         self.add_peak(peak_x)
         return peak_x
 
     def find_peaks(self, xmin=None, xmax=None, min_snr=2, max_num=40):
         """Find the highest SNR peaks in the data."""
         bin_edges = self.spectrum.bin_edges_raw
+        bin_centers = self.spectrum.bin_centers_raw
 
         if xmin is None:
             xmin = bin_edges.min()
@@ -377,7 +377,7 @@ class PeakFinder(object):
         peak &= (min_snr <= self.snr)
         peak &= (xmin <= bin_edges[:-1])
         peak &= (bin_edges[:-1] <= xmax)
-        for x in bin_edges[:-1][peak]:
+        for x in bin_centers[peak]:
             self.add_peak(x)
         # reduce number of centroids to a maximum number max_n of highest SNR
         self.sort_by(np.array(self.snrs))

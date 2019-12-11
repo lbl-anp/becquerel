@@ -92,7 +92,7 @@ def test_peakfinder():
     kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
     finder = bq.PeakFinder(spec1, kernel)
     finder.find_peak(500, min_snr=3.)
-    assert np.isclose(finder.channels[0], 485)
+    assert np.isclose(finder.channels[0], 485.5)
     finder.reset()
     finder.find_peaks()
     assert len(finder.channels) == 9

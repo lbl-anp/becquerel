@@ -255,7 +255,7 @@ class AutoCalibrator(object):
             plt.plot(chan, snr, 'go')
 
     def fit(self, required_energies, optional=(),
-            gain_range=(1e-3, 1e3), de_max=10., verbose=False):
+            gain_range=(1e-4, 1e3), de_max=10., verbose=False):
         """Find the gain that gives the best match of peaks to energies."""
         if len(self.peakfinder.centroids) == 1 and \
                 len(required_energies) == 1:
