@@ -433,6 +433,8 @@ class Spectrum(object):
 
         Raises:
           UncalibratedError: if spectrum is not calibrated
+          DeprecationWarning: since it will be removed in favor of
+            bin_centers_kev in a future release
         """
 
         warnings.warn('energies_kev is deprecated and will be removed in a '
@@ -469,6 +471,8 @@ class Spectrum(object):
 
         Raises:
           UncalibratedError: if spectrum is not calibrated
+          DeprecationWarning: since it will be removed in favor of
+            bin_widths_kev in a future release
         """
 
         warnings.warn('bin_widths is deprecated and will be removed in a '
