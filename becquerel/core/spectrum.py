@@ -7,14 +7,12 @@ import datetime
 import numpy as np
 from uncertainties import UFloat, unumpy
 from .. import parsers
-from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
+from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
 from .rebin import rebin
 from . import plotting
 import warnings
 
 warnings.simplefilter('default', DeprecationWarning)
-
-EPS = np.finfo(float).eps
 
 
 class SpectrumError(Exception):
@@ -73,12 +71,15 @@ class Spectrum(object):
       cpskev_vals: CPS/keV in each bin, no uncertainty
       cpskev_uncs: uncertainties on CPS/keV in each bin
       bins: np.array of bin index as integers
-      channels: np.array of bin index as integers (deprecated)
+      channels: np.array of bin index as integers (deprecated, raises a
+        DeprecationWarning)
       is_calibrated: bool indicating calibration status
-      energies_kev: np.array of energy bin centers, if calibrated (deprecated)
+      energies_kev: np.array of energy bin centers, if calibrated (deprecated,
+        raises a DeprecationWarning)
       bin_centers_raw: np.array of raw bin centers
       bin_centers_kev: np.array of energy bin centers, if calibrated
-      bin_widths: np.array of energy bin widths, if calibrated (deprecated)
+      bin_widths: np.array of energy bin widths, if calibrated (deprecated,
+        raises a DeprecationWarning)
       bin_widths_raw: np.array of raw bin widths
       bin_widths_kev: np.array of energy bin widths, if calibrated
 
@@ -586,7 +587,8 @@ class Spectrum(object):
         Args:
           listmode_data: the array containing the listmode data, e.g., the ADC
             values triggered or pulse integral values recorded
-          bins: integer number of bins OR array of bin_edges
+          bins: integer number of bins OR array of bin_edges, following the
+            numpy.histogram style (array of all low edges and last up edge)
           xmin: minimum x of histogram; equals bin_edges[0] if int # of bins
           xmax: maximum x of histogram; equals bin_edges[-1] if int # of bins
 

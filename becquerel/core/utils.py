@@ -6,6 +6,8 @@ from dateutil.parser import parse as dateutil_parse
 from uncertainties import UFloat, unumpy
 import numpy as np
 
+EPS = np.finfo(float).eps
+
 VECTOR_TYPES = (list, tuple, np.ndarray)
 
 try:
