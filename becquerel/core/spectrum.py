@@ -222,7 +222,7 @@ class Spectrum(object):
         for k in ['start_time', 'stop_time', 'realtime', 'livetime',
                   'is_calibrated']:
             ltups.append((k, getattr(self, k)))
-        ltups.append(('num_bins', len(self.bins)))
+        ltups.append(('num_bins', len(self.bin_indices)))
         if self._counts is None:
             ltups.append(('gross_counts', None))
         else:
@@ -364,7 +364,7 @@ class Spectrum(object):
         return unumpy.std_devs(self.cpskev)
 
     @property
-    def bins(self):
+    def bin_indices(self):
         """Bin indices.
 
         Returns:
@@ -375,14 +375,15 @@ class Spectrum(object):
 
     @property
     def channels(self):
-        """Bin indices.
+        """Alias for bin_indices. Raises a DeprecationWarning, as it will be
+        removed in a future release.
 
         Returns:
           np.array of int's from 0 to (len(self.counts) - 1)
         """
 
         warnings.warn('channels is deprecated terminology and will be removed '
-                      'in a future release. Use bins instead.',
+                      'in a future release. Use bin_indices instead.',
                       DeprecationWarning)
         return np.arange(len(self), dtype=int)
 
