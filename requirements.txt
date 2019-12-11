@@ -10,4 +10,4 @@ python-dateutil
 requests
 scipy
 setuptools
-uncertainties
+uncertainties>=3.0.3
