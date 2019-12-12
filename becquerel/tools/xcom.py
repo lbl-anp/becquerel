@@ -10,7 +10,7 @@ References:
 """
 
 from __future__ import print_function
-from collections import Iterable
+from collections.abc import Iterable
 import requests
 import pandas as pd
 from . import element
