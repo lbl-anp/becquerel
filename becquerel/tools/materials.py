@@ -8,11 +8,10 @@ References:
 """
 
 from __future__ import print_function
-from collections.abc import Iterable
 import requests
 import pandas as pd
 from .element import element_symbol
-from ..core.utils import isstring
+from ..core.utils import isstring, Iterable
 
 MAX_Z = 92
 N_COMPOUNDS = 48
