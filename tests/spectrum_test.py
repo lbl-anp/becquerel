@@ -231,9 +231,9 @@ def test_negative_input(spec_data):
 #      Test Spectrum.from_listmode behavior
 # ----------------------------------------------
 
-# It's easy to introduce off-by-one errors in histogramming, so run quite a few
-# sanity checks here.
 def test_listmode():
+    """It's easy to introduce off-by-one errors in histogramming listmode data,
+       so run quite a few sanity checks here."""
     NBINS = 100
     MEAN = 1000.
     STDDEV = 50.
