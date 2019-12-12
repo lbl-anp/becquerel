@@ -14,7 +14,7 @@ import numpy as np
 import requests
 import pandas as pd
 import uncertainties
-from ..core.utils import isstring
+from ..core.utils import isstring, ResourceWarning
 
 
 PARITIES = ['+', '-', 'any']

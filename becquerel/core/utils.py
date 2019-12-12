@@ -1,6 +1,7 @@
 """General utility functions to be shared among core modules."""
 
 from __future__ import print_function
+import sys
 import datetime
 from dateutil.parser import parse as dateutil_parse
 from uncertainties import UFloat, unumpy
@@ -8,15 +9,22 @@ import numpy as np
 
 VECTOR_TYPES = (list, tuple, np.ndarray)
 
-try:
+if sys.version_info < (3, 2):
 
-    isinstance("", basestring)
+    class ResourceWarning(Warning):
+        pass
+
+else:
+
+    ResourceWarning = ResourceWarning
+
+if sys.version_info < (3,):
 
     def isstring(s):
         """Test for strings in python2"""
         return isinstance(s, basestring)
 
-except NameError:
+else:
 
     def isstring(s):
         """Test for strings in python3"""
