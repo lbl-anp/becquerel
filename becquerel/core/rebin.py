@@ -2,7 +2,6 @@
 import numpy as np
 import numba as nb
 import warnings
-warnings.simplefilter('always', DeprecationWarning)
 
 
 class RebinError(Exception):

@@ -12,8 +12,6 @@ from .rebin import rebin
 from . import plotting
 import warnings
 
-warnings.simplefilter('default', DeprecationWarning)
-
 
 class SpectrumError(Exception):
     """Exception raised by Spectrum."""

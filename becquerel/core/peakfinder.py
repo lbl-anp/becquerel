@@ -8,8 +8,6 @@ import numpy as np
 import warnings
 from .spectrum import Spectrum
 
-warnings.simplefilter('always', DeprecationWarning)
-
 
 class PeakFilterError(Exception):
     """Base class for errors in PeakFilter."""

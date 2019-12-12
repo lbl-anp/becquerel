@@ -23,6 +23,9 @@ from .tools.isotope_qty import IsotopeQuantity
 from .tools import xcom
 from .tools import materials
 
+import warnings
+warnings.simplefilter('default', DeprecationWarning)
+
 __all__ = ['core', 'parsers', 'tools',
            'rebin', 'RebinError', 'RebinWarning',
            'Spectrum', 'SpectrumError', 'SpectrumWarning', 'SpectrumPlotter',
