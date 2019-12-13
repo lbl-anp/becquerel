@@ -5,6 +5,12 @@ import datetime
 from dateutil.parser import parse as dateutil_parse
 from uncertainties import UFloat, unumpy
 import numpy as np
+try:
+    # Python 3.x
+    from collections.abc import Iterable
+except ImportError:
+    # Python 2.x
+    from collections import Iterable
 
 EPS = np.finfo(float).eps
 
