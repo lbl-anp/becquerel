@@ -320,7 +320,7 @@ def test_apply_calibration(uncal_spec, chlist, kevlist):
     uncal_spec.apply_calibration(cal)
     assert uncal_spec.is_calibrated
     assert np.allclose(
-        uncal_spec.energies_kev, cal.ch2kev(uncal_spec.channels))
+        uncal_spec.bin_edges_kev[:-1], cal.ch2kev(uncal_spec.channels))
 
 
 def test_apply_calibration_recal(cal_spec, chlist, kevlist):

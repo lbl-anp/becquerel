@@ -12,6 +12,8 @@ except ImportError:
     # Python 2.x
     from collections import Iterable
 
+EPS = np.finfo(float).eps
+
 VECTOR_TYPES = (list, tuple, np.ndarray)
 
 try:
