@@ -119,15 +119,16 @@ def find_best_gain(
                 len(channels), len(snrs)))
     if len(channels) < 2:
         raise AutoCalibratorError(
-            'Number of channels ({}) must at least 2'.format(len(channels)))
+            'Number of channels ({}) must be at least 2'.format(len(channels)))
     if len(required_energies) < 2:
         raise AutoCalibratorError(
-            'Number of required energies ({}) must at least 2'.format(
+            'Number of required energies ({}) must be at least 2'.format(
                 len(required_energies)))
     if len(channels) < len(required_energies):
         raise AutoCalibratorError(
-            'Number of channels ({}) must be > required energies ({})'.format(
+            'Number of channels ({}) must be >= required energies ({})'.format(
                 len(channels), len(required_energies)))
+
     channels = np.array(channels)
     snrs = np.array(snrs)
     n_req = len(required_energies)
@@ -202,6 +203,7 @@ def find_best_gain(
     if best_gain is None:
         return None
     else:
+        print('found best gain: %f keV/channel' % best_gain)
         return {
             'gain': best_gain,
             'channels': best_chans,
@@ -211,7 +213,13 @@ def find_best_gain(
 
 
 class AutoCalibrator(object):
-    """Automatically calibrate a spectrum by convolving it with a filter."""
+    """Automatically calibrate a spectrum by convolving it with a filter.
+
+    A note on nomenclature: for historic reasons, 'channels' is used in
+    autocal.py for generic uncalibrated x-axis values. A 'channel' is no longer
+    necessarily an integer channel number (i.e., bin) from a multi-channel
+    analyzer, but could for instance be a float-type fC of charge collected.
+    """
 
     def __init__(self, peakfinder):
         """Initialize the calibration with a spectrum and kernel."""
@@ -247,38 +255,38 @@ class AutoCalibrator(object):
             plt.plot(chan, snr, 'go')
 
     def fit(self, required_energies, optional=(),
-            gain_range=(1e-3, 1e3), de_max=10., verbose=False):
+            gain_range=(1e-4, 1e3), de_max=10., verbose=False):
         """Find the gain that gives the best match of peaks to energies."""
-        if len(self.peakfinder.channels) == 1 and \
+        if len(self.peakfinder.centroids) == 1 and \
                 len(required_energies) == 1:
             # special case: only one line identified
-            self.fit_channels = list(self.peakfinder.channels)
+            self.fit_channels = list(self.peakfinder.centroids)
             self.fit_snrs = list(self.peakfinder.snrs)
             self.fit_energies = list(required_energies)
-            gain = required_energies[0] / self.peakfinder.channels[0]
+            gain = required_energies[0] / self.peakfinder.centroids[0]
             self.gain = gain
             self.cal = LinearEnergyCal.from_coeffs(
                 {'offset': 0, 'slope': self.gain})
             return
         # handle the usual case: multiple lines to match
-        if len(self.peakfinder.channels) < 2:
+        if len(self.peakfinder.centroids) < 2:
             raise AutoCalibratorError(
                 'Need more than {} peaks to fit'.format(
-                    len(self.peakfinder.channels)))
+                    len(self.peakfinder.centroids)))
         if len(required_energies) < 2:
             raise AutoCalibratorError(
                 'Need more than {} energies to fit'.format(
                     len(required_energies)))
-        if len(self.peakfinder.channels) < len(required_energies):
+        if len(self.peakfinder.centroids) < len(required_energies):
             raise AutoCalibratorError(
                 'Require {} energies but only {} peaks are available'.format(
-                    len(required_energies), len(self.peakfinder.channels)))
+                    len(required_energies), len(self.peakfinder.centroids)))
         fit = find_best_gain(
-            self.peakfinder.channels, self.peakfinder.snrs,
+            self.peakfinder.centroids, self.peakfinder.snrs,
             required_energies, optional=optional, gain_range=gain_range,
             de_max=de_max, verbose=verbose)
         if fit is None:
-            self.fit_energies = []
+            self.fit_channels = []
             self.fit_snrs = []
             self.fit_energies = []
             self.gain = None
