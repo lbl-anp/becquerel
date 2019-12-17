@@ -8,6 +8,7 @@ import dateutil.parser
 import numpy as np
 from .spectrum_file import (SpectrumFile, SpectrumFileParsingError,
                             SpectrumFileParsingWarning)
+warnings.simplefilter('always', DeprecationWarning)
 
 
 class SpeFileParsingError(SpectrumFileParsingError):
@@ -78,7 +79,7 @@ class SpeFile(SpectrumFile):
                 elif lines[i] == '$SPEC_REM:':
                     self.sample_description = ''
                     i += 1
-                    while i < len(lines) and lines[i][0] != '$':
+                    while i < len(lines) and not lines[i].startswith('$'):
                         self.sample_description += lines[i] + '\n'
                         i += 1
                     self.sample_description = self.sample_description[:-1]
@@ -116,7 +117,7 @@ class SpeFile(SpectrumFile):
                 elif lines[i] == '$ROI:':
                     self.ROIs = []
                     i += 1
-                    while i < len(lines) and lines[i][0] != '$':
+                    while i < len(lines) and not lines[i].startswith('$'):
                         self.ROIs.append(lines[i])
                         i += 1
                     i -= 1

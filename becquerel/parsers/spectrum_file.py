@@ -5,6 +5,7 @@ import os
 import warnings
 import numpy as np
 from scipy.interpolate import interp1d
+warnings.simplefilter('always', DeprecationWarning)
 
 
 class SpectrumFileParsingWarning(UserWarning):

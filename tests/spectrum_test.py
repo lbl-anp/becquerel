@@ -127,7 +127,6 @@ class TestSpectrumFromFile(object):
 
     def run_from_file(self, extension):
         """Run the test of from_file() for files with the given extension."""
-
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
         for filename in filenames:
@@ -179,7 +178,7 @@ def test_cal(cal_spec):
 
     assert len(cal_spec.counts) == TEST_DATA_LENGTH
     assert len(cal_spec.bin_edges_kev) == TEST_DATA_LENGTH + 1
-    assert len(cal_spec.energies_kev) == TEST_DATA_LENGTH
+    assert len(cal_spec.bin_centers_kev) == TEST_DATA_LENGTH
     assert cal_spec.is_calibrated
 
 
@@ -209,7 +208,7 @@ def test_uncalibrated_exception(uncal_spec):
     """Test UncalibratedError."""
 
     with pytest.raises(bq.UncalibratedError):
-        uncal_spec.energies_kev
+        uncal_spec.bin_centers_kev
 
 
 def test_negative_input(spec_data):
@@ -226,6 +225,52 @@ def test_negative_input(spec_data):
     spec = bq.Spectrum(neg_spec, uncs=neg_uncs)
     assert np.any(spec.counts_vals < 0)
     assert np.any(np.isnan(spec.counts_uncs))
+
+
+# ----------------------------------------------
+#      Test Spectrum.from_listmode behavior
+# ----------------------------------------------
+
+def test_listmode():
+    """It's easy to introduce off-by-one errors in histogramming listmode data,
+       so run quite a few sanity checks here."""
+    NBINS = 100
+    MEAN = 1000.
+    STDDEV = 50.
+    NSAMPLES = 10000
+    XMIN, XMAX = 0., 2000.
+    BW = (XMAX - XMIN) / (1.0 * NBINS)
+    lmd = np.random.normal(MEAN, STDDEV, NSAMPLES)
+
+    # test with args
+    spec0 = bq.Spectrum.from_listmode(lmd, bins=NBINS, xmin=XMIN, xmax=XMAX)
+    assert len(spec0) == NBINS
+    assert np.isclose(spec0.bin_widths_raw[0], BW)
+    assert spec0.bin_edges_raw[0] == XMIN
+    assert spec0.bin_edges_raw[-1] == XMAX
+    assert len(spec0.bin_edges_raw) == NBINS + 1
+    assert spec0.has_uniform_bins(use_kev=False)
+    assert spec0.find_bin_index(XMIN, use_kev=False) == 0
+    assert spec0.find_bin_index(XMIN + BW/4.0, use_kev=False) == 0
+    assert spec0.find_bin_index(XMAX - BW/4.0, use_kev=False) == NBINS - 1
+    with pytest.raises(AssertionError):
+        spec0.find_bin_index(XMAX, use_kev=False)
+    with pytest.raises(AssertionError):
+        spec0.find_bin_index(XMIN - BW/4.0, use_kev=False)
+
+    # test without args
+    spec1 = bq.Spectrum.from_listmode(lmd)
+    assert len(spec1) == int(np.ceil(max(lmd)))
+
+    # test non-uniform bins
+    NEDGES = NBINS + 1
+    log_bins = np.logspace(1, 4, num=NEDGES, base=10.0)
+    spec2 = bq.Spectrum.from_listmode(lmd, bins=log_bins)
+    assert len(spec2) == NBINS
+    assert spec2.has_uniform_bins(use_kev=False) is False
+    assert spec2.find_bin_index(1e1, use_kev=False) == 0
+    assert spec2.find_bin_index(1e1 + 1e-9, use_kev=False) == 0
+    assert spec2.find_bin_index(1e4 - 1e-9, use_kev=False) == NBINS - 1
 
 
 # ----------------------------------------------
@@ -381,19 +426,19 @@ def test_properties(spec_data):
 #         Test Spectrum.bin_widths
 # ----------------------------------------------
 
-def test_bin_widths(cal_spec):
-    """Test Spectrum.bin_widths"""
+def test_bin_widths_kev(cal_spec):
+    """Test Spectrum.bin_widths_kev"""
 
-    cal_spec.bin_widths
-    assert len(cal_spec.bin_widths) == len(cal_spec.counts)
-    assert np.allclose(cal_spec.bin_widths, TEST_GAIN)
+    cal_spec.bin_widths_kev
+    assert len(cal_spec.bin_widths_kev) == len(cal_spec.counts)
+    assert np.allclose(cal_spec.bin_widths_kev, TEST_GAIN)
 
 
-def test_bin_width_error(uncal_spec):
-    """Test Spectrum.bin_widths error"""
+def test_bin_widths_uncal(uncal_spec):
+    """Test Spectrum.bin_widths_raw"""
 
-    with pytest.raises(bq.UncalibratedError):
-        uncal_spec.bin_widths
+    uncal_spec.bin_widths_raw
+    assert len(uncal_spec.bin_widths_raw) == len(uncal_spec.counts)
 
 
 # ----------------------------------------------
@@ -426,9 +471,10 @@ def test_cpskev(spec_data, livetime):
     spec.cpskev_vals
     spec.cpskev_uncs
     assert np.allclose(
-        spec.cpskev_vals, spec_data / spec.bin_widths / float(livetime))
+        spec.cpskev_vals, spec_data / spec.bin_widths_kev / float(livetime))
     assert np.allclose(
-        spec.cpskev_uncs, spec.counts_uncs / spec.bin_widths / float(livetime))
+        spec.cpskev_uncs,
+        spec.counts_uncs / spec.bin_widths_kev / float(livetime))
 
 
 def test_cps_cpsspec(spec_data, livetime):
