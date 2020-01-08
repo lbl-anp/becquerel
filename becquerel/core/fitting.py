@@ -217,6 +217,15 @@ MODEL_STR_TO_CLS = {
 
 
 class Fitter(object):
+    '''Base class for more specialized fit objects.
+
+    A note on interpreting fit results: ascribing meaning to histogram fit
+    parameters is notoriously tricky, since the y-scale has units of counts
+    per bin width, not just counts. The user may need to divide by the
+    histogram bin width for area- or height-like parameters if the histogram is
+    not already normalized by bin width. See, e.g., p. 171 of Bevington and
+    Robinson, "Data reduction and error analysis for the physical sciences".
+    '''
 
     def __init__(self, model, x=None, y=None, y_unc=None, roi=None):
         # Initialize
