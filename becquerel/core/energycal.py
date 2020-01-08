@@ -247,7 +247,7 @@ class EnergyCalBase(object):
         # Find bounds (assumes self._kev2ch(kev) > 0))
         _ch_min = 0.0
         _ch_max = 1.0
-       _num_interp_pts = 1e4
+        _num_interp_pts = 1e4
         while True:
             _ch_max_kev = self.ch2keV(_ch_max)
             if _ch_max_kev < kev.max():
