@@ -7,7 +7,7 @@ import becquerel as bq
 
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'samples')
-
+np.random.seed(1)
 
 # TODO: use these for fitting actual data
 SAMPLES = {}
