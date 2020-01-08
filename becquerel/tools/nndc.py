@@ -9,11 +9,12 @@ References:
 
 from __future__ import print_function
 from future.builtins import super
+import warnings
 import numpy as np
 import requests
 import pandas as pd
 import uncertainties
-from ..core.utils import isstring
+from ..core.utils import isstring, ResourceWarning
 
 
 PARITIES = ['+', '-', 'any']
@@ -177,8 +178,9 @@ def _parse_table(text):
         text = text.split('</pre>')[0]
         text = text.split('To save this output')[0]
         lines = text.split('\n')
-    except:
-        raise NNDCRequestError('Unable to parse text:\n' + text)
+    except Exception as exc:
+        raise NNDCRequestError('Unable to parse text:\n{}\n{}'.format(exc,
+                                                                      text))
     table = {}
     headers = None
     for line in lines:
@@ -422,19 +424,23 @@ class _NNDCQuery(object):
 
     def _request(self):
         """Request data table from the URL."""
-        req = requests.post(self._URL, data=self._data)
-        if not req.ok or req.reason != 'OK' or req.status_code != 200:
-            raise NNDCRequestError('Request failed: ' + req.reason)
-        for msg in [
-                'Your search was unsuccessful',
-                'There are too many results for your search',
-        ]:
-            if msg in req.text:
-                raise NNDCRequestError('Request failed: ' + msg)
-        msg = 'No datasets were found within the specified search'
-        if msg in req.text:
-            raise NoDataFound(msg)
-        return req.text
+        # Use the context manager to automatically cleanup the session
+        with requests.Session() as session:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=ResourceWarning)
+                resp = session.post(self._URL, data=self._data, stream=False)
+            if not resp.ok or resp.reason != 'OK' or resp.status_code != 200:
+                raise NNDCRequestError('Request failed: ' + resp.reason)
+            for msg in [
+                    'Your search was unsuccessful',
+                    'There are too many results for your search',
+            ]:
+                if msg in resp.text:
+                    raise NNDCRequestError('Request failed: ' + msg)
+            msg = 'No datasets were found within the specified search'
+            if msg in resp.text:
+                raise NoDataFound(msg)
+        return resp.text
 
     def update(self, **kwargs):
         """Update the search criteria."""

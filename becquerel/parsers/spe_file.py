@@ -8,6 +8,7 @@ import dateutil.parser
 import numpy as np
 from .spectrum_file import (SpectrumFile, SpectrumFileParsingError,
                             SpectrumFileParsingWarning)
+warnings.simplefilter('always', DeprecationWarning)
 
 
 class SpeFileParsingError(SpectrumFileParsingError):

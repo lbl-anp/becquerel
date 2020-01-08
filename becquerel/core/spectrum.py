@@ -7,7 +7,7 @@ import datetime
 import numpy as np
 from uncertainties import UFloat, unumpy
 from .. import parsers
-from .utils import handle_uncs, handle_datetime, bin_centers_from_edges
+from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
 from .rebin import rebin
 from . import plotting
 import warnings
@@ -35,7 +35,8 @@ class Spectrum(object):
     """
     Represents an energy spectrum.
 
-    Initialize a Spectrum directly, or with Spectrum.from_file(filename).
+    Initialize a Spectrum directly, or with Spectrum.from_file(filename), or
+    with Spectrum.from_listmode(listmode_data).
 
     Note on livetime:
       A livetime of None is the default for a spectrum, and indicates a
@@ -49,6 +50,7 @@ class Spectrum(object):
         division results in a livetime of None).
 
     Data Attributes:
+      bin_edges_raw: np.array of raw/uncalibrated bin edges
       bin_edges_kev: np.array of energy bin edges, if calibrated
       livetime: int or float of livetime, in seconds. See note above
       realtime: int or float of realtime, in seconds. May be None
@@ -57,19 +59,27 @@ class Spectrum(object):
       stop_time: a datetime.datetime object representing the acquisition end
 
     Properties (read-only):
-      counts: counts in each channel, with uncertainty
-      counts_vals: counts in each channel, no uncertainty
-      counts_uncs: uncertainties on counts in each channel
-      cps: counts per second in each channel, with uncertainty
-      cps_vals: counts per second in each channel, no uncertainty
-      cps_uncs: uncertainties on counts per second in each channel
-      cpskev: CPS/keV in each channel, with uncertainty
-      cpskev_vals: CPS/keV in each channel, no uncertainty
-      cpskev_uncs: uncertainties on CPS/keV in each channel
-      channels: np.array of channel index as integers
+      counts: counts in each bin, with uncertainty
+      counts_vals: counts in each bin, no uncertainty
+      counts_uncs: uncertainties on counts in each bin
+      cps: counts per second in each bin, with uncertainty
+      cps_vals: counts per second in each bin, no uncertainty
+      cps_uncs: uncertainties on counts per second in each bin
+      cpskev: CPS/keV in each bin, with uncertainty
+      cpskev_vals: CPS/keV in each bin, no uncertainty
+      cpskev_uncs: uncertainties on CPS/keV in each bin
+      bins: np.array of bin index as integers
+      channels: np.array of bin index as integers (deprecated, raises a
+        DeprecationWarning)
       is_calibrated: bool indicating calibration status
-      energies_kev: np.array of energy bin centers, if calibrated
-      bin_widths: np.array of energy bin widths, if calibrated
+      energies_kev: np.array of energy bin centers, if calibrated (deprecated,
+        raises a DeprecationWarning)
+      bin_centers_raw: np.array of raw bin centers
+      bin_centers_kev: np.array of energy bin centers, if calibrated
+      bin_widths: np.array of energy bin widths, if calibrated (deprecated,
+        raises a DeprecationWarning)
+      bin_widths_raw: np.array of raw bin widths
+      bin_widths_kev: np.array of energy bin widths, if calibrated
 
     Methods:
       apply_calibration: use an EnergyCal object to calibrate this spectrum
@@ -81,8 +91,8 @@ class Spectrum(object):
     """
 
     def __init__(self, counts=None, cps=None, uncs=None, bin_edges_kev=None,
-                 input_file_object=None, livetime=None, realtime=None,
-                 start_time=None, stop_time=None):
+                 bin_edges_raw=None, input_file_object=None, livetime=None,
+                 realtime=None, start_time=None, stop_time=None):
         """Initialize the spectrum.
 
         Either counts or cps must be specified. Other args are optional.
@@ -93,11 +103,10 @@ class Spectrum(object):
         See note on livetime in class docstring.
 
         Args:
-          counts: counts per channel. array-like of ints, floats or UFloats,
-            if uncs is not provided all values must be positive
-          cps: counts per second per channel. array-like of floats or UFloats
-          uncs (optional): an iterable of uncertainty on the counts for each
-            channel.
+          counts: counts per bin. array-like of ints, floats or UFloats, if
+            uncs is not provided all values must be positive
+          cps: counts per second per bin. array-like of floats or UFloats
+          uncs (optional): iterable of uncertainty on the counts for each bin.
             If counts is given, is NOT a UFloat type, and uncs is not given,
             the uncertainties are assumed to be sqrt(N), with a minimum
             uncertainty of 1 (e.g. for 0 counts).
@@ -129,6 +138,7 @@ class Spectrum(object):
         self._counts = None
         self._cps = None
         self._bin_edges_kev = None
+        self._bin_edges_raw = None
         self.livetime = None
         self.realtime = None
 
@@ -147,6 +157,9 @@ class Spectrum(object):
                 raise SpectrumError('Empty spectrum counts')
             self._cps = handle_uncs(cps, uncs, lambda x: np.nan)
 
+        if bin_edges_raw is None and not (counts is None and cps is None):
+            bin_edges_raw = np.arange(len(self)+1)
+        self.bin_edges_raw = bin_edges_raw
         self.bin_edges_kev = bin_edges_kev
 
         if livetime is not None:
@@ -208,7 +221,7 @@ class Spectrum(object):
         for k in ['start_time', 'stop_time', 'realtime', 'livetime',
                   'is_calibrated']:
             ltups.append((k, getattr(self, k)))
-        ltups.append(('num_channels', len(self.channels)))
+        ltups.append(('num_bins', len(self.bin_indices)))
         if self._counts is None:
             ltups.append(('gross_counts', None))
         else:
@@ -231,7 +244,7 @@ class Spectrum(object):
 
     @property
     def counts(self):
-        """Counts in each channel, with uncertainty.
+        """Counts in each bin, with uncertainty.
 
         If cps is defined, counts is calculated from cps and livetime.
         Otherwise, it is an independent data property.
@@ -254,7 +267,7 @@ class Spectrum(object):
 
     @property
     def counts_vals(self):
-        """Counts in each channel, no uncertainties.
+        """Counts in each bin, no uncertainties.
 
         Returns:
           an np.array of floats
@@ -264,7 +277,7 @@ class Spectrum(object):
 
     @property
     def counts_uncs(self):
-        """Uncertainties on the counts in each channel.
+        """Uncertainties on the counts in each bin.
 
         Returns:
           an np.array of floats
@@ -274,7 +287,7 @@ class Spectrum(object):
 
     @property
     def cps(self):
-        """Counts per second in each channel, with uncertainty.
+        """Counts per second in each bin, with uncertainty.
 
         If counts is defined, cps is calculated from counts and livetime.
         Otherwise, it is an independent data property.
@@ -297,7 +310,7 @@ class Spectrum(object):
 
     @property
     def cps_vals(self):
-        """Counts per second in each channel, no uncertainties.
+        """Counts per second in each bin, no uncertainties.
 
         Returns:
           an np.array of floats
@@ -307,7 +320,7 @@ class Spectrum(object):
 
     @property
     def cps_uncs(self):
-        """Uncertainties on the counts per second in each channel.
+        """Uncertainties on the counts per second in each bin.
 
         Returns:
           an np.array of floats
@@ -317,7 +330,7 @@ class Spectrum(object):
 
     @property
     def cpskev(self):
-        """Counts per second per keV in each channel, with uncertainty.
+        """Counts per second per keV in each bin, with uncertainty.
 
         Raises:
           SpectrumError: if cps is not defined due to missing livetime
@@ -327,11 +340,11 @@ class Spectrum(object):
           an np.array of uncertainties.ufloats
         """
 
-        return self.cps / self.bin_widths
+        return self.cps / self.bin_widths_kev
 
     @property
     def cpskev_vals(self):
-        """Counts per second per keV in each channel, no uncertainties.
+        """Counts per second per keV in each bin, no uncertainties.
 
         Returns:
           an np.array of floats
@@ -341,7 +354,7 @@ class Spectrum(object):
 
     @property
     def cpskev_uncs(self):
-        """Uncertainties on the counts per second per keV in each channel.
+        """Uncertainties on the counts per second per keV in each bin.
 
         Returns:
           an np.array of floats
@@ -350,8 +363,8 @@ class Spectrum(object):
         return unumpy.std_devs(self.cpskev)
 
     @property
-    def channels(self):
-        """Channel index.
+    def bin_indices(self):
+        """Bin indices.
 
         Returns:
           np.array of int's from 0 to (len(self.counts) - 1)
@@ -360,7 +373,41 @@ class Spectrum(object):
         return np.arange(len(self), dtype=int)
 
     @property
-    def energies_kev(self):
+    def channels(self):
+        """Alias for bin_indices. Raises a DeprecationWarning, as it will be
+        removed in a future release.
+
+        Returns:
+          np.array of int's from 0 to (len(self.counts) - 1)
+        """
+
+        warnings.warn('channels is deprecated terminology and will be removed '
+                      'in a future release. Use bin_indices instead.',
+                      DeprecationWarning)
+        return np.arange(len(self), dtype=int)
+
+    @property
+    def bin_centers_raw(self):
+        """Convenience function for accessing the raw values of bin centers.
+
+        Returns:
+          np.array of floats, same length as self.counts
+        """
+
+        return bin_centers_from_edges(self.bin_edges_raw)
+
+    @property
+    def bin_widths_raw(self):
+        """The width of each bin, in raw values.
+
+        Returns:
+          np.array of floats, same length as self.counts
+        """
+
+        return np.diff(self.bin_edges_raw)
+
+    @property
+    def bin_centers_kev(self):
         """Convenience function for accessing the energies of bin centers.
 
         Returns:
@@ -376,7 +423,29 @@ class Spectrum(object):
             return bin_centers_from_edges(self.bin_edges_kev)
 
     @property
-    def bin_widths(self):
+    def energies_kev(self):
+        """Convenience function for accessing the energies of bin centers.
+
+        Returns:
+          np.array of floats, same length as self.counts
+
+        Raises:
+          UncalibratedError: if spectrum is not calibrated
+          DeprecationWarning: since it will be removed in favor of
+            bin_centers_kev in a future release
+        """
+
+        warnings.warn('energies_kev is deprecated and will be removed in a '
+                      'future release. Use bin_centers_kev instead.',
+                      DeprecationWarning)
+
+        if not self.is_calibrated:
+            raise UncalibratedError('Spectrum is not calibrated')
+        else:
+            return bin_centers_from_edges(self.bin_edges_kev)
+
+    @property
+    def bin_widths_kev(self):
         """The width of each bin, in keV.
 
         Returns:
@@ -385,6 +454,28 @@ class Spectrum(object):
         Raises:
           UncalibratedError: if spectrum is not calibrated
         """
+
+        if not self.is_calibrated:
+            raise UncalibratedError('Spectrum is not calibrated')
+        else:
+            return np.diff(self.bin_edges_kev)
+
+    @property
+    def bin_widths(self):
+        """The width of each bin, in keV.
+
+        Returns:
+          np.array of floats, same length as self.counts
+
+        Raises:
+          UncalibratedError: if spectrum is not calibrated
+          DeprecationWarning: since it will be removed in favor of
+            bin_widths_kev in a future release
+        """
+
+        warnings.warn('bin_widths is deprecated and will be removed in a '
+                      'future release. Use bin_widths_kev (or bin_widths_raw) '
+                      'instead.', DeprecationWarning)
 
         if not self.is_calibrated:
             raise UncalibratedError('Spectrum is not calibrated')
@@ -417,7 +508,7 @@ class Spectrum(object):
 
         Args:
           bin_edges_kev: an iterable of bin edge energies
-            If not none, should have length of (len(counts) + 1)
+            If not None, should have length of (len(counts) + 1)
 
         Raises:
           SpectrumError: for bad input length
@@ -431,6 +522,37 @@ class Spectrum(object):
                 'Bin edge energies must be strictly increasing')
         else:
             self._bin_edges_kev = np.array(bin_edges_kev, dtype=float)
+
+    @property
+    def bin_edges_raw(self):
+        """Get the raw bin edges of a spectrum
+
+        Returns:
+          np.array of floats or None
+        """
+
+        return self._bin_edges_raw
+
+    @bin_edges_raw.setter
+    def bin_edges_raw(self, bin_edges_raw):
+        """Set the raw bin edges of a spectrum
+
+        Args:
+          bin_edges_raw: an iterable of raw bin edges
+            If not None, should have length of (len(counts) + 1)
+
+        Raises:
+          SpectrumError: for bad input length
+        """
+        if bin_edges_raw is None:
+            self._bin_edges_raw = None
+        elif len(bin_edges_raw) != len(self) + 1:
+            raise SpectrumError('Bad length of bin edges vector')
+        elif np.any(np.diff(bin_edges_raw) <= 0):
+            raise ValueError(
+                'Raw bin edges must be strictly increasing')
+        else:
+            self._bin_edges_raw = np.array(bin_edges_raw, dtype=float)
 
     @classmethod
     def from_file(cls, infilename):
@@ -456,6 +578,53 @@ class Spectrum(object):
 
         return cls(**kwargs)
 
+    @classmethod
+    def from_listmode(cls, listmode_data, bins=None, xmin=None, xmax=None,
+                      **kwargs):
+        """Construct a Spectrum object (specifically the `bin_edges_raw` and
+        `counts` of a histogram) from an array of listmode data. It is left to
+        the user to set kwargs realtime, livetime, etc, rather than trying to
+        cover all use cases here.
+
+        Args:
+          listmode_data: the array containing the listmode data, e.g., the ADC
+            values triggered or pulse integral values recorded
+          bins: integer number of bins OR array of bin_edges, following the
+            numpy.histogram style (array of all low edges and last up edge)
+          xmin: minimum x of histogram; equals bin_edges[0] if int # of bins
+          xmax: maximum x of histogram; equals bin_edges[-1] if int # of bins
+
+        Returns:
+          A Spectrum object
+
+        Raises:
+          AssertionError: no listmode_data, or xmin >= xmax, or nbins < 1
+        """
+
+        assert len(listmode_data) > 0
+
+        if xmin is None:
+            xmin = 0
+        if xmax is None:
+            xmax = np.ceil(max(listmode_data))
+        if bins is None:
+            bins = np.arange(xmin, xmax + 1, dtype=np.int)
+
+        assert xmin < xmax
+        if isinstance(bins, int):
+            assert bins > 0
+        else:
+            assert len(bins) > 1
+
+        bin_counts, bin_edges = np.histogram(listmode_data,
+                                             bins=bins,
+                                             range=(xmin, xmax))
+
+        kwargs['counts'] = bin_counts
+        kwargs['bin_edges_raw'] = bin_edges
+
+        return cls(**kwargs)
+
     def copy(self):
         """Make a deep copy of this Spectrum object.
 
@@ -466,7 +635,7 @@ class Spectrum(object):
         return deepcopy(self)
 
     def __len__(self):
-        """The number of channels in the spectrum.
+        """The number of bins in the spectrum.
 
         Returns:
           an int
@@ -516,8 +685,11 @@ class Spectrum(object):
                               'livetime was set to None.', SpectrumWarning)
         else:
             kwargs = {'cps': self.cps + other.cps}
-        spect_obj = Spectrum(
-            bin_edges_kev=self.bin_edges_kev, **kwargs)
+
+        if self.is_calibrated and other.is_calibrated:
+            spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **kwargs)
+        else:
+            spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **kwargs)
         return spect_obj
 
     def __sub__(self, other):
@@ -562,8 +734,11 @@ class Spectrum(object):
                 raise SpectrumError(
                     'Subtraction of counts and CPS-based spectra without' +
                     'livetimes not possible')
-        spect_obj = Spectrum(
-            bin_edges_kev=self.bin_edges_kev, **kwargs)
+
+        if self.is_calibrated and other.is_calibrated:
+            spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **kwargs)
+        else:
+            spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **kwargs)
         return spect_obj
 
     def _add_sub_error_checking(self, other):
@@ -597,6 +772,11 @@ class Spectrum(object):
                     'not implemented')
                 # TODO: if both spectra are calibrated but with different
                 #   calibrations, should one be rebinned to match?
+        if not self.is_calibrated and not other.is_calibrated:
+            if not np.all(self.bin_edges_raw == other.bin_edges_raw):
+                raise NotImplementedError(
+                    'Addition/subtraction for arbitrary uncalibrated ' +
+                    'spectra not implemented')
 
     def __mul__(self, other):
         """Return a new Spectrum object with counts (or CPS) scaled up.
@@ -673,7 +853,11 @@ class Spectrum(object):
             data_arg = {'counts': self.counts * multiplier}
         else:
             data_arg = {'cps': self.cps * multiplier}
-        spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **data_arg)
+
+        if self.is_calibrated:
+            spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **data_arg)
+        else:
+            spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **data_arg)
         return spect_obj
 
     def downsample(self, f, handle_livetime=None):
@@ -722,9 +906,81 @@ class Spectrum(object):
         old_counts = self.counts_vals.astype(int)
         new_counts = np.random.binomial(old_counts, 1. / f)
 
-        return Spectrum(counts=new_counts,
-                        bin_edges_kev=self.bin_edges_kev,
-                        livetime=new_livetime)
+        if self.is_calibrated:
+            return Spectrum(counts=new_counts,
+                            bin_edges_kev=self.bin_edges_kev,
+                            livetime=new_livetime)
+        else:
+            return Spectrum(counts=new_counts,
+                            bin_edges_raw=self.bin_edges_raw,
+                            livetime=new_livetime)
+
+    def has_uniform_bins(self, use_kev=True):
+        """Test whether the Spectrum has uniform binning.
+
+        This is possibly the best way to test for uniform binning within float
+        precision, after https://github.com/0cjs/py-allthesame. It may also be
+        useful to make this a member, not a method, that gets set at Spectrum
+        initialization.
+
+        Args:
+          use_kev: check bin_edges_kev if True, otherwise bin_edges_raw. This
+            is a rather unfortunate workaround necessary when keeping both the
+            raw and kev versions of the bin_edges
+
+        Raises:
+          SpectrumError: if use_kev=True but Spectrum is not calibrated
+
+        Returns:
+          True/False if all binwidths are equal to within np.finfo(float).eps
+        """
+
+        if use_kev and not self.is_calibrated:
+            raise SpectrumError('Cannot access energy bins with an ' +
+                                'uncalibrated Spectrum.')
+
+        bin_widths = self.bin_widths_kev if use_kev else self.bin_widths_raw
+        iterator = iter(bin_widths)
+        x0 = next(iterator, None)
+        for x in iterator:
+            if abs(x/x0 - 1.0) > EPS:
+                return False
+        return True
+
+    def find_bin_index(self, x, use_kev=True):
+        """Find the Spectrum bin index that contains an x-axis value x.
+
+        If the Spectrum has uniform binning, then we just solve the linear
+        equation between bin indices and x-axis values. Otherwise, we use
+        searchsorted to bisect for the insertion point where x would fit in a
+        list of bin edges, then subtract 1 to get the index of the low edge.
+
+        Args:
+          x: value whose bin to find
+          use_kev: check bin_edges_kev if True, otherwise bin_edges_raw
+
+        Raises:
+          AssertionError: if x is outside the bin edges or equal to up edge
+          SpectrumError: if use_kev=True but Spectrum is not calibrated
+
+        Returns:
+          The integer bin index that contains x
+        """
+
+        if use_kev and not self.is_calibrated:
+            raise SpectrumError('Cannot access energy bins with an ' +
+                                'uncalibrated Spectrum.')
+
+        bin_edges = self.bin_edges_kev if use_kev else self.bin_edges_raw
+        bin_widths = self.bin_widths_kev if use_kev else self.bin_widths_raw
+
+        assert x >= bin_edges[0]
+        assert x < bin_edges[-1]
+
+        if self.has_uniform_bins(use_kev=use_kev):
+            return int((x - bin_edges[0]) / bin_widths[0])
+        else:
+            return np.searchsorted(bin_edges, x, 'right') - 1
 
     def apply_calibration(self, cal):
         """Use an EnergyCal to generate bin edge energies for this spectrum.
@@ -733,9 +989,7 @@ class Spectrum(object):
           cal: an object derived from EnergyCalBase
         """
 
-        n_edges = len(self.channels) + 1
-        channel_edges = np.linspace(-0.5, self.channels[-1] + 0.5, num=n_edges)
-        self.bin_edges_kev = cal.ch2kev(channel_edges)
+        self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
 
     def calibrate_like(self, other):
         """Apply another Spectrum object's calibration (bin edges vector).
@@ -763,8 +1017,8 @@ class Spectrum(object):
     def combine_bins(self, f):
         """Make a new Spectrum with counts combined into bigger bins.
 
-        If f is not a factor of the number of channels, the counts from the
-        first spectrum will be padded with zeros.
+        If f is not a factor of the number of bins, the counts from the first
+        spectrum will be padded with zeros.
 
         len(new.counts) == np.ceil(float(len(self.counts)) / f)
 
@@ -795,7 +1049,7 @@ class Spectrum(object):
             if combined_bin_edges[-1] != self.bin_edges_kev[-1]:
                 combined_bin_edges = np.append(
                     combined_bin_edges, self.bin_edges_kev[-1])
-        else:
+        else:  # TODO: should be able to combine bins
             combined_bin_edges = None
 
         kwargs = {key: combined_counts,
@@ -812,7 +1066,7 @@ class Spectrum(object):
 
         Args:
             out_edges (np.ndarray): an array of the output bin edges
-                [num_channels_out]
+                [num_bins_out]
             method (str): rebinning method
                 "interpolation"
                     Deterministic interpolation
@@ -833,7 +1087,7 @@ class Spectrum(object):
         """
         if self.bin_edges_kev is None:
             raise SpectrumError('Cannot rebin spectrum without energy '
-                                'calibration')
+                                'calibration')  # TODO: why not?
         in_spec = self.counts_vals
         if method.lower() == 'listmode':
             if (self._counts is None) and (self.livetime is not None):
@@ -853,6 +1107,7 @@ class Spectrum(object):
     def rebin_like(self, other, zero_pad_warnings=False, **kwargs):
         return self.rebin(other.bin_edges_kev,
                           zero_pad_warnings=zero_pad_warnings, **kwargs)
+        # TODO: raw here too?
 
     def plot(self, *fmt, **kwargs):
         """Plot a spectrum with matplotlib's plot command.

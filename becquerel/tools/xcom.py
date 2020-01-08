@@ -10,11 +10,10 @@ References:
 """
 
 from __future__ import print_function
-from collections import Iterable
 import requests
 import pandas as pd
 from . import element
-from ..core.utils import isstring
+from ..core.utils import isstring, Iterable
 
 # Dry air relative weights taken from:
 # http://www.engineeringtoolbox.com/air-composition-d_212.html
