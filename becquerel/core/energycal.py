@@ -235,8 +235,33 @@ class EnergyCalBase(object):
             a float if input is scalar. an np.array if input is iterable
         """
 
-        # if this is not possible, raise a NotImplementedError ?
-        pass
+        kev = np.asarray(kev, dtype=np.float)
+        # Should we allow negative inputs? (This will change the bounds below)
+        assert (keV >= 0).all()
+        # Find bounds (assumes self._kev2ch(kev) > 0))
+        _ch_min = 0.0
+        _ch_max = 1.0
+       _num_interp_pts = 1e4
+        while True:
+            _ch_max_kev = self.ch2keV(_ch_max)
+            if _ch_max_kev < kev.max():
+                if _ch_max_kev < kev.min():
+                    _ch_min = _ch_max
+                _ch_max *= 2.0
+        # Create at vectors of length _num_interp_pts to interpolate from
+        if (_ch_max - _ch_min) > _num_interp_pts:
+            _ch = np.arange(int(round(_ch_min)), int(round(_ch_max)), dtype=np.float)
+        else:
+            _ch = np.linspace(_ch_min, _ch_max, _num_interp_pts, dtype=np.float)
+        _kev = self.ch2kev(_ch)
+        # calibration must be monotonically increasing
+        assert (np.diff(_kev) > 0).all()
+        # make sure we can interpolate
+        assert (_kev.min() <= kev).all() and (kev <= _kev.max())  
+        ch = np.asarray(np.interp(kev, kev_interp, _ch))
+        # Removing because this won't be allowed by the bound search
+        # assert (ch >= 0).all()
+        return ch
 
     @abstractproperty
     def valid_coeffs(self):
