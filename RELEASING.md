@@ -2,6 +2,7 @@
 
 We follow the `git flow` [release process](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
 
+- [ ] Pull the most recent versions of `develop` and `master`
 - If normal release:
   - [ ] Branch off of `develop` and name the branch `release-X.X.X`
 - If hotfix/patch:

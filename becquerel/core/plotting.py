@@ -141,7 +141,7 @@ class SpectrumPlotter(object):
             if self._xlabel == 'Channel' or self._xlabel is None:
                 self._xlabel = 'Energy [keV]'
         elif self._xmode == 'channel':
-            self._xedges = self.get_channel_edges(self.spec.channels)
+            self._xedges = self.spec.bin_edges_raw
             if self._xlabel == 'Energy [keV]' or self._xlabel is None:
                 self._xlabel = 'Channel'
 
@@ -384,13 +384,6 @@ class SpectrumPlotter(object):
             self._xedges, unumpy.nominal_values(self._ydata+self.yerror))
         self.ax.fill_between(xcorners, ycorlow, ycorhig, alpha=alpha, **self.kwargs)
         return self.ax
-
-    @staticmethod
-    def get_channel_edges(channels):
-        """Get a vector of xedges for uncalibrated channels."""
-
-        n_edges = len(channels) + 1
-        return np.linspace(-0.5, channels[-1] + 0.5, num=n_edges)
 
 
     @staticmethod

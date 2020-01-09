@@ -56,9 +56,9 @@ def _check_partial_overlap(in_edges, out_edges):
     """
     Args:
         in_edges (np.ndarray): an array of the input bin edges (1D or 2D)
-            [num_spectra, num_channels_in + 1] or [num_channels_in + 1]
+            [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
         out_edges (np.ndarray): an array of the output bin edges
-            [num_channels_out]
+            [num_bins_out]
 
     Raises:
         RebinWarning: for the following cases:
@@ -86,9 +86,9 @@ def _check_any_overlap(in_edges, out_edges):
     """
     Args:
         in_edges (np.ndarray): an array of the input bin edges (1D or 2D)
-            [num_spectra, num_channels_in + 1] or [num_channels_in + 1]
+            [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
         out_edges (np.ndarray): an array of the output bin edges
-            [num_channels_out]
+            [num_bins_out]
 
     Raises:
 
@@ -309,16 +309,16 @@ def _rebin2d_interpolation(in_spectra, in_edges, out_edges, slopes):
     Wrapper around _rebin_interpolation (1D) for the 2D case
 
     Args:
-      in_spectra: np.2darray, shape (num_spectra, num_channels_in)
+      in_spectra: np.2darray, shape (num_spectra, num_bins_in)
         array of input spectrum counts of shape
-      in_edges: np.2darray, shape (num_spectra, num_channels_in + 1)
+      in_edges: np.2darray, shape (num_spectra, num_bins_in + 1)
         array of the input bin edges of shape
       out_edges: np.1darray
         array of the output bin edges
       slopes:
 
     Returns:
-      np.2darray, shape (num_spectra, num_channels_in)
+      np.2darray, shape (num_spectra, num_bins_in)
       The rebinned spectra
     """
     # Init output
@@ -338,9 +338,9 @@ def _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes):
     Wrapper around _rebin_listmode (1D) for the 2D case
 
     Args:
-      in_spectra: np.2darray, shape (num_spectra, num_channels_in)
+      in_spectra: np.2darray, shape (num_spectra, num_bins_in)
         array of input spectrum counts of shape
-      in_edges: np.2darray, shape (num_spectra, num_channels_in + 1)
+      in_edges: np.2darray, shape (num_spectra, num_bins_in + 1)
         array of the input bin edges of shape
       out_edges: np.1darray
         array of the output bin edges
@@ -348,7 +348,7 @@ def _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes):
               _rebin_interpolation()
 
     Returns:
-      np.2darray, shape (num_spectra, num_channels_in)
+      np.2darray, shape (num_spectra, num_bins_in)
       The rebinned spectra
     """
     # Init output
@@ -367,11 +367,11 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
 
     Args:
         in_spectrum (np.ndarray): an array of input spectrum counts (1D or 2D)
-            [num_spectra, num_channels_in] or [num_channels_in]
+            [num_spectra, num_bins_in] or [num_bins_in]
         in_edges (np.ndarray): an array of the input bin edges (1D or 2D)
-            [num_spectra, num_channels_in + 1] or [num_channels_in + 1]
+            [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
         out_edges (np.ndarray): an array of the output bin edges
-            [num_channels_out]
+            [num_bins_out]
         method (str): rebinning method
             "interpolation"
                 Deterministic interpolation
@@ -383,7 +383,7 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
         slopes (np.ndarray|None): (optional) an array of input bin slopes for
             quadratic interpolation (1D or 2D)
             (only applies for "interpolation" method)
-            [num_spectra, num_channels_in + 1] or [num_channels_in + 1]
+            [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
         zero_pad_warnings (boolean): warn when edge overlap results in
             appending empty bins
 
