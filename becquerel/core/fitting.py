@@ -11,7 +11,7 @@ from matplotlib.font_manager import FontProperties
 from .utils import isstring
 
 FWHM_SIG_RATIO = np.sqrt(8*np.log(2))  # 2.35482
-
+SQRT_TWO = np.sqrt(2) #1.414213562
 
 class FittingError(Exception):
     """Exception raised by Fitters."""
@@ -45,18 +45,18 @@ def gauss(x, amp, mu, sigma):
 
 
 def erf(x, amp, mu, sigma):
-    return amp * 0.5 * (1. - scipy.special.erf((x - mu) / (1.414214 * sigma)))
+    return amp * 0.5 * (1. - scipy.special.erf((x - mu) / (SQRT_TWO * sigma)))
 
 
 def exp(x, amp, lam):
     return amp * np.exp(x / lam)
 
 
-def expgaussian(x, amplitude=1, center=0, sigma=1.0, gamma=1.0):
+def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
     gss = gamma*sigma*sigma
-    arg1 = gamma*(center + gss/2.0 - x)
-    arg2 = (center + gss - x)/(s2*sigma)
-    return amplitude*(gamma/2) * exp(arg1) * erfc(arg2)
+    arg1 = gamma*(mu + gss/2.0 - x)
+    arg2 = (mu + gss - x)/(SQRT_TWO*sigma)
+    return amp*(gamma/2) * np.exp(arg1) * scipy.special.erfc(arg2)
 
 # -----------------------------------------------------------------------------
 # Fitting models
@@ -169,7 +169,7 @@ class ExpModel(Model):
         ]
 
 
-class ExponentialGaussianModel(Model):
+class ExpGaussModel(Model):
     """A model of an Exponentially modified Gaussian distribution
     (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
     """
@@ -177,22 +177,41 @@ class ExponentialGaussianModel(Model):
     fwhm_factor = 2*np.sqrt(2*np.log(2))
 
     def __init__(self, *args, **kwargs):
-        super(ExponentialGaussianModel, self).__init__(expgaussian, **kwargs)
-        self._set_paramhints_prefix()
+        super(ExpGaussModel, self).__init__(expgauss, **kwargs)
+        self.set_param_hint('{}sigma'.format(self.prefix), min=0)
+        self.set_param_hint('{}gamma'.format(self.prefix), min=0, max=1)
+        # TODO: This is obviously wrong
+        self.set_param_hint(
+            '{}fwhm'.format(self.prefix),
+            expr='{} * {}sigma'.format(FWHM_SIG_RATIO, self.prefix))
 
-    def _set_paramhints_prefix(self):
-        self.set_param_hint('sigma', min=0)
-        self.set_param_hint('gamma', min=0, max=20)
-        fmt = ("{prefix:s}amplitude*{prefix:s}gamma/2*"
-               "exp({prefix:s}gamma**2*{prefix:s}sigma**2/2)*"
-               "erfc({prefix:s}gamma*{prefix:s}sigma/sqrt(2))")
-        self.set_param_hint('height', expr=fmt.format(prefix=self.prefix))
-        self.set_param_hint('fwhm', expr=fwhm_expr(self))
-
-    def guess(self, data, x=None, negative=False, **kwargs):
-        """Estimate initial model parameter values from data."""
-        pars = guess_from_peak(self, data, x, negative)
-        return update_param_vals(pars, self.prefix, **kwargs)
+    def guess(self, y, x=None, center_ratio=0.5, width_ratio=0.5):
+        assert center_ratio < 1, \
+            'Center mask ratio cannot exceed 1: {}'.format(center_ratio)
+        assert width_ratio < 1, \
+            'Width mask ratio cannot exceed 1: {}'.format(width_ratio)
+        if x is None:
+            x = np.arange(0, len(y))
+        xspan = x[-1] - x[0]
+        mu = x[0] + xspan * center_ratio
+        msk = ((x >= (mu - xspan * width_ratio)) &
+               (x <= mu + xspan * width_ratio))
+        # NOTE: this integration assumes y is NOT normalized to dx
+        amp = np.sum(y[msk])
+        # TODO: update this, minimizer creates NaN's if default sigma used (0)
+        sigma = xspan * width_ratio / 10.
+        # TODO: We miss gamma here
+        return [
+            ('{}amp'.format(self.prefix), 'value', amp),
+            ('{}amp'.format(self.prefix), 'min', 0.0),
+            ('{}mu'.format(self.prefix), 'value', mu),
+            ('{}mu'.format(self.prefix), 'min', x[0]),
+            ('{}mu'.format(self.prefix), 'max', x[-1]),
+            ('{}sigma'.format(self.prefix), 'value', sigma),
+            ('{}sigma'.format(self.prefix), 'min', 0.0),
+            ('{}gamma'.format(self.prefix), 'value', 0.95),
+            ('{}gamma'.format(self.prefix), 'min', 0.0),
+        ]
 
 
 MODEL_STR_TO_CLS = {
@@ -201,7 +220,7 @@ MODEL_STR_TO_CLS = {
     'gauss': GaussModel,
     'erf': ErfModel,
     'exp': ExpModel,
-    'expgaussian': ExponentialGaussianModel
+    'expgauss': ExpGaussModel
 }
 
 
