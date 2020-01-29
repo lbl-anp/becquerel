@@ -7,7 +7,6 @@ import becquerel as bq
 
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'samples')
-np.random.seed(1)
 
 # TODO: use these for fitting actual data
 SAMPLES = {}
@@ -31,6 +30,7 @@ def get_model_name(x):
 def sim_data(x_min, x_max, y_func, num_x=200, **params):
     x = np.linspace(x_min, x_max, num_x, dtype=np.float)
     y_smooth = y_func(x=x, **params)
+    np.random.seed(1)
     y = np.random.poisson(y_smooth).astype(np.float)
     y_unc = np.sqrt(y)
     return {'x': x, 'y': y, 'y_unc': y_unc}
@@ -74,7 +74,7 @@ HIGH_STAT_SIM_PARAMS = {
         },
     },
     'setup': {
-        'roi': (20, 180),
+        'roi': (25, 175),
         'rtol': 30e-2,
         'sim_data_kwargs': {
             'x_min': 0.0,
