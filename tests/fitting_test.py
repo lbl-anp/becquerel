@@ -74,7 +74,7 @@ HIGH_STAT_SIM_PARAMS = {
         },
     },
     'setup': {
-        'roi': (25, 175),
+        'roi': (20, 180),
         'rtol': 30e-2,
         'sim_data_kwargs': {
             'x_min': 0.0,
