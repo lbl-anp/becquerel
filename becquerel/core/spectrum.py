@@ -960,8 +960,8 @@ class Spectrum(object):
           use_kev: check bin_edges_kev if True, otherwise bin_edges_raw
 
         Raises:
-          ValueError: if x is outside the bin edges or equal to up edge
-          SpectrumError: if use_kev=True but Spectrum is not calibrated
+          SpectrumError: if use_kev=True but Spectrum is not calibrated; or if
+            x is outside the bin edges or equal to up edge
 
         Returns:
           The integer bin index or indices containing x
