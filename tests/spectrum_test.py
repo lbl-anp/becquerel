@@ -253,9 +253,13 @@ def test_listmode():
     assert spec0.find_bin_index(XMIN, use_kev=False) == 0
     assert spec0.find_bin_index(XMIN + BW/4.0, use_kev=False) == 0
     assert spec0.find_bin_index(XMAX - BW/4.0, use_kev=False) == NBINS - 1
-    with pytest.raises(AssertionError):
+    assert np.all(spec0.find_bin_index(
+        spec0.bin_edges_raw[:-1], use_kev=False) == np.arange(NBINS))
+
+    # raise errors
+    with pytest.raises(ValueError):
         spec0.find_bin_index(XMAX, use_kev=False)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         spec0.find_bin_index(XMIN - BW/4.0, use_kev=False)
 
     # test without args
@@ -271,6 +275,8 @@ def test_listmode():
     assert spec2.find_bin_index(1e1, use_kev=False) == 0
     assert spec2.find_bin_index(1e1 + 1e-9, use_kev=False) == 0
     assert spec2.find_bin_index(1e4 - 1e-9, use_kev=False) == NBINS - 1
+    assert np.all(spec2.find_bin_index(
+        spec2.bin_edges_raw[:-1], use_kev=False) == np.arange(NBINS))
 
 
 # ----------------------------------------------
