@@ -976,9 +976,9 @@ class Spectrum(object):
         x = np.array(x)
 
         if np.any(x < bin_edges[0]):
-            raise ValueError('requested x is < lowest bin edge')
+            raise SpectrumError('requested x is < lowest bin edge')
         if np.any(x >= bin_edges[-1]):
-            raise ValueError('requested x is >= highest bin edge')
+            raise SpectrumError('requested x is >= highest bin edge')
 
         if self.has_uniform_bins(use_kev=use_kev):
             return ((x - bin_edges[0]) / bin_widths[0]).astype(np.int)
