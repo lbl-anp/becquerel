@@ -973,7 +973,7 @@ class Spectrum(object):
 
         bin_edges = self.bin_edges_kev if use_kev else self.bin_edges_raw
         bin_widths = self.bin_widths_kev if use_kev else self.bin_widths_raw
-        x = np.array(x)
+        x = np.asarray(x)
 
         if np.any(x < bin_edges[0]):
             raise SpectrumError('requested x is < lowest bin edge')
