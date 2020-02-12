@@ -948,7 +948,7 @@ class Spectrum(object):
         return True
 
     def find_bin_index(self, x, use_kev=True):
-        """Find the Spectrum bin index that contains an x-axis value x.
+        """Find the Spectrum bin index or indices containing x-axis value(s) x.
 
         If the Spectrum has uniform binning, then we just solve the linear
         equation between bin indices and x-axis values. Otherwise, we use
@@ -956,15 +956,15 @@ class Spectrum(object):
         list of bin edges, then subtract 1 to get the index of the low edge.
 
         Args:
-          x: value whose bin to find
+          x: value(s) whose bin to find
           use_kev: check bin_edges_kev if True, otherwise bin_edges_raw
 
         Raises:
-          AssertionError: if x is outside the bin edges or equal to up edge
-          SpectrumError: if use_kev=True but Spectrum is not calibrated
+          SpectrumError: if use_kev=True but Spectrum is not calibrated; or if
+            x is outside the bin edges or equal to up edge
 
         Returns:
-          The integer bin index that contains x
+          The integer bin index or indices containing x
         """
 
         if use_kev and not self.is_calibrated:
@@ -973,12 +973,15 @@ class Spectrum(object):
 
         bin_edges = self.bin_edges_kev if use_kev else self.bin_edges_raw
         bin_widths = self.bin_widths_kev if use_kev else self.bin_widths_raw
+        x = np.asarray(x)
 
-        assert x >= bin_edges[0]
-        assert x < bin_edges[-1]
+        if np.any(x < bin_edges[0]):
+            raise SpectrumError('requested x is < lowest bin edge')
+        if np.any(x >= bin_edges[-1]):
+            raise SpectrumError('requested x is >= highest bin edge')
 
         if self.has_uniform_bins(use_kev=use_kev):
-            return int((x - bin_edges[0]) / bin_widths[0])
+            return ((x - bin_edges[0]) / bin_widths[0]).astype(np.int)
         else:
             return np.searchsorted(bin_edges, x, 'right') - 1
 
