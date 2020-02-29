@@ -309,19 +309,27 @@ def test_listmode_types():
         spec.find_bin_index([XMIN], use_kev=False), np.ndarray)
 
 
-@pytest.mark.parametrize('spec',
-                         [make_spec_listmode('uniform'), make_spec('uncal')])
+@pytest.mark.parametrize('spec', [
+    make_spec_listmode('uniform'),
+    make_spec_listmode('log'),
+    make_spec('uncal'),
+    make_spec('cal')])
 def test_index_out_of_bounds(spec):
     '''Raise a SpectrumError when we look for a bin index out of bounds.'''
 
+    if spec.is_calibrated:
+        edges, widths = spec.bin_edges_kev, spec.bin_widths_kev
+    else:
+        edges, widths = spec.bin_edges_raw, spec.bin_widths_raw
+
+    xmin, xmax = edges[0], edges[-1]
+    bw = widths[-1]
+
     # out of histogram bounds
-    xmin = spec.bin_edges_raw[0]
-    xmax = spec.bin_edges_raw[-1]
-    bw = spec.bin_widths_raw[-1]
     with pytest.raises(bq.SpectrumError):
-        spec.find_bin_index(xmax, use_kev=False)
+        spec.find_bin_index(xmax, use_kev=spec.is_calibrated)
     with pytest.raises(bq.SpectrumError):
-        spec.find_bin_index(xmin - bw/4.0, use_kev=False)
+        spec.find_bin_index(xmin - bw/4.0, use_kev=spec.is_calibrated)
 
 
 # ----------------------------------------------
