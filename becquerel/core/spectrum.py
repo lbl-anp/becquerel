@@ -947,7 +947,7 @@ class Spectrum(object):
                 return False
         return True
 
-    def find_bin_index(self, x, use_kev=True):
+    def find_bin_index(self, x, use_kev=None):
         """Find the Spectrum bin index or indices containing x-axis value(s) x.
 
         If the Spectrum has uniform binning, then we just solve the linear
@@ -967,12 +967,14 @@ class Spectrum(object):
           The integer bin index or indices containing x
         """
 
+        if use_kev is None:
+            use_kev = self.is_calibrated
+
         if use_kev and not self.is_calibrated:
             raise SpectrumError('Cannot access energy bins with an ' +
                                 'uncalibrated Spectrum.')
 
-        bin_edges = self.bin_edges_kev if use_kev else self.bin_edges_raw
-        bin_widths = self.bin_widths_kev if use_kev else self.bin_widths_raw
+        bin_edges, bin_widths, _ = self.get_bin_info(use_kev)
         x = np.asarray(x)
 
         if np.any(x < bin_edges[0]):
@@ -984,6 +986,16 @@ class Spectrum(object):
             return ((x - bin_edges[0]) / bin_widths[0]).astype(np.int)
         else:
             return np.searchsorted(bin_edges, x, 'right') - 1
+
+    def get_bin_info(self, use_kev=None):
+        '''Convenience function to get all bin info, depending on use_kev.'''
+        if use_kev:
+            if not self.is_calibrated:
+                raise SpectrumError('Cannot access energy bins with an ' +
+                                    'uncalibrated Spectrum.')
+            return self.bin_edges_kev, self.bin_widths_kev, self.bin_centers_kev
+        else:
+            return self.bin_edges_raw, self.bin_widths_raw, self.bin_centers_raw
 
     def apply_calibration(self, cal):
         """Use an EnergyCal to generate bin edge energies for this spectrum.
