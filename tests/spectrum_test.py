@@ -275,11 +275,30 @@ def test_listmode_args(use_kev):
     assert edges[-1] == XMAX
     assert len(edges) == NBINS + 1
     assert spec.has_uniform_bins(use_kev=use_kev)
-    assert spec.find_bin_index(XMIN, use_kev=use_kev) == 0
-    assert spec.find_bin_index(XMIN + BW/4.0, use_kev=use_kev) == 0
-    assert spec.find_bin_index(XMAX - BW/4.0, use_kev=use_kev) == NBINS - 1
+
+
+@pytest.mark.parametrize('spec', [
+    make_spec_listmode('uniform'),
+    make_spec_listmode('log')])
+def test_find_bin_index(spec):
+    use_kev = spec.is_calibrated
+    if use_kev:
+        edges, widths = spec.bin_edges_kev, spec.bin_widths_kev
+    else:
+        edges, widths = spec.bin_edges_raw, spec.bin_widths_raw
+    xmin, xmax = edges[0], edges[-1]
+    bw = widths[0]
+
+    assert spec.find_bin_index(xmin, use_kev=use_kev) == 0
+    assert spec.find_bin_index(xmin + bw/4.0, use_kev=use_kev) == 0
+    assert spec.find_bin_index(xmax - bw/4.0, use_kev=use_kev) == len(spec) - 1
     assert np.all(spec.find_bin_index(
-        edges[:-1], use_kev=use_kev) == np.arange(NBINS))
+        edges[:-1], use_kev=use_kev) == np.arange(len(spec)))
+
+
+# TODO further split these into making list mode, and testing indices
+# TODO also start a new issue that anywhere use_kev appears, it should be None
+#   by default, which then checks if spec.is_calibrated
 
 
 def test_listmode_no_args():
@@ -293,11 +312,6 @@ def test_listmode_non_uniform():
     spec = make_spec_listmode('log')
     assert len(spec) == NBINS
     assert spec.has_uniform_bins(use_kev=False) is False
-    assert spec.find_bin_index(1e1, use_kev=False) == 0
-    assert spec.find_bin_index(1e1 + 1e-9, use_kev=False) == 0
-    assert spec.find_bin_index(1e4 - 1e-9, use_kev=False) == NBINS - 1
-    assert np.all(spec.find_bin_index(
-        spec.bin_edges_raw[:-1], use_kev=False) == np.arange(NBINS))
 
 
 def test_listmode_types():
@@ -317,7 +331,8 @@ def test_listmode_types():
 def test_index_out_of_bounds(spec):
     '''Raise a SpectrumError when we look for a bin index out of bounds.'''
 
-    if spec.is_calibrated:
+    use_kev = spec.is_calibrated
+    if use_kev:
         edges, widths = spec.bin_edges_kev, spec.bin_widths_kev
     else:
         edges, widths = spec.bin_edges_raw, spec.bin_widths_raw
@@ -327,9 +342,9 @@ def test_index_out_of_bounds(spec):
 
     # out of histogram bounds
     with pytest.raises(bq.SpectrumError):
-        spec.find_bin_index(xmax, use_kev=spec.is_calibrated)
+        spec.find_bin_index(xmax, use_kev=use_kev)
     with pytest.raises(bq.SpectrumError):
-        spec.find_bin_index(xmin - bw/4.0, use_kev=spec.is_calibrated)
+        spec.find_bin_index(xmin - bw/4.0, use_kev=use_kev)
 
 
 # ----------------------------------------------
