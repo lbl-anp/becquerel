@@ -296,13 +296,8 @@ def test_find_bin_index(spec):
         edges[:-1], use_kev=use_kev) == np.arange(len(spec)))
 
 
-# TODO further split these into making list mode, and testing indices
-# TODO also start a new issue that anywhere use_kev appears, it should be None
-#   by default, which then checks if spec.is_calibrated
-
-
 def test_listmode_no_args():
-    '''test without args'''
+    '''test listmode without args'''
     spec = make_spec_listmode('default')
     assert len(spec) == int(np.ceil(max(lmd)))
 
