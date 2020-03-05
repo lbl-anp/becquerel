@@ -915,7 +915,7 @@ class Spectrum(object):
                             bin_edges_raw=self.bin_edges_raw,
                             livetime=new_livetime)
 
-    def has_uniform_bins(self, use_kev=True):
+    def has_uniform_bins(self, use_kev=None):
         """Test whether the Spectrum has uniform binning.
 
         This is possibly the best way to test for uniform binning within float
@@ -934,6 +934,9 @@ class Spectrum(object):
         Returns:
           True/False if all binwidths are equal to within np.finfo(float).eps
         """
+
+        if use_kev is None:
+            use_kev = self.is_calibrated
 
         if use_kev and not self.is_calibrated:
             raise SpectrumError('Cannot access energy bins with an ' +

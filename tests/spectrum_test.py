@@ -264,9 +264,8 @@ def test_listmode_args(use_kev):
     if use_kev:
         cal = bq.LinearEnergyCal.from_coeffs({'m': 1.0, 'b': 0.0})
         spec.apply_calibration(cal)
-        edges, widths = spec.bin_edges_kev, spec.bin_widths_kev
-    else:
-        edges, widths = spec.bin_edges_raw, spec.bin_widths_raw
+
+    edges, widths, _ = spec.get_bin_properties()
 
     # test with args
     assert len(spec) == NBINS
@@ -277,45 +276,42 @@ def test_listmode_args(use_kev):
     assert spec.has_uniform_bins(use_kev=use_kev)
 
 
-@pytest.mark.parametrize('spec', [
-    make_spec_listmode('uniform'),
-    make_spec_listmode('log')])
-def test_find_bin_index(spec):
-    use_kev = spec.is_calibrated
-    if use_kev:
-        edges, widths = spec.bin_edges_kev, spec.bin_widths_kev
-    else:
-        edges, widths = spec.bin_edges_raw, spec.bin_widths_raw
-    xmin, xmax = edges[0], edges[-1]
-    bw = widths[0]
-
-    assert spec.find_bin_index(xmin, use_kev=use_kev) == 0
-    assert spec.find_bin_index(xmin + bw/4.0, use_kev=use_kev) == 0
-    assert spec.find_bin_index(xmax - bw/4.0, use_kev=use_kev) == len(spec) - 1
-    assert np.all(spec.find_bin_index(
-        edges[:-1], use_kev=use_kev) == np.arange(len(spec)))
-
-
 def test_listmode_no_args():
-    '''test listmode without args'''
+    """test listmode without args"""
     spec = make_spec_listmode('default')
     assert len(spec) == int(np.ceil(max(lmd)))
 
 
 def test_listmode_non_uniform():
-    '''test non-uniform bins'''
+    """test non-uniform bins"""
     spec = make_spec_listmode('log')
     assert len(spec) == NBINS
     assert spec.has_uniform_bins(use_kev=False) is False
 
 
 def test_listmode_types():
-    '''additional type checking'''
+    """additional type checking"""
     spec = make_spec_listmode('uniform')
     assert isinstance(
-        spec.find_bin_index(XMIN, use_kev=False), (int, np.integer))
+        spec.find_bin_index(XMIN), (int, np.integer))
     assert isinstance(
-        spec.find_bin_index([XMIN], use_kev=False), np.ndarray)
+        spec.find_bin_index([XMIN]), np.ndarray)
+
+
+@pytest.mark.parametrize('spec', [
+    make_spec_listmode('uniform'),
+    make_spec_listmode('log')])
+def test_find_bin_index(spec):
+    """test that find_bin_index works for various spectrum objects"""
+
+    edges, widths, _ = spec.get_bin_properties()
+    xmin, xmax = edges[0], edges[-1]
+    bw = widths[0]
+
+    assert spec.find_bin_index(xmin) == 0
+    assert spec.find_bin_index(xmin + bw/4.0) == 0
+    assert spec.find_bin_index(xmax - bw/4.0) == len(spec) - 1
+    assert np.all(spec.find_bin_index(edges[:-1]) == np.arange(len(spec)))
 
 
 @pytest.mark.parametrize('spec', [
@@ -324,22 +320,20 @@ def test_listmode_types():
     make_spec('uncal'),
     make_spec('cal')])
 def test_index_out_of_bounds(spec):
-    '''Raise a SpectrumError when we look for a bin index out of bounds.'''
+    """Raise a SpectrumError when we look for a bin index out of bounds."""
 
-    use_kev = spec.is_calibrated
-    if use_kev:
-        edges, widths = spec.bin_edges_kev, spec.bin_widths_kev
-    else:
-        edges, widths = spec.bin_edges_raw, spec.bin_widths_raw
-
+    edges, widths, _ = spec.get_bin_properties()
     xmin, xmax = edges[0], edges[-1]
     bw = widths[-1]
 
     # out of histogram bounds
     with pytest.raises(bq.SpectrumError):
-        spec.find_bin_index(xmax, use_kev=use_kev)
+        i = spec.find_bin_index(xmax)
+        print(xmax)
+        print(i)
+        print(len(spec))
     with pytest.raises(bq.SpectrumError):
-        spec.find_bin_index(xmin - bw/4.0, use_kev=use_kev)
+        spec.find_bin_index(xmin - bw/4.0)
 
 
 # ----------------------------------------------
