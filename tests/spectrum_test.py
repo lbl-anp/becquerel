@@ -330,6 +330,7 @@ def test_index_out_of_bounds(spec):
         print(xmax)
         print(i)
         print(len(spec))
+        print(xmax >= edges[-1])
     with pytest.raises(bq.SpectrumError):
         spec.find_bin_index(xmin - widths[0]/4.0)
 

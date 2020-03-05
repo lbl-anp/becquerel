@@ -1003,6 +1003,9 @@ class Spectrum(object):
             bin edges, widths, centers
         """
 
+        if use_kev is None:
+            use_kev = self.is_calibrated
+
         if use_kev:
             if not self.is_calibrated:
                 raise SpectrumError('Cannot access energy bins with an ' +
