@@ -273,7 +273,7 @@ def test_listmode_args(use_kev):
     assert edges[0] == XMIN
     assert edges[-1] == XMAX
     assert len(edges) == NBINS + 1
-    assert spec.has_uniform_bins(use_kev=use_kev)
+    assert spec.has_uniform_bins()
 
 
 def test_listmode_no_args():
@@ -286,7 +286,7 @@ def test_listmode_non_uniform():
     """test non-uniform bins"""
     spec = make_spec_listmode('log')
     assert len(spec) == NBINS
-    assert spec.has_uniform_bins(use_kev=False) is False
+    assert spec.has_uniform_bins() is False
 
 
 def test_listmode_types():
