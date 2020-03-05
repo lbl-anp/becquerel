@@ -956,16 +956,16 @@ class Spectrum(object):
         list of bin edges, then subtract 1 to get the index of the low edge.
 
         Args:
-            x: value(s) whose bin to find
-            use_kev: check bin_edges_kev if True, bin_edges_raw if False, or
-                decide based on self.is_calibrated if None
+          x: value(s) whose bin to find
+          use_kev: check bin_edges_kev if True, bin_edges_raw if False, or
+            decide based on self.is_calibrated if None
 
         Raises:
-            SpectrumError: if use_kev=True but Spectrum is not calibrated; or
-                if x is outside the bin edges or equal to up edge
+          SpectrumError: if use_kev=True but Spectrum is not calibrated; or if
+            x is outside the bin edges or equal to up edge
 
         Returns:
-            The integer bin index or indices containing x
+          The integer bin index or indices containing x
         """
 
         if use_kev is None:
@@ -992,13 +992,14 @@ class Spectrum(object):
         """Convenience function to get bin properties: edges, widths, centers.
 
         Args:
-            use_kev: if use_kev is False, use raw bins. If use_kev is True,
-                use kev bins, or raise SpectrumError if uncalibrated. If None,
-                decide based on self.is_calibrated
+          use_kev: if use_kev is False, use raw bins. If use_kev is True, use
+            kev bins, or raise SpectrumError if uncalibrated. If None, decide
+            based on self.is_calibrated
 
         Returns:
             bin edges, widths, centers
         """
+
         if use_kev:
             if not self.is_calibrated:
                 raise SpectrumError('Cannot access energy bins with an ' +
