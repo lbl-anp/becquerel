@@ -269,7 +269,7 @@ def test_listmode_args(use_kev):
 
     # test with args
     assert len(spec) == NBINS
-    assert np.isclose(widths[0], BW)
+    assert np.all(np.isclose(widths, BW))
     assert edges[0] == XMIN
     assert edges[-1] == XMAX
     assert len(edges) == NBINS + 1
@@ -306,11 +306,10 @@ def test_find_bin_index(spec):
 
     edges, widths, _ = spec.get_bin_properties()
     xmin, xmax = edges[0], edges[-1]
-    bw = widths[0]
 
     assert spec.find_bin_index(xmin) == 0
-    assert spec.find_bin_index(xmin + bw/4.0) == 0
-    assert spec.find_bin_index(xmax - bw/4.0) == len(spec) - 1
+    assert spec.find_bin_index(xmin + widths[0]/4.0) == 0
+    assert spec.find_bin_index(xmax - widths[-1]/4.0) == len(spec) - 1
     assert np.all(spec.find_bin_index(edges[:-1]) == np.arange(len(spec)))
 
 
@@ -324,7 +323,6 @@ def test_index_out_of_bounds(spec):
 
     edges, widths, _ = spec.get_bin_properties()
     xmin, xmax = edges[0], edges[-1]
-    bw = widths[-1]
 
     # out of histogram bounds
     with pytest.raises(bq.SpectrumError):
@@ -333,7 +331,7 @@ def test_index_out_of_bounds(spec):
         print(i)
         print(len(spec))
     with pytest.raises(bq.SpectrumError):
-        spec.find_bin_index(xmin - bw/4.0)
+        spec.find_bin_index(xmin - widths[0]/4.0)
 
 
 # ----------------------------------------------
