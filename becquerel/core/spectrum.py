@@ -915,7 +915,7 @@ class Spectrum(object):
                             bin_edges_raw=self.bin_edges_raw,
                             livetime=new_livetime)
 
-    def has_uniform_bins(self, use_kev=None):
+    def has_uniform_bins(self, use_kev=None, rtol=None):
         """Test whether the Spectrum has uniform binning.
 
         This is possibly the best way to test for uniform binning within float
@@ -929,24 +929,30 @@ class Spectrum(object):
             raw and kev versions of the bin_edges
 
         Raises:
-          SpectrumError: if use_kev=True but Spectrum is not calibrated
+          UncalibratedError: if use_kev=True but Spectrum is not calibrated
 
         Returns:
-          True/False if all binwidths are equal to within np.finfo(float).eps
+          True/False if all binwidths are equal to within relative tolerance
+            rtol (default 100 * np.finfo(float).eps)
         """
+
+        if rtol is None:
+            rtol = 100 * EPS
+        if rtol < EPS:
+            raise ValueError('Relative tolerance rtol cannot be < system EPS')
 
         if use_kev is None:
             use_kev = self.is_calibrated
 
         if use_kev and not self.is_calibrated:
-            raise SpectrumError('Cannot access energy bins with an ' +
-                                'uncalibrated Spectrum.')
+            raise UncalibratedError('Cannot access energy bins with an ' +
+                                    'uncalibrated Spectrum.')
 
         bin_widths = self.bin_widths_kev if use_kev else self.bin_widths_raw
         iterator = iter(bin_widths)
         x0 = next(iterator, None)
         for x in iterator:
-            if abs(x/x0 - 1.0) > EPS:
+            if abs(x/x0 - 1.0) > rtol:
                 return False
         return True
 
@@ -964,8 +970,8 @@ class Spectrum(object):
             decide based on self.is_calibrated if None
 
         Raises:
-          SpectrumError: if use_kev=True but Spectrum is not calibrated; or if
-            x is outside the bin edges or equal to up edge
+          UncalibratedError: if use_kev=True but Spectrum is not calibrated
+          SpectrumError: if x is outside the bin edges or equal to up edge
 
         Returns:
           The integer bin index or indices containing x
@@ -975,8 +981,8 @@ class Spectrum(object):
             use_kev = self.is_calibrated
 
         if use_kev and not self.is_calibrated:
-            raise SpectrumError('Cannot access energy bins with an ' +
-                                'uncalibrated Spectrum.')
+            raise UncalibratedError('Cannot access energy bins with an ' +
+                                    'uncalibrated Spectrum.')
 
         bin_edges, bin_widths, _ = self.get_bin_properties(use_kev)
         x = np.asarray(x)
@@ -996,11 +1002,11 @@ class Spectrum(object):
 
         Args:
           use_kev: if use_kev is False, use raw bins. If use_kev is True, use
-            kev bins, or raise SpectrumError if uncalibrated. If None, decide
-            based on self.is_calibrated
+            kev bins, or raise UncalibratedError if uncalibrated. If None,
+            decide based on self.is_calibrated.
 
         Returns:
-            bin edges, widths, centers
+          bin edges, widths, centers
         """
 
         if use_kev is None:
@@ -1008,8 +1014,8 @@ class Spectrum(object):
 
         if use_kev:
             if not self.is_calibrated:
-                raise SpectrumError('Cannot access energy bins with an ' +
-                                    'uncalibrated Spectrum.')
+                raise UncalibratedError('Cannot access energy bins with an ' +
+                                        'uncalibrated Spectrum.')
             return self.bin_edges_kev, self.bin_widths_kev, self.bin_centers_kev
         else:
             return self.bin_edges_raw, self.bin_widths_raw, self.bin_centers_raw
