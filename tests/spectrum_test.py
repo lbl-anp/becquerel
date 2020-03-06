@@ -313,9 +313,6 @@ def test_find_bin_index(spec_str, use_cal):
     assert spec.find_bin_index(xmin) == 0
     assert spec.find_bin_index(xmin + widths[0]/4.0) == 0
     assert spec.find_bin_index(xmax - widths[-1]/4.0) == len(spec) - 1
-    if spec_str == 'uniform' and use_cal:
-        print(spec.find_bin_index(edges[:-1]))
-        print(np.arange(len(spec)))
     assert np.all(spec.find_bin_index(edges[:-1]) == np.arange(len(spec)))
 
 

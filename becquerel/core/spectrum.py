@@ -959,10 +959,12 @@ class Spectrum(object):
     def find_bin_index(self, x, use_kev=None):
         """Find the Spectrum bin index or indices containing x-axis value(s) x.
 
-        If the Spectrum has uniform binning, then we just solve the linear
-        equation between bin indices and x-axis values. Otherwise, we use
-        searchsorted to bisect for the insertion point where x would fit in a
-        list of bin edges, then subtract 1 to get the index of the low edge.
+        One might think that if the Spectrum has uniform binning, we could just
+        solve the linear equation between bin indices and x-axis values.
+        However, this can introduce enough precision loss to change the index.
+        As such, we use searchsorted to bisect for the insertion point where x
+        would fit in a list of bin edges, then subtract 1 to get the index of
+        the low edge. The numpy searchsorted method is only ~1.4 us per loop.
 
         Args:
           x: value(s) whose bin to find
@@ -992,10 +994,7 @@ class Spectrum(object):
         if np.any(x >= bin_edges[-1]):
             raise SpectrumError('requested x is >= highest bin edge')
 
-        if self.has_uniform_bins(use_kev=use_kev):
-            return ((x - bin_edges[0]) / bin_widths[0]).astype(np.int)
-        else:
-            return np.searchsorted(bin_edges, x, 'right') - 1
+        return np.searchsorted(bin_edges, x, 'right') - 1
 
     def get_bin_properties(self, use_kev=None):
         """Convenience function to get bin properties: edges, widths, centers.
