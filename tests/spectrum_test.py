@@ -317,13 +317,17 @@ def test_find_bin_index(spec_str, use_cal):
 
 
 @pytest.mark.parametrize('spec', [
-    make_spec_listmode('uniform'),
-    make_spec_listmode('log'),
+    make_spec_listmode('uniform', use_cal=False),
+    make_spec_listmode('uniform', use_cal=True),
+    make_spec_listmode('default', use_cal=False),
+    make_spec_listmode('default', use_cal=True),
+    make_spec_listmode('log', use_cal=False),
+    make_spec_listmode('log', use_cal=True),
     make_spec('uncal'),
     make_spec('cal')])
 def test_index_out_of_bounds(spec):
-    """Raise a SpectrumError when we look for a bin index out of bounds, or
-    when we ask to search bin_edges_kev in an uncalibrated spectrum.
+    """Raise a SpectrumError when we look for a bin index out of bounds, or an
+    UncalibratedError when we ask to search bin_edges_kev in an uncal spectrum.
     """
 
     edges, widths, _ = spec.get_bin_properties()
