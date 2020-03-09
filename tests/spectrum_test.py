@@ -259,7 +259,7 @@ def make_spec_listmode(t, use_cal=False):
     return spec
 
 
-@pytest.mark.parametrize('use_cal', [False, True])
+@pytest.mark.parametrize('use_cal', [None, False, True])
 def test_listmode_uniform(use_cal):
     """Test listmode spectra with uniform binning.
 
@@ -285,7 +285,7 @@ def test_listmode_uniform(use_cal):
     assert spec.has_uniform_bins()
 
 
-@pytest.mark.parametrize('use_cal', [False, True])
+@pytest.mark.parametrize('use_cal', [None, False, True])
 def test_listmode_non_uniform(use_cal):
     """Test listmode spectra with non-uniform bins."""
     spec = make_spec_listmode('log', use_cal)
@@ -293,7 +293,7 @@ def test_listmode_non_uniform(use_cal):
     assert spec.has_uniform_bins() is False
 
 
-@pytest.mark.parametrize('use_cal', [False, True])
+@pytest.mark.parametrize('use_cal', [None, False, True])
 def test_listmode_no_args(use_cal):
     """Test listmode spectra without args."""
     spec = make_spec_listmode('default', use_cal)
@@ -301,7 +301,7 @@ def test_listmode_no_args(use_cal):
 
 
 @pytest.mark.parametrize('spec_str', ['uniform', 'log'])
-@pytest.mark.parametrize('use_cal', [False, True])
+@pytest.mark.parametrize('use_cal', [None, False, True])
 def test_find_bin_index(spec_str, use_cal):
     """Test that find_bin_index works for various spectrum objects."""
 
@@ -316,20 +316,14 @@ def test_find_bin_index(spec_str, use_cal):
     assert np.all(spec.find_bin_index(edges[:-1]) == np.arange(len(spec)))
 
 
-@pytest.mark.parametrize('spec', [
-    make_spec_listmode('uniform', use_cal=False),
-    make_spec_listmode('uniform', use_cal=True),
-    make_spec_listmode('default', use_cal=False),
-    make_spec_listmode('default', use_cal=True),
-    make_spec_listmode('log', use_cal=False),
-    make_spec_listmode('log', use_cal=True),
-    make_spec('uncal'),
-    make_spec('cal')])
-def test_index_out_of_bounds(spec):
+@pytest.mark.parametrize('spec_str', ['uniform', 'default', 'log'])
+@pytest.mark.parametrize('use_cal', [None, False, True])
+def test_index_out_of_bounds(spec_str, use_cal):
     """Raise a SpectrumError when we look for a bin index out of bounds, or an
     UncalibratedError when we ask to search bin_edges_kev in an uncal spectrum.
     """
 
+    spec = make_spec_listmode(spec_str, use_cal)
     edges, widths, _ = spec.get_bin_properties()
     xmin, xmax = edges[0], edges[-1]
 
@@ -345,9 +339,10 @@ def test_index_out_of_bounds(spec):
             spec.find_bin_index(xmin, use_kev=True)
 
 
-def test_bin_index_types():
+@pytest.mark.parametrize('use_cal', [None, False, True])
+def test_bin_index_types(use_cal):
     """Additional bin index type checking."""
-    spec = make_spec_listmode('uniform')
+    spec = make_spec_listmode('uniform', use_cal=use_cal)
     assert isinstance(spec.find_bin_index(XMIN), (int, np.integer))
     assert isinstance(spec.find_bin_index([XMIN]), np.ndarray)
 
