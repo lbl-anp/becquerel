@@ -231,58 +231,120 @@ def test_negative_input(spec_data):
 #      Test Spectrum.from_listmode behavior
 # ----------------------------------------------
 
-def test_listmode():
-    """It's easy to introduce off-by-one errors in histogramming listmode data,
-       so run quite a few sanity checks here."""
-    NBINS = 100
-    MEAN = 1000.
-    STDDEV = 50.
-    NSAMPLES = 10000
-    XMIN, XMAX = 0., 2000.
-    BW = (XMAX - XMIN) / (1.0 * NBINS)
-    lmd = np.random.normal(MEAN, STDDEV, NSAMPLES)
 
-    # test with args
-    spec0 = bq.Spectrum.from_listmode(lmd, bins=NBINS, xmin=XMIN, xmax=XMAX)
-    assert len(spec0) == NBINS
-    assert np.isclose(spec0.bin_widths_raw[0], BW)
-    assert spec0.bin_edges_raw[0] == XMIN
-    assert spec0.bin_edges_raw[-1] == XMAX
-    assert len(spec0.bin_edges_raw) == NBINS + 1
-    assert spec0.has_uniform_bins(use_kev=False)
-    assert spec0.find_bin_index(XMIN, use_kev=False) == 0
-    assert spec0.find_bin_index(XMIN + BW/4.0, use_kev=False) == 0
-    assert spec0.find_bin_index(XMAX - BW/4.0, use_kev=False) == NBINS - 1
-    assert np.all(spec0.find_bin_index(
-        spec0.bin_edges_raw[:-1], use_kev=False) == np.arange(NBINS))
+NBINS = 100
+NEDGES = NBINS + 1
+MEAN = 1000.
+STDDEV = 50.
+NSAMPLES = 10000
+XMIN, XMAX = 0., 2000.
+BW = (XMAX - XMIN) / (1.0 * NBINS)
+lmd = np.random.normal(MEAN, STDDEV, NSAMPLES)
+log_bins = np.logspace(1, 4, num=NEDGES, base=10.0)
 
-    # raise errors
+
+def make_spec_listmode(t, use_cal=False):
+    if t == 'uniform':
+        spec = bq.Spectrum.from_listmode(lmd, bins=NBINS, xmin=XMIN, xmax=XMAX)
+    elif t == 'log':
+        spec = bq.Spectrum.from_listmode(lmd, bins=log_bins)
+    elif t == 'default':
+        spec = bq.Spectrum.from_listmode(lmd)
+    else:
+        return t
+
+    if use_cal:
+        cal = bq.LinearEnergyCal.from_coeffs({'m': TEST_GAIN, 'b': 0.0})
+        spec.apply_calibration(cal)
+    return spec
+
+
+@pytest.mark.parametrize('use_cal', [None, False, True])
+def test_listmode_uniform(use_cal):
+    """Test listmode spectra with uniform binning.
+
+    It's easy to introduce off-by-one errors in histogramming listmode data,
+    so run quite a few sanity checks here and in the following tests.
+    """
+
+    spec = make_spec_listmode('uniform', use_cal)
+
+    xmin, xmax, bw = XMIN, XMAX, BW
+    if spec.is_calibrated:
+        xmin *= TEST_GAIN
+        xmax *= TEST_GAIN
+        bw *= TEST_GAIN
+
+    edges, widths, _ = spec.get_bin_properties()
+
+    assert len(spec) == NBINS
+    assert np.all(np.isclose(widths, bw))
+    assert edges[0] == xmin
+    assert edges[-1] == xmax
+    assert len(edges) == NBINS + 1
+    assert spec.has_uniform_bins()
+
+
+@pytest.mark.parametrize('use_cal', [None, False, True])
+def test_listmode_non_uniform(use_cal):
+    """Test listmode spectra with non-uniform bins."""
+    spec = make_spec_listmode('log', use_cal)
+    assert len(spec) == NBINS
+    assert spec.has_uniform_bins() is False
+
+
+@pytest.mark.parametrize('use_cal', [None, False, True])
+def test_listmode_no_args(use_cal):
+    """Test listmode spectra without args."""
+    spec = make_spec_listmode('default', use_cal)
+    assert len(spec) == int(np.ceil(max(lmd)))
+
+
+@pytest.mark.parametrize('spec_str', ['uniform', 'log'])
+@pytest.mark.parametrize('use_cal', [None, False, True])
+def test_find_bin_index(spec_str, use_cal):
+    """Test that find_bin_index works for various spectrum objects."""
+
+    spec = make_spec_listmode(spec_str, use_cal)
+
+    edges, widths, _ = spec.get_bin_properties()
+    xmin, xmax = edges[0], edges[-1]
+
+    assert spec.find_bin_index(xmin) == 0
+    assert spec.find_bin_index(xmin + widths[0]/4.0) == 0
+    assert spec.find_bin_index(xmax - widths[-1]/4.0) == len(spec) - 1
+    assert np.all(spec.find_bin_index(edges[:-1]) == np.arange(len(spec)))
+
+
+@pytest.mark.parametrize('spec_str', ['uniform', 'default', 'log'])
+@pytest.mark.parametrize('use_cal', [None, False, True])
+def test_index_out_of_bounds(spec_str, use_cal):
+    """Raise a SpectrumError when we look for a bin index out of bounds, or an
+    UncalibratedError when we ask to search bin_edges_kev in an uncal spectrum.
+    """
+
+    spec = make_spec_listmode(spec_str, use_cal)
+    edges, widths, _ = spec.get_bin_properties()
+    xmin, xmax = edges[0], edges[-1]
+
+    # out of histogram bounds
     with pytest.raises(bq.SpectrumError):
-        spec0.find_bin_index(XMAX, use_kev=False)
+        spec.find_bin_index(xmax)
     with pytest.raises(bq.SpectrumError):
-        spec0.find_bin_index(XMIN - BW/4.0, use_kev=False)
+        spec.find_bin_index(xmin - widths[0]/4.0)
 
-    # test without args
-    spec1 = bq.Spectrum.from_listmode(lmd)
-    assert len(spec1) == int(np.ceil(max(lmd)))
+    # UncalibratedError if not calibrated and we ask for calibrated
+    if not spec.is_calibrated:
+        with pytest.raises(bq.UncalibratedError):
+            spec.find_bin_index(xmin, use_kev=True)
 
-    # test non-uniform bins
-    NEDGES = NBINS + 1
-    log_bins = np.logspace(1, 4, num=NEDGES, base=10.0)
-    spec2 = bq.Spectrum.from_listmode(lmd, bins=log_bins)
-    assert len(spec2) == NBINS
-    assert spec2.has_uniform_bins(use_kev=False) is False
-    assert spec2.find_bin_index(1e1, use_kev=False) == 0
-    assert spec2.find_bin_index(1e1 + 1e-9, use_kev=False) == 0
-    assert spec2.find_bin_index(1e4 - 1e-9, use_kev=False) == NBINS - 1
-    assert np.all(spec2.find_bin_index(
-        spec2.bin_edges_raw[:-1], use_kev=False) == np.arange(NBINS))
 
-    # additional type checking
-    assert isinstance(
-        spec0.find_bin_index(XMIN, use_kev=False), (int, np.integer))
-    assert isinstance(
-        spec0.find_bin_index([XMIN], use_kev=False), np.ndarray)
+@pytest.mark.parametrize('use_cal', [None, False, True])
+def test_bin_index_types(use_cal):
+    """Additional bin index type checking."""
+    spec = make_spec_listmode('uniform', use_cal=use_cal)
+    assert isinstance(spec.find_bin_index(XMIN), (int, np.integer))
+    assert isinstance(spec.find_bin_index([XMIN]), np.ndarray)
 
 
 # ----------------------------------------------
