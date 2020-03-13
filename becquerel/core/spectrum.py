@@ -949,6 +949,12 @@ class Spectrum(object):
                                     'uncalibrated Spectrum.')
 
         bin_widths = self.bin_widths_kev if use_kev else self.bin_widths_raw
+
+        # Iterate over the bin_widths, checking if each is the same within the
+        # relative tolerance rtol. Note: this is more or less equivalent to
+        #   np.allclose(bin_widths, bin_widths[0], rtol=rtol)
+        # except that the iterator approach terminates as soon as it finds the
+        # first non-uniform bin.
         iterator = iter(bin_widths)
         x0 = next(iterator, None)
         for x in iterator:
