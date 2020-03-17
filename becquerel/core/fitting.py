@@ -455,8 +455,36 @@ class Fitter(object):
                                          self.params,
                                          x=self.x_roi,
                                          weights=weights)
+        elif backend.lower().strip() == 'lmfit-pml':
+            self._set_likelihood_residual()
+            self.result = self.model.fit(
+                self.y_roi, self.params, x=self.x_roi,
+                fit_kws={'reduce_fcn': lambda r: 2.0 * np.sum(r)},
+                method='Nelder-Mead')
         else:
             raise FittingError('Unknown fitting backend: {}'.format(backend))
+
+    def _set_likelihood_residual(self):
+        def _likelihood_residual(self, params, data, weights, **kwargs):
+            """same as model._residual of lmfit"""
+            model = self.eval(params, **kwargs)
+            if self.nan_policy == 'raise' and not np.all(np.isfinite(model)):
+                msg = ('The model function generated NaN values and the fit '
+                       'aborted! Please check your model function and/or set '
+                       'boundaries on parameters where applicable. In cases '
+                       'like this, using "nan_policy=\'omit\'" will probably '
+                       'not work.')
+                raise ValueError(msg)
+            diff = (scipy.special.xlogy(data, data) -
+                    scipy.special.xlogy(data, model) + model - data)
+            if diff.dtype == np.complex:
+                # data/model are complex
+                diff = diff.ravel().view(np.float)
+            if weights is not None:
+                raise ValueError("Weights are not supported in Poisson " +
+                                 "Likelihood minimization.")
+            return np.asarray(diff).ravel()  # for compatibility with pandas.Series
+        self.model._residual = _likelihood_residual.__get__(self.model, Model)
 
     def eval(self, x, params=None, **kwargs):
         return self.model.eval(x=x, params=params, **kwargs)
