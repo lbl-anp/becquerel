@@ -246,7 +246,7 @@ class Fitter(object):
     Robinson, "Data reduction and error analysis for the physical sciences".
     '''
 
-    def __init__(self, model, x=None, y=None, y_unc=None, roi=None):
+    def __init__(self, model, x=None, y=None, y_unc=None, dx=None, roi=None):
         # Initialize
         self._model = None
         self._name = None
@@ -256,11 +256,13 @@ class Fitter(object):
         self._roi = None
         self._roi_msk = None
         self.result = None
+        self.dx = None
         # Model and parameters
         self._make_model(model)
         self.params = self.model.make_params()
         # Set data
-        self.set_data(x=x, y=y, y_unc=y_unc, roi=roi, update_defaults=True)
+        self.set_data(x=x, y=y, y_unc=y_unc, dx=dx, roi=roi,
+                      update_defaults=True)
 
     def __str__(self):
         return (
@@ -270,6 +272,7 @@ class Fitter(object):
             '        x: {}\n'.format(self.x) +
             '        y: {}\n'.format(self.y) +
             '    y_unc: {}\n'.format(self.y_unc) +
+            '       dx: {}\n'.format(self.dx) +
             '      roi: {}'.format(self.roi)
         )
 
@@ -293,7 +296,29 @@ class Fitter(object):
 
     @property
     def y_unc(self):
+        if self._y_unc is None:
+            warnings.warn(
+                'No y uncertainties (y_unc) provided. The fit will not be ' +
+                'weighted causing in poor results at low counting statistics.',
+                FittingWarning)
         return self._y_unc
+
+    @y_unc.setter
+    def y_unc(self, y_unc):
+        if y_unc is not None:
+            self._y_unc = np.asarray(y_unc, dtype=np.float)
+            assert len(self.x) == len(self._y_unc), \
+                'Fitting x (len {}) does not match y_unc (len {})'.format(
+                    len(self.x), len(self._y_unc))
+            if np.any(self._y_unc <= 0.):
+                min_v = np.min(self._y_unc[self._y_unc > 0.])
+                warnings.warn(
+                    'Negative or zero uncertainty not supported. Changing ' +
+                    'them to {}. If you have Poisson data, '.format(min_v) +
+                    'this should be 1.')
+                self._y_unc[self._y_unc <= 0.] = min_v
+        else:
+            self._y_unc = None
 
     @property
     def x_roi(self):
@@ -305,7 +330,15 @@ class Fitter(object):
 
     @property
     def y_unc_roi(self):
+        if self.y_unc is None:
+            return None
         return self.y_unc[self.roi_msk]
+
+    @property
+    def dx_roi(self):
+        if self.dx is None:
+            return None
+        return self.dx[self.roi_msk]
 
     @property
     def roi(self):
@@ -322,7 +355,8 @@ class Fitter(object):
     def param_names(self):
         return list(self.params.keys())
 
-    def set_data(self, y, x=None, y_unc=None, roi=None, update_defaults=True):
+    def set_data(self, y, x=None, y_unc=None, dx=None, roi=None,
+                 update_defaults=True):
         # Set y data (skip if y is None)
         if y is None:
             return
@@ -336,23 +370,10 @@ class Fitter(object):
                 'Fitting x (len {}) does not match y (len {})'.format(
                     len(self.x), len(self.y))
         # Handle y uncertainties
-        if y_unc is None:
-            warnings.warn(
-                'No y uncertainties (y_unc) provided. The fit will not be ' +
-                'weighted causing in poor results at low counting statistics.',
-                FittingWarning)
-        else:
-            self._y_unc = np.asarray(y_unc, dtype=np.float)
-            assert len(self.x) == len(self._y_unc), \
-                'Fitting x (len {}) does not match y_unc (len {})'.format(
-                    len(self.x), len(self._y_unc))
-            if np.any(self._y_unc <= 0.):
-                min_v = np.min(self._y_unc[self._y_unc > 0.])
-                warnings.warn(
-                    'Negative or zero uncertainty not supported. Changing ' +
-                    'them to {}. If you have Poisson data, '.format(min_v) +
-                    'this should be 1.')
-                self._y_unc[self._y_unc <= 0.] = min_v
+        self.y_unc = y_unc
+        # set deltax (bin width)
+        self.dx = dx
+
         if roi is not None:
             self.set_roi(*roi)
         if update_defaults:
@@ -446,19 +467,16 @@ class Fitter(object):
             'No data initialized, did you call set_data?'
         self.result = None
         if backend.lower().strip() == 'lmfit':
-            if self.y_unc is None:
-                weights = None
-            else:
-                # TODO: check this
-                weights = self.y_unc_roi ** -1.0
-            self.result = self.model.fit(self.y_roi,
-                                         self.params,
-                                         x=self.x_roi,
-                                         weights=weights)
+            weights = self.y_unc_roi ** -1.0
+            y_roi = self.y_roi
+            if self.dx is not None:
+                y_roi /= self.dx_roi
+            self.result = self.model.fit(
+                y_roi, self.params, x=self.x_roi, weights=weights)
         elif backend.lower().strip() == 'lmfit-pml':
             self._set_likelihood_residual()
             self.result = self.model.fit(
-                self.y_roi, self.params, x=self.x_roi,
+                self.y_roi, self.params, x=self.x_roi, weights=self.dx_roi,
                 fit_kws={'reduce_fcn': lambda r: 2.0 * np.sum(r)},
                 method='Nelder-Mead')
         else:
@@ -468,6 +486,8 @@ class Fitter(object):
         def _likelihood_residual(self, params, data, weights, **kwargs):
             """same as model._residual of lmfit"""
             model = self.eval(params, **kwargs)
+            if weights is not None:
+                model *= weights
             if self.nan_policy == 'raise' and not np.all(np.isfinite(model)):
                 msg = ('The model function generated NaN values and the fit '
                        'aborted! Please check your model function and/or set '
@@ -475,14 +495,12 @@ class Fitter(object):
                        'like this, using "nan_policy=\'omit\'" will probably '
                        'not work.')
                 raise ValueError(msg)
+            model[model <= 0] = 1e-8
             diff = (scipy.special.xlogy(data, data) -
                     scipy.special.xlogy(data, model) + model - data)
             if diff.dtype == np.complex:
                 # data/model are complex
                 diff = diff.ravel().view(np.float)
-            if weights is not None:
-                raise ValueError("Weights are not supported in Poisson " +
-                                 "Likelihood minimization.")
             return np.asarray(diff).ravel()  # for compatibility with pandas.Series
         self.model._residual = _likelihood_residual.__get__(self.model, Model)
 
@@ -612,9 +630,9 @@ class Fitter(object):
         txt_ax.get_yaxis().set_visible(False)
         best_fit_values = ''
         op = self.result.params
-        for p in self.result.params:
-            best_fit_values += '{:15} {: .6e} +/- {:.5e} ({:6.1%})\n'.format(
-                p, op[p].value, op[p].stderr, abs(op[p].stderr / op[p].value))
+        # for p in self.result.params:
+            # best_fit_values += '{:15} {: .6e} +/- {:.5e} ({:6.1%})\n'.format(
+            #    p, op[p].value, op[p].stderr, abs(op[p].stderr / op[p].value))
         best_fit_values += '{:15} {: .6e}\n'.format('Chi Squared:',
                                                     self.result.chisqr)
         best_fit_values += '{:15} {: .6e}'.format('Reduced Chi Sq:',
