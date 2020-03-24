@@ -83,7 +83,7 @@ class ConstantModel(Model):
         # TODO: remove this min setting?
         self.set_param_hint('{}c'.format(self.prefix), min=0.)
 
-    def guess(self, y, x=None, num=2):
+    def guess(self, y, x=None, dx=None, num=2):
         return []
 
 
@@ -92,10 +92,14 @@ class LineModel(Model):
     def __init__(self, *args, **kwargs):
         super(LineModel, self).__init__(line, *args, **kwargs)
 
-    def guess(self, y, x=None, num=2):
+    def guess(self, y, x=None, dx=None, num=2):
         _, b = _xy_left(y, x=x, num=num)
+        if dx is None:
+            dx = np.ones_like(x)
+        m = (y[-1]/dx[-1] - y[0]/dx[0])/(x[-1] - x[0])
+        b = ((y[-1]/dx[-1] + y[0]/dx[0]) - m*(x[1] + x[0])) * 0.5
         return [
-            ('{}m'.format(self.prefix), 'value', 0.),
+            ('{}m'.format(self.prefix), 'value', m),
             ('{}b'.format(self.prefix), 'value', b),
         ]
 
@@ -108,19 +112,34 @@ class GaussModel(Model):
             '{}fwhm'.format(self.prefix),
             expr='{} * {}sigma'.format(FWHM_SIG_RATIO, self.prefix))
 
-    def guess(self, y, x=None, center_ratio=0.5, width_ratio=0.5):
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5):
         assert center_ratio < 1, \
             'Center mask ratio cannot exceed 1: {}'.format(center_ratio)
         assert width_ratio < 1, \
             'Width mask ratio cannot exceed 1: {}'.format(width_ratio)
+
         if x is None:
             x = np.arange(0, len(y))
+        if dx is None:
+            dx = np.ones_like(x)
+
+        # counts = (y - (y[-1] - y[0]) * (x - x[0]) / (x[-1] - x[0]) - y[0])
+        # max_idx = np.argmax(counts)
+        # counts[counts < counts[max_idx] * 0.5] *= 0
+        # amp = np.sum(counts) / 0.8
+        # mu = x[max_idx]
+        # sigma = np.sqrt(np.sum(counts * (x - mu)**2) / amp) * 2
+        # if x is None:
+        #     x = np.arange(0, len(y))
+
         xspan = x[-1] - x[0]
         mu = x[0] + xspan * center_ratio
         msk = ((x >= (mu - xspan * width_ratio)) &
                (x <= mu + xspan * width_ratio))
-        # NOTE: this integration assumes y is NOT normalized to dx
-        amp = np.sum(y[msk])
+        # NOTE: this integration assumes y is NOT normalized to dx (NOW IT IS)
+        amp = np.sum(y[msk]/dx[msk])
+        # c = y[msk]
+        # amp = np.sum(c) - (c[0] + c[-1]) * np.sum(msk) * 0.5
         # TODO: update this, minimizer creates NaN's if default sigma used (0)
         sigma = xspan * width_ratio / 10.
         return [
@@ -139,10 +158,9 @@ class ErfModel(Model):
     def __init__(self, *args, **kwargs):
         super(ErfModel, self).__init__(erf, *args, **kwargs)
 
-    def guess(self, y, x=None):
+    def guess(self, y, x=None, dx=None):
         return [
             ('{}amp'.format(self.prefix), 'value', y[0] - y[-1]),
-            ('{}amp'.format(self.prefix), 'min', 0.),
             ('{}mu'.format(self.prefix), 'expr', 'gauss_mu'),
             ('{}sigma'.format(self.prefix), 'expr', 'gauss_sigma'),
         ]
@@ -155,7 +173,7 @@ class ExpModel(Model):
         self.set_param_hint('{}amp'.format(self.prefix), min=0.)
         self.set_param_hint('{}lam'.format(self.prefix), max=0.)
 
-    def guess(self, y, x=None, num=1):
+    def guess(self, y, x=None, dx=None, num=1):
         xl, yl = _xy_left(y, x=x, num=num)
         xr, yr = _xy_right(y, x=x, num=num)
         # TODO: update this hardcoded zero offset
@@ -185,19 +203,21 @@ class ExpGaussModel(Model):
             '{}fwhm'.format(self.prefix),
             expr='{} * {}sigma'.format(FWHM_SIG_RATIO, self.prefix))
 
-    def guess(self, y, x=None, center_ratio=0.5, width_ratio=0.5):
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5):
         assert center_ratio < 1, \
             'Center mask ratio cannot exceed 1: {}'.format(center_ratio)
         assert width_ratio < 1, \
             'Width mask ratio cannot exceed 1: {}'.format(width_ratio)
         if x is None:
             x = np.arange(0, len(y))
+        if dx is None:
+            dx = np.ones_like(x)
         xspan = x[-1] - x[0]
         mu = x[0] + xspan * center_ratio
         msk = ((x >= (mu - xspan * width_ratio)) &
                (x <= mu + xspan * width_ratio))
         # NOTE: this integration assumes y is NOT normalized to dx
-        amp = np.sum(y[msk])
+        amp = np.sum(y[msk]/dx[msk])
         # TODO: update this, minimizer creates NaN's if default sigma used (0)
         sigma = xspan * width_ratio / 10.
         # TODO: We miss gamma here
@@ -450,7 +470,7 @@ class Fitter(object):
     def _guess_param_defaults(self, **kwargs):
         params = []
         for comp in self.model.components:
-            params += comp.guess(self.y_roi, x=self.x_roi)
+            params += comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
         return params
 
     def guess_param_defaults(self, update=False, **kwargs):
@@ -466,19 +486,21 @@ class Fitter(object):
         assert self.y is not None, \
             'No data initialized, did you call set_data?'
         self.result = None
+        y_roi_norm = self.y_roi
+        if self.dx is not None:
+            y_roi_norm = self.y_roi / self.dx_roi
         if backend.lower().strip() == 'lmfit':
             weights = self.y_unc_roi ** -1.0
-            y_roi = self.y_roi
-            if self.dx is not None:
-                y_roi /= self.dx_roi
             self.result = self.model.fit(
-                y_roi, self.params, x=self.x_roi, weights=weights)
+                y_roi_norm, self.params, x=self.x_roi, weights=weights)
         elif backend.lower().strip() == 'lmfit-pml':
             self._set_likelihood_residual()
             self.result = self.model.fit(
-                self.y_roi, self.params, x=self.x_roi, weights=self.dx_roi,
+                self.y_roi, self.params, #self.result.params,
+                x=self.x_roi, weights=self.dx_roi,
                 fit_kws={'reduce_fcn': lambda r: 2.0 * np.sum(r)},
-                method='Nelder-Mead')
+                method='Nelder-Mead', calc_covar=False)  # no, bounds, default would be L-BFGS-B'
+                # TODO: Calculate errors breaks minimization right now
         else:
             raise FittingError('Unknown fitting backend: {}'.format(backend))
 
@@ -495,9 +517,9 @@ class Fitter(object):
                        'like this, using "nan_policy=\'omit\'" will probably '
                        'not work.')
                 raise ValueError(msg)
-            model[model <= 0] = 1e-8
-            diff = (scipy.special.xlogy(data, data) -
-                    scipy.special.xlogy(data, model) + model - data)
+            mask = model <= 0  # This should not be necessary
+            diff = scipy.special.xlogy(data, data / model) + model - data
+            diff[mask] = 1e32
             if diff.dtype == np.complex:
                 # data/model are complex
                 diff = diff.ravel().view(np.float)
@@ -556,6 +578,11 @@ class Fitter(object):
                     title_fontweight='bold', **kwargs):
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
+        dx, dx_roi = self.dx, self.dx_roi
+        if dx is None:
+            dx = np.ones_like(self.x)
+        if dx_roi is None:
+            dx_roi = np.ones_like(self.x_roi)
         gs = GridSpec(2, 2, height_ratios=(4, 1))
         gs.update(left=0.05, right=0.99, wspace=0.03, top=0.94, bottom=0.06,
                   hspace=0.06)
@@ -573,7 +600,7 @@ class Fitter(object):
         # Smooth roi x values
         x_plot = np.linspace(self.x_roi[0], self.x_roi[-1], 1000)
         # All data (not only roi)
-        fit_ax.errorbar(self.x, self.y, yerr=self.y_unc,
+        fit_ax.errorbar(self.x, self.y/dx, yerr=self.y_unc,
                         c='k', fmt='o', markersize=5, alpha=0.1, label='data')
         # Init fit
         y = self.eval(x_plot, **self.result.init_values)
@@ -618,7 +645,8 @@ class Fitter(object):
         # ---------
         res_ax.errorbar(
             self.x_roi,
-            self.eval(self.x_roi, **self.result.best_values) - self.y_roi,
+            (self.eval(self.x_roi, **self.result.best_values) * dx_roi -
+             self.y_roi),
             yerr=self.y_unc_roi, fmt='o', color='k',
             markersize=5, label='residuals')
         res_ax.set_ylabel('Residuals')
@@ -630,9 +658,16 @@ class Fitter(object):
         txt_ax.get_yaxis().set_visible(False)
         best_fit_values = ''
         op = self.result.params
-        # for p in self.result.params:
-            # best_fit_values += '{:15} {: .6e} +/- {:.5e} ({:6.1%})\n'.format(
-            #    p, op[p].value, op[p].stderr, abs(op[p].stderr / op[p].value))
+        for p in self.result.params:
+            if op[p].stderr is None:
+                pass
+                # TODO: Calculate errors breaks minimization right now
+                # warnings.warn(
+                #     "Package numdifftools is required to have "
+                #     "stderr calculated.", FittingWarning)
+            else:
+                best_fit_values += '{:15} {: .6e} +/- {:.5e} ({:6.1%})\n'.format(
+                   p, op[p].value, op[p].stderr, abs(op[p].stderr / op[p].value))
         best_fit_values += '{:15} {: .6e}\n'.format('Chi Squared:',
                                                     self.result.chisqr)
         best_fit_values += '{:15} {: .6e}'.format('Reduced Chi Sq:',
@@ -675,10 +710,10 @@ class FitterGaussGauss(Fitter):
         params = []
         for comp in self.model.components:
             if comp.prefix == 'gauss0_':
-                params += comp.guess(self.y_roi, x=self.x_roi,
+                params += comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi,
                                      center_ratio=0.33, width_ratio=0.5)
             elif comp.prefix == 'gauss1_':
-                params += comp.guess(self.y_roi, x=self.x_roi,
+                params += comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi,
                                      center_ratio=0.66, width_ratio=0.5)
         return params
 
@@ -695,13 +730,13 @@ class FitterGaussGaussLine(Fitter):
         params = []
         for comp in self.model.components:
             if comp.prefix == 'gauss0_':
-                params += comp.guess(self.y_roi, x=self.x_roi,
+                params += comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi,
                                      center_ratio=0.33, width_ratio=0.5)
             elif comp.prefix == 'gauss1_':
-                params += comp.guess(self.y_roi, x=self.x_roi,
+                params += comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi,
                                      center_ratio=0.66, width_ratio=0.5)
             else:
-                params += comp.guess(self.y_roi, x=self.x_roi)
+                params += comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
         return params
 
 
@@ -717,11 +752,11 @@ class FitterGaussGaussExp(Fitter):
         params = []
         for comp in self.model.components:
             if comp.prefix == 'gauss0_':
-                params += comp.guess(self.y_roi, x=self.x_roi,
+                params += comp.guess(self.y_roi, x=self.x_roi, dx=dx_roi,
                                      center_ratio=0.33, width_ratio=0.5)
             elif comp.prefix == 'gauss1_':
-                params += comp.guess(self.y_roi, x=self.x_roi,
+                params += comp.guess(self.y_roi, x=self.x_roi, dx=dx_roi,
                                      center_ratio=0.66, width_ratio=0.5)
             else:
-                params += comp.guess(self.y_roi, x=self.x_roi)
+                params += comp.guess(self.y_roi, x=self.x_roi, dx=dx_roi)
         return params

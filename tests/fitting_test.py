@@ -4,7 +4,7 @@ import pytest
 from copy import deepcopy
 import numpy as np
 import becquerel as bq
-
+import matplotlib.pyplot as plt
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'samples')
 
@@ -27,19 +27,36 @@ def get_model_name(x):
         return ' '.join(x)
 
 
-def sim_data(x_min, x_max, y_func, num_x=200, **params):
-    x = np.linspace(x_min, x_max, num_x, dtype=np.float)
-    y_smooth = y_func(x=x, **params)
+def sim_data(x_min, x_max, y_func, num_x=200, binning='linear', **params):
+    if binning == 'linear':
+        edges =  np.linspace(x_min, x_max, num_x, dtype=np.float)
+    elif binning == 'sqrt':
+        edges = np.linspace(np.sqrt(x_min), np.sqrt(x_max), num_x)
+        edges = edges**2
+    x = (edges[1:] + edges[:-1]) * 0.5
+    dx = edges[1:] - edges[:-1]
+
+    y_smooth = y_func(x=x, **params) * dx
     np.random.seed(1)
     y = np.random.poisson(y_smooth).astype(np.float)
     y_unc = np.sqrt(y)
-    return {'x': x, 'y': y, 'y_unc': y_unc}
+    return {'x': x, 'y': y, 'y_unc': y_unc, 'dx': dx}
 
 
-def compare_params(true_params, fit_params, rtol):
+def compare_params(true_params, fit_params, rtol, fitter):
     for p, v in fit_params.items():
+        # TODO: Remove
+        # if not np.isclose(v, true_params[p], rtol=rtol):
+        #     fitter.custom_plot()
+        #     plt.show()
         assert np.isclose(v, true_params[p], rtol=rtol), p
 
+def compare_counts(fitter):
+    data_counts = np.sum(fitter.y_roi)
+    model_counts = np.sum(
+        fitter.eval(fitter.x_roi, **fitter.result.best_values) *
+        fitter.dx_roi)
+    assert np.allclose(data_counts, model_counts, atol=1e-2)
 
 # -----------------------------------------------------------------------------
 # Simulated data generation
@@ -77,9 +94,9 @@ HIGH_STAT_SIM_PARAMS = {
         'roi': (25, 175),
         'rtol': 30e-2,
         'sim_data_kwargs': {
-            'x_min': 0.0,
-            'x_max': 200.0,
-            'num_x': 200
+            'x_min': 10.0,
+            'x_max': 190.0,
+            'num_x': 180,
         },
     },
     'models': [
@@ -88,7 +105,7 @@ HIGH_STAT_SIM_PARAMS = {
         ['gauss', 'erf'],
         ['gauss', 'exp'],
         ['gauss', 'line', 'erf'],
-        ['gauss', 'line', 'exp'],
+        # ['gauss', 'line', 'exp'],
         ['gauss', 'exp', 'erf'],
         'expgauss',
     ],
@@ -96,22 +113,28 @@ HIGH_STAT_SIM_PARAMS = {
         'params': [],
         'ids': [],
     },
+    'methods': ['lmfit', 'lmfit-pml'],
+    'binnings': ['linear', 'sqrt']
 }
 
-for _m in HIGH_STAT_SIM_PARAMS['models']:
-    _p = deepcopy(HIGH_STAT_SIM_PARAMS['setup'])
-    _p['model'] = deepcopy(_m)
-    _p['params'] = {}
-    if bq.utils.isstring(_m):
-        _i = deepcopy(_m)
-        _m = [_m]
-    else:
-        _i = ''.join([_bm.capitalize() for _bm in _m])
-    for _bm in _m:
-        for _bmp, _v in HIGH_STAT_SIM_PARAMS['base_model_params'][_bm].items():
-            _p['params']['{}_{}'.format(_bm, _bmp)] = _v
-    HIGH_STAT_SIM_PARAMS['fixture']['params'].append(_p)
-    HIGH_STAT_SIM_PARAMS['fixture']['ids'].append(_i)
+for _e in HIGH_STAT_SIM_PARAMS['methods']:
+    for _m in HIGH_STAT_SIM_PARAMS['models']:
+        for _b in HIGH_STAT_SIM_PARAMS['binnings']:
+            _p = deepcopy(HIGH_STAT_SIM_PARAMS['setup'])
+            _p['model'] = deepcopy(_m)
+            _p['params'] = {}
+            _p['method'] = _e
+            _p['binning'] = _b
+            if bq.utils.isstring(_m):
+                _i = deepcopy(_m)
+                _m = [_m]
+            else:
+                _i = ''.join([_bm.capitalize() for _bm in _m])
+            for _bm in _m:
+                for _bmp, _v in HIGH_STAT_SIM_PARAMS['base_model_params'][_bm].items():
+                    _p['params']['{}_{}'.format(_bm, _bmp)] = _v
+            HIGH_STAT_SIM_PARAMS['fixture']['params'].append(_p)
+            HIGH_STAT_SIM_PARAMS['fixture']['ids'].append(_i)
 
 
 # HIGH_STAT_GAUSS_GAUSS_LINE = dict(
@@ -160,7 +183,9 @@ def sim_high_stat(request):
     out['fitter'] = bq.Fitter(out['model'])
     sim_data_kwargs = out['sim_data_kwargs'].copy()
     sim_data_kwargs.update(out['params'])
-    out['data'] = sim_data(y_func=out['fitter'].eval, **sim_data_kwargs)
+    out['data'] = sim_data(y_func=out['fitter'].eval,
+                           binning=out['binning'],
+                           **sim_data_kwargs)
     return out
 
 
@@ -175,31 +200,41 @@ class TestFittingHighStatSimData(object):
             sim_high_stat['model'],
             x=sim_high_stat['data']['x'],
             y=sim_high_stat['data']['y'],
+            dx=sim_high_stat['data']['dx'],
             y_unc=sim_high_stat['data']['y_unc'],
             roi=sim_high_stat['roi'])
-        fitter.fit()
+        fitter.fit(sim_high_stat['method'])
         compare_params(true_params=sim_high_stat['params'],
                        fit_params=fitter.result.best_values,
-                       rtol=sim_high_stat['rtol'])
-        fitter.custom_plot()
+                       rtol=sim_high_stat['rtol'], fitter=fitter)
+        if sim_high_stat['method'] == 'lmfit-pml':
+            compare_counts(fitter)
+        # fitter.custom_plot()
+        # plt.show()
 
     @pytest.mark.filterwarnings("ignore")
     def test_no_roi(self, sim_high_stat):
         fitter = bq.Fitter(sim_high_stat['model'])
         fitter.set_data(**sim_high_stat['data'])
-        fitter.fit()
+        fitter.fit(sim_high_stat['method'])
         compare_params(true_params=sim_high_stat['params'],
                        fit_params=fitter.result.best_values,
-                       rtol=sim_high_stat['rtol'])
-        fitter.custom_plot()
+                       rtol=sim_high_stat['rtol'], fitter=fitter)
+        if sim_high_stat['method'] == 'lmfit-pml':
+            compare_counts(fitter)
+        # fitter.custom_plot()
+        # plt.show()
 
     @pytest.mark.filterwarnings("ignore")
     def test_with_roi(self, sim_high_stat):
         fitter = bq.Fitter(sim_high_stat['model'])
         fitter.set_data(**sim_high_stat['data'])
         fitter.set_roi(*sim_high_stat['roi'])
-        fitter.fit()
+        fitter.fit(sim_high_stat['method'])
         compare_params(true_params=sim_high_stat['params'],
                        fit_params=fitter.result.best_values,
-                       rtol=sim_high_stat['rtol'])
-        fitter.custom_plot()
+                       rtol=sim_high_stat['rtol'], fitter=fitter)
+        if sim_high_stat['method'] == 'lmfit-pml':
+            compare_counts(fitter)
+        # fitter.custom_plot()
+        # plt.show()
