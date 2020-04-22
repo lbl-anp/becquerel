@@ -4,6 +4,7 @@ html5lib
 lxml
 matplotlib
 numba>=0.47.0
+llvmlite==0.31.0
 numpy
 pandas
 python-dateutil
