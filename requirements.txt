@@ -3,7 +3,7 @@ future
 html5lib
 lxml
 matplotlib
-numba
+numba>=0.47.0
 numpy
 pandas
 python-dateutil
