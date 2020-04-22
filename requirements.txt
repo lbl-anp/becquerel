@@ -4,7 +4,8 @@ html5lib
 lmfit
 lxml
 matplotlib
-numba
+numba>=0.47.0
+llvmlite==0.31.0
 numpy
 pandas
 python-dateutil
