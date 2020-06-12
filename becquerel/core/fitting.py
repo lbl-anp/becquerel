@@ -52,7 +52,7 @@ def exp(x, amp, lam):
     return amp * np.exp(x / lam)
 
 
-def erfgauss(x, ampgauss, amperf, mu, sigma):
+def gausserf(x, ampgauss, amperf, mu, sigma):
     return gauss(x, ampgauss, mu, sigma) + erf(x, amperf, mu, sigma)
 
 
@@ -172,10 +172,10 @@ class ErfModel(Model):
         ]
 
 
-class ErfGaussModel(Model):
+class GaussErfModel(Model):
 
     def __init__(self, *args, **kwargs):
-        super(ErfGaussModel, self).__init__(erfgauss, *args, **kwargs)
+        super(GaussErfModel, self).__init__(gausserf, *args, **kwargs)
         self.set_param_hint(
             '{}fwhm'.format(self.prefix),
             expr='{} * {}sigma'.format(FWHM_SIG_RATIO, self.prefix))
