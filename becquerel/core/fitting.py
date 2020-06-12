@@ -52,6 +52,10 @@ def exp(x, amp, lam):
     return amp * np.exp(x / lam)
 
 
+def erfgauss(x, ampgauss, amperf, mu, sigma):
+    return gauss(x, ampgauss, mu, sigma) + erf(x, amperf, mu, sigma)
+
+
 def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
     gss = gamma*sigma*sigma
     arg1 = gamma*(mu + gss/2.0 - x)
@@ -158,11 +162,50 @@ class ErfModel(Model):
     def __init__(self, *args, **kwargs):
         super(ErfModel, self).__init__(erf, *args, **kwargs)
 
-    def guess(self, y, x=None, dx=None):
+    def guess(self, y, x=None, dx=None, center_ratio=0):
+        xspan = x[-1] - x[0]
+        mu = x[0] + xspan * center_ratio
         return [
             ('{}amp'.format(self.prefix), 'value', y[0] - y[-1]),
-            ('{}mu'.format(self.prefix), 'expr', 'gauss_mu'),
+            ('{}mu'.format(self.prefix), 'value', mu),
             ('{}sigma'.format(self.prefix), 'expr', 'gauss_sigma'),
+        ]
+
+
+class ErfGaussModel(Model):
+
+    def __init__(self, *args, **kwargs):
+        super(ErfGaussModel, self).__init__(erfgauss, *args, **kwargs)
+        self.set_param_hint(
+            '{}fwhm'.format(self.prefix),
+            expr='{} * {}sigma'.format(FWHM_SIG_RATIO, self.prefix))
+
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5,
+              amp_ratio=0.5):
+        assert center_ratio < 1, \
+            'Center mask ratio cannot exceed 1: {}'.format(center_ratio)
+        assert width_ratio < 1, \
+            'Width mask ratio cannot exceed 1: {}'.format(width_ratio)
+        if x is None:
+            x = np.arange(0, len(y))
+        if dx is None:
+            dx = np.ones_like(x)
+        xspan = x[-1] - x[0]
+        mu = x[0] + xspan * center_ratio
+        msk = ((x >= (mu - xspan * width_ratio)) &
+               (x <= mu + xspan * width_ratio))
+        amp = np.sum(y[msk]/dx[msk])
+        sigma = xspan * width_ratio / 10.
+        return [
+            ('{}ampgauss'.format(self.prefix), 'value', amp*amp_ratio),
+            ('{}ampgauss'.format(self.prefix), 'min', 0.0),
+            ('{}amperf'.format(self.prefix), 'value', amp*(1.0 - amp_ratio)),
+            ('{}amperf'.format(self.prefix), 'min', 0.0),
+            ('{}mu'.format(self.prefix), 'value', mu),
+            ('{}mu'.format(self.prefix), 'min', x[0]),
+            ('{}mu'.format(self.prefix), 'max', x[-1]),
+            ('{}sigma'.format(self.prefix), 'value', sigma),
+            ('{}sigma'.format(self.prefix), 'min', 0.0),
         ]
 
 
