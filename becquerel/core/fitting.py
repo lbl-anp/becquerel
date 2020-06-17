@@ -181,7 +181,7 @@ class GaussErfModel(Model):
             expr='{} * {}sigma'.format(FWHM_SIG_RATIO, self.prefix))
 
     def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5,
-              amp_ratio=0.5):
+              amp_ratio=0.9):
         assert center_ratio < 1, \
             'Center mask ratio cannot exceed 1: {}'.format(center_ratio)
         assert width_ratio < 1, \
@@ -281,6 +281,7 @@ MODEL_STR_TO_CLS = {
     'constant': ConstantModel,
     'line': LineModel,
     'gauss': GaussModel,
+    'gausserf': GaussErfModel,
     'erf': ErfModel,
     'exp': ExpModel,
     'expgauss': ExpGaussModel
@@ -541,7 +542,7 @@ class Fitter(object):
             self.result = self.model.fit(
                 self.y_roi, self.params, #self.result.params,
                 x=self.x_roi, weights=self.dx_roi,
-                fit_kws={'reduce_fcn': lambda r: 2.0 * np.sum(r)},
+                fit_kws={'reduce_fcn': lambda r: np.sum(r)},
                 method='Nelder-Mead', calc_covar=False)  # no, bounds, default would be L-BFGS-B'
                 # TODO: Calculate errors breaks minimization right now
         else:
@@ -561,7 +562,7 @@ class Fitter(object):
                        'not work.')
                 raise ValueError(msg)
             mask = model <= 0  # This should not be necessary
-            diff = scipy.special.xlogy(data, data / model) + model - data
+            diff = model - scipy.special.xlogy(data, model)
             diff[mask] = 1e32
             if diff.dtype == np.complex:
                 # data/model are complex

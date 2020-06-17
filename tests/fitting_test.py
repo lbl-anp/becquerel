@@ -70,6 +70,12 @@ HIGH_STAT_SIM_PARAMS = {
             'mu': 100.,
             'sigma': 5.,
         },
+        'gausserf': {
+            'ampgauss': 1e5,
+            'amperf': 1e4,
+            'mu': 100.,
+            'sigma': 5.,
+        },
         'exp': {
             'lam': -5e1,
             'amp': 1e4,
@@ -92,7 +98,7 @@ HIGH_STAT_SIM_PARAMS = {
     },
     'setup': {
         'roi': (25, 175),
-        'rtol': 30e-2,
+        'rtol': 40e-2,
         'sim_data_kwargs': {
             'x_min': 10.0,
             'x_max': 190.0,
@@ -102,11 +108,11 @@ HIGH_STAT_SIM_PARAMS = {
     'models': [
         'gauss',
         ['gauss', 'line'],
-        ['gauss', 'erf'],
+        'gausserf',
         ['gauss', 'exp'],
-        ['gauss', 'line', 'erf'],
+        ['gausserf', 'line'],
         # ['gauss', 'line', 'exp'],
-        ['gauss', 'exp', 'erf'],
+        ['gausserf', 'exp'],
         'expgauss',
     ],
     'fixture': {
