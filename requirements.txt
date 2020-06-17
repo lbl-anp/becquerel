@@ -5,7 +5,6 @@ lxml
 matplotlib
 numba>=0.47.0
 llvmlite==0.31.0; python_version < "3"
-llvmlite; python_version >= "3"
 numpy
 pandas
 python-dateutil
