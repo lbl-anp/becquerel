@@ -24,7 +24,9 @@ class SpcFile(SpectrumFile):
         spec.data [counts]
         spec.channels
         spec.energies
+        spec.bin_edges_kev
         spec.energy_bin_widths
+        spec.energy_bin_edges (deprecated)
 
     ORTEC's SPC file format is divided into records of 128 bytes each. The
     specifications for what each record should contain can be found on pages
@@ -200,9 +202,10 @@ class SpcFile(SpectrumFile):
                         'Unable to read 128 bytes from file')
                 if len(binary_data) < 128:
                     break
-            print(
-                'Done reading in SPC file.  Number of records: ',
-                len(data_records))
+            if verbose:
+                print(
+                    'Done reading in SPC file.  Number of records: ',
+                    len(data_records))
             if len(data_records) not in (279, 280):
                 raise SpcFileParsingError(
                     'Number of data records incorrect: {}'.format(
@@ -293,24 +296,29 @@ class SpcFile(SpectrumFile):
         # finish the parsing
         self.sample_description = self.metadata['Sample Description']
         self.detector_description = self.metadata['Detector Description']
-        print(self.metadata['Start date of sample collection'])
+        if verbose:
+            print(self.metadata['Start date of sample collection'])
         self.metadata['Start date of sample collection'] = \
             self.metadata['Start date of sample collection'][:-1]
-        print(self.metadata['Start date of sample collection'])
-        print(self.metadata['Start time of sample collection'])
+        if verbose:
+            print(self.metadata['Start date of sample collection'])
+            print(self.metadata['Start time of sample collection'])
         self.collection_start = dateutil.parser.parse(
             self.metadata['Start date of sample collection'] + ' ' +
             self.metadata['Start time of sample collection'])
-        print(self.collection_start)
-        print(self.metadata['Stop date of sample collection'])
+        if verbose:
+            print(self.collection_start)
+            print(self.metadata['Stop date of sample collection'])
         self.metadata['Stop date of sample collection'] = \
             self.metadata['Stop date of sample collection'][:-1]
-        print(self.metadata['Stop date of sample collection'])
-        print(self.metadata['Stop time of sample collection'])
+        if verbose:
+            print(self.metadata['Stop date of sample collection'])
+            print(self.metadata['Stop time of sample collection'])
         self.collection_stop = dateutil.parser.parse(
             self.metadata['Stop date of sample collection'] + ' ' +
             self.metadata['Stop time of sample collection'])
-        print(self.collection_stop)
+        if verbose:
+            print(self.collection_stop)
         self.location_description = \
             self.metadata['Location Description Record 1'][3:]
         self.location_description = self.location_description.split(

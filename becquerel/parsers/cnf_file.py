@@ -93,7 +93,9 @@ class CnfFile(SpectrumFile):
         spec.data [counts]
         spec.channels
         spec.energies
+        spec.bin_edges_kev
         spec.energy_bin_widths
+        spec.energy_bin_edges (deprecated)
 
     """
 
@@ -109,7 +111,7 @@ class CnfFile(SpectrumFile):
 
     def read(self, verbose=False):
         """Read in the file."""
-        print('CnfFile: attempting to read file ' + self.filename)
+        print('CnfFile: Reading file ' + self.filename)
         self.realtime = 0.0
         self.livetime = 0.0
         self.channels = np.array([], dtype=np.float)
@@ -122,7 +124,8 @@ class CnfFile(SpectrumFile):
                 data_int = struct.unpack('1B', data_str)
                 data.append(data_int[0])
                 data_str = f.read(1)
-        print(len(data))
+        if verbose:
+            print('file size (bytes):', len(data))
         # skip first 112 bytes of file
         i = 112
         # scan for offsets
@@ -160,34 +163,41 @@ class CnfFile(SpectrumFile):
         # extract sample information
         if (offset_sam + 48 + 80) >= len(data) or data[offset_sam] != 1 \
                 or data[offset_sam + 1] != 0x20:
-            print(offset_sam + 48 + 80, len(data))
-            print(data[offset_sam], data[offset_sam + 1])
+            if verbose:
+                print(offset_sam + 48 + 80, len(data))
+                print(data[offset_sam], data[offset_sam + 1])
             raise CnfFileParsingError('Sample information not found')
         else:
             sample_name = ''
             for j in range(offset_sam + 48, offset_sam + 48 + 64):
                 sample_name += chr(data[j])
-            print('sample name: ', sample_name)
+            if verbose:
+                print('sample name: ', sample_name)
             sample_id = ''
             for j in range(offset_sam + 112, offset_sam + 112 + 64):
                 sample_id += chr(data[j])
-            print('sample id:   ', sample_id)
+            if verbose:
+                print('sample id:   ', sample_id)
             sample_type = ''
             for j in range(offset_sam + 176, offset_sam + 176 + 16):
                 sample_type += chr(data[j])
-            print('sample type: ', sample_type)
+            if verbose:
+                print('sample type: ', sample_type)
             sample_unit = ''
             for j in range(offset_sam + 192, offset_sam + 192 + 64):
                 sample_unit += chr(data[j])
-            print('sample unit: ', sample_unit)
+            if verbose:
+                print('sample unit: ', sample_unit)
             user_name = ''
             for j in range(offset_sam + 0x02d6, offset_sam + 0x02d6 + 32):
                 user_name += chr(data[j])
-            print('user name:   ', user_name)
+            if verbose:
+                print('user name:   ', user_name)
             sample_desc = ''
             for j in range(offset_sam + 0x036e, offset_sam + 0x036e + 256):
                 sample_desc += chr(data[j])
-            print('sample desc: ', sample_desc)
+            if verbose:
+                print('sample desc: ', sample_desc)
             self.spectrum_id = sample_name
             self.sample_description = sample_desc
             self.detector_description = ''
@@ -197,8 +207,9 @@ class CnfFile(SpectrumFile):
         if (offset_acq + 48 + 128 + 10 + 4) >= len(data) \
                 or data[offset_acq] != 0 \
                 or data[offset_acq + 1] != 0x20:
-            print(offset_acq + 48 + 128 + 10 + 4, len(data))
-            print(data[offset_acq], data[offset_acq + 1])
+            if verbose:
+                print(offset_acq + 48 + 128 + 10 + 4, len(data))
+                print(data[offset_acq], data[offset_acq + 1])
             raise CnfFileParsingError('Acquisition information not found')
         else:
             offset1 = _from_little_endian(data, offset_acq + 34, 2)
@@ -213,7 +224,8 @@ class CnfFile(SpectrumFile):
             if self.num_channels < 256 or self.num_channels > 16384:
                 raise CnfFileParsingError(
                     'Unexpected number of channels: ', self.num_channels)
-            print('Number of channels: ', self.num_channels)
+            if verbose:
+                print('Number of channels: ', self.num_channels)
 
         # extract date and time information
         offset_date = offset_acq + 48 + offset2 + 1
@@ -221,24 +233,30 @@ class CnfFile(SpectrumFile):
             raise CnfFileParsingError('Problem with date offset')
         self.collection_start = _convert_date(data, offset_date)
         self.realtime = _convert_time(data, offset_date + 8)
-        print('realtime: ', self.realtime)
+        if verbose:
+            print('realtime: ', self.realtime)
         self.livetime = _convert_time(data, offset_date + 16)
-        print('livetime: ', self.livetime)
-        print('{:%Y-%m-%d %H:%M:%S}'.format(self.collection_start))
+        if verbose:
+            print('livetime: ', self.livetime)
+            print('{:%Y-%m-%d %H:%M:%S}'.format(self.collection_start))
         self.collection_stop = self.collection_start \
             + datetime.timedelta(seconds=self.realtime)
-        print('{:%Y-%m-%d %H:%M:%S}'.format(self.collection_stop))
+        if verbose:
+            print('{:%Y-%m-%d %H:%M:%S}'.format(self.collection_stop))
 
         # extract energy calibration information
         offset_cal = offset_enc + 48 + 32 + offset1
         if offset_enc + 48 + 32 + offset1 >= len(data):
             raise CnfFileParsingError('Problem with energy calibration offset')
         coeff = _read_energy_calibration(data, offset_enc + 48 + 32 + offset1)
-        print(coeff)
+        if verbose:
+            print('calibration coefficients:', coeff)
         if coeff is None:
-            print('Energy calibration - second try')
+            if verbose:
+                print('Energy calibration - second try')
             coeff = _read_energy_calibration(data, offset_enc + 48 + 32)
-            print(coeff)
+            if verbose:
+                print('calibration coefficients:', coeff)
         if coeff is None:
             raise CnfFileParsingError('Energy calibration not found')
         self.cal_coeff = coeff

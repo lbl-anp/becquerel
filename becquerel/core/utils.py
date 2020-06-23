@@ -1,13 +1,42 @@
 """General utility functions to be shared among core modules."""
 
 from __future__ import print_function
+import sys
 import datetime
 from dateutil.parser import parse as dateutil_parse
-from six import string_types
 from uncertainties import UFloat, unumpy
 import numpy as np
+try:
+    # Python 3.x
+    from collections.abc import Iterable
+except ImportError:
+    # Python 2.x
+    from collections import Iterable
+
+EPS = np.finfo(float).eps
 
 VECTOR_TYPES = (list, tuple, np.ndarray)
+
+if sys.version_info < (3, 2):
+
+    class ResourceWarning(Warning):
+        pass
+
+else:
+
+    ResourceWarning = ResourceWarning
+
+if sys.version_info < (3,):
+
+    def isstring(s):
+        """Test for strings in python2"""
+        return isinstance(s, basestring)
+
+else:
+
+    def isstring(s):
+        """Test for strings in python3"""
+        return isinstance(s, str)
 
 
 class UncertaintiesError(Exception):
@@ -65,7 +94,7 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
     ufloats = all_ufloats(x_array)
 
     if ufloats and x_uncs is None:
-        return np.array(x_array)
+        return np.asarray(x_array)
     elif ufloats:
         raise UncertaintiesError('Specify uncertainties with UFloats or ' +
                                  'by separate argument, but not both')
@@ -94,7 +123,7 @@ def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
 
     if isinstance(input_time, datetime.datetime):
         return input_time
-    elif isinstance(input_time, string_types):
+    elif isstring(input_time):
         return dateutil_parse(input_time)
     elif input_time is None and allow_none:
         return None

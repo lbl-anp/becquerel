@@ -3,11 +3,12 @@ future
 html5lib
 lxml
 matplotlib
+numba>=0.47.0
+llvmlite==0.31.0; python_version < "3"
 numpy
 pandas
 python-dateutil
 requests
 scipy
 setuptools
-six
-uncertainties
+uncertainties>=3.0.3

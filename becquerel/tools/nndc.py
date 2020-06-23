@@ -8,55 +8,78 @@ References:
 """
 
 from __future__ import print_function
-from builtins import super
+from future.builtins import super
+import warnings
 import numpy as np
 import requests
 import pandas as pd
-from six import string_types
 import uncertainties
+from ..core.utils import isstring, ResourceWarning
 
 
-PARITIES = ['+', '-', 'ANY']
-
-
-WALLET_DECAY_MODE = {
-    'ANY': 'ANY',
-    'IT': 'IT',
-    'B-': 'B-',
-    'EC+B+': 'ECBP',
-    'Double Beta': 'DB',
-    'Neutron': 'N',
-    'Proton': 'P',
-    'Alpha': 'A',
-    'Cluster': 'C',
-    'SF': 'SF',
-    'B-delayed n': 'DN',
-    'B-delayed p': 'DP',
-    'B-delayed a': 'DA',
-    'B-delayed F': 'DF',
-}
+PARITIES = ['+', '-', 'any']
 
 
 DECAYRAD_DECAY_MODE = {
-    'ANY': 'ANY',
-    'IT': 'IT',
-    'B-': 'B-',
-    'EC+B+': 'ECBP',
-    'Neutron': 'N',
-    'Proton': 'P',
-    'Alpha': 'A',
-    'SF': 'SF',
+    'any': 'ANY',
+    'internal transition': 'IT',
+    'it': 'IT',
+    'beta-': 'B-',
+    'b-': 'B-',
+    'electron capture beta+': 'ECBP',
+    'ecbp': 'ECBP',
+    'ecb+': 'ECBP',
+    'ec+b+': 'ECBP',
+    'electron capture': 'ECBP',
+    'ec': 'ECBP',
+    'beta+': 'ECBP',
+    'b+': 'ECBP',
+    'neutron': 'N',
+    'n': 'N',
+    'proton': 'P',
+    'p': 'P',
+    'alpha': 'A',
+    'a': 'A',
+    'spontaneous fission': 'SF',
+    'sf': 'SF',
 }
 
 
+WALLET_DECAY_MODE = dict(DECAYRAD_DECAY_MODE)
+WALLET_DECAY_MODE.update({
+    'double beta': 'DB',
+    'bb': 'DB',
+    'cluster': 'C',
+    'c': 'C',
+    'beta-delayed neutron': 'DN',
+    'b-delayed n': 'DN',
+    'bdn': 'DN',
+    'beta-delayed proton': 'DP',
+    'b-delayed p': 'DP',
+    'bdp': 'DP',
+    'beta-delayed alpha': 'DA',
+    'b-delayed a': 'DA',
+    'bda': 'DA',
+    'beta-delayed fission': 'DF',
+    'b-delayed f': 'DF',
+    'bdf': 'DF',
+})
+
+
 DECAYRAD_RADIATION_TYPE = {
-    'ANY': 'ANY',
-    'Gamma': 'G',
-    'B-': 'BM',
-    'B+': 'BP',
-    'Electron': 'E',
-    'Proton': 'P',
-    'Alpha': 'A',
+    'any': 'ANY',
+    'gamma': 'G',
+    'g': 'G',
+    'beta-': 'BM',
+    'b-': 'BM',
+    'beta+': 'BP',
+    'b+': 'BP',
+    'electron': 'E',
+    'e': 'E',
+    'proton': 'P',
+    'p': 'P',
+    'alpha': 'A',
+    'a': 'A',
 }
 
 
@@ -155,8 +178,9 @@ def _parse_table(text):
         text = text.split('</pre>')[0]
         text = text.split('To save this output')[0]
         lines = text.split('\n')
-    except:
-        raise NNDCRequestError('Unable to parse text:\n' + text)
+    except Exception as exc:
+        raise NNDCRequestError('Unable to parse text:\n{}\n{}'.format(exc,
+                                                                      text))
     table = {}
     headers = None
     for line in lines:
@@ -201,9 +225,9 @@ def _parse_float_uncertainty(x, dx):
 
     """
 
-    if not isinstance(x, string_types):
+    if not isstring(x):
         raise NNDCRequestError('Value must be a string: {}'.format(x))
-    if not isinstance(dx, string_types):
+    if not isstring(dx):
         raise NNDCRequestError('Uncertainty must be a string: {}'.format(dx))
     # ignore percents
     if '%' in x:
@@ -400,19 +424,23 @@ class _NNDCQuery(object):
 
     def _request(self):
         """Request data table from the URL."""
-        req = requests.post(self._URL, data=self._data)
-        if not req.ok or req.reason != 'OK' or req.status_code != 200:
-            raise NNDCRequestError('Request failed: ' + req.reason)
-        for msg in [
-                'Your search was unsuccessful',
-                'There are too many results for your search',
-        ]:
-            if msg in req.text:
-                raise NNDCRequestError('Request failed: ' + msg)
-        msg = 'No datasets were found within the specified search'
-        if msg in req.text:
-            raise NoDataFound(msg)
-        return req.text
+        # Use the context manager to automatically cleanup the session
+        with requests.Session() as session:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=ResourceWarning)
+                resp = session.post(self._URL, data=self._data, stream=False)
+            if not resp.ok or resp.reason != 'OK' or resp.status_code != 200:
+                raise NNDCRequestError('Request failed: ' + resp.reason)
+            for msg in [
+                    'Your search was unsuccessful',
+                    'There are too many results for your search',
+            ]:
+                if msg in resp.text:
+                    raise NNDCRequestError('Request failed: ' + msg)
+            msg = 'No datasets were found within the specified search'
+            if msg in resp.text:
+                raise NoDataFound(msg)
+        return resp.text
 
     def update(self, **kwargs):
         """Update the search criteria."""
@@ -637,7 +665,7 @@ class _NuclearWalletCardQuery(_NNDCQuery):
 
     """
 
-    _URL = 'http://www.nndc.bnl.gov/nudat2/sigma_searchi.jsp'
+    _URL = 'https://www.nndc.bnl.gov/nudat2/sigma_searchi.jsp'
     _DATA = dict(_NNDCQuery._DATA)
     _DATA.update({
         'eled': 'disabled',    # E(level) condition on/off
@@ -667,12 +695,12 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
         super().update(**kwargs)
         # handle decay mode
         if 'decay' in kwargs:
-            if kwargs['decay'] not in WALLET_DECAY_MODE:
+            if kwargs['decay'].lower() not in WALLET_DECAY_MODE:
                 raise NNDCInputError(
                     'Decay mode must be one of {}, not {}'.format(
-                        WALLET_DECAY_MODE.keys(), kwargs['decay']))
+                        WALLET_DECAY_MODE.keys(), kwargs['decay'].lower()))
             self._data['dmed'] = 'enabled'
-            self._data['dmn'] = WALLET_DECAY_MODE[kwargs['decay']]
+            self._data['dmn'] = WALLET_DECAY_MODE[kwargs['decay'].lower()]
         # handle energy level condition
         if 'elevel_range' in kwargs:
             self._data['eled'] = 'enabled'
@@ -685,12 +713,12 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
             self._data['jled'] = 'enabled'
             self._data['jlv'] = kwargs['j']
         if 'parity' in kwargs:
-            if kwargs['parity'] not in PARITIES:
+            if kwargs['parity'].lower() not in PARITIES:
                 raise NNDCInputError(
                     'Parity must be one of {}, not {}'.format(
-                        PARITIES, kwargs['parity']))
+                        PARITIES, kwargs['parity'].lower()))
             self._data['jled'] = 'enabled'
-            self._data['plv'] = kwargs['parity']
+            self._data['plv'] = kwargs['parity'].upper()
 
 
 def fetch_wallet_card(**kwargs):
@@ -774,7 +802,7 @@ class _DecayRadiationQuery(_NNDCQuery):
 
     """
 
-    _URL = 'http://www.nndc.bnl.gov/nudat2/dec_searchi.jsp'
+    _URL = 'https://www.nndc.bnl.gov/nudat2/dec_searchi.jsp'
     _DATA = dict(_NNDCQuery._DATA)
     _DATA.update({
         'rted': 'enabled',     # radiation type condition on/off
@@ -806,20 +834,21 @@ To save this output into a local File, clik on "File" in your browser menu and s
         super().update(**kwargs)
         # handle decay mode
         if 'decay' in kwargs:
-            if kwargs['decay'] not in DECAYRAD_DECAY_MODE:
+            if kwargs['decay'].lower() not in DECAYRAD_DECAY_MODE:
                 raise NNDCInputError(
                     'Decay mode must be one of {}, not {}'.format(
-                        DECAYRAD_DECAY_MODE.keys(), kwargs['decay']))
+                        DECAYRAD_DECAY_MODE.keys(), kwargs['decay'].lower()))
             self._data['dmed'] = 'enabled'
-            self._data['dmn'] = DECAYRAD_DECAY_MODE[kwargs['decay']]
+            self._data['dmn'] = DECAYRAD_DECAY_MODE[kwargs['decay'].lower()]
         # handle radiation type
         if 'type' in kwargs:
-            if kwargs['type'] not in DECAYRAD_RADIATION_TYPE:
+            if kwargs['type'].lower() not in DECAYRAD_RADIATION_TYPE:
                 raise NNDCInputError(
                     'Radiation type must be one of {}, not {}'.format(
-                        DECAYRAD_RADIATION_TYPE.keys(), kwargs['type']))
+                        DECAYRAD_RADIATION_TYPE.keys(),
+                        kwargs['type'].lower()))
             self._data['rted'] = 'enabled'
-            self._data['rtn'] = DECAYRAD_RADIATION_TYPE[kwargs['type']]
+            self._data['rtn'] = DECAYRAD_RADIATION_TYPE[kwargs['type'].lower()]
         # handle energy level condition
         self.elevel_range = (0, 1e9)
         if 'elevel_range' in kwargs:

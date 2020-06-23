@@ -1,7 +1,7 @@
 """"Energy calibration classes"""
 
 from abc import ABCMeta, abstractmethod, abstractproperty
-from builtins import dict, super, zip  # pylint: disable=redefined-builtin
+from future.builtins import dict, super, zip
 from future.utils import viewitems
 import numpy as np
 
@@ -19,6 +19,12 @@ class BadInput(EnergyCalError):
 
 class EnergyCalBase(object):
     """Abstract base class for energy calibration.
+
+    A note on nomenclature: for historic reasons, 'channels' is used in
+    energycal.py for generic uncalibrated x-axis values. A 'channel' is no
+    longer necessarily an integer channel number (i.e., bin) from a
+    multi-channel analyzer, but could for instance be a float-type fC of charge
+    collected.
 
     Subclasses must implement:
       _ch2kev (method)
