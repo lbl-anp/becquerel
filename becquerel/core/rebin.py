@@ -47,7 +47,7 @@ def _check_monotonic_increasing(arr, arr_name='array'):
     # Check that elements along the last axis are increasing or
     # neighboring elements are equal
     tmp = np.diff(arr)
-    if not np.all((tmp > 0) | np.isclose(tmp, 0)):
+    if not ((tmp > 0) | np.isclose(tmp, 0)).all():
         raise RebinError('{} is not monotonically increasing: {}'.format(
             arr_name, arr))
 
@@ -70,12 +70,12 @@ def _check_partial_overlap(in_edges, out_edges):
             new: ... ┴┴┴┴┴┘
 
     """
-    if np.any(in_edges[..., 0] > out_edges[0]):
+    if (in_edges[..., 0] > out_edges[0]).any():
         warnings.warn(
             'The first input edge is larger than the first output edge, ' +
             'zeros will padded on the left side of the new spectrum',
             RebinWarning)
-    if np.any(in_edges[..., -1] < out_edges[-1]):
+    if (in_edges[..., -1] < out_edges[-1]).any():
         warnings.warn(
             'The last input edge is smaller than the last output edge, ' +
             'zeros will padded on the right side of the new spectrum',
@@ -100,9 +100,9 @@ def _check_any_overlap(in_edges, out_edges):
             old:           └┴┴┴┴┘
             new:   └┴┴┴┘
     """
-    if np.any(in_edges[..., -1] <= out_edges[0]):
+    if (in_edges[..., -1] <= out_edges[0]).any():
         raise RebinError('Input edges are all smaller than output edges')
-    if np.any(in_edges[..., 0] >= out_edges[-1]):
+    if (in_edges[..., 0] >= out_edges[-1]).any():
         raise RebinError('Input edges are all larger than output edges')
 
 
@@ -396,10 +396,10 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     method = method.lower()
     # Cast data types and check listmode input
     if method == "listmode":
-        if not np.all(in_spectra >= 0.):
+        if not (in_spectra >= 0.).all():
             raise RebinError('Cannot rebin spectra with negative values with '
                              'listmode method')
-        if np.all(in_spectra < 1):
+        if (in_spectra < 1).all():
             raise RebinError('Cannot rebin spectra with all values less than '
                              'one with listmode method')
         if np.issubdtype(in_spectra.dtype.type, np.floating):
