@@ -396,7 +396,7 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     method = method.lower()
     # Cast data types and check listmode input
     if method == "listmode":
-        if not (in_spectra >= 0.).all():
+        if (in_spectra < 0).any():
             raise RebinError('Cannot rebin spectra with negative values with '
                              'listmode method')
         if (in_spectra < 1).all():
