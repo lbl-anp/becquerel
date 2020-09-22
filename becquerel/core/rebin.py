@@ -195,8 +195,9 @@ def _counts(m, b, x_low, x_high):
 
 
 @nb.jit(nb.f8[:](nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:]),
-        locals={'in_idx': nb.u4, 'out_idx': nb.u4, 'counts': nb.f8,
-                'slope': nb.f8, 'offset': nb.f8, 'low': nb.f8, 'high': nb.f8},
+        # numba's documentation suggests letting numba handle locals
+        # locals={'in_idx': nb.u4, 'out_idx': nb.u4, 'counts': nb.f8,
+        #         'slope': nb.f8, 'offset': nb.f8, 'low': nb.f8, 'high': nb.f8},
         nopython=True)
 def _rebin_interpolation(in_spectrum, in_edges, out_edges, slopes):
     """
@@ -259,7 +260,8 @@ def _rebin_interpolation(in_spectrum, in_edges, out_edges, slopes):
 
 
 @nb.jit(nb.i8[:](nb.i8[:], nb.f8[:], nb.f8[:], nb.f8[:]),
-        locals={'energies': nb.f8[:], 'in_idx': nb.u4, 'energy_idx': nb.u4},
+        # numba's documentation suggests letting numba handle locals
+        # locals={'energies': nb.f8[:], 'in_idx': nb.u4, 'energy_idx': nb.u4},
         nopython=True)
 def _rebin_listmode(in_spectrum, in_edges, out_edges, slopes):
     """
@@ -299,7 +301,9 @@ def _rebin_listmode(in_spectrum, in_edges, out_edges, slopes):
 
 
 @nb.jit(nb.f8[:, :](nb.f8[:, :], nb.f8[:, :], nb.f8[:], nb.f8[:, :]),
-        locals={'i': nb.u4}, nopython=True)
+        # numba's documentation suggests letting numba handle locals
+        # locals={'i': nb.u4},
+        nopython=True)
 def _rebin2d_interpolation(in_spectra, in_edges, out_edges, slopes):
     """
     Rebins a 2D array of spectra using linear interpolation
@@ -330,7 +334,9 @@ def _rebin2d_interpolation(in_spectra, in_edges, out_edges, slopes):
 
 
 @nb.jit(nb.i8[:, :](nb.i8[:, :], nb.f8[:, :], nb.f8[:], nb.f8[:, :]),
-        locals={'i': nb.u4}, nopython=True)
+        # numba's documentation suggests letting numba handle locals
+        # locals={'i': nb.u4},
+        nopython=True)
 def _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes):
     """
     Rebins a 2D array of spectra stochastically: histogram to listmode and back
