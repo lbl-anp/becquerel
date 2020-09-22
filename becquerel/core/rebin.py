@@ -133,7 +133,7 @@ def _check_shape(arr0, arr1, arr0_name='array0', arr1_name='array1',
                 arr0_name, arr0_shape, arr1_name, arr1_shape))
 
 
-@nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
+@nb.vectorize([nb.f8(nb.f8, nb.f8, nb.f8, nb.f8)], nopython=True)
 def _linear_offset(slope, cts, low, high):
     """
     Calculate the offset of the linear aproximation of slope when splitting
@@ -155,7 +155,7 @@ def _linear_offset(slope, cts, low, high):
     return offset
 
 
-@nb.jit(nb.f8(nb.f8, nb.f8, nb.f8), nopython=True)
+@nb.vectorize([nb.f8(nb.f8, nb.f8, nb.f8)], nopython=True)
 def _slope_integral(x, m, b):
     '''
     The indefinite integral of y = mx + b, with an x value substituted in.
@@ -172,7 +172,7 @@ def _slope_integral(x, m, b):
     return m * x**2 / 2 + b * x
 
 
-@nb.jit(nb.f8(nb.f8, nb.f8, nb.f8, nb.f8), nopython=True)
+@nb.vectorize([nb.f8(nb.f8, nb.f8, nb.f8, nb.f8)], nopython=True)
 def _counts(m, b, x_low, x_high):
     '''
     the definite integral of y = mx + b
