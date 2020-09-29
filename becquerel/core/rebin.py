@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-import numpy as np
 import numba as nb
+import numpy as np
 import warnings
+import xarray as xr
 
 
 class RebinError(Exception):
@@ -259,13 +260,53 @@ def _rebin_interpolation(in_spectrum, in_edges, out_edges, slopes):
     return out_spectrum
 
 
-@nb.jit(nb.i8[:](nb.i8[:], nb.f8[:], nb.f8[:], nb.f8[:]),
-        # numba's documentation suggests letting numba handle locals
-        # locals={'energies': nb.f8[:], 'in_idx': nb.u4, 'energy_idx': nb.u4},
-        nopython=True)
-def _rebin_listmode(in_spectrum, in_edges, out_edges, slopes):
+def _rebin_listmode(in_spectra, in_edges, out_edges):
     """
     Stochastic rebinning method: spectrum-histogram to listmode then back
+
+    All overflow values are put in the leftmost and rightmost bins,
+    and note we pass out_edges[:-1] into _rebin_listmode_vectorized.
+
+    TODO Assume piecewise constant (ie steps, flat within each bin)
+         distribution for in_spectrum (for now). slopes is unused.
+
+    Args:
+      in_spectra: xr/dask/np array of input spectrum counts in each bin
+                  in_spectra must have dtype int
+                  (if xr.DataArray: name of bin dimension should be "bin")
+      in_edges: xr/dask/np array of input bin edges
+                (if xr.DataArray: name of bin dimension should be "bin_edge")
+                (len(in_edges) = (len of dim "bin" of in_spectra) + 1)
+      out_edges: xr/dask/np array of output bin edges
+
+    Returns:
+      1D numpy array of rebinned spectrum counts in each bin
+    """
+    return xr.apply_ufunc(
+        _rebin_listmode_vectorized,
+        # note `out_edges[:-1]`: see _rebin_listmode_vectorized for details
+        in_spectra, in_edges, out_edges[:-1],
+        input_core_dims=[["bin"], ["bin_edge"], ["bin_edge"]],
+        output_core_dims=[["bin"]],
+        exclude_dims={"bin", "bin_edge"},  # dimensions allowed to change size
+        dask="parallelized",
+        # vectorize=True  # only required if the func is not vectorized
+    )
+
+
+@nb.guvectorize([(nb.i8[:], nb.f8[:], nb.f8[:], nb.i8[:])],
+                "(n),(N),(m)->(m)")
+def _rebin_listmode_vectorized(
+        in_spectrum, in_edges, out_edges_no_rightmost, out_spectrum):
+    """
+    Stochastic rebinning method: spectrum-histogram to listmode then back
+
+    rightmost edge in the parameter out_edges chopped off, in order for
+    nb.guvectorize to work, because it requires the output dimensions
+    to be specified by the dimensions of the input parameters
+    (i.e. m -> m-1 is not allowed).
+    This works since we put all overflow values in the leftmost and rightmost
+    bins anyways
 
     TODO Assume piecewise constant (ie steps, flat within each bin)
          distribution for in_spectrum (for now). slopes is unused.
@@ -274,12 +315,14 @@ def _rebin_listmode(in_spectrum, in_edges, out_edges, slopes):
       in_spectrum: iterable of input spectrum counts in each bin
       in_edges: iterable of input bin edges (len = len(in_spectrum) + 1)
       out_edges: iterable of output bin edges
-      slopes: unused, just for keeping number of arguments the same as
-              _rebin_interpolation()
 
     Returns:
       1D numpy array of rebinned spectrum counts in each bin
     """
+    # knock out leftmost bin edge too, because we put all overflows into
+    # first and last bins anyways
+    out_edges = np.concatenate(
+        (np.array([-np.inf]), out_edges_no_rightmost[1:], np.array([np.inf])))
     energies = np.zeros(np.sum(in_spectrum))
     energy_idx_start = 0
     # loop through input bins:
@@ -294,10 +337,13 @@ def _rebin_listmode(in_spectrum, in_edges, out_edges, slopes):
         energy_idx_start = energy_idx_stop
     # bin the energies (drops the energies outside of the out-binning-range)
     out_spectrum = np.histogram(energies, bins=out_edges)[0]
-    # add the under/flow counts back into the out_spectrum
-    out_spectrum[0] += (energies < out_edges[0]).nonzero()[0].size
-    out_spectrum[-1] += (energies > out_edges[-1]).nonzero()[0].size
-    return out_spectrum
+    # handling of overflows no longer needed since the first/last out_edges
+    # are now -/+ inf
+    # # add the under/flow counts back into the out_spectrum
+    # out_spectrum[0] += (energies < out_edges[0]).nonzero()[0].size
+    # out_spectrum[-1] += (energies > out_edges[-1]).nonzero()[0].size
+    # nb.guvectorize returns void, specifies output as an "input":
+    # return out_spectrum
 
 
 @nb.jit(nb.f8[:, :](nb.f8[:, :], nb.f8[:, :], nb.f8[:], nb.f8[:, :]),
@@ -330,39 +376,6 @@ def _rebin2d_interpolation(in_spectra, in_edges, out_edges, slopes):
     for i in np.arange(in_spectra.shape[0]):
         out_spectra[i, :] = _rebin_interpolation(
             in_spectra[i, :], in_edges[i, :], out_edges, slopes[i, :])
-    return out_spectra
-
-
-@nb.jit(nb.i8[:, :](nb.i8[:, :], nb.f8[:, :], nb.f8[:], nb.f8[:, :]),
-        # numba's documentation suggests letting numba handle locals
-        # locals={'i': nb.u4},
-        nopython=True)
-def _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes):
-    """
-    Rebins a 2D array of spectra stochastically: histogram to listmode and back
-
-    Wrapper around _rebin_listmode (1D) for the 2D case
-
-    Args:
-      in_spectra: np.2darray, shape (num_spectra, num_bins_in)
-        array of input spectrum counts of shape
-      in_edges: np.2darray, shape (num_spectra, num_bins_in + 1)
-        array of the input bin edges of shape
-      out_edges: np.1darray
-        array of the output bin edges
-      slopes: TODO unused, just for keeping number of arguments the same as
-              _rebin_interpolation()
-
-    Returns:
-      np.2darray, shape (num_spectra, num_bins_in)
-      The rebinned spectra
-    """
-    # Init output
-    out_spectra = np.zeros((in_spectra.shape[0], out_edges.shape[0] - 1),
-                           np.int64)
-    for i in np.arange(in_spectra.shape[0]):
-        out_spectra[i, :] = _rebin_listmode(in_spectra[i, :], in_edges[i, :],
-                                            out_edges, slopes[i, :])
     return out_spectra
 
 
@@ -454,9 +467,6 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
             return _rebin_interpolation(
                 in_spectra, in_edges, out_edges, slopes)
     elif method == "listmode":
-        if in_spectra.ndim == 2:
-            return _rebin2d_listmode(in_spectra, in_edges, out_edges, slopes)
-        elif in_spectra.ndim == 1:
-            return _rebin_listmode(in_spectra, in_edges, out_edges, slopes)
+        return _rebin_listmode(in_spectra, in_edges, out_edges)
     else:
         raise ValueError("{} is not a valid rebinning method".format(method))
