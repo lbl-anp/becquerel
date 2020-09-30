@@ -700,6 +700,7 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
                 raise NNDCInputError(
                     'Decay mode must be one of {}, not {}'.format(
                         WALLET_DECAY_MODE.keys(), kwargs['decay'].lower()))
+            warnings.warn('query kwarg "decay" may not be working on NNDC')
             self._data['dmed'] = 'enabled'
             self._data['dmn'] = WALLET_DECAY_MODE[kwargs['decay'].lower()]
         # handle energy level condition
