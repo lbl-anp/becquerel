@@ -433,6 +433,7 @@ class _NNDCQuery(object):
                 raise NNDCRequestError('Request failed: ' + resp.reason)
             for msg in [
                     'Your search was unsuccessful',
+                    'Your search exceeded the maximum number of results',
                     'There are too many results for your search',
             ]:
                 if msg in resp.text:
