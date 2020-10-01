@@ -18,7 +18,7 @@ class RebinWarning(UserWarning):
 
 
 def _check_ndim(arr, ndim, arr_name='array'):
-    """Check the dimensionality of a numpy array
+    """Check the dimensionality of a numpy/xarray array
 
     Check that the array arr has dimension ndim.
 
@@ -105,18 +105,6 @@ def _check_any_overlap(in_edges, out_edges):
         raise RebinError('Input edges are all smaller than output edges')
     if (in_edges[..., 0] >= out_edges[-1]).any():
         raise RebinError('Input edges are all larger than output edges')
-
-
-def _broadcast(arr, shape):
-    """
-    broadcast arr out to the first dimension in shape
-    specifically for the case 1D -> 2D
-    copy req'd: the readonly array doesn't work w/ numba
-    """
-    if (arr.ndim == 1) and (len(shape) == 2):
-        return np.copy(np.broadcast_to(arr, (shape[0], arr.shape[0])))
-    else:
-        return arr
 
 
 def _check_shape(arr0, arr1, arr0_name='array0', arr1_name='array1',
@@ -452,9 +440,6 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
         slopes = np.zeros_like(in_spectra, dtype=np.float64)
     else:
         slopes = np.asarray(slopes, dtype=np.float64)
-    # Broadcast 1D -> 2D if necessary
-    in_edges = _broadcast(in_edges, in_spectra.shape)
-    slopes = _broadcast(slopes, in_spectra.shape)
     # Check dimensions
     _check_ndim(in_spectra, {1, 2}, 'in_spectra')
     _check_ndim(in_edges, {1, 2}, 'in_edges')
