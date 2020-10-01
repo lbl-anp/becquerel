@@ -252,8 +252,8 @@ def _rebin_interpolation_vectorized(
     Returns:
       1D numpy array of rebinned spectrum counts in each bin
     """
-    # no need to initiate output with guvectorize:
-    # out_spectrum = np.zeros(out_edges.shape[0] - 1)  # init output
+    # N.B. use [:] to assign values to full array output with guvectorize:
+    out_spectrum[:] = np.zeros_like(out_spectrum)  # init output
     # out_edges: might not actually need to create this, since for loops
     # handles under/over-flows.
     # TODO check logic and do whichever is the least computationally expensive
@@ -380,7 +380,8 @@ def _rebin_listmode_vectorized(
             in_right_edge - in_left_edge) * np.random.rand(bin_counts)
         energy_idx_start = energy_idx_stop
     # bin the energies (drops the energies outside of the out-binning-range)
-    out_spectrum = np.histogram(energies, bins=out_edges)[0]
+    # N.B. use [:] to assign values to full array output with guvectorize:
+    out_spectrum[:] = np.histogram(energies, bins=out_edges)[0]
     # handling of overflows no longer needed since the first/last out_edges
     # are now -/+ inf
     # # add the under/flow counts back into the out_spectrum
