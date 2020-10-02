@@ -448,10 +448,12 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     # no longer explicitly cast in_spectra as np.array: user's responsibility
     in_edges = np.asarray(in_edges)
     out_edges = np.asarray(out_edges)
-    if slopes:  # if not None
+    if slopes is not None:
         slopes = np.asarray(slopes)
     elif method == "interpolation":  # "listmode" doesn't use slopes for now
-        slopes = np.zeros(len(in_spectra))
+        slopes = np.zeros(in_spectra.shape[-1])
+        _check_ndim(slopes, {1, 2}, 'slopes')
+        # _check_shape(in_spectra, slopes, 'in_spectra', 'slopes')
     # Check dimensions
     _check_ndim(in_spectra, {1, 2}, 'in_spectra')
     _check_ndim(in_edges, {1, 2}, 'in_edges')
@@ -465,9 +467,6 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     _check_any_overlap(in_edges, out_edges)
     if zero_pad_warnings:
         _check_partial_overlap(in_edges, out_edges)
-    if slopes:
-        _check_ndim(slopes, {1, 2}, 'slopes')
-        # _check_shape(in_spectra, slopes, 'in_spectra', 'slopes')
     # Specific calls to (wrapped) nb.guvectorize'd rebinning methods
     if method == "interpolation":
         return _rebin_interpolation(in_spectra, in_edges, out_edges, slopes)
