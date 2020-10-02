@@ -107,19 +107,23 @@ def _check_any_overlap(in_edges, out_edges):
         raise RebinError('Input edges are all larger than output edges')
 
 
-def _check_shape(arr0, arr1, arr0_name='array0', arr1_name='array1',
-                 edges=False):
-    arr0_shape = arr0.shape
-    arr1_shape = arr1.shape
-    if edges:
-        if len(arr1_shape) == 1:
-            arr1_shape = (arr1_shape[0] - 1,)
-        else:
-            arr1_shape = (arr1_shape[0], arr1_shape[1] - 1,)
-    if arr0_shape != arr1_shape:
-        raise RebinError(
-            '{}{} does not have a shape compatible with {}{}'.format(
-                arr0_name, arr0_shape, arr1_name, arr1_shape))
+# no longer check shape because errors will pop up during xr.apply_ufunc.
+# too many cases to check for; explicit checks defeats the purpose of
+# using xr.apply_ufunc. Also, since xr.DataArrays use dimension names,
+# checking shapes do not make sense.
+# def _check_shape(arr0, arr1, arr0_name='array0', arr1_name='array1',
+#                  edges=False):
+#     arr0_shape = arr0.shape
+#     arr1_shape = arr1.shape
+#     if edges:
+#         if len(arr1_shape) == 1:
+#             arr1_shape = (arr1_shape[0] - 1,)
+#         else:
+#             arr1_shape = (arr1_shape[0], arr1_shape[1] - 1,)
+#     if arr0_shape != arr1_shape:
+#         raise RebinError(
+#             '{}{} does not have a shape compatible with {}{}'.format(
+#                 arr0_name, arr0_shape, arr1_name, arr1_shape))
 
 
 @nb.vectorize([nb.f8(nb.f8, nb.f8, nb.f8, nb.f8)], nopython=True)
@@ -422,32 +426,38 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
             raise RebinError('Cannot rebin spectra with all values less than '
                              'one with listmode method')
         if np.issubdtype(in_spectra.dtype.type, np.floating):
-            if np.allclose(in_spectra, np.round(in_spectra)):
-                # Don't warn in the case of floats which round to integers
-                pass
-            else:
-                warnings.warn(
-                    'Argument in_spectra contains float value(s) which ' +
-                    'will have decimal precision loss when converting to ' +
-                    'integers for rebin method listmode.',
-                    RebinWarning)
-            in_spectra = np.asarray(np.round(in_spectra), dtype=np.int64)
-    else:
-        in_spectra = np.asarray(in_spectra, dtype=np.float64)
-    in_edges = np.asarray(in_edges, np.float64)
-    out_edges = np.asarray(out_edges, np.float64)
-    if slopes is None:
-        slopes = np.zeros_like(in_spectra, dtype=np.float64)
-    else:
-        slopes = np.asarray(slopes, dtype=np.float64)
+            # np.rint is a ufunc: natively supported by xarray:
+            in_spectra_rint = np.rint(in_spectra)
+            # TEMP disable this test, always raise warning for now because
+            # isclose/allclose are not ufuncs, so no easy way to implement now
+            # if np.allclose(in_spectra, in_spectra_rint):
+            #     # Don't warn in the case of floats which round to integers
+            #     pass
+            # else:
+            #     warnings.warn(
+            #         'Argument in_spectra contains float value(s) which ' +
+            #         'will have decimal precision loss when converting to ' +
+            #         'integers for rebin method listmode.',
+            #         RebinWarning)
+            warnings.warn(
+                'Argument in_spectra contains float value(s) which ' +
+                'might have decimal precision loss when converting to ' +
+                'integers for rebin method listmode.',
+                RebinWarning)
+            in_spectra = in_spectra_rint.astype(int)
+    # no longer explicitly cast in_spectra as np.array: user's responsibility
+    in_edges = np.asarray(in_edges)
+    out_edges = np.asarray(out_edges)
+    if slopes:  # if not None
+        slopes = np.asarray(slopes)
+    elif method == "interpolation":  # "listmode" doesn't use slopes for now
+        slopes = np.zeros(len(in_spectra))
     # Check dimensions
     _check_ndim(in_spectra, {1, 2}, 'in_spectra')
     _check_ndim(in_edges, {1, 2}, 'in_edges')
-    _check_ndim(slopes, {1, 2}, 'slopes')
     _check_ndim(out_edges, 1, 'out_edges')
-    # Check shape
-    _check_shape(in_spectra, in_edges, 'in_spectra', 'in_edges', edges=True)
-    _check_shape(in_spectra, slopes, 'in_spectra', 'slopes')
+    # Check shape: skip
+    # _check_shape(in_spectra, in_edges, 'in_spectra', 'in_edges', edges=True)
     # Check for increasing bin structure
     _check_monotonic_increasing(in_edges, 'in_edges')
     _check_monotonic_increasing(out_edges, 'out_edges')
@@ -455,7 +465,10 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     _check_any_overlap(in_edges, out_edges)
     if zero_pad_warnings:
         _check_partial_overlap(in_edges, out_edges)
-    # Specific calls to different JIT-ed rebinning methods
+    if slopes:
+        _check_ndim(slopes, {1, 2}, 'slopes')
+        # _check_shape(in_spectra, slopes, 'in_spectra', 'slopes')
+    # Specific calls to (wrapped) nb.guvectorize'd rebinning methods
     if method == "interpolation":
         return _rebin_interpolation(in_spectra, in_edges, out_edges, slopes)
     elif method == "listmode":
