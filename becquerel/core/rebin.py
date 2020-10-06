@@ -208,14 +208,19 @@ def _rebin_interpolation(in_spectra, in_edges, out_edges, slopes):
     Returns:
       1D numpy array of rebinned spectrum counts in each bin
     """
+    try:  # out_edges: rename dim "bin_edge" to avoid conflict if xr.DataArray
+        out_edges = out_edges.rename({"bin_edge": "new_bin_edge"})
+    except AttributeError:
+        pass  # AttributeError raised if out_edges is a np.array, so pass
     return xr.apply_ufunc(
         _rebin_interpolation_vectorized,
         # note `out_edges[:-1]`: details see _rebin_interpolation_vectorized
         in_spectra, in_edges, out_edges[:-1], slopes,
-        input_core_dims=[["bin"], ["bin_edge"], ["bin_edge"], ["bin"]],
+        input_core_dims=[["bin"], ["bin_edge"], ["new_bin_edge"], ["bin"]],
         output_core_dims=[["bin"]],
-        exclude_dims={"bin", "bin_edge"},  # dimensions allowed to change size
+        exclude_dims={"bin"},  # dimensions allowed to change size
         dask="parallelized",
+        output_dtypes=[float],
         # vectorize=True  # only required if the func is not vectorized
     )
 
@@ -316,14 +321,19 @@ def _rebin_listmode(in_spectra, in_edges, out_edges):
     Returns:
       1D numpy array of rebinned spectrum counts in each bin
     """
+    try:  # out_edges: rename dim "bin_edge" to avoid conflict if xr.DataArray
+        out_edges = out_edges.rename({"bin_edge": "new_bin_edge"})
+    except AttributeError:
+        pass  # AttributeError raised if out_edges is a np.array, so pass
     return xr.apply_ufunc(
         _rebin_listmode_vectorized,
         # note `out_edges[:-1]`: see _rebin_listmode_vectorized for details
         in_spectra, in_edges, out_edges[:-1],
-        input_core_dims=[["bin"], ["bin_edge"], ["bin_edge"]],
+        input_core_dims=[["bin"], ["bin_edge"], ["new_bin_edge"]],
         output_core_dims=[["bin"]],
-        exclude_dims={"bin", "bin_edge"},  # dimensions allowed to change size
+        exclude_dims={"bin"},  # dimensions allowed to change size
         dask="parallelized",
+        output_dtypes=[int],
         # vectorize=True  # only required if the func is not vectorized
     )
 
