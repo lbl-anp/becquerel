@@ -9,6 +9,7 @@ from .isotope_qty import (IsotopeQuantity, IsotopeQuantityError,
                           UCI_TO_BQ, N_AV)
 from .materials import (fetch_element_data, fetch_compound_data,
                         NISTMaterialsError, NISTMaterialsRequestError)
+from .nai_saturation import NaISaturation
 from .nndc import (fetch_wallet_card, fetch_decay_radiation,
                    NNDCError, NoDataFound, NNDCInputError, NNDCRequestError)
 from .xcom import (fetch_xcom_data,
@@ -25,6 +26,7 @@ __all__ = [
     'UCI_TO_BQ', 'N_AV',
     'fetch_element_data', 'fetch_compound_data',
     'NISTMaterialsError', 'NISTMaterialsRequestError',
+    'NaISaturation',
     'fetch_wallet_card', 'fetch_decay_radiation',
     'NNDCError', 'NoDataFound', 'NNDCInputError', 'NNDCRequestError',
     'fetch_xcom_data',

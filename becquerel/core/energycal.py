@@ -4,6 +4,107 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from future.builtins import dict, super, zip
 from future.utils import viewitems
 import numpy as np
+from lmfit.model import Model
+from ..tools.nai_saturation import NaISaturation
+
+
+# TODO: Move models to central location once peak fitting merged
+
+
+def constant(x, c):
+    return np.ones_like(x) * c
+
+
+def line(x, m, b):
+    return m * x + b
+
+
+def quadratic(x, a, b, c):
+    return a * x ** 2 + b * x + c
+
+
+###############################################################################
+
+
+def quadratic_guess_coeffs(x, data):
+    a, b, c = 0., 0., 0.
+    if x is not None:
+        assert len(x) == len(data), \
+            'Cannot guess quad coeffs from different len x and data'
+        if len(x) > 2:
+            a, b, c = np.polyfit(x, data, 2)
+        elif len(x) > 1:
+            b, c = np.polyfit(x, data, 1)
+        elif len(x) == 1:
+            if not np.isclose(x, 0.):
+                b, = data / x
+    return a, b, c
+
+
+def nai_saturation_guess_coeffs(x, data):
+    g, s, c = 0.6, 2.E-5, 0.
+    return g, s, c
+
+
+###############################################################################
+
+
+def _update_param_vals(pars, prefix, **kwargs):
+    """
+    Convenience function to update parameter values with keyword arguments
+    """
+    for key, val in kwargs.items():
+        pname = "{}{}".format(prefix, key)
+        if pname in pars:
+            pars[pname].value = val
+    return pars
+
+
+###############################################################################
+
+
+class ConstantModel(Model):
+
+    def __init__(self, *args, **kwargs):
+        super(ConstantModel, self).__init__(constant, *args, **kwargs)
+        self.set_param_hint('{}c'.format(self.prefix), min=0.)
+
+
+class LineModel(Model):
+
+    def __init__(self, *args, **kwargs):
+        super(LineModel, self).__init__(line, *args, **kwargs)
+
+
+class QuadraticModel(Model):
+
+    def __init__(self, *args, **kwargs):
+        super(QuadraticModel, self).__init__(quadratic, *args, **kwargs)
+
+    def guess(self, data, x=None, **kwargs):
+        a, b, c = quadratic_guess_coeffs(x, data)
+        pars = self.make_params(a=a, b=b, c=c)
+        return _update_param_vals(pars, self.prefix, **kwargs)
+
+
+class NaISaturationModel(Model):
+
+    def __init__(self, nai_saturation, *args, **kwargs):
+        if not isinstance(nai_saturation, NaISaturation):
+            raise TypeError(
+                'Invalid NaISaturation object: {}'.format(nai_saturation))
+        self.nai_saturation = nai_saturation
+        super().__init__(nai_saturation.ch2kev, *args, **kwargs)
+
+    def guess(self, data, x=None, **kwargs):
+        g, s, c = nai_saturation_guess_coeffs(x, data)
+        pars = self.make_params(g=g, s=s, c=c)
+        return _update_param_vals(pars, self.prefix, **kwargs)
+
+
+
+###############################################################################
+
 
 class EnergyCalError(Exception):
     """Base class for errors in energycal.py"""
@@ -17,6 +118,9 @@ class BadInput(EnergyCalError):
     pass
 
 
+###############################################################################
+
+
 class EnergyCalBase(object):
     """Abstract base class for energy calibration.
 
@@ -27,10 +131,10 @@ class EnergyCalBase(object):
     collected.
 
     Subclasses must implement:
-      _ch2kev (method)
-      kev2ch (method)
-      valid_coeffs (property)
-      _perform_fit (method)
+        _ch2kev (method)
+        kev2ch (method)
+        valid_coeffs (property)
+        _perform_fit (method)
     """
 
     __metaclass__ = ABCMeta
@@ -41,7 +145,7 @@ class EnergyCalBase(object):
         Normally you should use from_points or from_coeffs classmethods.
 
         Args:
-          none
+            none
         """
 
         self._calpoints = dict()
@@ -53,10 +157,10 @@ class EnergyCalBase(object):
         """Construct EnergyCal from calibration points.
 
         Args:
-          chlist: list/tuple/array of the channel values of calibration points
-          kevlist: list/tuple/array of the corresponding energy values [keV]
-          include_origin: Default is False, if set to True will add a point
-                          at zero into the fit.
+            chlist: list/tuple/array of the channel values of calibration points
+            kevlist: list/tuple/array of the corresponding energy values [keV]
+            include_origin: Default is False, if set to True will add a point
+                            at zero into the fit.
 
         Raises:
           BadInput: for bad chlist and/or kevlist.
@@ -90,8 +194,8 @@ class EnergyCalBase(object):
         """Construct EnergyCal from equation coefficients dict.
 
         Args:
-          coeffs: a dict with keys equal to elements in valid_coeffs,
-            and values specifying the value of the coefficient
+            coeffs: a dict with keys equal to elements in valid_coeffs,
+                    and values specifying the value of the coefficient
         """
 
         cal = cls()
@@ -108,7 +212,7 @@ class EnergyCalBase(object):
         """The channel values of calibration points.
 
         Returns:
-          an np.ndarray of channel values (floats)
+            an np.ndarray of channel values (floats)
         """
 
         return np.array(list(self._calpoints.values()), dtype=float)
@@ -118,7 +222,7 @@ class EnergyCalBase(object):
         """The energy values of calibration points.
 
         Returns:
-          an np.ndarray of energy values [keV]
+            an np.ndarray of energy values [keV]
         """
 
         return np.array(list(self._calpoints), dtype=float)
@@ -128,7 +232,7 @@ class EnergyCalBase(object):
         """The calibration points, in (ch, kev) pairs.
 
         Returns:
-          a list of 2-element tuples of (channel, energy[keV])
+            a list of 2-element tuples of (channel, energy[keV])
         """
 
         return list(zip(self.channels, self.energies))
@@ -138,7 +242,7 @@ class EnergyCalBase(object):
         """The coefficients of the current calibration curve.
 
         Returns:
-          a dict of {coeff: value}
+            a dict of {coeff: value}
         """
 
         # TODO: if there are no coeffs, error?
@@ -148,8 +252,8 @@ class EnergyCalBase(object):
         """Add a calibration point (ch, kev) pair. May be new or existing.
 
         Args:
-          ch: the channel value of the calibration point
-          kev: the energy value of the calibration point [keV]
+            ch: the channel value of the calibration point
+            kev: the energy value of the calibration point [keV]
         """
 
         self._calpoints[float(kev)] = float(ch)
@@ -158,11 +262,11 @@ class EnergyCalBase(object):
         """Add a new calibration point. Error if energy matches existing point.
 
         Args:
-          ch: the channel value of the calibration point
-          kev: the energy value of the calibration point [keV]
+            ch: the channel value of the calibration point
+            kev: the energy value of the calibration point [keV]
 
         Raises:
-          EnergyCalError: if energy value already exists in calibration
+            EnergyCalError: if energy value already exists in calibration
         """
 
         if kev in self._calpoints:
@@ -173,7 +277,7 @@ class EnergyCalBase(object):
         """Remove a calibration point, if it exists.
 
         Args:
-          the energy value of the point to remove [keV]
+            the energy value of the point to remove [keV]
         """
 
         if kev in self._calpoints:
@@ -184,10 +288,10 @@ class EnergyCalBase(object):
         """Convert channel(s) to energy value(s).
 
         Args:
-          ch: a scalar, np.array, list or tuple of channel values
+            ch: a scalar, np.array, list or tuple of channel values
 
         Returns:
-          the energy value(s) corresponding to the channel value(s) [keV].
+            the energy value(s) corresponding to the channel value(s) [keV].
             a float if input is scalar. an np.array if input is iterable
         """
 
@@ -203,10 +307,10 @@ class EnergyCalBase(object):
         Should use numpy ufuncs so that the input dtype doesn't matter.
 
         Args:
-          ch: an np.array, float, or int of channel values
+            ch: an np.array, float, or int of channel values
 
         Returns:
-          energy values, the same size/type as ch [keV]
+            energy values, the same size/type as ch [keV]
         """
 
         pass
@@ -215,10 +319,10 @@ class EnergyCalBase(object):
         """Convert energy value(s) to channel(s).
 
         Args:
-          kev: a scalar, np.array, list or tuple of energy values [keV]
+            kev: a scalar, np.array, list or tuple of energy values [keV]
 
         Returns:
-          the channel value(s) corresponding to the input energies.
+            the channel value(s) corresponding to the input energies.
             a float if input is scalar. an np.array if input is iterable
         """
 
@@ -227,23 +331,22 @@ class EnergyCalBase(object):
 
         return self._kev2ch(kev)
 
-    @abstractmethod
     def _kev2ch(self, kev):
         """Convert energy value(s) to channel(s).
 
         Should use numpy ufuncs so that the input dtype doesn't matter.
 
         Args:
-          kev: an np.array, float, or int of energy values [keV]
+            kev: an np.array, float, or int of energy values [keV]
 
         Returns:
-          the channel value(s) corresponding to the input energies.
+            the channel value(s) corresponding to the input energies.
             a float if input is scalar. an np.array if input is iterable
         """
 
         kev = np.asarray(kev, dtype=np.float)
         # Should we allow negative inputs? (This will change the bounds below)
-        assert (keV >= 0).all()
+        assert (kev >= 0).all()
         # Find bounds (assumes self._kev2ch(kev) > 0))
         _ch_min = 0.0
         _ch_max = 1.0
@@ -263,7 +366,7 @@ class EnergyCalBase(object):
         # calibration must be monotonically increasing
         assert (np.diff(_kev) > 0).all()
         # make sure we can interpolate
-        assert (_kev.min() <= kev).all() and (kev <= _kev.max())  
+        assert (_kev.min() <= kev).all() and (kev <= _kev.max())
         ch = np.asarray(np.interp(kev, kev_interp, _ch))
         # Removing because this won't be allowed by the bound search
         # assert (ch >= 0).all()
@@ -274,7 +377,7 @@ class EnergyCalBase(object):
         """A list of valid coefficients for the calibration curve.
 
         Returns:
-          a tuple of strings, the names of the coefficients for this curve
+            a tuple of strings, the names of the coefficients for this curve
         """
 
         pass
@@ -283,11 +386,11 @@ class EnergyCalBase(object):
         """Set a coefficient for the calibration curve.
 
         Args:
-          name: a string, the name of the coefficient to set
-          val: the value to set the coefficient to
+            name: a string, the name of the coefficient to set
+            val: the value to set the coefficient to
 
         Raises:
-          EnergyCalError: if name is not in valid_coeffs
+            EnergyCalError: if name is not in valid_coeffs
         """
 
         if name in self.valid_coeffs:
@@ -299,7 +402,7 @@ class EnergyCalBase(object):
         """Compute the calibration curve from the current points.
 
         Raises:
-          EnergyCalError: if there are too few calibration points to fit
+            EnergyCalError: if there are too few calibration points to fit
         """
 
         num_coeffs = len(self.valid_coeffs)
@@ -333,14 +436,14 @@ class LinearEnergyCal(EnergyCalBase):
         """Construct LinearEnergyCal from equation coefficients dict.
 
         Valid coefficient names (slope, offset):
-          ('b', 'c')
-          ('p1', 'p0')
-          ('slope', 'offset')
-          ('m', 'b')
+            ('b', 'c')
+            ('p1', 'p0')
+            ('slope', 'offset')
+            ('m', 'b')
 
         Args:
-          coeffs: a dict with keys equal to valid coeff names,
-            and values specifying the value of the coefficient
+            coeffs: a dict with keys equal to valid coeff names,
+                    and values specifying the value of the coefficient
         """
 
         new_coeffs = {}
@@ -394,10 +497,10 @@ class LinearEnergyCal(EnergyCalBase):
         Should use numpy ufuncs so that the input dtype doesn't matter.
 
         Args:
-          ch: an np.array, float, or int of channel values
+            ch: an np.array, float, or int of channel values
 
         Returns:
-          energy values, the same size/type as ch [keV]
+            energy values, the same size/type as ch [keV]
         """
 
         return self.slope * ch + self.offset
@@ -406,10 +509,10 @@ class LinearEnergyCal(EnergyCalBase):
         """Convert energy value(s) to channel(s).
 
         Args:
-          kev: an np.array, float, or int of energy values [keV]
+            kev: an np.array, float, or int of energy values [keV]
 
         Returns:
-          the channel value(s) corresponding to the input energies.
+            the channel value(s) corresponding to the input energies.
             a float if input is scalar. an np.array if input is iterable
         """
 
@@ -431,8 +534,9 @@ class QuadraticEnergyCal(EnergyCalBase):
     @property
     def valid_coeffs(self):
         """A list of valid coefficients for the calibration curve.
+
         Returns:
-          a tuple of strings, the names of the coefficients for this curve
+            a tuple of strings, the names of the coefficients for this curve
         """
         return ('a', 'b', 'c')
 
@@ -440,9 +544,9 @@ class QuadraticEnergyCal(EnergyCalBase):
         """Convert scalar OR np.array of channel(s) to energies.
         Should use numpy ufuncs so that the input dtype doesn't matter.
         Args:
-          ch: an np.array, float, or int of channel values
+            ch: an np.array, float, or int of channel values
         Returns:
-          energy values, the same size/type as ch [keV]
+            energy values, the same size/type as ch [keV]
         """
         return (self._coeffs['a'] * ch ** 2 +
                 self._coeffs['b'] * ch +
@@ -451,9 +555,9 @@ class QuadraticEnergyCal(EnergyCalBase):
     def _kev2ch(self, kev):
         """Convert energy value(s) to channel(s).
         Args:
-          kev: an np.array, float, or int of energy values [keV]
+            kev: an np.array, float, or int of energy values [keV]
         Returns:
-          the channel value(s) corresponding to the input energies.
+            the channel value(s) corresponding to the input energies.
             a float if input is scalar. an np.array if input is iterable
         """
         # TODO: address with the quadratic inverse formula
@@ -465,3 +569,89 @@ class QuadraticEnergyCal(EnergyCalBase):
         self._set_coeff('a', a)
         self._set_coeff('b', b)
         self._set_coeff('c', c)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class NaISaturationEnergyCal(EnergyCalBase):
+    """
+    Energy calibration in the form of:
+        E = finv[ (ch - c) / (g - s * (ch - c)) ]
+    Where:
+        ch : channel
+        c : offset
+        g : pmt gain
+        s : pmt saturation
+        E : energy (keV)
+        finv : transformation from light to energy
+    """
+
+    def __init__(self, nai_saturation, **kwargs):
+        super(NaISaturationEnergyCal, self).__init__(**kwargs)
+        if not isinstance(nai_saturation, NaISaturation):
+            raise TypeError(
+                'Invalid NaISaturation object: {}'.format(nai_saturation))
+        self.nai_saturation = nai_saturation
+
+    @classmethod
+    def from_detector_model(cls, detector_model='4x4', **kwargs):
+        return cls(
+            nai_saturation=NaISaturation.from_detector_model(detector_model),
+            **kwargs)
+
+    @property
+    def valid_coeffs(self):
+        return ('g', 's', 'c')
+
+    def _ch2kev(self, ch):
+        """Convert channel to energy (keV).
+
+        Parameters
+        ----------
+        ch : int or float or array-like
+            Input adc channels
+
+        Returns
+        -------
+        float or np.ndarray
+            Energies in keV
+        """
+        return nai_saturation_forward(ch, nai_saturation=self.nai_saturation,
+                                      **self._coeffs)
+
+    def _kev2ch(self, kev):
+        """Convert energy (keV) to channel.
+
+        Parameters
+        ----------
+        kev : int or float or array-like
+            Input energy in keV
+
+        Returns
+        -------
+        float or np.ndarray
+            Channels
+        """
+        return nai_saturation_inverse(kev, nai_saturation=self.nai_saturation,
+                                      **self._coeffs)
+
+    def _perform_fit(self):
+        """Do the actual curve fitting."""
+        pass
+        # a, b, c = np.polyfit(self.channels, self.energies, 2)
+        # self._set_coeff('a', a)
+        # self._set_coeff('b', b)
+        # self._set_coeff('c', c)
