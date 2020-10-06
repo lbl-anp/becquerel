@@ -209,20 +209,19 @@ def _rebin_interpolation(in_spectra, in_edges, out_edges, slopes):
       1D numpy array of rebinned spectrum counts in each bin
     """
     try:  # out_edges: rename dim "bin_edge" to avoid conflict if xr.DataArray
-        out_edges = out_edges.rename({"bin_edge": "new_bin_edge"})
+        out_edges = out_edges.rename({"bin_edge": "out_bin"})
     except AttributeError:
         pass  # AttributeError raised if out_edges is a np.array, so pass
     return xr.apply_ufunc(
         _rebin_interpolation_vectorized,
         # note `out_edges[:-1]`: details see _rebin_interpolation_vectorized
         in_spectra, in_edges, out_edges[:-1], slopes,
-        input_core_dims=[["bin"], ["bin_edge"], ["new_bin_edge"], ["bin"]],
-        output_core_dims=[["bin"]],
-        exclude_dims={"bin"},  # dimensions allowed to change size
+        input_core_dims=[["bin"], ["bin_edge"], ["out_bin"], ["bin"]],
+        output_core_dims=[["out_bin"]],
         dask="parallelized",
         output_dtypes=[float],
         # vectorize=True  # only required if the func is not vectorized
-    )
+    ).rename({"out_bin": "bin"})
 
 
 
@@ -322,20 +321,19 @@ def _rebin_listmode(in_spectra, in_edges, out_edges):
       1D numpy array of rebinned spectrum counts in each bin
     """
     try:  # out_edges: rename dim "bin_edge" to avoid conflict if xr.DataArray
-        out_edges = out_edges.rename({"bin_edge": "new_bin_edge"})
+        out_edges = out_edges.rename({"bin_edge": "out_bin"})
     except AttributeError:
         pass  # AttributeError raised if out_edges is a np.array, so pass
     return xr.apply_ufunc(
         _rebin_listmode_vectorized,
         # note `out_edges[:-1]`: see _rebin_listmode_vectorized for details
         in_spectra, in_edges, out_edges[:-1],
-        input_core_dims=[["bin"], ["bin_edge"], ["new_bin_edge"]],
-        output_core_dims=[["bin"]],
-        exclude_dims={"bin"},  # dimensions allowed to change size
+        input_core_dims=[["bin"], ["bin_edge"], ["out_bin"]],
+        output_core_dims=[["out_bin"]],
         dask="parallelized",
         output_dtypes=[int],
         # vectorize=True  # only required if the func is not vectorized
-    )
+    ).rename({"out_bin": "bin"})
 
 
 @nb.guvectorize([(nb.i8[:], nb.f8[:], nb.f8[:], nb.i8[:])],
