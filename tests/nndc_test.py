@@ -637,9 +637,9 @@ class TestNuclearWalletCard(NNDCQueryTests):
             d = self.fetch(j='10')
             assert len(d) > 0
 
-    @pytest.mark.skip(reason='query kwarg "decay" seems to not be working' +
-                             'on NNDC, and as a result too many results' +
-                             'are returned for this test, causing an' +
+    @pytest.mark.skip(reason='query kwarg "decay" seems to not be working ' +
+                             'on NNDC, and as a result too many results ' +
+                             'are returned for this test, causing an ' +
                              'NNDCRequestError')
     def test_wallet_decay_SF(self):
         """Test fetch_wallet_card: decay='SF'.............................."""
