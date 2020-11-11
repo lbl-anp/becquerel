@@ -433,6 +433,7 @@ class _NNDCQuery(object):
                 raise NNDCRequestError('Request failed: ' + resp.reason)
             for msg in [
                     'Your search was unsuccessful',
+                    'Your search exceeded the maximum number of results',
                     'There are too many results for your search',
             ]:
                 if msg in resp.text:
@@ -699,6 +700,9 @@ A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)         
                 raise NNDCInputError(
                     'Decay mode must be one of {}, not {}'.format(
                         WALLET_DECAY_MODE.keys(), kwargs['decay'].lower()))
+            warnings.warn('query kwarg "decay" may not be working on NNDC, ' +
+                          'and the user is advised to check the ' +
+                          '"Decay Mode" column of the resulting DataFrame')
             self._data['dmed'] = 'enabled'
             self._data['dmn'] = WALLET_DECAY_MODE[kwargs['decay'].lower()]
         # handle energy level condition
