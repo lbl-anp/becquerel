@@ -8,7 +8,7 @@ NAME = 'becquerel'
 
 MAJOR = 0
 MINOR = 2
-MICRO = 5
+MICRO = 6
 VERSION = '{}.{}.{}'.format(MAJOR, MINOR, MICRO)
 
 DESCRIPTION = __doc__.split('\n')[0].split(': ')[-1]
