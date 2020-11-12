@@ -56,7 +56,7 @@ contributors to use [`pylint`][3], [`pycodestyle`][4], [`pydocstyle`][5] and
 
 ## Copyright Notice
 
-Becquerel v. 0.2.5, Copyright (c) 2017, The Regents of the University of
+Becquerel v. 0.2.6, Copyright (c) 2017, The Regents of the University of
 California (UC), through Lawrence Berkeley National Laboratory, and the UC
 Berkeley campus (subject to receipt of any required approvals from the U.S.
 Dept. of Energy). All rights reserved. If you have questions about your rights
