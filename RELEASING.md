@@ -2,20 +2,17 @@
 
 We follow the `git flow` [release process](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
 
-- [ ] Pull the most recent versions of `develop` and `master`
-- If normal release:
-  - [ ] Branch off of `develop` and name the branch `release-X.X.X`
-- If hotfix/patch:
-  - [ ] Branch off of `master` and name the branch `hotfix-X`
+- [ ] Pull the most recent versions of `main`
+- [ ] Branch off of `main` and name the branch `release-X.X.X` or `hotfix-X`
 - [ ] Update version number within the repository
   - in `setup.py`
   - in Copyright Notice in `README`
   - in the `LICENSE`
 - [ ] Update classifiers in `setup.py`
 - [ ] Verify that all tests pass (`python setup.py test`)
-- [ ] Commit the changes, push to GitHub, and start a pull request into `master`
-- [ ] Approve PR and merge it into master, but do not delete it yet
-- [ ] Create tagged version (`X.X.X`) on GitHub
+- [ ] Commit the changes, push to GitHub, and start a pull request into `main`
+- [ ] Approve PR and merge it into main, and delete release or hotfix branch
+- [ ] Create tagged version (`X.X.X`) on GitHub pointing to the merge commit to main.
 - [ ] Add release notes to the tag on GitHub with a list of changes
 
 ## 2. Distribution Creation/Upload
@@ -44,8 +41,3 @@ We follow the `git flow` [release process](https://www.atlassian.com/git/tutoria
   python3 -m pip install becquerel
   python3 -c "import becquerel; print(becquerel.__version__)"
   ```
-
-## 3. Cleanup
-
-- [ ] Create PR from the `release-X.X.X`/`hotfix-X` branch into `develop`
-- [ ] After PR is accepted, delete the `release-X.X.X`/`hotfix-X` branch
