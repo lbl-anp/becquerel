@@ -8,6 +8,7 @@ import becquerel as bq
 # ----------------------------------------------
 #         Test Rebinning
 # ----------------------------------------------
+# TODO this only tests np.array inputs now but not xr.DataArray as inputs
 
 
 @pytest.fixture(params=[np.linspace(0, 30, 31),
