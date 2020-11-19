@@ -368,27 +368,34 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
             )
     else:
         import xarray as xr
-        if method == "interpolation":
-            func = _rebin_interpolation
-        elif method == "listmode":
-            func = _rebin_listmode
-        else:
-            raise ValueError(
-                "{} is not a valid rebinning method".format(method)
-            )
         try:  # out_edges: rename dim "bin_edge" to avoid xr.DataArray conflict
             out_edges = out_edges.rename({"bin_edge": "out_bin"})
         except AttributeError:
             pass  # AttributeError raised if out_edges is a np.array, so pass
-        out_spectra = xr.apply_ufunc(
-            func,
-            in_spectra, in_edges, out_edges,
-            input_core_dims=[["bin"], ["bin_edge"], ["out_bin"]],
-            output_core_dims=[["out_bin"]],
-            dask="parallelized",
-            output_dtypes=[int],
-            # vectorize=True  # only required if the func is not vectorized
-        )
+        if method == "interpolation":
+            out_spectra = xr.apply_ufunc(
+                _rebin_interpolation,
+                in_spectra, in_edges, out_edges, slopes,
+                input_core_dims=[["bin"], ["bin_edge"], ["out_bin"], ["bin"]],
+                output_core_dims=[["out_bin"]],
+                dask="parallelized",
+                output_dtypes=[float],
+                # vectorize=True  # only required if the func is not vectorized
+            )
+        elif method == "listmode":
+            out_spectra = xr.apply_ufunc(
+                _rebin_listmode,
+                in_spectra, in_edges, out_edges,
+                input_core_dims=[["bin"], ["bin_edge"], ["out_bin"]],
+                output_core_dims=[["out_bin"]],
+                dask="parallelized",
+                output_dtypes=[int],
+                # vectorize=True  # only required if the func is not vectorized
+            )
+        else:
+            raise ValueError(
+                "{} is not a valid rebinning method".format(method)
+            )
         try:  # undo the initial rename if xr.DataArray
             return out_spectra.rename({"out_bin": "bin"})
         except AttributeError:
