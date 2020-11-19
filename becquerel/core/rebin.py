@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
+import warnings
 import numba as nb
 import numpy as np
-import warnings
-import xarray as xr
 
 
 class RebinError(Exception):
@@ -17,26 +16,8 @@ class RebinWarning(UserWarning):
     pass
 
 
-def _check_ndim(arr, ndim, arr_name='array'):
-    """Check the dimensionality of a numpy/xarray array
-
-    Check that the array arr has dimension ndim.
-
-    Args:
-      arr: numpy array for which dimensionality is checked
-      ndim: a scalar number or an iterable
-      arr_name: name of array, just for use in the AssertionError message
-
-    Raises:
-      AssertionError: if arr does not have dimension ndim
-    """
-    if (arr.ndim != ndim) and (arr.ndim not in ndim):
-        raise RebinError('{}({}) is not {}D'.format(
-            arr_name, arr.shape, ndim))
-
-
 def _check_monotonic_increasing(arr, arr_name='array'):
-    """Check that a numpy array is monotonically increasing
+    """Check that a numpy array is monotonically increasing.
 
     Args:
       arr: numpy array for checking
@@ -54,7 +35,8 @@ def _check_monotonic_increasing(arr, arr_name='array'):
 
 
 def _check_partial_overlap(in_edges, out_edges):
-    """
+    """In and out edges partial overlap checking.
+
     Args:
         in_edges (np.ndarray): an array of the input bin edges (1D or 2D)
             [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
@@ -71,12 +53,12 @@ def _check_partial_overlap(in_edges, out_edges):
             new: ... ┴┴┴┴┴┘
 
     """
-    if (in_edges[..., 0] > out_edges[0]).any():
+    if (in_edges[..., 0] > out_edges[..., 0]).any():
         warnings.warn(
             'The first input edge is larger than the first output edge, ' +
             'zeros will padded on the left side of the new spectrum',
             RebinWarning)
-    if (in_edges[..., -1] < out_edges[-1]).any():
+    if (in_edges[..., -1] < out_edges[..., -1]).any():
         warnings.warn(
             'The last input edge is smaller than the last output edge, ' +
             'zeros will padded on the right side of the new spectrum',
@@ -84,7 +66,8 @@ def _check_partial_overlap(in_edges, out_edges):
 
 
 def _check_any_overlap(in_edges, out_edges):
-    """
+    """In and out edges overlapping at all.
+
     Args:
         in_edges (np.ndarray): an array of the input bin edges (1D or 2D)
             [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
@@ -92,7 +75,6 @@ def _check_any_overlap(in_edges, out_edges):
             [num_bins_out]
 
     Raises:
-
         RebinError: for the following cases:
 
             old:   └┴┴┴┴┘
@@ -101,35 +83,16 @@ def _check_any_overlap(in_edges, out_edges):
             old:           └┴┴┴┴┘
             new:   └┴┴┴┘
     """
-    if (in_edges[..., -1] <= out_edges[0]).any():
+    if (in_edges[..., -1] <= out_edges[..., 0]).any():
         raise RebinError('Input edges are all smaller than output edges')
-    if (in_edges[..., 0] >= out_edges[-1]).any():
+    if (in_edges[..., 0] >= out_edges[..., -1]).any():
         raise RebinError('Input edges are all larger than output edges')
-
-
-# no longer check shape because errors will pop up during xr.apply_ufunc.
-# too many cases to check for; explicit checks defeats the purpose of
-# using xr.apply_ufunc. Also, since xr.DataArrays use dimension names,
-# checking shapes do not make sense.
-# def _check_shape(arr0, arr1, arr0_name='array0', arr1_name='array1',
-#                  edges=False):
-#     arr0_shape = arr0.shape
-#     arr1_shape = arr1.shape
-#     if edges:
-#         if len(arr1_shape) == 1:
-#             arr1_shape = (arr1_shape[0] - 1,)
-#         else:
-#             arr1_shape = (arr1_shape[0], arr1_shape[1] - 1,)
-#     if arr0_shape != arr1_shape:
-#         raise RebinError(
-#             '{}{} does not have a shape compatible with {}{}'.format(
-#                 arr0_name, arr0_shape, arr1_name, arr1_shape))
 
 
 @nb.vectorize([nb.f8(nb.f8, nb.f8, nb.f8, nb.f8)], nopython=True)
 def _linear_offset(slope, cts, low, high):
     """
-    Calculate the offset of the linear aproximation of slope when splitting
+    Calculate the offset of the linear approximation of slope when splitting
     counts between bins.
 
     Args:
@@ -150,8 +113,7 @@ def _linear_offset(slope, cts, low, high):
 
 @nb.vectorize([nb.f8(nb.f8, nb.f8, nb.f8)], nopython=True)
 def _slope_integral(x, m, b):
-    '''
-    The indefinite integral of y = mx + b, with an x value substituted in.
+    """Indefinite integral of y = mx + b, with an x value substituted in.
 
     Args:
       x: the x-value
@@ -161,14 +123,13 @@ def _slope_integral(x, m, b):
     Returns:
       The indefinite integral of y = mx + b, with an x value substituted in.
       (m x^2 / 2 + b x)
-    '''
+    """
     return m * x**2 / 2 + b * x
 
 
 @nb.vectorize([nb.f8(nb.f8, nb.f8, nb.f8, nb.f8)], nopython=True)
 def _counts(m, b, x_low, x_high):
-    '''
-    the definite integral of y = mx + b
+    """Definite integral of y = mx + b.
 
     Computes the area under a linear approximation of the changing count
     rate in the vincity of relevant bins.  Edges of this integration
@@ -183,59 +144,15 @@ def _counts(m, b, x_low, x_high):
 
     Returns:
       the definite integral of y = mx + b
-    '''
+    """
     return _slope_integral(x_high, m, b) - _slope_integral(x_low, m, b)
-
-
-def _rebin_interpolation(in_spectra, in_edges, out_edges, slopes):
-    """
-    Rebins a spectrum using linear interpolation.
-
-    Keeps a running counter of two loop indices: in_idx & out_idx
-
-    N.B. Does not keep Poisson statistics
-
-    Args:
-      in_spectra: xr/dask/np array of input spectrum counts in each bin
-                  (if xr.DataArray: name of bin dimension should be "bin")
-      in_edges: xr/dask/np array of input bin edges
-                (if xr.DataArray: name of bin dimension should be "bin_edge")
-                (len(in_edges) = (len of dim "bin" of in_spectra) + 1)
-      out_edges: xr/dask/np array of output bin edges
-      slopes: the slopes of each histogram bin, with the lines drawn between
-              each bin edge. (len(slopes) = (len of dim "bin" of in_spectra))
-
-    Returns:
-      1D numpy array of rebinned spectrum counts in each bin
-    """
-    try:  # out_edges: rename dim "bin_edge" to avoid conflict if xr.DataArray
-        out_edges = out_edges.rename({"bin_edge": "out_bin"})
-    except AttributeError:
-        pass  # AttributeError raised if out_edges is a np.array, so pass
-    out_spectra = xr.apply_ufunc(
-        _rebin_interpolation_vectorized,
-        # note `out_edges[:-1]`: details see _rebin_interpolation_vectorized
-        in_spectra, in_edges, out_edges[:-1], slopes,
-        input_core_dims=[["bin"], ["bin_edge"], ["out_bin"], ["bin"]],
-        output_core_dims=[["out_bin"]],
-        dask="parallelized",
-        output_dtypes=[float],
-        # vectorize=True  # only required if the func is not vectorized
-    )
-    try:  # undo the initial rename if xr.DataArray
-        return out_spectra.rename({"out_bin": "bin"})
-    except AttributeError:
-        # AttributeError raised if out_spectra is a np.array, no need to rename
-        return out_spectra
-
 
 
 @nb.guvectorize([(nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:])],
                 "(n),(N),(m),(n)->(m)")
-def _rebin_interpolation_vectorized(
+def _rebin_interpolation(
         in_spectrum, in_edges, out_edges_no_rightmost, slopes, out_spectrum):
-    """
-    Rebins a spectrum using linear interpolation.
+    """Rebins a spectrum using linear interpolation.
 
     Keeps a running counter of two loop indices: in_idx & out_idx
 
@@ -299,59 +216,13 @@ def _rebin_interpolation_vectorized(
                 high = min(in_right_edge, out_right_edge)
             # Calc counts for this bin
             out_spectrum[out_idx] += _counts(slope, offset, low, high)
-    # nb.guvectorize returns void; specifies output as an "input":
-    # return out_spectrum
-
-
-def _rebin_listmode(in_spectra, in_edges, out_edges):
-    """
-    Stochastic rebinning method: spectrum-histogram to listmode then back
-
-    All overflow values are put in the leftmost and rightmost bins,
-    and note we pass out_edges[:-1] into _rebin_listmode_vectorized.
-
-    TODO Assume piecewise constant (ie steps, flat within each bin)
-         distribution for in_spectrum (for now). slopes is unused.
-
-    Args:
-      in_spectra: xr/dask/np array of input spectrum counts in each bin
-                  in_spectra must have dtype int
-                  (if xr.DataArray: name of bin dimension should be "bin")
-      in_edges: xr/dask/np array of input bin edges
-                (if xr.DataArray: name of bin dimension should be "bin_edge")
-                (len(in_edges) = (len of dim "bin" of in_spectra) + 1)
-      out_edges: xr/dask/np array of output bin edges
-
-    Returns:
-      1D numpy array of rebinned spectrum counts in each bin
-    """
-    try:  # out_edges: rename dim "bin_edge" to avoid conflict if xr.DataArray
-        out_edges = out_edges.rename({"bin_edge": "out_bin"})
-    except AttributeError:
-        pass  # AttributeError raised if out_edges is a np.array, so pass
-    out_spectra = xr.apply_ufunc(
-        _rebin_listmode_vectorized,
-        # note `out_edges[:-1]`: see _rebin_listmode_vectorized for details
-        in_spectra, in_edges, out_edges[:-1],
-        input_core_dims=[["bin"], ["bin_edge"], ["out_bin"]],
-        output_core_dims=[["out_bin"]],
-        dask="parallelized",
-        output_dtypes=[int],
-        # vectorize=True  # only required if the func is not vectorized
-    )
-    try:  # undo the initial rename if xr.DataArray
-        return out_spectra.rename({"out_bin": "bin"})
-    except AttributeError:
-        # AttributeError raised if out_spectra is a np.array, no need to rename
-        return out_spectra
 
 
 @nb.guvectorize([(nb.i8[:], nb.f8[:], nb.f8[:], nb.i8[:])],
                 "(n),(N),(m)->(m)")
-def _rebin_listmode_vectorized(
+def _rebin_listmode(
         in_spectrum, in_edges, out_edges_no_rightmost, out_spectrum):
-    """
-    Stochastic rebinning method: spectrum-histogram to listmode then back
+    """Stochastic rebinning method: spectrum-histogram to listmode then back.
 
     rightmost edge in the parameter out_edges chopped off, in order for
     nb.guvectorize to work, because it requires the output dimensions
@@ -394,15 +265,10 @@ def _rebin_listmode_vectorized(
     out_spectrum[:] = np.histogram(energies, bins=out_edges)[0]
     # handling of overflows no longer needed since the first/last out_edges
     # are now -/+ inf
-    # # add the under/flow counts back into the out_spectrum
-    # out_spectrum[0] += (energies < out_edges[0]).nonzero()[0].size
-    # out_spectrum[-1] += (energies > out_edges[-1]).nonzero()[0].size
-    # nb.guvectorize returns void; specifies output as an "input":
-    # return out_spectrum
 
 
 def rebin(in_spectra, in_edges, out_edges, method="interpolation",
-          slopes=None, zero_pad_warnings=True):
+          slopes=None, zero_pad_warnings=True, xarray=False):
     """
     Spectra rebinning via deterministic or stochastic methods.
 
@@ -427,6 +293,8 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
             [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
         zero_pad_warnings (boolean): warn when edge overlap results in
             appending empty bins
+        xarray (boolean): use xarray backend. Requires xarray module to be
+            installed.
 
     Raises:
         AssertionError: for bad input arguments
@@ -468,16 +336,13 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     out_edges = np.asarray(out_edges)
     if slopes is not None:
         slopes = np.asarray(slopes)
+        # if slope is wrong dimension error will be raised in guvectorize
     elif method == "interpolation":  # "listmode" doesn't use slopes for now
         slopes = np.zeros(in_spectra.shape[-1])
-        _check_ndim(slopes, {1, 2}, 'slopes')
-        # _check_shape(in_spectra, slopes, 'in_spectra', 'slopes')
-    # Check dimensions
-    _check_ndim(in_spectra, {1, 2}, 'in_spectra')
-    _check_ndim(in_edges, {1, 2}, 'in_edges')
-    _check_ndim(out_edges, 1, 'out_edges')
-    # Check shape: skip
-    # _check_shape(in_spectra, in_edges, 'in_spectra', 'in_edges', edges=True)
+
+    # Only check that in_spectra and in_edges are compatible any other shape
+    # issue should raise an error in guvectorize
+    assert in_spectra.shape[-1] == in_edges.shape[-1] - 1
     # Check for increasing bin structure
     _check_monotonic_increasing(in_edges, 'in_edges')
     _check_monotonic_increasing(out_edges, 'out_edges')
@@ -485,10 +350,47 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     _check_any_overlap(in_edges, out_edges)
     if zero_pad_warnings:
         _check_partial_overlap(in_edges, out_edges)
-    # Specific calls to (wrapped) nb.guvectorize'd rebinning methods
-    if method == "interpolation":
-        return _rebin_interpolation(in_spectra, in_edges, out_edges, slopes)
-    elif method == "listmode":
-        return _rebin_listmode(in_spectra, in_edges, out_edges)
+    # Remove highest output edge, necessary for guvectorize
+    out_edges = out_edges[..., :-1]
+
+    # by default use numpy backend, if requested switch to xarray
+    if xarray is False:
+        # Specific calls to (wrapped) nb.guvectorize'd rebinning methods
+        if method == "interpolation":
+            return _rebin_interpolation(
+                in_spectra, in_edges, out_edges, slopes
+            )
+        elif method == "listmode":
+            return _rebin_listmode(in_spectra, in_edges, out_edges)
+        else:
+            raise ValueError(
+                "{} is not a valid rebinning method".format(method)
+            )
     else:
-        raise ValueError("{} is not a valid rebinning method".format(method))
+        import xarray as xr
+        if method == "interpolation":
+            func = _rebin_interpolation
+        elif method == "listmode":
+            func = _rebin_listmode
+        else:
+            raise ValueError(
+                "{} is not a valid rebinning method".format(method)
+            )
+        try:  # out_edges: rename dim "bin_edge" to avoid xr.DataArray conflict
+            out_edges = out_edges.rename({"bin_edge": "out_bin"})
+        except AttributeError:
+            pass  # AttributeError raised if out_edges is a np.array, so pass
+        out_spectra = xr.apply_ufunc(
+            func,
+            in_spectra, in_edges, out_edges,
+            input_core_dims=[["bin"], ["bin_edge"], ["out_bin"]],
+            output_core_dims=[["out_bin"]],
+            dask="parallelized",
+            output_dtypes=[int],
+            # vectorize=True  # only required if the func is not vectorized
+        )
+        try:  # undo the initial rename if xr.DataArray
+            return out_spectra.rename({"out_bin": "bin"})
+        except AttributeError:
+            # if out_spectra is a np.array, no need to rename
+            return out_spectra
