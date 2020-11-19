@@ -273,12 +273,12 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     Spectra rebinning via deterministic or stochastic methods.
 
     Args:
-        in_spectrum (np.ndarray): an array of input spectrum counts (1D or 2D)
-            [num_spectra, num_bins_in] or [num_bins_in]
-        in_edges (np.ndarray): an array of the input bin edges (1D or 2D)
-            [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
+        in_spectrum (np.ndarray): an array of input spectrum counts
+            [..., num_bins_in]
+        in_edges (np.ndarray): an array of the input bin edges
+            [..., num_bins_in + 1] or [num_bins_in + 1]
         out_edges (np.ndarray): an array of the output bin edges
-            [num_bins_out]
+            [..., num_bins_out + 1] or [num_bins_out + 1]
         method (str): rebinning method
             "interpolation"
                 Deterministic interpolation
