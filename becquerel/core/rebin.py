@@ -303,6 +303,9 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
         The rebinned spectrum/a
     """
     method = method.lower()
+    if not hasattr(in_spectra, "shape"):
+        assert xarray is False, "Use xarray as input not list"
+        in_spectra = np.asarray(in_spectra)
     # Cast data types and check listmode input
     if method == "listmode":
         if (in_spectra < 0).any():
@@ -331,7 +334,6 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
                 'integers for rebin method listmode.',
                 RebinWarning)
             in_spectra = in_spectra_rint.astype(int)
-    # no longer explicitly cast in_spectra as np.array: user's responsibility
     in_edges = np.asarray(in_edges)
     out_edges = np.asarray(out_edges)
     if slopes is not None:
