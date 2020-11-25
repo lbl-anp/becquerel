@@ -2,7 +2,7 @@
 
 We follow the `git flow` [release process](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
 
-- [ ] Pull the most recent versions of `main`
+- [ ] Pull the most recent version of `main`
 - [ ] Branch off of `main` and name the branch `release-X.X.X` or `hotfix-X`
 - [ ] Update version number within the repository
   - in `setup.py`
