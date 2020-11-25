@@ -11,8 +11,8 @@ We follow the `git flow` [release process](https://www.atlassian.com/git/tutoria
 - [ ] Update classifiers in `setup.py`
 - [ ] Verify that all tests pass (`python setup.py test`)
 - [ ] Commit the changes, push to GitHub, and start a pull request into `main`
-- [ ] Approve PR, merge it into main, and delete release or hotfix branch
-- [ ] Create tagged version (`X.X.X`) on GitHub pointing to the merge commit to main
+- [ ] Approve PR, merge it into `main`, and delete release or hotfix branch
+- [ ] Create tagged version (`X.X.X`) on GitHub pointing to the merge commit to `main`
 - [ ] Add release notes to the tag on GitHub with a list of changes
 
 ## 2. Distribution Creation/Upload
