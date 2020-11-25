@@ -62,4 +62,4 @@ Use [google standards](https://google.github.io/styleguide/pyguide.html)
     - `pylint becquerel tests`
   - [ ] Spellcheck your code and docstrings
   - [ ] Check style is [consistent with Google Python style guide](https://github.com/google/styleguide/blob/gh-pages/pyguide.md)
-  - [ ] Push branch to GitHub and create a pull request to main
+  - [ ] Push branch to GitHub and create a pull request to `main`
