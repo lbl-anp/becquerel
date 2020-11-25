@@ -356,7 +356,7 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     out_edges = out_edges[..., :-1]
 
     # by default use numpy backend, if requested switch to xarray
-    if xarray is False:
+    if not xarray:
         # Specific calls to (wrapped) nb.guvectorize'd rebinning methods
         if method == "interpolation":
             return _rebin_interpolation(
