@@ -69,8 +69,8 @@ def _check_any_overlap(in_edges, out_edges):
     """In and out edges overlapping at all.
 
     Args:
-        in_edges (np.ndarray): an array of the input bin edges (1D or 2D)
-            [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
+        in_edges (np.ndarray): an array of the input bin edges
+            [..., num_bins_in + 1] (defined as the last dim in the array)
         out_edges (np.ndarray): an array of the output bin edges
             [num_bins_out]
 
