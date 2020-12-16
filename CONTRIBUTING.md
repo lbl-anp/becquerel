@@ -51,7 +51,7 @@ Use [google standards](https://google.github.io/styleguide/pyguide.html)
 * Use `pylint` from command line (as in style guide)
 
 ### Checklist for code contributions:
-  - [ ] Branch off of `develop` and name the branch `feature-XX` or `issue-XX`
+  - [ ] Branch off of `main` and name the branch `feature-XX` or `issue-XX`
   - [ ] Develop the feature or fix
   - [ ] Write tests to cover all use cases
   - [ ] Ensure all tests pass (`python setup.py test`)
@@ -62,4 +62,4 @@ Use [google standards](https://google.github.io/styleguide/pyguide.html)
     - `pylint becquerel tests`
   - [ ] Spellcheck your code and docstrings
   - [ ] Check style is [consistent with Google Python style guide](https://github.com/google/styleguide/blob/gh-pages/pyguide.md)
-  - [ ] Push branch to GitHub and create a pull request
+  - [ ] Push branch to GitHub and create a pull request to `main`
