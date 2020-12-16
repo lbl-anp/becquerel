@@ -268,7 +268,7 @@ def _rebin_listmode(
 
 
 def rebin(in_spectra, in_edges, out_edges, method="interpolation",
-          slopes=None, zero_pad_warnings=True, xarray=False):
+          slopes=None, zero_pad_warnings=True):
     """
     Spectra rebinning via deterministic or stochastic methods.
 
@@ -293,8 +293,6 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
             [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
         zero_pad_warnings (boolean): warn when edge overlap results in
             appending empty bins
-        xarray (boolean): use xarray backend. Requires xarray module to be
-            installed.
 
     Raises:
         AssertionError: for bad input arguments
@@ -355,51 +353,13 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     # Remove highest output edge, necessary for guvectorize
     out_edges = out_edges[..., :-1]
 
-    # by default use numpy backend, if requested switch to xarray
-    if not xarray:
-        # Specific calls to (wrapped) nb.guvectorize'd rebinning methods
-        if method == "interpolation":
-            return _rebin_interpolation(
-                in_spectra, in_edges, out_edges, slopes
-            )
-        elif method == "listmode":
-            return _rebin_listmode(in_spectra, in_edges, out_edges)
-        else:
-            raise ValueError(
-                "{} is not a valid rebinning method".format(method)
-            )
-    else:
-        import xarray as xr
-        try:  # out_edges: rename dim "bin_edge" to avoid xr.DataArray conflict
-            out_edges = out_edges.rename({"bin_edge": "out_bin"})
-        except AttributeError:
-            pass  # AttributeError raised if out_edges is a np.array, so pass
-        if method == "interpolation":
-            out_spectra = xr.apply_ufunc(
-                _rebin_interpolation,
-                in_spectra, in_edges, out_edges, slopes,
-                input_core_dims=[["bin"], ["bin_edge"], ["out_bin"], ["bin"]],
-                output_core_dims=[["out_bin"]],
-                dask="parallelized",
-                output_dtypes=[float],
-                # vectorize=True  # only required if the func is not vectorized
-            )
-        elif method == "listmode":
-            out_spectra = xr.apply_ufunc(
-                _rebin_listmode,
-                in_spectra, in_edges, out_edges,
-                input_core_dims=[["bin"], ["bin_edge"], ["out_bin"]],
-                output_core_dims=[["out_bin"]],
-                dask="parallelized",
-                output_dtypes=[int],
-                # vectorize=True  # only required if the func is not vectorized
-            )
-        else:
-            raise ValueError(
-                "{} is not a valid rebinning method".format(method)
-            )
-        try:  # undo the initial rename if xr.DataArray
-            return out_spectra.rename({"out_bin": "bin"})
-        except AttributeError:
-            # if out_spectra is a np.array, no need to rename
-            return out_spectra
+    # Specific calls to (wrapped) nb.guvectorize'd rebinning methods
+    if method == "interpolation":
+        return _rebin_interpolation(
+            in_spectra, in_edges, out_edges, slopes
+        )
+    elif method == "listmode":
+        return _rebin_listmode(in_spectra, in_edges, out_edges)
+    raise ValueError(
+        "{} is not a valid rebinning method".format(method)
+    )
