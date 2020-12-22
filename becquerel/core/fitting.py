@@ -701,7 +701,7 @@ class Fitter(object):
             yerr_plot = self.y_unc_roi
             ylabel = 'Residuals'
         res_ax.errorbar(x=self.x_roi, y=y_plot, yerr=yerr_plot, **res_kwargs)
-        res_ax.set_ylabel('Residuals')
+        res_ax.set_ylabel(ylabel)
         res_ax.axhline(0.0, linestyle='dashed', c='k', linewidth=1.0)
         # TODO: add xlabel based on units of x
 
