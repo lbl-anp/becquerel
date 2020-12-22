@@ -731,7 +731,7 @@ class Fitter(object):
                 v = param_data['val']
                 e = param_data['unc']
                 s += '    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n'.format(
-                    param_name, v, e, e / v)
+                    param_name, v, e, np.abs(e / v))
         # Add to empty axis
         txt_ax.text(x=0.01, y=0.99, s=s, fontproperties=fp,
                     ha='left', va='top', transform=txt_ax.transAxes,
