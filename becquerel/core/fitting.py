@@ -85,7 +85,12 @@ class ConstantModel(Model):
         self.set_param_hint('{}c'.format(self.prefix), min=0.)
 
     def guess(self, y, x=None, dx=None, num=2):
-        return []
+        if dx is None:
+            dx = np.ones_like(x)
+        c = (y[-1]/dx[-1] + y[0]/dx[0]) * 0.5
+        return [
+            ('{}c'.format(self.prefix), 'value', c),
+        ]
 
 
 class LineModel(Model):
