@@ -619,7 +619,7 @@ class Fitter(object):
         return df
 
     def custom_plot(self, title=None, savefname=None, title_fontsize=24,
-                    title_fontweight='bold', **kwargs):
+                    title_fontweight='bold', norm_residuals=False, **kwargs):
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
         dx, dx_roi = self.dx, self.dx_roi
@@ -638,6 +638,7 @@ class Fitter(object):
         if title is not None:
             fig.suptitle(str(title), fontweight=title_fontweight,
                          fontsize=title_fontsize)
+
         # ---------------------------------------
         # Fit plot (keep track of min/max in roi)
         # ---------------------------------------
@@ -684,17 +685,26 @@ class Fitter(object):
         ypad = (ymax - ymin) * 0.05
         fit_ax.set_xlim([self.x_roi[0] - xpad, self.x_roi[-1] + xpad])
         fit_ax.set_ylim([ymin - ypad, ymax + ypad])
+
         # ---------
         # Residuals
         # ---------
-        res_ax.errorbar(
-            self.x_roi,
-            (self.eval(self.x_roi, **self.result.best_values) * dx_roi -
-             self.y_roi),
-            yerr=self.y_unc_roi, fmt='o', color='k',
-            markersize=5, label='residuals')
+        y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
+        y_res = y_eval - self.y_roi
+        res_kwargs = dict(fmt='o', color='k', markersize=5, label='residuals')
+        if norm_residuals:
+            y_plot = y_res / self.y_roi
+            yerr_plot = self.y_unc_roi / self.y_roi
+            ylabel = 'Relative residuals'
+        else:
+            y_plot = y_res
+            yerr_plot = self.y_unc_roi
+            ylabel = 'Residuals'
+        res_ax.errorbar(x=self.x_roi, y=y_plot, yerr=yerr_plot, **res_kwargs)
         res_ax.set_ylabel('Residuals')
+        res_ax.axhline(0.0, linestyle='dashed', c='k', linewidth=1.0)
         # TODO: add xlabel based on units of x
+
         # -------------------
         # Fit report (txt_ax)
         # -------------------
