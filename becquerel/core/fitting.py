@@ -40,7 +40,7 @@ def gauss(x, amp, mu, sigma):
     amp = np.abs(amp)
     mu = np.abs(mu)
     sigma = np.abs(sigma)
-    return amp / np.sqrt(2. * sigma ** 2. * np.pi) * \
+    return amp / sigma / np.sqrt(2. * np.pi) * \
         np.exp(-(x - mu) ** 2. / (2. * sigma ** 2.))
 
 
