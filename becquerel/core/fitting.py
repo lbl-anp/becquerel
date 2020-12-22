@@ -37,9 +37,6 @@ def line(x, m, b):
 
 
 def gauss(x, amp, mu, sigma):
-    amp = np.abs(amp)
-    mu = np.abs(mu)
-    sigma = np.abs(sigma)
     return amp / sigma / np.sqrt(2. * np.pi) * \
         np.exp(-(x - mu) ** 2. / (2. * sigma ** 2.))
 
