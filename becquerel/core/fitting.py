@@ -621,7 +621,7 @@ class Fitter(object):
         return df
 
     def custom_plot(self, title=None, savefname=None, title_fontsize=24,
-                    title_fontweight='bold', norm_residuals=False, **kwargs):
+                    title_fontweight='bold', residuals='abs', **kwargs):
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
         dx, dx_roi = self.dx, self.dx_roi
@@ -692,16 +692,24 @@ class Fitter(object):
         # Residuals
         # ---------
         y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
-        y_res = y_eval - self.y_roi
+        y_res = self.y_roi - y_eval
         res_kwargs = dict(fmt='o', color='k', markersize=5, label='residuals')
-        if norm_residuals:
-            y_plot = y_res / self.y_roi
-            yerr_plot = self.y_unc_roi / self.y_roi
+        if residuals == 'rel':
+            y_plot = y_res / np.abs(y_eval)
+            yerr_plot = self.y_unc_roi / np.abs(y_eval)
             ylabel = 'Relative residuals'
-        else:
+        elif residuals == 'sigma':
+            y_plot = y_res / self.y_unc_roi
+            yerr_plot = np.zeros_like(y_plot)
+            ylabel = r'Residuals $(\sigma)$'
+        elif residuals == 'abs':
             y_plot = y_res
             yerr_plot = self.y_unc_roi
             ylabel = 'Residuals'
+        else:
+            raise ValueError(
+                'Unknown residuals option: {0:s}'.format(residuals)
+            )
         res_ax.errorbar(x=self.x_roi, y=y_plot, yerr=yerr_plot, **res_kwargs)
         res_ax.set_ylabel(ylabel)
         res_ax.axhline(0.0, linestyle='dashed', c='k', linewidth=1.0)
