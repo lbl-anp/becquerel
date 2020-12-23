@@ -694,15 +694,19 @@ class Fitter(object):
         y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
         y_res = self.y_roi - y_eval
         res_kwargs = dict(fmt='o', color='k', markersize=5, label='residuals')
+
         if residuals == 'rel':
+            # Plot residuals relative to the model evaluation
             y_plot = y_res / np.abs(y_eval)
             yerr_plot = self.y_unc_roi / np.abs(y_eval)
             ylabel = 'Relative residuals'
         elif residuals == 'sigma':
+            # Plot residuals relative to the data uncertainty
             y_plot = y_res / self.y_unc_roi
             yerr_plot = np.zeros_like(y_plot)
             ylabel = r'Residuals $(\sigma)$'
         elif residuals == 'abs':
+            # Plot absolute residuals
             y_plot = y_res
             yerr_plot = self.y_unc_roi
             ylabel = 'Residuals'
