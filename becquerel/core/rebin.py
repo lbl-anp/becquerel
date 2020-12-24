@@ -302,7 +302,6 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     """
     method = method.lower()
     if not hasattr(in_spectra, "shape"):
-        assert xarray is False, "Use xarray as input not list"
         in_spectra = np.asarray(in_spectra)
     # Cast data types and check listmode input
     if method == "listmode":
@@ -313,7 +312,7 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
             raise RebinError('Cannot rebin spectra with all values less than '
                              'one with listmode method')
         if np.issubdtype(in_spectra.dtype.type, np.floating):
-            # np.rint is a ufunc: natively supported by xarray:
+            # np.rint is a ufunc: allows using this with tools such as xarray
             in_spectra_rint = np.rint(in_spectra)
             # TEMP disable this test, always raise warning for now because
             # isclose/allclose are not ufuncs, so no easy way to implement now
