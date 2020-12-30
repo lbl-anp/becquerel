@@ -9,9 +9,7 @@ on:
 
   # When to test
   push:
-    branches: [ $default-branch ]
   pull_request:
-    branches: [ $default-branch ]
 
 jobs:
   pip_build_test:
