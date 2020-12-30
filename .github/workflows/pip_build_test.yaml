@@ -9,6 +9,7 @@ on:
 
   # When to test
   push:
+    branches: [ $default-branch ]
   pull_request:
 
 jobs:
