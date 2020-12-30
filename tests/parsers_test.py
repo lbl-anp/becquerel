@@ -62,7 +62,7 @@ class TestSpectrumFilePlot(object):
         try:
             plt.figure()
         except:
-            # TclError on Travis bc no display. skip the test
+            # TclError on CI bc no display. skip the test
             return
         plt.title('Testing ' + cls.__name__)
         filenames = SAMPLES.get(extension, [])
