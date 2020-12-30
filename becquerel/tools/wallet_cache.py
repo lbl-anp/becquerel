@@ -19,15 +19,15 @@ def convert_float_ufloat(x):
     """
 
     if isstring(x):
-        if '+/-' in x:
-            tokens = x.split('+/-')
+        if "+/-" in x:
+            tokens = x.split("+/-")
             return uncertainties.ufloat(float(tokens[0]), float(tokens[1]))
-        if x == '':
+        if x == "":
             return None
     return float(x)
 
 
-def format_ufloat(x, fmt='{:.12f}'):
+def format_ufloat(x, fmt="{:.12f}"):
     """Convert ufloat to a string, including None ('') and NaN.
 
     Args:
@@ -35,19 +35,19 @@ def format_ufloat(x, fmt='{:.12f}'):
     """
 
     if x is None:
-        return ''
+        return ""
     return fmt.format(x)
 
 
 class WalletCardCache(df_cache.DataFrameCache):
     """A cache of all isotope wallet cards from NNDC."""
 
-    name = 'all_wallet_cards'
+    name = "all_wallet_cards"
 
     def write_file(self):
         """Format ufloat columns before writing so they keep precision."""
 
-        for col in ['Abundance (%)', 'Mass Excess (MeV)']:
+        for col in ["Abundance (%)", "Mass Excess (MeV)"]:
             self.df[col] = self.df[col].apply(format_ufloat)
         super().write_file()
 
@@ -55,7 +55,7 @@ class WalletCardCache(df_cache.DataFrameCache):
         """Ensure some columns are properly converted to float/ufloat."""
 
         super().read_file()
-        for col in ['Abundance (%)', 'Mass Excess (MeV)']:
+        for col in ["Abundance (%)", "Mass Excess (MeV)"]:
             self.df[col] = self.df[col].apply(convert_float_ufloat)
 
     def fetch(self):

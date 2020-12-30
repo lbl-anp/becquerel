@@ -52,17 +52,21 @@ def fit_gain(channels, snrs, energies):
     """
     if len(channels) != len(energies):
         raise AutoCalibratorError(
-            'Number of channels ({}) must equal # of energies ({})'.format(
-                len(channels), len(energies)))
+            "Number of channels ({}) must equal # of energies ({})".format(
+                len(channels), len(energies)
+            )
+        )
     if len(channels) != len(snrs):
         raise AutoCalibratorError(
-            'Number of channels ({}) must equal # of SNRs ({})'.format(
-                len(channels), len(snrs)))
+            "Number of channels ({}) must equal # of SNRs ({})".format(
+                len(channels), len(snrs)
+            )
+        )
     x = np.asarray(channels)
     s = np.asarray(snrs)
     y = np.asarray(energies)
-    S2X = (s**2 * x).sum()
-    S2Y = (s**2 * y).sum()
+    S2X = (s ** 2 * x).sum()
+    S2Y = (s ** 2 * y).sum()
     gain = S2Y / S2X
     return gain
 
@@ -93,41 +97,58 @@ def fom_gain(channels, snrs, energies):
     """
     if len(channels) != len(energies):
         raise AutoCalibratorError(
-            'Number of channels ({}) must equal # of energies ({})'.format(
-                len(channels), len(energies)))
+            "Number of channels ({}) must equal # of energies ({})".format(
+                len(channels), len(energies)
+            )
+        )
     if len(channels) != len(snrs):
         raise AutoCalibratorError(
-            'Number of channels ({}) must equal # of SNRs ({})'.format(
-                len(channels), len(snrs)))
+            "Number of channels ({}) must equal # of SNRs ({})".format(
+                len(channels), len(snrs)
+            )
+        )
     x = np.asarray(channels)
     s = np.asarray(snrs)
     y = np.asarray(energies)
     N = len(channels)
-    S2X = (s**2 * x).sum()
-    S2Y = (s**2 * y).sum()
-    squared_errs = s**2 * (S2Y * x - S2X * y)**2 / (S2X - s**2 * x)**2 / x
+    S2X = (s ** 2 * x).sum()
+    S2Y = (s ** 2 * y).sum()
+    squared_errs = s ** 2 * (S2Y * x - S2X * y) ** 2 / (S2X - s ** 2 * x) ** 2 / x
     return squared_errs.sum() / N / (N - 1)
 
 
 def find_best_gain(
-        channels, snrs, required_energies, optional=(),
-        gain_range=(1e-3, 1e3), de_max=10., verbose=False):
+    channels,
+    snrs,
+    required_energies,
+    optional=(),
+    gain_range=(1e-3, 1e3),
+    de_max=10.0,
+    verbose=False,
+):
     """Find the gain that gives the best match of peaks to energies."""
     if len(channels) != len(snrs):
         raise AutoCalibratorError(
-            'Number of channels ({}) must equal # of SNRs ({})'.format(
-                len(channels), len(snrs)))
+            "Number of channels ({}) must equal # of SNRs ({})".format(
+                len(channels), len(snrs)
+            )
+        )
     if len(channels) < 2:
         raise AutoCalibratorError(
-            'Number of channels ({}) must be at least 2'.format(len(channels)))
+            "Number of channels ({}) must be at least 2".format(len(channels))
+        )
     if len(required_energies) < 2:
         raise AutoCalibratorError(
-            'Number of required energies ({}) must be at least 2'.format(
-                len(required_energies)))
+            "Number of required energies ({}) must be at least 2".format(
+                len(required_energies)
+            )
+        )
     if len(channels) < len(required_energies):
         raise AutoCalibratorError(
-            'Number of channels ({}) must be >= required energies ({})'.format(
-                len(channels), len(required_energies)))
+            "Number of channels ({}) must be >= required energies ({})".format(
+                len(channels), len(required_energies)
+            )
+        )
 
     channels = np.array(channels)
     snrs = np.array(snrs)
@@ -143,7 +164,7 @@ def find_best_gain(
     best_ergs = None
     while n_set >= n_req:
         if verbose:
-            print('Searching groups of {}'.format(n_set))
+            print("Searching groups of {}".format(n_set))
         # cycle through energy combinations
         for comb_erg in combinations(optional, n_set - n_req):
             comb_erg = np.array(comb_erg)
@@ -154,8 +175,7 @@ def find_best_gain(
             max_chan = (comb_erg / gain_range[0]).max()
             # cycle through channel combinations
             chan_inds = np.arange(len(channels))
-            chan_inds = chan_inds[
-                (min_chan <= channels) & (channels <= max_chan)]
+            chan_inds = chan_inds[(min_chan <= channels) & (channels <= max_chan)]
             for chan_indices in combinations(chan_inds, n_set):
                 chan_indices = np.array(chan_indices, dtype=int)
                 comb_chan = np.array(channels)[chan_indices]
@@ -175,16 +195,16 @@ def find_best_gain(
                 # calculate figure of merit
                 fom = fom_gain(comb_chan, comb_snr, comb_erg)
                 if verbose:
-                    print('v')
-                    s0 = 'Valid calibration found:\n'
-                    s0 += 'FOM: {:15.9f}'.format(fom)
-                    s0 += '  gain: {:6.3f}'.format(gain)
-                    s0 += '  ergs: {:50s}'.format(str(comb_erg))
-                    s0 += '  de: {:50s}'.format(str(de))
-                    s0 += '  chans: {:40s}'.format(str(comb_chan))
+                    print("v")
+                    s0 = "Valid calibration found:\n"
+                    s0 += "FOM: {:15.9f}".format(fom)
+                    s0 += "  gain: {:6.3f}".format(gain)
+                    s0 += "  ergs: {:50s}".format(str(comb_erg))
+                    s0 += "  de: {:50s}".format(str(de))
+                    s0 += "  chans: {:40s}".format(str(comb_chan))
                     print(s0)
                 if best_fom is None:
-                    best_fom = fom + 1.
+                    best_fom = fom + 1.0
                 if fom < best_fom:
                     best_fom = fom
                     best_gain = gain
@@ -192,23 +212,23 @@ def find_best_gain(
                     best_snrs = comb_snr
                     best_ergs = comb_erg
                     if verbose:
-                        s0 = 'Best calibration so far:\n'
-                        s0 += 'FOM: {:15.9f}'.format(best_fom)
-                        s0 += '  gain: {:6.3f}'.format(best_gain)
-                        s0 += '  ergs: {:50s}'.format(str(best_ergs))
-                        s0 += '  de: {:50s}'.format(str(de))
-                        s0 += '  chans: {:40s}'.format(str(best_chans))
+                        s0 = "Best calibration so far:\n"
+                        s0 += "FOM: {:15.9f}".format(best_fom)
+                        s0 += "  gain: {:6.3f}".format(best_gain)
+                        s0 += "  ergs: {:50s}".format(str(best_ergs))
+                        s0 += "  de: {:50s}".format(str(de))
+                        s0 += "  chans: {:40s}".format(str(best_chans))
                         print(s0)
         n_set -= 1
     if best_gain is None:
         return None
     else:
-        print('found best gain: %f keV/channel' % best_gain)
+        print("found best gain: %f keV/channel" % best_gain)
         return {
-            'gain': best_gain,
-            'channels': best_chans,
-            'snrs': best_snrs,
-            'energies': best_ergs,
+            "gain": best_gain,
+            "channels": best_chans,
+            "snrs": best_snrs,
+            "energies": best_ergs,
         }
 
 
@@ -243,59 +263,69 @@ class AutoCalibrator(object):
         """Use the peaks found by the PeakFinder."""
         if not isinstance(peakfinder, PeakFinder):
             raise AutoCalibratorError(
-                'Argument must be a PeakFinder, not {}'.format(
-                    type(peakfinder)))
+                "Argument must be a PeakFinder, not {}".format(type(peakfinder))
+            )
         self.peakfinder = peakfinder
 
     def plot(self, **kwargs):
         """Plot the peaks found and the peaks used to fit."""
         self.peakfinder.plot(peaks=True, **kwargs)
         for chan, snr in zip(self.fit_channels, self.fit_snrs):
-            plt.plot([chan] * 2, [0, snr], 'g-', lw=2)
-            plt.plot(chan, snr, 'go')
+            plt.plot([chan] * 2, [0, snr], "g-", lw=2)
+            plt.plot(chan, snr, "go")
 
-    def fit(self, required_energies, optional=(),
-            gain_range=(1e-4, 1e3), de_max=10., verbose=False):
+    def fit(
+        self,
+        required_energies,
+        optional=(),
+        gain_range=(1e-4, 1e3),
+        de_max=10.0,
+        verbose=False,
+    ):
         """Find the gain that gives the best match of peaks to energies."""
-        if len(self.peakfinder.centroids) == 1 and \
-                len(required_energies) == 1:
+        if len(self.peakfinder.centroids) == 1 and len(required_energies) == 1:
             # special case: only one line identified
             self.fit_channels = list(self.peakfinder.centroids)
             self.fit_snrs = list(self.peakfinder.snrs)
             self.fit_energies = list(required_energies)
             gain = required_energies[0] / self.peakfinder.centroids[0]
             self.gain = gain
-            self.cal = LinearEnergyCal.from_coeffs(
-                {'offset': 0, 'slope': self.gain})
+            self.cal = LinearEnergyCal.from_coeffs({"offset": 0, "slope": self.gain})
             return
         # handle the usual case: multiple lines to match
         if len(self.peakfinder.centroids) < 2:
             raise AutoCalibratorError(
-                'Need more than {} peaks to fit'.format(
-                    len(self.peakfinder.centroids)))
+                "Need more than {} peaks to fit".format(len(self.peakfinder.centroids))
+            )
         if len(required_energies) < 2:
             raise AutoCalibratorError(
-                'Need more than {} energies to fit'.format(
-                    len(required_energies)))
+                "Need more than {} energies to fit".format(len(required_energies))
+            )
         if len(self.peakfinder.centroids) < len(required_energies):
             raise AutoCalibratorError(
-                'Require {} energies but only {} peaks are available'.format(
-                    len(required_energies), len(self.peakfinder.centroids)))
+                "Require {} energies but only {} peaks are available".format(
+                    len(required_energies), len(self.peakfinder.centroids)
+                )
+            )
         fit = find_best_gain(
-            self.peakfinder.centroids, self.peakfinder.snrs,
-            required_energies, optional=optional, gain_range=gain_range,
-            de_max=de_max, verbose=verbose)
+            self.peakfinder.centroids,
+            self.peakfinder.snrs,
+            required_energies,
+            optional=optional,
+            gain_range=gain_range,
+            de_max=de_max,
+            verbose=verbose,
+        )
         if fit is None:
             self.fit_channels = []
             self.fit_snrs = []
             self.fit_energies = []
             self.gain = None
             self.cal = None
-            raise AutoCalibratorError('No valid fit was found')
+            raise AutoCalibratorError("No valid fit was found")
         else:
-            self.fit_channels = fit['channels']
-            self.fit_snrs = fit['snrs']
-            self.fit_energies = fit['energies']
-            self.gain = fit['gain']
-            self.cal = LinearEnergyCal.from_coeffs(
-                {'offset': 0, 'slope': self.gain})
+            self.fit_channels = fit["channels"]
+            self.fit_snrs = fit["snrs"]
+            self.fit_energies = fit["energies"]
+            self.gain = fit["gain"]
+            self.cal = LinearEnergyCal.from_coeffs({"offset": 0, "slope": self.gain})

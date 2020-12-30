@@ -8,13 +8,16 @@ import pytest
 # pylint: disable=no-self-use
 
 
-@pytest.mark.parametrize('arg, result', [
-    ('', None),
-    ('NaN', np.nan),
-    ('nan', np.nan),
-    ('5.0+/-1.0', uncertainties.ufloat(5., 1.)),
-    ('5.0', 5.),
-])
+@pytest.mark.parametrize(
+    "arg, result",
+    [
+        ("", None),
+        ("NaN", np.nan),
+        ("nan", np.nan),
+        ("5.0+/-1.0", uncertainties.ufloat(5.0, 1.0)),
+        ("5.0", 5.0),
+    ],
+)
 def test_convert_float_ufloat(arg, result):
     """Convert string to a float or a ufloat, including None ('') and NaN."""
     answer = wallet_cache.convert_float_ufloat(arg)
@@ -31,12 +34,15 @@ def test_convert_float_ufloat(arg, result):
             assert np.isclose(answer, result)
 
 
-@pytest.mark.parametrize('arg, result', [
-    (None, ''),
-    (np.nan, 'nan'),
-    (uncertainties.ufloat(5., 1.), '5.000000000000+/-1.000000000000'),
-    (5., '5.000000000000'),
-])
+@pytest.mark.parametrize(
+    "arg, result",
+    [
+        (None, ""),
+        (np.nan, "nan"),
+        (uncertainties.ufloat(5.0, 1.0), "5.000000000000+/-1.000000000000"),
+        (5.0, "5.000000000000"),
+    ],
+)
 def test_format_ufloat(arg, result):
     """Convert ufloat to a string, including None ('') and NaN."""
     answer = wallet_cache.format_ufloat(arg)

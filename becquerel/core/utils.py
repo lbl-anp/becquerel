@@ -6,6 +6,7 @@ import datetime
 from dateutil.parser import parse as dateutil_parse
 from uncertainties import UFloat, unumpy
 import numpy as np
+
 try:
     # Python 3.x
     from collections.abc import Iterable
@@ -22,6 +23,7 @@ if sys.version_info < (3, 2):
     class ResourceWarning(Warning):
         pass
 
+
 else:
 
     ResourceWarning = ResourceWarning
@@ -31,6 +33,7 @@ if sys.version_info < (3,):
     def isstring(s):
         """Test for strings in python2"""
         return isinstance(s, basestring)
+
 
 else:
 
@@ -67,8 +70,7 @@ def all_ufloats(x):
         if all(are_ufloats):
             return True
         elif any(are_ufloats):
-            raise UncertaintiesError(
-                'Input should be all UFloats or no UFloats')
+            raise UncertaintiesError("Input should be all UFloats or no UFloats")
         else:
             return False
 
@@ -96,15 +98,17 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
     if ufloats and x_uncs is None:
         return np.asarray(x_array)
     elif ufloats:
-        raise UncertaintiesError('Specify uncertainties with UFloats or ' +
-                                 'by separate argument, but not both')
+        raise UncertaintiesError(
+            "Specify uncertainties with UFloats or "
+            + "by separate argument, but not both"
+        )
     elif x_uncs is not None:
         return unumpy.uarray(x_array, x_uncs)
     else:
         return unumpy.uarray(x_array, default_unc_func(x_array))
 
 
-def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
+def handle_datetime(input_time, error_name="datetime arg", allow_none=False):
     """Parse an argument as a datetime, date+time string, or None.
 
     Args:
@@ -128,8 +132,7 @@ def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
     elif input_time is None and allow_none:
         return None
     else:
-        raise TypeError(
-            'Unknown type for {}: {}'.format(error_name, input_time))
+        raise TypeError("Unknown type for {}: {}".format(error_name, input_time))
 
 
 def bin_centers_from_edges(edges_kev):

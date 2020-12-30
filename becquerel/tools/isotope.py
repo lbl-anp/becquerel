@@ -38,13 +38,12 @@ def _split_element_mass(arg):
     arg = str(arg)
     element_id = None
     mass_isomer = None
-    if '-' in arg:
+    if "-" in arg:
         # parse string of the form "EE-AAA[m[M]]" or "AAA[m[M]]-EE"
         # (i.e., those with a hyphen)
-        tokens = arg.split('-')
+        tokens = arg.split("-")
         if len(tokens) != 2:
-            raise IsotopeError(
-                'Too many hyphens in isotope string: {}'.format(arg))
+            raise IsotopeError("Too many hyphens in isotope string: {}".format(arg))
         if tokens[0].isalpha() and tokens[1][0].isdigit():
             element_id = tokens[0]
             mass_isomer = tokens[1]
@@ -53,7 +52,8 @@ def _split_element_mass(arg):
             mass_isomer = tokens[0]
         else:
             raise IsotopeError(
-                'Could not find mass number for isotope: {}'.format(tokens))
+                "Could not find mass number for isotope: {}".format(tokens)
+            )
     else:
         # parse string of the form "EEAAA[m[M]]" or "AAA[m[M]]EE"
         # (i.e., those without a hyphen)
@@ -78,11 +78,10 @@ def _split_element_mass(arg):
             element_ids.append(p_element)
             mass_isomers.append(p_mass)
         if len(element_ids) == 0:
-            raise IsotopeError(
-                'Could not find element for isotope: {}'.format(arg))
+            raise IsotopeError("Could not find element for isotope: {}".format(arg))
         # if multiple element IDs were found, choose the longest
-        element_id = ''
-        mass_isomer = ''
+        element_id = ""
+        mass_isomer = ""
         for elem, mass in zip(element_ids, mass_isomers):
             if len(elem) > len(element_id):
                 element_id = elem
@@ -91,8 +90,7 @@ def _split_element_mass(arg):
     try:
         element.Element(element_id)
     except element.ElementError:
-        raise IsotopeError(
-            'Element name or symbol is invalid: {}'.format(element_id))
+        raise IsotopeError("Element name or symbol is invalid: {}".format(element_id))
     return element_id, mass_isomer
 
 
@@ -115,31 +113,29 @@ def _split_mass_isomer(arg):
 
     arg = str(arg)
     aa = 0
-    mm = ''
-    if 'm' in arg.lower():
-        tokens = arg.lower().split('m')
+    mm = ""
+    if "m" in arg.lower():
+        tokens = arg.lower().split("m")
         if len(tokens) != 2:
-            raise IsotopeError(
-                'Too many ms in mass number: {} {}'.format(arg, tokens))
+            raise IsotopeError("Too many ms in mass number: {} {}".format(arg, tokens))
         try:
             aa = int(tokens[0])
         except ValueError:
             raise IsotopeError(
-                'Mass number cannot be converted to int: {} {}'.format(
-                    tokens[0], arg))
-        mm = 'm'
+                "Mass number cannot be converted to int: {} {}".format(tokens[0], arg)
+            )
+        mm = "m"
         if len(tokens[1]) > 0:
             if not tokens[1].isdigit():
                 raise IsotopeError(
-                    'Metastable level must be a number: {} {}'.format(
-                        tokens[1], arg))
+                    "Metastable level must be a number: {} {}".format(tokens[1], arg)
+                )
             mm += tokens[1]
     else:
         try:
             aa = int(arg)
         except ValueError:
-            raise IsotopeError(
-                'Mass number cannot be converted to int: {}'.format(arg))
+            raise IsotopeError("Mass number cannot be converted to int: {}".format(arg))
     return (aa, mm)
 
 
@@ -204,11 +200,11 @@ class Isotope(element.Element):
         """
 
         self.A = 0
-        self.m = ''
+        self.m = ""
         self.M = 0
         if len(args) == 1:
             if not isinstance(args[0], str):
-                raise IsotopeError('Single argument must be a string')
+                raise IsotopeError("Single argument must be a string")
             symbol, aa, mm = parse_isotope(args[0])
             super().__init__(symbol)
             self._init_A(aa)
@@ -217,17 +213,17 @@ class Isotope(element.Element):
             try:
                 super().__init__(args[0])
             except element.ElementError:
-                raise IsotopeError('Unable to create Isotope: {}'.format(args))
+                raise IsotopeError("Unable to create Isotope: {}".format(args))
             self._init_A(args[1])
             if len(args) == 3:
                 self._init_m(args[2])
         else:
-            raise IsotopeError('One, two, or three arguments required')
+            raise IsotopeError("One, two, or three arguments required")
         self.N = self.A - self.Z
         if self.N < 0:
             raise IsotopeError(
-                'Neutron number N cannot be negative: {} {}'.format(
-                    args, self.N))
+                "Neutron number N cannot be negative: {} {}".format(args, self.N)
+            )
 
     def _init_A(self, arg):
         """Initialize with an isotope A."""
@@ -235,49 +231,52 @@ class Isotope(element.Element):
             self.A = int(arg)
         except ValueError:
             raise IsotopeError(
-                'Mass number cannot be converted to integer: {}'.format(arg))
+                "Mass number cannot be converted to integer: {}".format(arg)
+            )
         if self.A < 1:
-            raise IsotopeError(
-                'Mass number must be >= 1: {}'.format(self.A))
+            raise IsotopeError("Mass number must be >= 1: {}".format(self.A))
 
     def _init_m(self, arg):
         """Initialize with an isomer level number."""
-        if arg == '' or arg is None or arg == 0:
-            self.m = ''
+        if arg == "" or arg is None or arg == 0:
+            self.m = ""
             self.M = 0
         else:
             if isinstance(arg, int):
                 if arg == 1:
-                    self.m = 'm'
+                    self.m = "m"
                     self.M = 1
                 elif arg >= 2:
                     self.M = arg
-                    self.m = 'm{}'.format(self.M)
+                    self.m = "m{}".format(self.M)
                 else:
-                    raise IsotopeError(
-                        'Metastable level must be >= 0: {}'.format(arg))
+                    raise IsotopeError("Metastable level must be >= 0: {}".format(arg))
             elif isinstance(arg, str):
                 self.m = arg.lower()
-                if self.m[0] != 'm':
+                if self.m[0] != "m":
                     raise IsotopeError(
-                        'Metastable level must start with "m": {}'.format(
-                            self.m))
+                        'Metastable level must start with "m": {}'.format(self.m)
+                    )
                 if len(self.m) > 1:
                     if not self.m[1:].isdigit():
                         raise IsotopeError(
-                            'Metastable level must be numeric: {} {}'.format(
-                                self.m[0], self.m[1:]))
+                            "Metastable level must be numeric: {} {}".format(
+                                self.m[0], self.m[1:]
+                            )
+                        )
                     self.M = int(self.m[1:])
                 else:
                     self.M = 1
             else:
                 raise IsotopeError(
-                    'Metastable level must be integer or string: {} {}'.format(
-                        arg, type(arg)))
+                    "Metastable level must be integer or string: {} {}".format(
+                        arg, type(arg)
+                    )
+                )
 
     def __str__(self):
         """Define behavior of str() on Isotope."""
-        return '{}'.format(self)
+        return "{}".format(self)
 
     def __format__(self, formatstr):
         """Define behavior of string's format method.
@@ -292,22 +291,25 @@ class Isotope(element.Element):
 
         str0 = str(formatstr)
         if len(str0) == 0:
-            str0 = '%s-%a%m'
-        str0 = str0.replace('%s', self.symbol)
-        str0 = str0.replace('%n', self.name)
-        str0 = str0.replace('%z', '{}'.format(self.Z))
-        str0 = str0.replace('%a', '{}'.format(self.A))
-        str0 = str0.replace('%m', self.m)
+            str0 = "%s-%a%m"
+        str0 = str0.replace("%s", self.symbol)
+        str0 = str0.replace("%n", self.name)
+        str0 = str0.replace("%z", "{}".format(self.Z))
+        str0 = str0.replace("%a", "{}".format(self.A))
+        str0 = str0.replace("%m", self.m)
         return str0
 
     def __eq__(self, other):
         """Define equality of two isotopes."""
         if isinstance(other, Isotope):
             return (
-                super().__eq__(other) and
-                self.A == other.A and self.Z == other.Z and self.M == other.M)
+                super().__eq__(other)
+                and self.A == other.A
+                and self.Z == other.Z
+                and self.M == other.M
+            )
         else:
-            raise TypeError('Cannot compare to non-isotope')
+            raise TypeError("Cannot compare to non-isotope")
 
     def _wallet_card(self):
         """Retrieve the wallet card data for this isotope.
@@ -321,14 +323,14 @@ class Isotope(element.Element):
 
         if not wallet_cache.loaded:
             wallet_cache.load()
-        this_isotope = \
-            (wallet_cache.df['Z'] == self.Z) & \
-            (wallet_cache.df['A'] == self.A) & \
-            (wallet_cache.df['M'] == self.M)
+        this_isotope = (
+            (wallet_cache.df["Z"] == self.Z)
+            & (wallet_cache.df["A"] == self.A)
+            & (wallet_cache.df["M"] == self.M)
+        )
         df = wallet_cache.df[this_isotope]
         if len(df) == 0:
-            raise IsotopeError(
-                'No wallet card data found for isotope {}'.format(self))
+            raise IsotopeError("No wallet card data found for isotope {}".format(self))
         return df
 
     @property
@@ -340,7 +342,7 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        data = df['T1/2 (s)'].tolist()
+        data = df["T1/2 (s)"].tolist()
         assert len(np.unique(data)) == 1
         return data[0]
 
@@ -363,9 +365,9 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        data = df['T1/2 (txt)'].tolist()
+        data = df["T1/2 (txt)"].tolist()
         assert len(np.unique(data)) == 1
-        return 'STABLE' in data
+        return "STABLE" in data
 
     @property
     def abundance(self):
@@ -376,7 +378,7 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        data = df['Abundance (%)'].tolist()
+        data = df["Abundance (%)"].tolist()
         if not isinstance(data[0], uncertainties.core.Variable):
             if np.isnan(data[0]):
                 return None
@@ -391,7 +393,7 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        data = df['JPi'].tolist()
+        data = df["JPi"].tolist()
         assert len(np.unique(data)) == 1
         return data[0]
 
@@ -404,7 +406,7 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        data = df['Energy Level (MeV)'].tolist()
+        data = df["Energy Level (MeV)"].tolist()
         assert len(np.unique(data)) == 1
         return data[0]
 
@@ -417,7 +419,7 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        data = df['Mass Excess (MeV)'].tolist()
+        data = df["Mass Excess (MeV)"].tolist()
         if not isinstance(data[0], uncertainties.core.Variable):
             if np.isnan(data[0]):
                 return None
@@ -432,8 +434,8 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        data1 = df['Decay Mode'].tolist()
-        data2 = df['Branching (%)'].tolist()
+        data1 = df["Decay Mode"].tolist()
+        data2 = df["Branching (%)"].tolist()
         if len(data1) == 1 and np.isnan(data2[0]):
             return [], []
         return data1, data2

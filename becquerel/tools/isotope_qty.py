@@ -37,8 +37,8 @@ def handle_isotope(isotope, error_name=None):
         return Isotope(isotope)
     else:
         raise TypeError(
-            '{} needs an Isotope instance or string, not {}'.format(
-                error_name, isotope))
+            "{} needs an Isotope instance or string, not {}".format(error_name, isotope)
+        )
 
 
 class IsotopeQuantity(object):
@@ -113,7 +113,7 @@ class IsotopeQuantity(object):
           AttributeError: if isotope is missing half_life or decay_const
         """
 
-        self.isotope = handle_isotope(isotope, error_name='IsotopeQuantity')
+        self.isotope = handle_isotope(isotope, error_name="IsotopeQuantity")
 
         self.half_life = self.isotope.half_life
         self.decay_const = self.isotope.decay_const
@@ -127,7 +127,8 @@ class IsotopeQuantity(object):
         """
 
         self.ref_date = utils.handle_datetime(
-            date, error_name='IsotopeQuantity date', allow_none=True)
+            date, error_name="IsotopeQuantity date", allow_none=True
+        )
         if self.ref_date is None:
             # assume a long-lived source in the current epoch
             self.ref_date = datetime.datetime.now()
@@ -147,24 +148,24 @@ class IsotopeQuantity(object):
           IsotopeQuantityError: if no valid argument specified
         """
 
-        if 'atoms' in kwargs:
-            return self._check_positive_qty(kwargs['atoms'])
-        elif 'g' in kwargs:
-            return (self._check_positive_qty(kwargs['g']) /
-                    self.isotope.A * N_AV)
-        elif 'bq' in kwargs and not self.is_stable:
-            return (self._check_positive_qty(kwargs['bq']) /
-                    self.decay_const)
-        elif 'uci' in kwargs and not self.is_stable:
-            return (self._check_positive_qty(kwargs['uci']) *
-                    UCI_TO_BQ / self.decay_const)
-        elif 'bq' in kwargs or 'uci' in kwargs:
+        if "atoms" in kwargs:
+            return self._check_positive_qty(kwargs["atoms"])
+        elif "g" in kwargs:
+            return self._check_positive_qty(kwargs["g"]) / self.isotope.A * N_AV
+        elif "bq" in kwargs and not self.is_stable:
+            return self._check_positive_qty(kwargs["bq"]) / self.decay_const
+        elif "uci" in kwargs and not self.is_stable:
+            return (
+                self._check_positive_qty(kwargs["uci"]) * UCI_TO_BQ / self.decay_const
+            )
+        elif "bq" in kwargs or "uci" in kwargs:
             raise IsotopeQuantityError(
-                'Cannot initialize a stable IsotopeQuantity from activity')
-        elif '_init_empty' in kwargs:
+                "Cannot initialize a stable IsotopeQuantity from activity"
+            )
+        elif "_init_empty" in kwargs:
             pass
         else:
-            raise IsotopeQuantityError('Missing arg for isotope activity')
+            raise IsotopeQuantityError("Missing arg for isotope activity")
 
     def _check_positive_qty(self, val):
         """Check that the quantity value is a nonnegative float or ufloat.
@@ -173,10 +174,11 @@ class IsotopeQuantity(object):
           ValueError: if val is negative
         """
 
-        val *= 1.   # convert to float, or preserve ufloat, as appropriate
+        val *= 1.0  # convert to float, or preserve ufloat, as appropriate
         if val < 0:
             raise ValueError(
-                'Mass or activity must be a positive quantity: {}'.format(val))
+                "Mass or activity must be a positive quantity: {}".format(val)
+            )
         return val
 
     @classmethod
@@ -204,16 +206,17 @@ class IsotopeQuantity(object):
         duration = (stop_time - obj.ref_date).total_seconds()
         if duration < 0:
             raise ValueError(
-                'Start time must precede stop time: {}, {}'.format(
-                    start_time, stop_time))
+                "Start time must precede stop time: {}, {}".format(
+                    start_time, stop_time
+                )
+            )
         atoms = float(n_decays) / (1 - np.exp(-obj.decay_const * duration))
 
         obj.ref_atoms = obj._atoms_from_kwargs(atoms=atoms)
         return obj
 
     @classmethod
-    def from_comparison(cls, isotope_qty1, counts1, interval1,
-                        counts2, interval2):
+    def from_comparison(cls, isotope_qty1, counts1, interval1, counts2, interval2):
         """Calculate an IsotopeQuantity by comparison with a known sample.
 
         Assumes the samples are in identical geometry with the detector.
@@ -258,7 +261,7 @@ class IsotopeQuantity(object):
 
         t1 = utils.handle_datetime(date)
         dt = (t1 - self.ref_date).total_seconds()
-        return self.ref_atoms * 2**(-dt / self.half_life)
+        return self.ref_atoms * 2 ** (-dt / self.half_life)
 
     def bq_at(self, date):
         """Calculate the activity [Bq] at a given time.
@@ -347,8 +350,8 @@ class IsotopeQuantity(object):
         As decays_from() except for return value.
         """
 
-        t0 = utils.handle_datetime(start_time, error_name='start_time')
-        t1 = utils.handle_datetime(stop_time, error_name='stop_time')
+        t0 = utils.handle_datetime(start_time, error_name="start_time")
+        t1 = utils.handle_datetime(stop_time, error_name="stop_time")
 
         return self.decays_from(t0, t1) / (t1 - t0).total_seconds()
 
@@ -417,8 +420,7 @@ class IsotopeQuantity(object):
         """
 
         if self.is_stable:
-            raise IsotopeQuantityError(
-                'Cannot calculate time_when for stable isotope')
+            raise IsotopeQuantityError("Cannot calculate time_when for stable isotope")
 
         target = self._atoms_from_kwargs(**kwargs)
         dt = -self.half_life * np.log2(target / self.ref_atoms)
@@ -431,10 +433,11 @@ class IsotopeQuantity(object):
         """
 
         if self.isotope.is_stable:
-            s = '{} g of {}'.format(self.g_at(self.ref_date), self.isotope)
+            s = "{} g of {}".format(self.g_at(self.ref_date), self.isotope)
         else:
-            s = '{} Bq of {} (at {})'.format(
-                self.bq_at(self.ref_date), self.isotope, self.ref_date)
+            s = "{} Bq of {} (at {})".format(
+                self.bq_at(self.ref_date), self.isotope, self.ref_date
+            )
         return s
 
     def __mul__(self, other):
@@ -468,8 +471,10 @@ class IsotopeQuantity(object):
         else:
             factor = float(other)
         return IsotopeQuantity(
-            copy.deepcopy(self.isotope), date=self.ref_date,
-            atoms=self.ref_atoms * factor)
+            copy.deepcopy(self.isotope),
+            date=self.ref_date,
+            atoms=self.ref_atoms * factor,
+        )
 
     def __eq__(self, other):
         """Equality operation"""
@@ -477,8 +482,9 @@ class IsotopeQuantity(object):
         if not isinstance(other, IsotopeQuantity):
             return False
         else:
-            return (self.isotope == other.isotope and
-                    np.isclose(self.ref_atoms, other.atoms_at(self.ref_date)))
+            return self.isotope == other.isotope and np.isclose(
+                self.ref_atoms, other.atoms_at(self.ref_date)
+            )
 
 
 class NeutronIrradiationError(Exception):
@@ -520,16 +526,21 @@ class NeutronIrradiation(object):
         """
 
         self.start_time = utils.handle_datetime(
-            start_time, error_name='NeutronIrradiation start_time')
+            start_time, error_name="NeutronIrradiation start_time"
+        )
         self.stop_time = utils.handle_datetime(
-            stop_time, error_name='NeutronIrradiation stop_time')
+            stop_time, error_name="NeutronIrradiation stop_time"
+        )
         if self.stop_time < self.start_time:
-            raise ValueError('Timestamps out of order: {}, {}'.format(
-                self.start_time, self.stop_time))
+            raise ValueError(
+                "Timestamps out of order: {}, {}".format(
+                    self.start_time, self.stop_time
+                )
+            )
         self.duration = (self.stop_time - self.start_time).total_seconds()
 
         if not ((n_cm2 is None) ^ (n_cm2_s is None)):
-            raise ValueError('Must specify either n_cm2 or n_cm2_s, not both')
+            raise ValueError("Must specify either n_cm2 or n_cm2_s, not both")
         elif n_cm2 is None:
             self.n_cm2_s = n_cm2_s
             self.n_cm2 = n_cm2_s * self.duration
@@ -547,10 +558,11 @@ class NeutronIrradiation(object):
         """
 
         if self.duration == 0:
-            return '{} neutrons/cm2 at {}'.format(self.n_cm2, self.start_time)
+            return "{} neutrons/cm2 at {}".format(self.n_cm2, self.start_time)
         else:
-            return '{} n/cm2/s from {} to {}'.format(
-                self.n_cm2_s, self.start_time, self.stop_time)
+            return "{} n/cm2/s from {} to {}".format(
+                self.n_cm2_s, self.start_time, self.stop_time
+            )
 
     def activate(self, barns, initial, activated):
         """
@@ -600,58 +612,63 @@ class NeutronIrradiation(object):
             IsotopeQuantity objects
         """
 
-        if (isinstance(initial, IsotopeQuantity) and
-                isinstance(activated, IsotopeQuantity)):
+        if isinstance(initial, IsotopeQuantity) and isinstance(
+            activated, IsotopeQuantity
+        ):
             raise NeutronIrradiationError(
-                "Two IsotopeQuantity's in args, nothing left to calculate!" +
-                'Args: {}, {}'.format(initial, activated))
-        elif (isinstance(initial, IsotopeQuantity) and
-              isinstance(activated, Isotope)):
+                "Two IsotopeQuantity's in args, nothing left to calculate!"
+                + "Args: {}, {}".format(initial, activated)
+            )
+        elif isinstance(initial, IsotopeQuantity) and isinstance(activated, Isotope):
             forward = True
-        elif (isinstance(initial, Isotope) and
-              isinstance(activated, IsotopeQuantity)):
+        elif isinstance(initial, Isotope) and isinstance(activated, IsotopeQuantity):
             forward = False
         elif isinstance(initial, Isotope) and isinstance(activated, Isotope):
             raise NeutronIrradiationError(
-                'No IsotopeQuantity specified, not enough data. ' +
-                'Args: {}, {}'.format(initial, activated))
+                "No IsotopeQuantity specified, not enough data. "
+                + "Args: {}, {}".format(initial, activated)
+            )
         else:
             raise TypeError(
-                'Input args should be Isotope or IsotopeQuantity objects: ' +
-                '{}, {}'.format(initial, activated))
+                "Input args should be Isotope or IsotopeQuantity objects: "
+                + "{}, {}".format(initial, activated)
+            )
 
         if not initial.is_stable:
             raise NotImplementedError(
-                'Activation not implemented for a radioactive initial isotope')
+                "Activation not implemented for a radioactive initial isotope"
+            )
 
         cross_section = barns * 1.0e-24
 
         if forward:
             if self.duration == 0:
                 activated_bq = (
-                    self.n_cm2 * cross_section *
-                    initial.atoms_at(self.stop_time) *
-                    activated.decay_const)
+                    self.n_cm2
+                    * cross_section
+                    * initial.atoms_at(self.stop_time)
+                    * activated.decay_const
+                )
             else:
                 activated_bq = (
-                    self.n_cm2_s * cross_section *
-                    initial.atoms_at(self.stop_time) *
-                    (1 - np.exp(-activated.decay_const * self.duration))
+                    self.n_cm2_s
+                    * cross_section
+                    * initial.atoms_at(self.stop_time)
+                    * (1 - np.exp(-activated.decay_const * self.duration))
                 )
-            return IsotopeQuantity(activated,
-                                   date=self.stop_time, bq=activated_bq)
+            return IsotopeQuantity(activated, date=self.stop_time, bq=activated_bq)
         else:
             if self.duration == 0:
-                initial_atoms = (
-                    activated.bq_at(self.stop_time) /
-                    (self.n_cm2 * cross_section * activated.decay_const))
+                initial_atoms = activated.bq_at(self.stop_time) / (
+                    self.n_cm2 * cross_section * activated.decay_const
+                )
             else:
-                initial_atoms = (
-                    activated.bq_at(self.stop_time) /
-                    (self.n_cm2_s * cross_section * (1 - np.exp(
-                        -activated.decay_const * self.duration))))
-            return IsotopeQuantity(initial,
-                                   date=self.start_time, atoms=initial_atoms)
+                initial_atoms = activated.bq_at(self.stop_time) / (
+                    self.n_cm2_s
+                    * cross_section
+                    * (1 - np.exp(-activated.decay_const * self.duration))
+                )
+            return IsotopeQuantity(initial, date=self.start_time, atoms=initial_atoms)
 
 
 def decay_normalize(isotope, interval1, interval2):
@@ -675,23 +692,23 @@ def decay_normalize(isotope, interval1, interval2):
       TypeError: if timestamps are not parseable, or isotope is not an Isotope
     """
 
-    isotope = handle_isotope(isotope, error_name='decay_normalize')
+    isotope = handle_isotope(isotope, error_name="decay_normalize")
     if len(interval1) != 2:
-        raise IsotopeQuantityError(
-            'interval1 should be length 2: {}'.format(interval1))
+        raise IsotopeQuantityError("interval1 should be length 2: {}".format(interval1))
     elif len(interval2) != 2:
-        raise IsotopeQuantityError(
-            'interval2 should be length 2: {}'.format(interval2))
-    start1 = utils.handle_datetime(interval1[0], error_name='decay_normalize')
-    stop1 = utils.handle_datetime(interval1[1], error_name='decay_normalize')
-    start2 = utils.handle_datetime(interval2[0], error_name='decay_normalize')
-    stop2 = utils.handle_datetime(interval2[1], error_name='decay_normalize')
+        raise IsotopeQuantityError("interval2 should be length 2: {}".format(interval2))
+    start1 = utils.handle_datetime(interval1[0], error_name="decay_normalize")
+    stop1 = utils.handle_datetime(interval1[1], error_name="decay_normalize")
+    start2 = utils.handle_datetime(interval2[0], error_name="decay_normalize")
+    stop2 = utils.handle_datetime(interval2[1], error_name="decay_normalize")
     if stop1 < start1:
-        raise ValueError('Timestamps in interval1 out of order: {}, {}'.format(
-            start1, stop1))
+        raise ValueError(
+            "Timestamps in interval1 out of order: {}, {}".format(start1, stop1)
+        )
     elif stop2 < start2:
-        raise ValueError('Timestamps in interval2 out of order: {}, {}'.format(
-            start2, stop2))
+        raise ValueError(
+            "Timestamps in interval2 out of order: {}, {}".format(start2, stop2)
+        )
 
     # TODO base this on countrate, not counts
 
@@ -719,6 +736,8 @@ def decay_normalize_spectra(isotope, spec1, spec2):
       AttributeError: if spec1 or spec2 do not have start_time and stop_time
     """
 
-    return decay_normalize(isotope,
-                           (spec1.start_time, spec1.stop_time),
-                           (spec2.start_time, spec2.stop_time))
+    return decay_normalize(
+        isotope,
+        (spec1.start_time, spec1.stop_time),
+        (spec2.start_time, spec2.stop_time),
+    )
