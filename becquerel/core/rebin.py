@@ -164,8 +164,10 @@ def _rebin_interpolation(
       out_edges_no_rightmost: iterable of output bin edges
                               (sans the rightmost bin)
       slopes: the slopes of each histogram bin, with the lines drawn between
-        each bin edge. (len = len(in_spectrum))
-      out_spectrum: for nb.guvectorize; do not actually give this as an arg
+              each bin edge. (len = len(in_spectrum))
+      out_spectrum: for nb.guvectorize; This is the return array, do not
+                    actually give this as an arg when calling the function.
+                    Same length as out_edges_no_rightmost due to signature.
 
     Returns:
       1D numpy array of rebinned spectrum counts in each bin
@@ -239,7 +241,8 @@ def _rebin_listmode(
       in_edges: iterable of input bin edges (len = len(in_spectrum) + 1)
       out_edges_no_rightmost: iterable of output bin edges
                               (sans the rightmost bin)
-      out_spectrum: for nb.guvectorize; do not actually give this as an arg.
+      out_spectrum: for nb.guvectorize; This is the return array, do not
+                    actually give this as an arg when calling the function.
                     Same length as out_edges_no_rightmost due to signature.
 
     Returns:
