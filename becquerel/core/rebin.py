@@ -229,7 +229,7 @@ def _rebin_listmode(
     to be specified by the dimensions of the input parameters
     (i.e. m -> m-1 is not allowed).
     This works since we put all overflow values in the leftmost and rightmost
-    bins anyways
+    bins anyways.
 
     TODO Assume piecewise constant (ie steps, flat within each bin)
          distribution for in_spectrum (for now). slopes is unused.
@@ -239,7 +239,8 @@ def _rebin_listmode(
       in_edges: iterable of input bin edges (len = len(in_spectrum) + 1)
       out_edges_no_rightmost: iterable of output bin edges
                               (sans the rightmost bin)
-      out_spectrum: for nb.guvectorize; do not actually give this as an arg
+      out_spectrum: for nb.guvectorize; do not actually give this as an arg.
+                    Same length as out_edges_no_rightmost due to signature.
 
     Returns:
       1D numpy array of rebinned spectrum counts in each bin
@@ -263,8 +264,6 @@ def _rebin_listmode(
     # bin the energies (drops the energies outside of the out-binning-range)
     # N.B. use [:] to assign values to full array output with guvectorize:
     out_spectrum[:] = np.histogram(energies, bins=out_edges)[0]
-    # handling of overflows no longer needed since the first/last out_edges
-    # are now -/+ inf
 
 
 def rebin(in_spectra, in_edges, out_edges, method="interpolation",
@@ -273,12 +272,14 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     Spectra rebinning via deterministic or stochastic methods.
 
     Args:
-        in_spectrum (np.ndarray): an array of input spectrum counts
+        in_spectrum (np.ndarray): an ND array of input counts spectra
             [..., num_bins_in]
         in_edges (np.ndarray): an array of the input bin edges
-            [..., num_bins_in + 1] or [num_bins_in + 1]
+            [..., num_bins_in + 1] or [num_bins_in + 1] (... must match
+            in_spectrum in shape)
         out_edges (np.ndarray): an array of the output bin edges
-            [..., num_bins_out + 1] or [num_bins_out + 1]
+            [..., num_bins_out + 1] or [num_bins_out + 1] (... must match
+            in_spectrum in shape)
         method (str): rebinning method
             "interpolation"
                 Deterministic interpolation
@@ -301,8 +302,11 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
         The rebinned spectrum/a
     """
     method = method.lower()
-    if not hasattr(in_spectra, "shape"):
-        in_spectra = np.asarray(in_spectra)
+
+    # Convert inputs to numpy types
+    in_edges = np.asarray(in_edges)
+    out_edges = np.asarray(out_edges)
+    in_spectra = np.asarray(in_spectra)
     # Cast data types and check listmode input
     if method == "listmode":
         if (in_spectra < 0).any():
@@ -313,26 +317,18 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
                              'one with listmode method')
         if np.issubdtype(in_spectra.dtype.type, np.floating):
             # np.rint is a ufunc: allows using this with tools such as xarray
-            in_spectra_rint = np.rint(in_spectra)
-            # TEMP disable this test, always raise warning for now because
-            # isclose/allclose are not ufuncs, so no easy way to implement now
-            # if np.allclose(in_spectra, in_spectra_rint):
-            #     # Don't warn in the case of floats which round to integers
-            #     pass
-            # else:
-            #     warnings.warn(
-            #         'Argument in_spectra contains float value(s) which ' +
-            #         'will have decimal precision loss when converting to ' +
-            #         'integers for rebin method listmode.',
-            #         RebinWarning)
-            warnings.warn(
-                'Argument in_spectra contains float value(s) which ' +
-                'might have decimal precision loss when converting to ' +
-                'integers for rebin method listmode.',
-                RebinWarning)
-            in_spectra = in_spectra_rint.astype(int)
-    in_edges = np.asarray(in_edges)
-    out_edges = np.asarray(out_edges)
+            in_spectra_rint = np.rint(in_spectra).astype(int)
+            if np.allclose(in_spectra, in_spectra_rint):
+                # Don't warn in the case of floats which round to integers
+                pass
+            else:
+                warnings.warn(
+                    'Argument in_spectra contains float value(s) which ' +
+                    'will have decimal precision loss when converting to ' +
+                    'integers for rebin method listmode.',
+                    RebinWarning)
+            in_spectra = in_spectra_rint
+
     if slopes is not None:
         slopes = np.asarray(slopes)
         # if slope is wrong dimension error will be raised in guvectorize
