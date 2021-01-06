@@ -170,7 +170,7 @@ class IsotopeQuantity(object):
         # rotates the order of the list so that the provided kwarg is at [0]
         order = ["atoms", "bq", "uci", "g"]
         if next(iter(kwargs)) not in order:
-            raise IsotopeQuantityError("Unknow isotope quantity.")
+            raise IsotopeQuantityError("Unknown isotope quantity.")
         while order[0] not in kwargs:
             order.append(order.pop(0))
         first = order.pop(0)
