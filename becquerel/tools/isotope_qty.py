@@ -264,7 +264,7 @@ class IsotopeQuantity(object):
     # ----------------------------
 
     def quantity_at(self, quantity, date):
-        """Calculate the number of atoms at a given time.
+        """Return a quantity at a given time.
 
         Args:
           date: the date to calculate for
