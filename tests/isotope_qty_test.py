@@ -107,7 +107,10 @@ def test_isotopequantity_ref_atoms_rad(radioisotope, iq_kwargs):
         assert iq.ref_atoms == iq_kwargs['bq'] / radioisotope.decay_const
     else:
         assert iq.ref_atoms == (
-            iq_kwargs['uci'] * UCI_TO_BQ / radioisotope.decay_const)
+            iq_kwargs['uci'] * UCI_TO_BQ / radioisotope.decay_const /
+            N_AV * radioisotope.A / radioisotope.A * N_AV)
+            # Note the last part cancels, but is necessary to get equality with
+            # floating points
 
 
 def test_isotopequantity_ref_atoms_stable(stable_isotope):
@@ -295,12 +298,12 @@ def test_isotopequantity_mul_div(iq, f):
     iq2 = iq * f
     assert iq2.isotope == iq.isotope
     assert iq2.ref_date == iq.ref_date
-    assert iq2.ref_atoms == iq.ref_atoms * f
+    assert iq2._ref_quantities["uci"] == iq._ref_quantities["uci"] * f
 
     iq3 = iq / f
     assert iq3.isotope == iq.isotope
     assert iq3.ref_date == iq.ref_date
-    assert iq3.ref_atoms == iq.ref_atoms / f
+    assert iq3._ref_quantities["uci"] == iq._ref_quantities["uci"] / f
 
 
 def test_isotopequantity_from_decays(iq):

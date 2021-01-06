@@ -6,6 +6,7 @@ import copy
 import numpy as np
 from .isotope import Isotope
 from ..core import utils
+from collections import OrderedDict
 
 UCI_TO_BQ = 3.7e4
 N_AV = 6.022141e23
@@ -98,7 +99,7 @@ class IsotopeQuantity(object):
 
         self._init_isotope(isotope, stability)
         self._init_date(date)
-        self.ref_atoms = self._atoms_from_kwargs(**kwargs)
+        self._ref_quantities = self._quantities_from_kwargs(**kwargs)
 
     def _init_isotope(self, isotope, stability):
         """Initialize the isotope.
@@ -132,8 +133,9 @@ class IsotopeQuantity(object):
             # assume a long-lived source in the current epoch
             self.ref_date = datetime.datetime.now()
 
-    def _atoms_from_kwargs(self, **kwargs):
-        """Parse kwargs and return a quantity in atoms.
+    def _quantities_from_kwargs(self, **kwargs):
+        """Parse kwargs and return a quantity as a OrderedDictionary. The first
+        element in the dictionary is the provided quantity.
 
         Args (specify one):
           atoms: the number of atoms
@@ -147,24 +149,35 @@ class IsotopeQuantity(object):
           IsotopeQuantityError: if no valid argument specified
         """
 
-        if 'atoms' in kwargs:
-            return self._check_positive_qty(kwargs['atoms'])
-        elif 'g' in kwargs:
-            return (self._check_positive_qty(kwargs['g']) /
-                    self.isotope.A * N_AV)
-        elif 'bq' in kwargs and not self.is_stable:
-            return (self._check_positive_qty(kwargs['bq']) /
-                    self.decay_const)
-        elif 'uci' in kwargs and not self.is_stable:
-            return (self._check_positive_qty(kwargs['uci']) *
-                    UCI_TO_BQ / self.decay_const)
-        elif 'bq' in kwargs or 'uci' in kwargs:
+        assert len(kwargs) == 1
+        ref_quantities = OrderedDict()
+        if '_init_empty' in kwargs:
+            return ref_quantities
+        if ('bq' in kwargs or 'uci' in kwargs) and self.is_stable:
             raise IsotopeQuantityError(
                 'Cannot initialize a stable IsotopeQuantity from activity')
-        elif '_init_empty' in kwargs:
-            pass
-        else:
-            raise IsotopeQuantityError('Missing arg for isotope activity')
+
+        # dictionary with functions that define how to calculate all quantities
+        # in a circular manner
+        conversions = dict(
+            atoms=lambda : ref_quantities["g"] / self.isotope.A * N_AV,
+            bq=lambda : ref_quantities["atoms"] * self.decay_const,
+            uci=lambda : ref_quantities["bq"] / UCI_TO_BQ,
+            g=lambda : ref_quantities["uci"] * UCI_TO_BQ /
+                       self.decay_const / N_AV * self.isotope.A
+        )
+
+        # rotates the order of the list so that the provided kwarg is at [0]
+        order = ["atoms", "bq", "uci", "g"]
+        if next(iter(kwargs)) not in order:
+            raise IsotopeQuantityError("Unknow isotope quantity.")
+        while order[0] not in kwargs:
+            order.append(order.pop(0))
+        first = order.pop(0)
+        ref_quantities[first] = self._check_positive_qty(kwargs[first])
+        for i in order:
+            ref_quantities[i] = conversions[i]()
+        return ref_quantities
 
     def _check_positive_qty(self, val):
         """Check that the quantity value is a nonnegative float or ufloat.
@@ -178,6 +191,13 @@ class IsotopeQuantity(object):
             raise ValueError(
                 'Mass or activity must be a positive quantity: {}'.format(val))
         return val
+
+    @property
+    def ref_atoms(self):
+        """
+        Access the reference atoms directly (for backwards compatibility)
+        """
+        return self._ref_quantities["atoms"]
 
     @classmethod
     def from_decays(cls, isotope, n_decays, start_time, stop_time):
@@ -208,7 +228,7 @@ class IsotopeQuantity(object):
                     start_time, stop_time))
         atoms = float(n_decays) / (1 - np.exp(-obj.decay_const * duration))
 
-        obj.ref_atoms = obj._atoms_from_kwargs(atoms=atoms)
+        obj._ref_quantities = obj._quantities_from_kwargs(atoms=atoms)
         return obj
 
     @classmethod
@@ -243,7 +263,7 @@ class IsotopeQuantity(object):
     #   *_at()
     # ----------------------------
 
-    def atoms_at(self, date):
+    def quantity_at(self, quantity, date):
         """Calculate the number of atoms at a given time.
 
         Args:
@@ -258,7 +278,23 @@ class IsotopeQuantity(object):
 
         t1 = utils.handle_datetime(date)
         dt = (t1 - self.ref_date).total_seconds()
-        return self.ref_atoms * 2**(-dt / self.half_life)
+        return self._ref_quantities[quantity] * 2**(-dt / self.half_life)
+
+
+    def atoms_at(self, date):
+        """Calculate the number of atoms at a given time.
+
+        Args:
+          date: the date to calculate for
+
+        Returns:
+          a float of the number of atoms at date
+
+        Raises:
+          TypeError: if date is not recognized
+        """
+
+        return self.quantity_at("atoms", date)
 
     def bq_at(self, date):
         """Calculate the activity [Bq] at a given time.
@@ -266,7 +302,7 @@ class IsotopeQuantity(object):
         As atoms_at() except for return value.
         """
 
-        return self.atoms_at(date) * self.decay_const
+        return self.quantity_at("bq", date)
 
     def uci_at(self, date):
         """Calculate the activity [uCi] at a given time.
@@ -274,7 +310,7 @@ class IsotopeQuantity(object):
         As atoms_at() except for return value.
         """
 
-        return self.bq_at(date) / UCI_TO_BQ
+        return self.quantity_at("uci", date)
 
     def g_at(self, date):
         """Calculate the mass [g] at a given time.
@@ -282,7 +318,7 @@ class IsotopeQuantity(object):
         As atoms_at() except for return value.
         """
 
-        return self.atoms_at(date) / N_AV * self.isotope.A
+        return self.quantity_at("g", date)
 
     # ----------------------------
     #   *_now()
@@ -295,7 +331,7 @@ class IsotopeQuantity(object):
           a float of the number of atoms at datetime.datetime.now()
         """
 
-        return self.atoms_at(datetime.datetime.now())
+        return self.quantity_at("atoms", datetime.datetime.now())
 
     def bq_now(self):
         """Calculate the activity [Bq] now.
@@ -303,7 +339,7 @@ class IsotopeQuantity(object):
         As atoms_now() except for return value.
         """
 
-        return self.bq_at(datetime.datetime.now())
+        return self.quantity_at("bq", datetime.datetime.now())
 
     def uci_now(self):
         """Calculate the activity [uCi] now.
@@ -311,7 +347,7 @@ class IsotopeQuantity(object):
         As atoms_now() except for return value.
         """
 
-        return self.uci_at(datetime.datetime.now())
+        return self.quantity_at("uci", datetime.datetime.now())
 
     def g_now(self):
         """Calculate the mass [g] now.
@@ -319,7 +355,7 @@ class IsotopeQuantity(object):
         As atoms_now() except for return value.
         """
 
-        return self.g_at(datetime.datetime.now())
+        return self.quantity_at("g", datetime.datetime.now())
 
     # ----------------------------
     #   *_from()
@@ -420,8 +456,10 @@ class IsotopeQuantity(object):
             raise IsotopeQuantityError(
                 'Cannot calculate time_when for stable isotope')
 
-        target = self._atoms_from_kwargs(**kwargs)
-        dt = -self.half_life * np.log2(target / self.ref_atoms)
+        assert len(kwargs) == 1
+        key = next(iter(kwargs))
+        target = kwargs[key]
+        dt = -self.half_life * np.log2(target / self._ref_quantities[key])
         return self.ref_date + datetime.timedelta(seconds=dt)
 
     def __str__(self):
@@ -467,9 +505,11 @@ class IsotopeQuantity(object):
             factor = 1 / float(other)
         else:
             factor = float(other)
+        key = next(iter(self._ref_quantities))
         return IsotopeQuantity(
-            copy.deepcopy(self.isotope), date=self.ref_date,
-            atoms=self.ref_atoms * factor)
+            copy.deepcopy(self.isotope),
+            **{"date": self.ref_date, key: self._ref_quantities[key] * factor}
+        )
 
     def __eq__(self, other):
         """Equality operation"""
@@ -477,8 +517,10 @@ class IsotopeQuantity(object):
         if not isinstance(other, IsotopeQuantity):
             return False
         else:
+            # TODO: Do we need to compare all quantities?
             return (self.isotope == other.isotope and
-                    np.isclose(self.ref_atoms, other.atoms_at(self.ref_date)))
+                    np.isclose(self._ref_quantities["atoms"],
+                               other.atoms_at(self.ref_date)))
 
 
 class NeutronIrradiationError(Exception):
