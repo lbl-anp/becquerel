@@ -830,7 +830,7 @@ class Fitter(object):
         fp = FontProperties(family='monospace', size=8)
         # Remove first 2 lines of fit report (long model description)
         s = '\n'.join(self.result.fit_report().split('\n')[2:])
-        # Add some more details
+        # Add some more parameter details
         s += '\n'
         param_df = self.param_dataframe(sort_by_model=True)
         for model_name, sdf in param_df.groupby(level='model'):
@@ -840,6 +840,10 @@ class Fitter(object):
                 e = param_data['unc']
                 s += '    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n'.format(
                     param_name, v, e, np.abs(e / v))
+        # Add info about the ROI and units
+        s += 'ROI: [{0:.3f}, {1:.3f}]\n'.format(*self.roi)
+        s += 'X units: {:s}\n'.format(self.xmode if self.xmode else 'None')
+        s += 'Y units: {:s}\n'.format(self.ymode if self.ymode else 'None')
         # Add to empty axis
         txt_ax.text(x=0.01, y=0.99, s=s, fontproperties=fp,
                     ha='left', va='top', transform=txt_ax.transAxes,
