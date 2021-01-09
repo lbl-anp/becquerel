@@ -1153,7 +1153,23 @@ class Spectrum(object):
         # TODO: raw here too?
 
     def parse_xmode(self, xmode):
-        # TODO: docs
+        """Parse the x-axis mode to get the associated data and plot label.
+
+        Parameters
+        ----------
+        xmode : {'energy', 'channel'}
+            Mode (effectively units) of the x-axis
+
+        Returns
+        -------
+        xedges, xlabel
+            X-axis bin edges and a suitable label for plotting
+
+        Raises
+        ------
+        ValueError
+            If the xmode parameter is unsupported
+        """
         if xmode == 'energy':
             xedges = self.bin_edges_kev
             xlabel = 'Energy [keV]'
@@ -1165,7 +1181,23 @@ class Spectrum(object):
         return xedges, xlabel
 
     def parse_ymode(self, ymode):
-        # TODO: docs
+        """Parse the y-axis mode to get the associated data and plot label.
+
+        Parameters
+        ----------
+        ymode : {'counts', 'cps', 'cpskev'}
+            Mode (effectively units) of the y-axis
+
+        Returns
+        -------
+        ydata, yuncs, ylabel
+            Y-axis data, uncertainties, and a suitable label for plotting
+
+        Raises
+        ------
+        ValueError
+            If the ymode parameter is unsupported
+        """
         if ymode == 'counts':
             ydata = self.counts_vals
             yuncs = self.counts_uncs
