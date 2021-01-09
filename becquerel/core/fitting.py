@@ -446,6 +446,18 @@ class Fitter(object):
             self.guess_param_defaults(update=True)
 
     def set_roi(self, low, high, update_defaults=True):
+        """Set the region of interest (ROI) of x-values for the fit.
+
+        Parameters
+        ----------
+        low : float
+            Lower x-value of the ROI
+        high : float
+            Upper x-value of the ROI
+        update_defaults : bool, optional
+            If True, recompute default params based on new ROI.
+        """
+
         self._roi = (float(low), float(high))
         self._roi_msk = ((self.x >= self.roi[0]) &
                          (self.x <= self.roi[1]))
