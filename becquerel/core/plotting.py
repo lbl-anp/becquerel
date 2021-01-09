@@ -120,6 +120,7 @@ class SpectrumPlotter(object):
           mode: energy (or kev), channel (or channels, chn, chns)
         """
 
+        # First, set the _xmode
         if mode is None:
             if self.spec.is_calibrated:
                 self._xmode = 'energy'
@@ -136,14 +137,13 @@ class SpectrumPlotter(object):
             else:
                 raise PlottingError('Unknown x data mode: {}'.format(mode))
 
-        if self._xmode == 'energy':
-            self._xedges = self.spec.bin_edges_kev
-            if self._xlabel == 'Channel' or self._xlabel is None:
-                self._xlabel = 'Energy [keV]'
-        elif self._xmode == 'channel':
-            self._xedges = self.spec.bin_edges_raw
-            if self._xlabel == 'Energy [keV]' or self._xlabel is None:
-                self._xlabel = 'Channel'
+        # Then, set the _xedges and _xlabel based on the _xmode
+        xedges, xlabel = self.spec.parse_xmode(self._xmode)
+        self._xedges = xedges
+        possible_labels = ['Energy [keV]', 'Channel']
+        if self._xlabel in possible_labels or self._xlabel is None:
+            # Only reset _xlabel if it's an old result from parse_xmode or None
+            self._xlabel = xlabel
 
 
     @property
@@ -165,6 +165,7 @@ class SpectrumPlotter(object):
           mode: counts, cps, cpskev
         """
 
+        # First, set the _ymode
         if mode is None:
             if self.spec._counts is not None:
                 self._ymode = 'counts'
@@ -181,18 +182,13 @@ class SpectrumPlotter(object):
         else:
             raise PlottingError('Unknown y data mode: {}'.format(mode))
 
-        if self._ymode == 'counts':
-            self._ydata = self.spec.counts_vals
-            if self._ylabel in ['Countrate [1/s]', 'Countrate [1/s/keV]'] or self._ylabel is None:
-                self._ylabel = 'Counts'
-        elif self._ymode == 'cps':
-            self._ydata = self.spec.cps_vals
-            if self._ylabel in ['Counts', 'Countrate [1/s/keV]'] or self._ylabel is None:
-                self._ylabel = 'Countrate [1/s]'
-        elif self._ymode == 'cpskev':
-            self._ydata = self.spec.cpskev_vals
-            if self._ylabel in ['Counts', 'Countrate [1/s]'] or self._ylabel is None:
-                self._ylabel = 'Countrate [1/s/keV]'
+        # Then, set the _ydata and _ylabel based on the _ymode
+        ydata, _, ylabel = self.spec.parse_ymode(self._ymode)
+        self._ydata = ydata
+        possible_labels = ['Counts', 'Countrate [1/s]', 'Countrate [1/s/keV]']
+        if self._ylabel in possible_labels or self._ylabel is None:
+            # Only reset _ylabel if it's an old result from parse_ymode or None
+            self._ylabel = ylabel
 
 
     @property
@@ -258,6 +254,7 @@ class SpectrumPlotter(object):
     def yerror(self):
         """
         Returns array of statistical errors for current mode
+        FIXME: now redundant?
         """
 
         if self._ymode == 'counts':

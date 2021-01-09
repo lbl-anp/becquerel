@@ -1152,6 +1152,32 @@ class Spectrum(object):
                           zero_pad_warnings=zero_pad_warnings, **kwargs)
         # TODO: raw here too?
 
+    def parse_xmode(self, xmode):
+        # TODO: docs
+        if xmode == 'energy':
+            xedges = self.bin_edges_kev
+            xlabel = 'Energy [keV]'
+        elif xmode == 'channel':
+            xedges = self.bin_edges_raw
+            xlabel = 'Channel'
+        return xedges, xlabel
+
+    def parse_ymode(self, ymode):
+        # TODO: docs
+        if ymode == 'counts':
+            ydata = self.counts_vals
+            yuncs = self.counts_uncs
+            ylabel = 'Counts'
+        elif ymode == 'cps':
+            ydata = self.cps_vals
+            yuncs = self.cps_uncs
+            ylabel = 'Countrate [1/s]'
+        elif ymode == 'cpskev':
+            ydata = self.cpskev_vals
+            yuncs = self.cpskev_uncs
+            ylabel = 'Countrate [1/s/keV]'
+        return ydata, yuncs, ylabel
+
     def plot(self, *fmt, **kwargs):
         """Plot a spectrum with matplotlib's plot command.
 

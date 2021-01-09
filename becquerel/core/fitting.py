@@ -8,7 +8,7 @@ from lmfit.model import Model
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-from .utils import isstring
+from .utils import isstring, bin_centers_from_edges
 
 FWHM_SIG_RATIO = np.sqrt(8*np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2) #1.414213562
@@ -340,9 +340,21 @@ class Fitter(object):
             '    y_unc: {}\n'.format(self.y_unc) +
             '       dx: {}\n'.format(self.dx) +
             '      roi: {}'.format(self.roi)
-        )
+        )  # TODO: xmode, ymode
 
     __repr__ = __str__
+
+    @classmethod
+    def from_spectrum(cls, model, spec, xmode, ymode, roi=None):
+        # TODO: docs
+        xedges, xlabel = spec.parse_xmode(xmode)
+        ydata, yuncs, ylabel = spec.parse_ymode(ymode)
+
+        xcenters = bin_centers_from_edges(xedges)
+        fitter = cls(model, x=xcenters, y=ydata, y_unc=yuncs, roi=roi)
+        fitter._xmode = xmode  # TODO: properties
+        fitter._ymode = ymode
+        return fitter
 
     @property
     def name(self):
