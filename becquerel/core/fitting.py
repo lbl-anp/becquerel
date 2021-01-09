@@ -321,6 +321,8 @@ class Fitter(object):
         self._y_unc = None
         self._roi = None
         self._roi_msk = None
+        self._xmode = None
+        self._ymode = None
         self.result = None
         self.dx = None
         # Model and parameters
@@ -338,21 +340,42 @@ class Fitter(object):
             '        x: {}\n'.format(self.x) +
             '        y: {}\n'.format(self.y) +
             '    y_unc: {}\n'.format(self.y_unc) +
+            '    xmode: {}\n'.format(self.xmode) +
+            '    ymode: {}\n'.format(self.ymode) +
             '       dx: {}\n'.format(self.dx) +
             '      roi: {}'.format(self.roi)
-        )  # TODO: xmode, ymode
+        )
 
     __repr__ = __str__
 
     @classmethod
     def from_spectrum(cls, model, spec, xmode, ymode, roi=None):
-        # TODO: docs
+        """Create a Fitter based on a Spectrum object.
+
+        Parameters
+        ----------
+        model : Model or list of str
+            Model object or list of model names with which to fit the Spectrum
+        spec : Spectrum object
+            Spectrum to fit with model
+        xmode : {'energy', 'channel'}
+            Mode (effectively units) of the x-axis
+        ymode : {'counts', 'cps', 'cpskev'}
+            Mode (effectively units) of the y-axis
+        roi : list or tuple of length 2
+            Min and max x-values between which to compute the fit
+
+        Returns
+        -------
+        Fitter
+        """
+
         xedges, xlabel = spec.parse_xmode(xmode)
         ydata, yuncs, ylabel = spec.parse_ymode(ymode)
 
         xcenters = bin_centers_from_edges(xedges)
         fitter = cls(model, x=xcenters, y=ydata, y_unc=yuncs, roi=roi)
-        fitter._xmode = xmode  # TODO: properties
+        fitter._xmode = xmode
         fitter._ymode = ymode
         return fitter
 
@@ -428,6 +451,14 @@ class Fitter(object):
             return np.ones_like(self.x, dtype=bool)
         else:
             return self._roi_msk
+
+    @property
+    def xmode(self):
+        return self._xmode
+
+    @property
+    def ymode(self):
+        return self._ymode
 
     @property
     def param_names(self):
@@ -667,7 +698,7 @@ class Fitter(object):
                 'rel' : (data - fit) / |fit|
                 'sigma' : (data - fit) / (data_uncertainty)
         **kwargs
-            Additional kwargs. TODO: currently unused.
+            Additional kwargs. Currently unused.
 
         Returns
         -------

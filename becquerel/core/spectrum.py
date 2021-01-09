@@ -1160,6 +1160,8 @@ class Spectrum(object):
         elif xmode == 'channel':
             xedges = self.bin_edges_raw
             xlabel = 'Channel'
+        else:
+            raise ValueError('Unsupported xmode: {0:s}'.format(xmode))
         return xedges, xlabel
 
     def parse_ymode(self, ymode):
@@ -1176,6 +1178,8 @@ class Spectrum(object):
             ydata = self.cpskev_vals
             yuncs = self.cpskev_uncs
             ylabel = 'Countrate [1/s/keV]'
+        else:
+            raise ValueError('Unsupported ymode: {0:s}'.format(ymode))
         return ydata, yuncs, ylabel
 
     def plot(self, *fmt, **kwargs):
