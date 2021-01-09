@@ -622,6 +622,35 @@ class Fitter(object):
 
     def custom_plot(self, title=None, savefname=None, title_fontsize=24,
                     title_fontweight='bold', residuals='abs', **kwargs):
+        """Three-panel figure showing fit results.
+
+        Top-left panel shows the data and the fit. Bottom-left shows the fit
+        residuals. Right prints fit statistics and correlations.
+
+        Parameters
+        ----------
+        title : str, optional
+            Title of the figure (default: no title)
+        savefname : str, optional
+            Filename to save the figure as (default: not saved)
+        title_fontsize : int, optional
+            Title font size (default: 24)
+        title_fontweight : str, optional
+            Title font weight (default: 'bold')
+        residuals : {'abs', 'rel', 'sigma'}, optional
+            Residual type to calculate (default: 'abs')
+                'abs' : data - fit
+                'rel' : (data - fit) / |fit|
+                'sigma' : (data - fit) / (data_uncertainty)
+        **kwargs
+            Additional kwargs. TODO: currently unused.
+
+        Returns
+        -------
+        matplotlib figure
+            Returned only if savefname is None
+        """
+
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
         dx, dx_roi = self.dx, self.dx_roi
