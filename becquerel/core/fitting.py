@@ -770,8 +770,7 @@ class Fitter(object):
         ypad = (ymax - ymin) * 0.05
         fit_ax.set_xlim([self.x_roi[0] - xpad, self.x_roi[-1] + xpad])
         fit_ax.set_ylim([ymin - ypad, ymax + ypad])
-        if hasattr(self, '_ymode'):
-            fit_ax.set_ylabel(self._ymode)
+        fit_ax.set_ylabel(self.ymode)
 
         # ---------
         # Residuals
@@ -802,8 +801,7 @@ class Fitter(object):
         res_ax.errorbar(x=self.x_roi, y=y_plot, yerr=yerr_plot, **res_kwargs)
         res_ax.axhline(0.0, linestyle='dashed', c='k', linewidth=1.0)
         res_ax.set_ylabel(ylabel)
-        if hasattr(self, '_xmode'):
-            res_ax.set_xlabel(self._xmode)
+        res_ax.set_xlabel(self.xmode)
 
         # -------------------
         # Fit report (txt_ax)
