@@ -734,12 +734,13 @@ class Fitter(object):
                            alpha=0.2, label=label)
         # Misc
         fit_ax.legend(loc='upper right')
-        # TODO: add ylabel based on units of y
         # Set viewing window to only include the roi (not entire spectrum)
         xpad = (self.x_roi[-1] - self.x_roi[0]) * 0.05
         ypad = (ymax - ymin) * 0.05
         fit_ax.set_xlim([self.x_roi[0] - xpad, self.x_roi[-1] + xpad])
         fit_ax.set_ylim([ymin - ypad, ymax + ypad])
+        if hasattr(self, '_ymode'):
+            fit_ax.set_ylabel(self._ymode)
 
         # ---------
         # Residuals
@@ -768,9 +769,10 @@ class Fitter(object):
                 'Unknown residuals option: {0:s}'.format(residuals)
             )
         res_ax.errorbar(x=self.x_roi, y=y_plot, yerr=yerr_plot, **res_kwargs)
-        res_ax.set_ylabel(ylabel)
         res_ax.axhline(0.0, linestyle='dashed', c='k', linewidth=1.0)
-        # TODO: add xlabel based on units of x
+        res_ax.set_ylabel(ylabel)
+        if hasattr(self, '_xmode'):
+            res_ax.set_xlabel(self._xmode)
 
         # -------------------
         # Fit report (txt_ax)
