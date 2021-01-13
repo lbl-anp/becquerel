@@ -517,11 +517,12 @@ class IsotopeQuantity(object):
         if not isinstance(other, IsotopeQuantity):
             return False
         else:
-            # TODO: Do we need to compare all quantities?
+            # This supports uncertanties too
+            a = self._ref_quantities["atoms"]
+            b = other.atoms_at(self.ref_date)
             return (self.isotope == other.isotope and
-                    np.isclose(self._ref_quantities["atoms"],
-                               other.atoms_at(self.ref_date)))
-
+                    abs(a - b) <= 1e-9 * max(abs(a), abs(b))
+                   )
 
 class NeutronIrradiationError(Exception):
     """Exception from NeutronIrradiation class."""
