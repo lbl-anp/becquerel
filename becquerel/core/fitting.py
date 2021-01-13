@@ -131,7 +131,6 @@ class LineModel(Model):
         super(LineModel, self).__init__(line, *args, **kwargs)
 
     def guess(self, y, x=None, dx=None, num=2):
-        _, b = _xy_left(y, x=x, num=num)
         if dx is None:
             dx = np.ones_like(x)
         m = (y[-1]/dx[-1] - y[0]/dx[0])/(x[-1] - x[0])
