@@ -592,17 +592,22 @@ class Fitter(object):
         if self.dx is not None:
             y_roi_norm = self.y_roi / self.dx_roi
         if backend.lower().strip() == 'lmfit':
+            # Perform the fit, weighted by 1/uncertainties.
             weights = self.y_unc_roi ** -1.0
             self.result = self.model.fit(
-                y_roi_norm, self.params, x=self.x_roi, weights=weights)
+                y_roi_norm, self.params, x=self.x_roi, weights=weights
+            )
         elif backend.lower().strip() == 'lmfit-pml':
             self._set_likelihood_residual()
+            # Perform the fit. PML automatically applies 1/sqrt(y) weights, so
+            # additional weights here just convert back to counts.
             self.result = self.model.fit(
                 self.y_roi, self.params, #self.result.params,
                 x=self.x_roi, weights=self.dx_roi,
                 fit_kws={'reduce_fcn': lambda r: np.sum(r)},
-                method='Nelder-Mead', calc_covar=False)  # no, bounds, default would be L-BFGS-B'
-                # TODO: Calculate errors breaks minimization right now
+                method='Nelder-Mead', calc_covar=False
+            )  # no, bounds, default would be L-BFGS-B'
+            # TODO: Calculate errors breaks minimization right now
         else:
             raise FittingError('Unknown fitting backend: {}'.format(backend))
 
