@@ -541,6 +541,21 @@ class Fitter(object):
         return defaults
 
     def fit(self, backend='lmfit'):
+        """Perform the weighted fit to data.
+
+        Parameters
+        ----------
+        backend : {'lmfit', 'lmfit-pml'}
+            Backend fitting module to use.
+
+        Raises
+        -------
+        FittingError
+            If `backend` is not supported.
+        AssertionError
+            If self.y is None.
+        """
+
         assert self.y is not None, \
             'No data initialized, did you call set_data?'
         self.result = None
