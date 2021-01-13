@@ -66,12 +66,44 @@ def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
 
 # Helper functions for guessing
 def _xy_right(y, x=None, num=4):
+    """Compute mean x and y in the last `num` points of a dataset (x, y).
+
+    Parameters
+    ----------
+    y : array-like
+        Y-data
+    x : array-like, optional
+        X-data. If not specified, return len(y)/2.
+    num : int, optional
+        Number of points to include in the averaging; default 4.
+
+    Returns
+    -------
+    (float, float)
+        Tuple of (xmean, ymean).
+    """
     if x is not None:
         return np.mean(x[-num:]), np.mean(y[-num:])
     return len(y)*0.5, np.mean(y[-num:])
 
 
 def _xy_left(y, x=None, num=4):
+    """Compute mean x and y in the first `num` points of a dataset (x, y).
+
+    Parameters
+    ----------
+    y : array-like
+        Y-data
+    x : array-like, optional
+        X-data. If not specified, return len(y)/2.
+    num : int, optional
+        Number of points to include in the averaging; default 4.
+
+    Returns
+    -------
+    (float, float)
+        Tuple of (xmean, ymean).
+    """
     if x is not None:
         return np.mean(x[:num]), np.mean(y[:num])
     return len(y)*0.5, np.mean(y[:num])
@@ -549,7 +581,7 @@ class Fitter(object):
             Backend fitting module to use.
 
         Raises
-        -------
+        ------
         FittingError
             If `backend` is not supported.
         AssertionError
