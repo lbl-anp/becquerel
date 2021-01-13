@@ -100,6 +100,14 @@ def test_isotopequantity_init_stable(stable_isotope, iq_date, iq_kwargs):
     assert iq.decay_const == stable_isotope.decay_const
 
 
+def test_isotopequantity_quantity_at(radioisotope, iq_kwargs):
+    """Test IsotopeQuantity.quantity_at for a radioactive isotope"""
+
+    iq = IsotopeQuantity(radioisotope, **iq_kwargs)
+    key = next(iter(iq_kwargs))
+    assert iq_kwargs[key] == iq.quantity_at(key, iq.ref_date)
+
+
 def test_isotopequantity_ref_atoms_rad(radioisotope, iq_kwargs):
     """Test IsotopeQuantity.ref_atoms for a radioactive isotope"""
 
