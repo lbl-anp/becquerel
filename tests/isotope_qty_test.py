@@ -16,6 +16,11 @@ import becquerel as bq
 import pytest
 
 
+def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+    """function to work with uncertainties too."""
+    return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+
 # ----------------------------------------------------
 #               IsotopeQuantity class
 # ----------------------------------------------------
@@ -100,17 +105,16 @@ def test_isotopequantity_ref_atoms_rad(radioisotope, iq_kwargs):
 
     iq = IsotopeQuantity(radioisotope, **iq_kwargs)
     if 'atoms' in iq_kwargs:
-        assert iq.ref_atoms == iq_kwargs['atoms']
+        assert isclose(iq.ref_atoms, iq_kwargs['atoms'])
     elif 'g' in iq_kwargs:
-        assert iq.ref_atoms == (iq_kwargs['g'] / radioisotope.A * N_AV)
+        assert isclose(iq.ref_atoms, (iq_kwargs['g'] / radioisotope.A * N_AV))
     elif 'bq' in iq_kwargs:
-        assert iq.ref_atoms == iq_kwargs['bq'] / radioisotope.decay_const
+        assert isclose(iq.ref_atoms, iq_kwargs['bq'] / radioisotope.decay_const)
     else:
-        assert iq.ref_atoms == (
-            iq_kwargs['uci'] * UCI_TO_BQ / radioisotope.decay_const /
-            N_AV * radioisotope.A / radioisotope.A * N_AV)
-            # Note the last part cancels, but is necessary to get equality with
-            # floating points
+        assert isclose(
+            iq.ref_atoms,
+            iq_kwargs['uci'] * UCI_TO_BQ / radioisotope.decay_const
+        )
 
 
 def test_isotopequantity_ref_atoms_stable(stable_isotope):
