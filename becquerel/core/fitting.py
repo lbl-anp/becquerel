@@ -268,8 +268,6 @@ class ExpGaussModel(Model):
     (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
     """
 
-    fwhm_factor = 2*np.sqrt(2*np.log(2))
-
     def __init__(self, *args, **kwargs):
         super(ExpGaussModel, self).__init__(expgauss, **kwargs)
         self.set_param_hint('{}sigma'.format(self.prefix), min=0)
