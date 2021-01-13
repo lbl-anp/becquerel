@@ -679,8 +679,42 @@ class Fitter(object):
                 inplace=True)
         return df
 
+    def compute_residuals(self, residual_type='abs'):
+        """Compute residuals between the data and the fit.
+
+        Parameters
+        ----------
+        residual_type : {'abs', 'rel', 'sigma'}, optional
+            Residual type to calculate (default: 'abs')
+                'abs' : data - fit
+                'rel' : (data - fit) / |fit|
+                'sigma' : (data - fit) / (data_uncertainty)
+
+        Returns
+        -------
+        np.ndarray
+            Array of residuals
+        """
+        dx_roi = np.ones_like(self.x_roi) if self.dx_roi is None else self.dx_roi
+        y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
+        y_res = self.y_roi - y_eval
+
+        if residual_type == 'rel':
+            # Residuals relative to the model evaluation
+            return y_res / np.abs(y_eval)
+        elif residual_type == 'sigma':
+            # Residuals relative to the data uncertainty
+            return y_res / self.y_unc_roi
+        elif residual_type == 'abs':
+            # Absolute residuals
+            return y_res
+        else:
+            raise ValueError(
+                'Unknown residuals type: {0:s}'.format(residual_type)
+            )
+
     def custom_plot(self, title=None, savefname=None, title_fontsize=24,
-                    title_fontweight='bold', residuals='abs', **kwargs):
+                    title_fontweight='bold', residual_type='abs', **kwargs):
         """Three-panel figure showing fit results.
 
         Top-left panel shows the data and the fit. Bottom-left shows the fit
@@ -696,7 +730,7 @@ class Fitter(object):
             Title font size (default: 24)
         title_fontweight : str, optional
             Title font weight (default: 'bold')
-        residuals : {'abs', 'rel', 'sigma'}, optional
+        residual_type : {'abs', 'rel', 'sigma'}, optional
             Residual type to calculate (default: 'abs')
                 'abs' : data - fit
                 'rel' : (data - fit) / |fit|
@@ -780,27 +814,24 @@ class Fitter(object):
         # Residuals
         # ---------
         y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
-        y_res = self.y_roi - y_eval
         res_kwargs = dict(fmt='o', color='k', markersize=5, label='residuals')
 
-        if residuals == 'rel':
-            # Plot residuals relative to the model evaluation
-            y_plot = y_res / np.abs(y_eval)
+        # Y-values of the residual plot, depending on residual_type
+        y_plot = self.compute_residuals(residual_type)
+
+        # Error bars and ylabel of the residual plot
+        if residual_type == 'rel':
             yerr_plot = self.y_unc_roi / np.abs(y_eval)
             ylabel = 'Relative residuals'
-        elif residuals == 'sigma':
-            # Plot residuals relative to the data uncertainty
-            y_plot = y_res / self.y_unc_roi
+        elif residual_type == 'sigma':
             yerr_plot = np.zeros_like(y_plot)
             ylabel = r'Residuals $(\sigma)$'
-        elif residuals == 'abs':
-            # Plot absolute residuals
-            y_plot = y_res
+        elif residual_type == 'abs':
             yerr_plot = self.y_unc_roi
             ylabel = 'Residuals'
         else:
             raise ValueError(
-                'Unknown residuals option: {0:s}'.format(residuals)
+                'Unknown residuals option: {0:s}'.format(residual_type)
             )
         res_ax.errorbar(x=self.x_roi, y=y_plot, yerr=yerr_plot, **res_kwargs)
         res_ax.set_ylabel(ylabel)
