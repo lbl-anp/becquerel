@@ -10,6 +10,7 @@ from .. import parsers
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
 from .rebin import rebin
 from . import plotting
+from . import fitting
 import warnings
 
 
@@ -1287,6 +1288,13 @@ class Spectrum(object):
 
         plotter = plotting.SpectrumPlotter(self, **kwargs)
         return plotter.fill_between()
+
+    def fit(self, model, xmode, ymode, roi=None):
+        fitter = fitting.Fitter.from_spectrum(
+            model, self, xmode, ymode, roi
+        )
+        fitter.fit()
+        return fitter
 
 
 def _get_file_object(infilename):
