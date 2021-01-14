@@ -34,8 +34,6 @@ class SpectrumPlotter(object):
                   and ymode='symlog'
         """
 
-        #TODO Marco: maybe we should use tuplets for all the x/y stuff in order
-        #to reduce the number of attributes (pylint ask for 7 we have 23)!
         self._xedges = None
         self._ydata = None
         self._xmode = None
