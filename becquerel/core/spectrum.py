@@ -1290,9 +1290,33 @@ class Spectrum(object):
         return plotter.fill_between()
 
     def fit(self, model, xmode, ymode, roi=None):
-        fitter = fitting.Fitter.from_spectrum(
-            model, self, xmode, ymode, roi
+        """Create a Fitter object based on this Spectrum and perform the fit.
+
+        Parameters
+        ----------
+        model : Model or list of str
+            Model object or list of model names with which to fit the Spectrum
+        xmode : {'energy', 'channel'}
+            Mode (effectively units) of the x-axis
+        ymode : {'counts', 'cps', 'cpskev'}
+            Mode (effectively units) of the y-axis
+        roi : list or tuple of length 2, optional
+            Min and max x-values between which to compute the fit
+
+        Returns
+        -------
+        Fitter
+        """
+
+        xedges, xlabel = self.parse_xmode(xmode)
+        ydata, yuncs, ylabel = self.parse_ymode(ymode)
+
+        xcenters = bin_centers_from_edges(xedges)
+        fitter = fitting.Fitter(
+            model, x=xcenters, y=ydata, y_unc=yuncs, roi=roi
         )
+        fitter._xmode = xmode
+        fitter._ymode = ymode
         fitter.fit()
         return fitter
 
