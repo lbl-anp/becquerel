@@ -66,12 +66,44 @@ def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
 
 # Helper functions for guessing
 def _xy_right(y, x=None, num=4):
+    """Compute mean x and y in the last `num` points of a dataset (x, y).
+
+    Parameters
+    ----------
+    y : array-like
+        Y-data
+    x : array-like, optional
+        X-data. If not specified, return len(y)/2.
+    num : int, optional
+        Number of points to include in the averaging; default 4.
+
+    Returns
+    -------
+    (float, float)
+        Tuple of (xmean, ymean).
+    """
     if x is not None:
         return np.mean(x[-num:]), np.mean(y[-num:])
     return len(y)*0.5, np.mean(y[-num:])
 
 
 def _xy_left(y, x=None, num=4):
+    """Compute mean x and y in the first `num` points of a dataset (x, y).
+
+    Parameters
+    ----------
+    y : array-like
+        Y-data
+    x : array-like, optional
+        X-data. If not specified, return len(y)/2.
+    num : int, optional
+        Number of points to include in the averaging; default 4.
+
+    Returns
+    -------
+    (float, float)
+        Tuple of (xmean, ymean).
+    """
     if x is not None:
         return np.mean(x[:num]), np.mean(y[:num])
     return len(y)*0.5, np.mean(y[:num])
@@ -99,7 +131,6 @@ class LineModel(Model):
         super(LineModel, self).__init__(line, *args, **kwargs)
 
     def guess(self, y, x=None, dx=None, num=2):
-        _, b = _xy_left(y, x=x, num=num)
         if dx is None:
             dx = np.ones_like(x)
         m = (y[-1]/dx[-1] - y[0]/dx[0])/(x[-1] - x[0])
@@ -236,8 +267,6 @@ class ExpGaussModel(Model):
     """A model of an Exponentially modified Gaussian distribution
     (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
     """
-
-    fwhm_factor = 2*np.sqrt(2*np.log(2))
 
     def __init__(self, *args, **kwargs):
         super(ExpGaussModel, self).__init__(expgauss, **kwargs)
@@ -553,6 +582,21 @@ class Fitter(object):
         return defaults
 
     def fit(self, backend='lmfit'):
+        """Perform the weighted fit to data.
+
+        Parameters
+        ----------
+        backend : {'lmfit', 'lmfit-pml'}
+            Backend fitting module to use.
+
+        Raises
+        ------
+        FittingError
+            If `backend` is not supported.
+        AssertionError
+            If self.y is None.
+        """
+
         assert self.y is not None, \
             'No data initialized, did you call set_data?'
         self.result = None
@@ -560,17 +604,22 @@ class Fitter(object):
         if self.dx is not None:
             y_roi_norm = self.y_roi / self.dx_roi
         if backend.lower().strip() == 'lmfit':
+            # Perform the fit, weighted by 1/uncertainties.
             weights = self.y_unc_roi ** -1.0
             self.result = self.model.fit(
-                y_roi_norm, self.params, x=self.x_roi, weights=weights)
+                y_roi_norm, self.params, x=self.x_roi, weights=weights
+            )
         elif backend.lower().strip() == 'lmfit-pml':
             self._set_likelihood_residual()
+            # Perform the fit. PML automatically applies 1/sqrt(y) weights, so
+            # additional weights here just convert back to counts.
             self.result = self.model.fit(
                 self.y_roi, self.params, #self.result.params,
                 x=self.x_roi, weights=self.dx_roi,
                 fit_kws={'reduce_fcn': lambda r: np.sum(r)},
-                method='Nelder-Mead', calc_covar=False)  # no, bounds, default would be L-BFGS-B'
-                # TODO: Calculate errors breaks minimization right now
+                method='Nelder-Mead', calc_covar=False
+            )  # no, bounds, default would be L-BFGS-B'
+            # TODO: Calculate errors breaks minimization right now
         else:
             raise FittingError('Unknown fitting backend: {}'.format(backend))
 
@@ -644,8 +693,42 @@ class Fitter(object):
                 inplace=True)
         return df
 
+    def compute_residuals(self, residual_type='abs'):
+        """Compute residuals between the data and the fit.
+
+        Parameters
+        ----------
+        residual_type : {'abs', 'rel', 'sigma'}, optional
+            Residual type to calculate (default: 'abs')
+                'abs' : data - fit
+                'rel' : (data - fit) / |fit|
+                'sigma' : (data - fit) / (data_uncertainty)
+
+        Returns
+        -------
+        np.ndarray
+            Array of residuals
+        """
+        dx_roi = np.ones_like(self.x_roi) if self.dx_roi is None else self.dx_roi
+        y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
+        y_res = self.y_roi - y_eval
+
+        if residual_type == 'rel':
+            # Residuals relative to the model evaluation
+            return y_res / np.abs(y_eval)
+        elif residual_type == 'sigma':
+            # Residuals relative to the data uncertainty
+            return y_res / self.y_unc_roi
+        elif residual_type == 'abs':
+            # Absolute residuals
+            return y_res
+        else:
+            raise ValueError(
+                'Unknown residuals type: {0:s}'.format(residual_type)
+            )
+
     def custom_plot(self, title=None, savefname=None, title_fontsize=24,
-                    title_fontweight='bold', residuals='abs', **kwargs):
+                    title_fontweight='bold', residual_type='abs', **kwargs):
         """Three-panel figure showing fit results.
 
         Top-left panel shows the data and the fit. Bottom-left shows the fit
@@ -661,7 +744,7 @@ class Fitter(object):
             Title font size (default: 24)
         title_fontweight : str, optional
             Title font weight (default: 'bold')
-        residuals : {'abs', 'rel', 'sigma'}, optional
+        residual_type : {'abs', 'rel', 'sigma'}, optional
             Residual type to calculate (default: 'abs')
                 'abs' : data - fit
                 'rel' : (data - fit) / |fit|
@@ -745,27 +828,24 @@ class Fitter(object):
         # Residuals
         # ---------
         y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
-        y_res = self.y_roi - y_eval
         res_kwargs = dict(fmt='o', color='k', markersize=5, label='residuals')
 
-        if residuals == 'rel':
-            # Plot residuals relative to the model evaluation
-            y_plot = y_res / np.abs(y_eval)
+        # Y-values of the residual plot, depending on residual_type
+        y_plot = self.compute_residuals(residual_type)
+
+        # Error bars and ylabel of the residual plot
+        if residual_type == 'rel':
             yerr_plot = self.y_unc_roi / np.abs(y_eval)
             ylabel = 'Relative residuals'
-        elif residuals == 'sigma':
-            # Plot residuals relative to the data uncertainty
-            y_plot = y_res / self.y_unc_roi
+        elif residual_type == 'sigma':
             yerr_plot = np.zeros_like(y_plot)
             ylabel = r'Residuals $(\sigma)$'
-        elif residuals == 'abs':
-            # Plot absolute residuals
-            y_plot = y_res
+        elif residual_type == 'abs':
             yerr_plot = self.y_unc_roi
             ylabel = 'Residuals'
         else:
             raise ValueError(
-                'Unknown residuals option: {0:s}'.format(residuals)
+                'Unknown residuals option: {0:s}'.format(residual_type)
             )
         res_ax.errorbar(x=self.x_roi, y=y_plot, yerr=yerr_plot, **res_kwargs)
         res_ax.axhline(0.0, linestyle='dashed', c='k', linewidth=1.0)

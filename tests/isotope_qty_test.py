@@ -16,6 +16,11 @@ import becquerel as bq
 import pytest
 
 
+def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+    """function to work with uncertainties too."""
+    return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+
 # ----------------------------------------------------
 #               IsotopeQuantity class
 # ----------------------------------------------------
@@ -95,19 +100,29 @@ def test_isotopequantity_init_stable(stable_isotope, iq_date, iq_kwargs):
     assert iq.decay_const == stable_isotope.decay_const
 
 
+def test_isotopequantity_quantity_at(radioisotope, iq_kwargs):
+    """Test IsotopeQuantity.quantity_at for a radioactive isotope"""
+
+    iq = IsotopeQuantity(radioisotope, **iq_kwargs)
+    key = next(iter(iq_kwargs))
+    assert iq_kwargs[key] == iq.quantity_at(key, iq.ref_date)
+
+
 def test_isotopequantity_ref_atoms_rad(radioisotope, iq_kwargs):
     """Test IsotopeQuantity.ref_atoms for a radioactive isotope"""
 
     iq = IsotopeQuantity(radioisotope, **iq_kwargs)
     if 'atoms' in iq_kwargs:
-        assert iq.ref_atoms == iq_kwargs['atoms']
+        assert isclose(iq.ref_atoms, iq_kwargs['atoms'])
     elif 'g' in iq_kwargs:
-        assert iq.ref_atoms == (iq_kwargs['g'] / radioisotope.A * N_AV)
+        assert isclose(iq.ref_atoms, (iq_kwargs['g'] / radioisotope.A * N_AV))
     elif 'bq' in iq_kwargs:
-        assert iq.ref_atoms == iq_kwargs['bq'] / radioisotope.decay_const
+        assert isclose(iq.ref_atoms, iq_kwargs['bq'] / radioisotope.decay_const)
     else:
-        assert iq.ref_atoms == (
-            iq_kwargs['uci'] * UCI_TO_BQ / radioisotope.decay_const)
+        assert isclose(
+            iq.ref_atoms,
+            iq_kwargs['uci'] * UCI_TO_BQ / radioisotope.decay_const
+        )
 
 
 def test_isotopequantity_ref_atoms_stable(stable_isotope):
@@ -295,12 +310,12 @@ def test_isotopequantity_mul_div(iq, f):
     iq2 = iq * f
     assert iq2.isotope == iq.isotope
     assert iq2.ref_date == iq.ref_date
-    assert iq2.ref_atoms == iq.ref_atoms * f
+    assert iq2._ref_quantities["uci"] == iq._ref_quantities["uci"] * f
 
     iq3 = iq / f
     assert iq3.isotope == iq.isotope
     assert iq3.ref_date == iq.ref_date
-    assert iq3.ref_atoms == iq.ref_atoms / f
+    assert iq3._ref_quantities["uci"] == iq._ref_quantities["uci"] / f
 
 
 def test_isotopequantity_from_decays(iq):
