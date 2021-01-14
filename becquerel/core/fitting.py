@@ -348,37 +348,6 @@ class Fitter(object):
 
     __repr__ = __str__
 
-    @classmethod
-    def from_spectrum(cls, model, spec, xmode, ymode, roi=None):
-        """Create a Fitter based on a Spectrum object.
-
-        Parameters
-        ----------
-        model : Model or list of str
-            Model object or list of model names with which to fit the Spectrum
-        spec : Spectrum object
-            Spectrum to fit with model
-        xmode : {'energy', 'channel'}
-            Mode (effectively units) of the x-axis
-        ymode : {'counts', 'cps', 'cpskev'}
-            Mode (effectively units) of the y-axis
-        roi : list or tuple of length 2
-            Min and max x-values between which to compute the fit
-
-        Returns
-        -------
-        Fitter
-        """
-
-        xedges, xlabel = spec.parse_xmode(xmode)
-        ydata, yuncs, ylabel = spec.parse_ymode(ymode)
-
-        xcenters = bin_centers_from_edges(xedges)
-        fitter = cls(model, x=xcenters, y=ydata, y_unc=yuncs, roi=roi)
-        fitter._xmode = xmode
-        fitter._ymode = ymode
-        return fitter
-
     @property
     def name(self):
         return self._name
