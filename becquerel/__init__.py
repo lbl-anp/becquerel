@@ -16,6 +16,10 @@ from .core.peakfinder import (PeakFilter, PeakFilterError,
                               GaussianPeakFilter, PeakFinder, PeakFinderError)
 from .core.autocal import AutoCalibrator, AutoCalibratorError
 
+from .core import utils
+from .core import fitting
+from .core.fitting import Fitter
+
 from .tools import nndc
 from .tools.element import Element
 from .tools.isotope import Isotope

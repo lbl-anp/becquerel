@@ -1,6 +1,7 @@
 beautifulsoup4
 future
 html5lib
+lmfit
 lxml
 matplotlib
 numba>=0.47.0
