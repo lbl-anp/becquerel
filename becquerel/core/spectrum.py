@@ -1289,7 +1289,7 @@ class Spectrum(object):
         plotter = plotting.SpectrumPlotter(self, **kwargs)
         return plotter.fill_between()
 
-    def fit(self, model, xmode, ymode, roi=None):
+    def fit(self, model, xmode, ymode, roi=None, perform_fit=True):
         """Create a Fitter object based on this Spectrum and perform the fit.
 
         Parameters
@@ -1302,6 +1302,9 @@ class Spectrum(object):
             Mode (effectively units) of the y-axis
         roi : list or tuple of length 2, optional
             Min and max x-values between which to compute the fit
+        perform_fit : bool
+            If True, perform the fit now, otherwise, set up fitter without
+            performing the fit.
 
         Returns
         -------
@@ -1317,7 +1320,8 @@ class Spectrum(object):
         )
         fitter._xmode = xmode
         fitter._ymode = ymode
-        fitter.fit()
+        if perform_fit:
+            fitter.fit()
         return fitter
 
 
