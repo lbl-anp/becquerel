@@ -631,6 +631,8 @@ class Fitter(object):
                 # data/model are complex
                 diff = diff.ravel().view(np.float)
             return np.asarray(diff).ravel()  # for compatibility with pandas.Series
+        # This overwrites the  model residual method, is an ugly hack to make
+        # poisson fitting possible. This is not undone for now.
         self.model._residual = _likelihood_residual.__get__(self.model, Model)
 
     def eval(self, x, params=None, **kwargs):
