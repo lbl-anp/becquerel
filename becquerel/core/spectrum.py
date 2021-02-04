@@ -10,6 +10,7 @@ from .. import parsers
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
 from .rebin import rebin
 from . import plotting
+from . import fitting
 import warnings
 
 
@@ -1152,6 +1153,68 @@ class Spectrum(object):
                           zero_pad_warnings=zero_pad_warnings, **kwargs)
         # TODO: raw here too?
 
+    def parse_xmode(self, xmode):
+        """Parse the x-axis mode to get the associated data and plot label.
+
+        Parameters
+        ----------
+        xmode : {'energy', 'channel'}
+            Mode (effectively units) of the x-axis
+
+        Returns
+        -------
+        xedges, xlabel
+            X-axis bin edges and a suitable label for plotting
+
+        Raises
+        ------
+        ValueError
+            If the xmode parameter is unsupported
+        """
+        if xmode == 'energy':
+            xedges = self.bin_edges_kev
+            xlabel = 'Energy [keV]'
+        elif xmode == 'channel':
+            xedges = self.bin_edges_raw
+            xlabel = 'Channel'
+        else:
+            raise ValueError('Unsupported xmode: {0:s}'.format(xmode))
+        return xedges, xlabel
+
+    def parse_ymode(self, ymode):
+        """Parse the y-axis mode to get the associated data and plot label.
+
+        Parameters
+        ----------
+        ymode : {'counts', 'cps', 'cpskev'}
+            Mode (effectively units) of the y-axis
+
+        Returns
+        -------
+        ydata, yuncs, ylabel
+            Y-axis data, uncertainties, and a suitable label for plotting
+
+        Raises
+        ------
+        ValueError
+            If the ymode parameter is unsupported
+        """
+        if ymode == 'counts':
+            ydata = self.counts_vals
+            yuncs = self.counts_uncs
+            ylabel = 'Counts'
+        elif ymode == 'cps':
+            ydata = self.cps_vals
+            yuncs = self.cps_uncs
+            ylabel = 'Countrate [1/s]'
+        elif ymode == 'cpskev':
+            ydata = self.cpskev_vals
+            yuncs = self.cpskev_uncs
+            ylabel = 'Countrate [1/s/keV]'
+        else:
+            raise ValueError('Unsupported ymode: {0:s}'.format(ymode))
+        return ydata, yuncs, ylabel
+
     def plot(self, *fmt, **kwargs):
         """Plot a spectrum with matplotlib's plot command.
 
@@ -1225,6 +1288,41 @@ class Spectrum(object):
 
         plotter = plotting.SpectrumPlotter(self, **kwargs)
         return plotter.fill_between()
+
+    def fit(self, model, xmode, ymode, roi=None, perform_fit=True):
+        """Create a Fitter object based on this Spectrum and perform the fit.
+
+        Parameters
+        ----------
+        model : Model or list of str
+            Model object or list of model names with which to fit the Spectrum
+        xmode : {'energy', 'channel'}
+            Mode (effectively units) of the x-axis
+        ymode : {'counts', 'cps', 'cpskev'}
+            Mode (effectively units) of the y-axis
+        roi : list or tuple of length 2, optional
+            Min and max x-values between which to compute the fit
+        perform_fit : bool
+            If True, perform the fit now, otherwise, set up fitter without
+            performing the fit.
+
+        Returns
+        -------
+        Fitter
+        """
+
+        xedges, xlabel = self.parse_xmode(xmode)
+        ydata, yuncs, ylabel = self.parse_ymode(ymode)
+
+        xcenters = bin_centers_from_edges(xedges)
+        fitter = fitting.Fitter(
+            model, x=xcenters, y=ydata, y_unc=yuncs, roi=roi
+        )
+        fitter._xmode = xmode
+        fitter._ymode = ymode
+        if perform_fit:
+            fitter.fit()
+        return fitter
 
 
 def _get_file_object(infilename):
