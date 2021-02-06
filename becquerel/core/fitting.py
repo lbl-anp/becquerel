@@ -8,7 +8,7 @@ from lmfit.model import Model
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-from .utils import isstring
+from .utils import isstring, bin_centers_from_edges
 
 FWHM_SIG_RATIO = np.sqrt(8*np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2) #1.414213562
@@ -350,6 +350,8 @@ class Fitter(object):
         self._y_unc = None
         self._roi = None
         self._roi_msk = None
+        self._xmode = None
+        self._ymode = None
         self.result = None
         self.dx = None
         # Model and parameters
@@ -367,6 +369,8 @@ class Fitter(object):
             '        x: {}\n'.format(self.x) +
             '        y: {}\n'.format(self.y) +
             '    y_unc: {}\n'.format(self.y_unc) +
+            '    xmode: {}\n'.format(self.xmode) +
+            '    ymode: {}\n'.format(self.ymode) +
             '       dx: {}\n'.format(self.dx) +
             '      roi: {}'.format(self.roi)
         )
@@ -445,6 +449,14 @@ class Fitter(object):
             return np.ones_like(self.x, dtype=bool)
         else:
             return self._roi_msk
+
+    @property
+    def xmode(self):
+        return self._xmode
+
+    @property
+    def ymode(self):
+        return self._ymode
 
     @property
     def param_names(self):
@@ -740,7 +752,7 @@ class Fitter(object):
                 'rel' : (data - fit) / |fit|
                 'sigma' : (data - fit) / (data_uncertainty)
         **kwargs
-            Additional kwargs. TODO: currently unused.
+            Additional kwargs. Currently unused.
 
         Returns
         -------
@@ -807,12 +819,12 @@ class Fitter(object):
                            alpha=0.2, label=label)
         # Misc
         fit_ax.legend(loc='upper right')
-        # TODO: add ylabel based on units of y
         # Set viewing window to only include the roi (not entire spectrum)
         xpad = (self.x_roi[-1] - self.x_roi[0]) * 0.05
         ypad = (ymax - ymin) * 0.05
         fit_ax.set_xlim([self.x_roi[0] - xpad, self.x_roi[-1] + xpad])
         fit_ax.set_ylim([ymin - ypad, ymax + ypad])
+        fit_ax.set_ylabel(self.ymode)
 
         # ---------
         # Residuals
@@ -838,9 +850,9 @@ class Fitter(object):
                 'Unknown residuals option: {0:s}'.format(residual_type)
             )
         res_ax.errorbar(x=self.x_roi, y=y_plot, yerr=yerr_plot, **res_kwargs)
-        res_ax.set_ylabel(ylabel)
         res_ax.axhline(0.0, linestyle='dashed', c='k', linewidth=1.0)
-        # TODO: add xlabel based on units of x
+        res_ax.set_ylabel(ylabel)
+        res_ax.set_xlabel(self.xmode)
 
         # -------------------
         # Fit report (txt_ax)
@@ -869,7 +881,7 @@ class Fitter(object):
         fp = FontProperties(family='monospace', size=8)
         # Remove first 2 lines of fit report (long model description)
         s = '\n'.join(self.result.fit_report().split('\n')[2:])
-        # Add some more details
+        # Add some more parameter details
         s += '\n'
         param_df = self.param_dataframe(sort_by_model=True)
         for model_name, sdf in param_df.groupby(level='model'):
@@ -879,6 +891,10 @@ class Fitter(object):
                 e = param_data['unc']
                 s += '    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n'.format(
                     param_name, v, e, np.abs(e / v))
+        # Add info about the ROI and units
+        s += 'ROI: [{0:.3f}, {1:.3f}]\n'.format(*self.roi)
+        s += 'X units: {:s}\n'.format(self.xmode if self.xmode else 'None')
+        s += 'Y units: {:s}\n'.format(self.ymode if self.ymode else 'None')
         # Add to empty axis
         txt_ax.text(x=0.01, y=0.99, s=s, fontproperties=fp,
                     ha='left', va='top', transform=txt_ax.transAxes,
