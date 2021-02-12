@@ -140,7 +140,6 @@ class Spectrum(object):
         self._cps = None
         self._bin_edges_kev = None
         self._bin_edges_raw = None
-        self.cal = None
         self.livetime = None
         self.realtime = None
 
@@ -1035,7 +1034,6 @@ class Spectrum(object):
         """
 
         self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
-        self.cal = cal
 
     def calibrate_like(self, other):
         """Apply another Spectrum object's calibration (bin edges vector).
@@ -1052,7 +1050,6 @@ class Spectrum(object):
 
         if other.is_calibrated:
             self.bin_edges_kev = other.bin_edges_kev.copy()
-            self.cal = other.cal
         else:
             raise UncalibratedError('Other spectrum is not calibrated')
 
@@ -1060,7 +1057,6 @@ class Spectrum(object):
         """Remove the calibration (if it exists) from this spectrum."""
 
         self.bin_edges_kev = None
-        self.cal = None
 
     def combine_bins(self, f):
         """Make a new Spectrum with counts combined into bigger bins.
