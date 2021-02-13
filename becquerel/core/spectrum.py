@@ -581,7 +581,7 @@ class Spectrum(object):
 
     @classmethod
     def from_listmode(cls, listmode_data, bins=None, xmin=None, xmax=None,
-                      **kwargs):
+                      is_cal=False, **kwargs):
         """Construct a Spectrum object (specifically the `bin_edges_raw` and
         `counts` of a histogram) from an array of listmode data. It is left to
         the user to set kwargs realtime, livetime, etc, rather than trying to
@@ -622,7 +622,10 @@ class Spectrum(object):
                                              range=(xmin, xmax))
 
         kwargs['counts'] = bin_counts
-        kwargs['bin_edges_raw'] = bin_edges
+        if is_cal:
+            kwargs['bin_edges_kev'] = bin_edges
+        else:
+            kwargs['bin_edges_raw'] = bin_edges
 
         return cls(**kwargs)
 
