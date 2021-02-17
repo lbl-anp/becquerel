@@ -729,6 +729,26 @@ class Fitter(object):
                 'Unknown residuals type: {0:s}'.format(residual_type)
             )
 
+    def plot(self, npts=1000, **kwargs):
+        """Plot the fit result on the current axis.
+
+        Parameters
+        ----------
+        npts : int (optional)
+            Number of points in x to generate.
+        kwargs : dict (optional)
+            Additional kwargs passed to plt.plot().
+
+        Returns
+        -------
+        int
+            Description of anonymous integer return value.
+        """
+
+        x_plot = np.linspace(self.x_roi[0], self.x_roi[-1], npts)
+        y = self.eval(x_plot, **self.result.best_values)
+        plt.plot(x_plot, y, **kwargs)
+
     def custom_plot(self, title=None, savefname=None, title_fontsize=24,
                     title_fontweight='bold', residual_type='abs', **kwargs):
         """Three-panel figure showing fit results.
