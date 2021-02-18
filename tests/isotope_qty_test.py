@@ -65,6 +65,7 @@ def iq_kwargs(request):
 
 @pytest.fixture(params=[
     datetime.datetime.now(),
+    datetime.date.today(),
     '2015-01-08 00:00:00',
     None
 ])
@@ -143,6 +144,8 @@ def test_isotopequantity_ref_date_rad(radioisotope, iq_date):
     iq = IsotopeQuantity(radioisotope, date=iq_date, atoms=1e24)
     if isinstance(iq_date, datetime.datetime):
         assert iq.ref_date == iq_date
+    elif isinstance(iq_date, datetime.date):
+        assert iq.ref_date.date() == iq_date
     elif bq.core.utils.isstring(iq_date):
         assert iq.ref_date == dateutil_parse(iq_date)
     else:
@@ -155,6 +158,8 @@ def test_isotopequantity_ref_date_stable(stable_isotope, iq_date):
     iq = IsotopeQuantity(stable_isotope, date=iq_date, atoms=1e24)
     if isinstance(iq_date, datetime.datetime):
         assert iq.ref_date == iq_date
+    elif isinstance(iq_date, datetime.date):
+        assert iq.ref_date.date() == iq_date
     elif bq.core.utils.isstring(iq_date):
         assert iq.ref_date == dateutil_parse(iq_date)
     else:
