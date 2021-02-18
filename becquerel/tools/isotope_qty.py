@@ -263,11 +263,11 @@ class IsotopeQuantity(object):
     #   *_at()
     # ----------------------------
 
-    def quantity_at(self, quantity, date):
+    def quantity_at(self, quantity, date=None):
         """Return a quantity at a given time.
 
         Args:
-          date: the date to calculate for
+          date: the date to calculate for (default now)
 
         Returns:
           a float of the number of atoms at date
@@ -276,16 +276,16 @@ class IsotopeQuantity(object):
           TypeError: if date is not recognized
         """
 
+        date = date if date is not None else datetime.datetime.now()
         t1 = utils.handle_datetime(date)
         dt = (t1 - self.ref_date).total_seconds()
         return self._ref_quantities[quantity] * 2**(-dt / self.half_life)
 
-
-    def atoms_at(self, date):
+    def atoms_at(self, date=None):
         """Calculate the number of atoms at a given time.
 
         Args:
-          date: the date to calculate for
+          date: the date to calculate for (default now)
 
         Returns:
           a float of the number of atoms at date
@@ -296,7 +296,7 @@ class IsotopeQuantity(object):
 
         return self.quantity_at("atoms", date)
 
-    def bq_at(self, date):
+    def bq_at(self, date=None):
         """Calculate the activity [Bq] at a given time.
 
         As atoms_at() except for return value.
@@ -304,7 +304,7 @@ class IsotopeQuantity(object):
 
         return self.quantity_at("bq", date)
 
-    def uci_at(self, date):
+    def uci_at(self, date=None):
         """Calculate the activity [uCi] at a given time.
 
         As atoms_at() except for return value.
@@ -312,7 +312,7 @@ class IsotopeQuantity(object):
 
         return self.quantity_at("uci", date)
 
-    def g_at(self, date):
+    def g_at(self, date=None):
         """Calculate the mass [g] at a given time.
 
         As atoms_at() except for return value.
