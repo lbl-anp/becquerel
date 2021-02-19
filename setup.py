@@ -7,8 +7,8 @@ from setuptools import setup, find_packages
 NAME = 'becquerel'
 
 MAJOR = 0
-MINOR = 2
-MICRO = 6
+MINOR = 3
+MICRO = 0
 VERSION = '{}.{}.{}'.format(MAJOR, MINOR, MICRO)
 
 DESCRIPTION = __doc__.split('\n')[0].split(': ')[-1]
