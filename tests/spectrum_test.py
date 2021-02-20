@@ -164,6 +164,7 @@ def test_uncal(uncal_spec):
 
     assert len(uncal_spec.counts) == TEST_DATA_LENGTH
     assert not uncal_spec.is_calibrated
+    assert uncal_spec.energy_cal is None
 
 
 def test_uncal_cps(uncal_spec_cps):
@@ -171,6 +172,7 @@ def test_uncal_cps(uncal_spec_cps):
 
     assert len(uncal_spec_cps.cps) == TEST_DATA_LENGTH
     assert not uncal_spec_cps.is_calibrated
+    assert uncal_spec_cps.energy_cal is None
 
 
 def test_cal(cal_spec):
