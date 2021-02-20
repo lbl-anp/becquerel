@@ -258,6 +258,7 @@ def make_spec_listmode(t, use_cal=False):
     if use_cal:
         cal = bq.LinearEnergyCal.from_coeffs({'m': TEST_GAIN, 'b': 0.0})
         spec.apply_calibration(cal)
+        assert spec.energy_cal is not None
     return spec
 
 
