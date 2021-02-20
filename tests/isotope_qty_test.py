@@ -166,6 +166,13 @@ def test_isotopequantity_ref_date_stable(stable_isotope, iq_date):
         assert (datetime.datetime.now() - iq.ref_date).total_seconds() < 5
 
 
+@pytest.mark.parametrize('date_in', [
+    '2021-2-20 0:00:00', '2021-2-20', datetime.date(2021, 2, 20)
+])
+def test_handle_datetime(date_in):
+    assert bq.utils.handle_datetime(date_in) == datetime.datetime(2021, 2, 20, 0, 0, 0)
+
+
 @pytest.mark.parametrize('iso, date, kwargs, error', [
     (['Cs-137'], None, {'atoms': 1e24}, TypeError),
     ('Cs-137', 123, {'bq': 456}, TypeError),
