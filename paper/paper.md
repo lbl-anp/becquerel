@@ -29,6 +29,11 @@ bibliography: paper.bib
 ---
 
 # Summary
+Nuclear spectroscopic analysis follows a typical workflow: collect binmode or listmode spectra of radiation emissions, apply a calibration from detector observables to energy, and then fit spectral peaks to determine the number of counts detected above background. While there are several open-source software packages such as ``ROOT`` and ``numpy`` suitable for managing spectroscopic data, no comprehensive solution exists for both managing and analyzing spectroscopic measurements, forcing students and researchers to develop their own codes independently.
+
+``becquerel`` is a Python package for analyzing nuclear spectroscopic measurements that seeks to prevent this wide duplication of efforts. It provides open-source standard analysis tools, including peak finding and fitting, smart energy calibrations, and file I/O across several widely-used formats in nuclear spectroscopy. Built atop the Python scientific stack of ``numpy``, ``scipy`` and ``lmfit``, < and OTHERS? >, ``becquerel`` is fast, flexible, and easy to use given even an introductory knowledge of Python. In addition, ``becquerel`` provides a comprehensive test suite, coverage metrics, and several example notebooks for quickly getting started with various analyses.
+
+``becquerel`` was developed to be useable by a wide range of nuclear scientists and engineers, from undergraduates in laboratory courses to academic and national laboratory researchers. It has already been used to facilitate analyses in several papers, including < TODO >.
 
 # Acknowledgements
 
