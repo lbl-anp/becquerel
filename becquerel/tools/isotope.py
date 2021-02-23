@@ -7,6 +7,8 @@ import uncertainties
 from . import element
 from .wallet_cache import wallet_cache
 
+N_AV = 6.022141e23  # mol^-1
+
 
 # pylint: disable=no-self-use
 
@@ -186,6 +188,7 @@ class Isotope(element.Element):
       energy_level: the nuclear energy level in MeV
       mass_excess: the mass excess in MeV
       decay_modes: the isotope's decay modes and their branching ratios
+      specific_activity: the specific activity in Bq/g
     """
 
     # pylint: disable=too-few-public-methods
@@ -437,3 +440,9 @@ class Isotope(element.Element):
         if len(data1) == 1 and np.isnan(data2[0]):
             return [], []
         return data1, data2
+
+    @property
+    def specific_activity(self):
+        """Return the specific activity in Bq/g."""
+
+        return self.decay_const * N_AV / self.A
