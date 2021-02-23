@@ -23,7 +23,7 @@ authors:
   - name: Tenzing H.Y. Joshi
     affiliation: 1
 affiliations:
-  - Applied Nuclear Physics group, Lawrence Berkeley National Laboratory
+  - name: Applied Nuclear Physics group, Lawrence Berkeley National Laboratory
     index: 1
 date: 23 Feb 2021
 bibliography: paper.bib
