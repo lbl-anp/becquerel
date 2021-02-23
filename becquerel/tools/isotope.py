@@ -7,7 +7,7 @@ import uncertainties
 from . import element
 from .wallet_cache import wallet_cache
 
-N_Avogadro = 6.02214076e23  # mol^-1
+N_AV = 6.022141e23  # mol^-1
 
 
 # pylint: disable=no-self-use
@@ -445,4 +445,4 @@ class Isotope(element.Element):
     def specific_activity(self):
         """Return the specific activity in Bq/g."""
 
-        return self.decay_const * N_Avogadro / self.A
+        return self.decay_const * N_AV / self.A
