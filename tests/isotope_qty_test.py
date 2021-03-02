@@ -256,10 +256,14 @@ def test_isotopequantity_time_when_error(stable_isotope):
 def test_isotopequantity_activity_now(iq):
     """Test IsotopeQuantity.*_now()"""
 
-    assert np.isclose(iq.bq_now(), iq.bq_at(datetime.datetime.now()))
-    assert np.isclose(iq.uci_now(), iq.uci_at(datetime.datetime.now()))
-    assert np.isclose(iq.atoms_now(), iq.atoms_at(datetime.datetime.now()))
-    assert np.isclose(iq.g_now(), iq.g_at(datetime.datetime.now()))
+    with pytest.warns(DeprecationWarning):
+        assert np.isclose(iq.bq_now(), iq.bq_at(datetime.datetime.now()))
+    with pytest.warns(DeprecationWarning):
+        assert np.isclose(iq.uci_now(), iq.uci_at(datetime.datetime.now()))
+    with pytest.warns(DeprecationWarning):
+        assert np.isclose(iq.atoms_now(), iq.atoms_at(datetime.datetime.now()))
+    with pytest.warns(DeprecationWarning):
+        assert np.isclose(iq.g_now(), iq.g_at(datetime.datetime.now()))
 
 
 def test_isotopequantity_decays_from(iq):
