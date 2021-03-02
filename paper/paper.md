@@ -35,7 +35,7 @@ Nuclear spectroscopic analysis follows a typical workflow: collect binmode or li
 
 ``becquerel`` is a Python package for analyzing nuclear spectroscopic measurements that seeks to prevent this wide duplication of efforts. It provides open-source standard analysis tools, including peak finding and fitting, automated energy calibrations, and file I/O across several widely-used formats in nuclear spectroscopy. Built atop the Python scientific stack of ``numpy``, ``scipy``, ``uncertainties``, and ``lmfit``, ``becquerel`` is fast, flexible, and easy to use given even an introductory knowledge of Python. In addition, ``becquerel`` provides a comprehensive test suite, coverage metrics, and several example notebooks for quickly getting started with various analyses. Finally, it also provides a convenient Python interface to the NIST XCOM and NNDC nuclear databases, eliminating the need for ad-hoc downloads or manual data entry.
 
-``becquerel`` was developed to be useable by a wide range of nuclear scientists and engineers, from undergraduates in laboratory courses to academic and national laboratory researchers. It has already been used to facilitate analyses in several papers and proceedings, including [@vavrek2020reconstructing], [@bandstra2020modeling], [@salathe2019using] < TODO >.
+``becquerel`` was developed to be useable by a wide range of nuclear scientists and engineers, from undergraduates in laboratory courses to academic and national laboratory researchers. It has already been used to facilitate analyses in several papers and proceedings, including [@vavrek2020reconstructing], [@bandstra2020modeling], and [@salathe2019using], and will facilitate the rapid development of future spectroscopic analyses and workflows.
 
 # Acknowledgements
 
