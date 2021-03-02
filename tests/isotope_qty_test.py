@@ -265,6 +265,11 @@ def test_isotopequantity_activity_now(iq):
     with pytest.warns(DeprecationWarning):
         assert np.isclose(iq.g_now(), iq.g_at(datetime.datetime.now()))
 
+    assert np.isclose(iq.bq_at(), iq.bq_at(datetime.datetime.now()))
+    assert np.isclose(iq.uci_at(), iq.uci_at(datetime.datetime.now()))
+    assert np.isclose(iq.atoms_at(), iq.atoms_at(datetime.datetime.now()))
+    assert np.isclose(iq.g_at(), iq.g_at(datetime.datetime.now()))
+
 
 def test_isotopequantity_decays_from(iq):
     """Test IsotopeQuantity.*_from()"""
