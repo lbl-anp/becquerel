@@ -164,6 +164,7 @@ def test_uncal(uncal_spec):
 
     assert len(uncal_spec.counts) == TEST_DATA_LENGTH
     assert not uncal_spec.is_calibrated
+    assert uncal_spec.energy_cal is None
 
 
 def test_uncal_cps(uncal_spec_cps):
@@ -171,6 +172,7 @@ def test_uncal_cps(uncal_spec_cps):
 
     assert len(uncal_spec_cps.cps) == TEST_DATA_LENGTH
     assert not uncal_spec_cps.is_calibrated
+    assert uncal_spec_cps.energy_cal is None
 
 
 def test_cal(cal_spec):
@@ -256,6 +258,7 @@ def make_spec_listmode(t, use_cal=False):
     if use_cal:
         cal = bq.LinearEnergyCal.from_coeffs({'m': TEST_GAIN, 'b': 0.0})
         spec.apply_calibration(cal)
+        assert spec.energy_cal is not None
     return spec
 
 

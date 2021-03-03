@@ -321,6 +321,7 @@ def test_apply_calibration(uncal_spec, chlist, kevlist):
     assert uncal_spec.is_calibrated
     assert np.allclose(
         uncal_spec.bin_edges_kev[:-1], cal.ch2kev(uncal_spec.channels))
+    assert uncal_spec.energy_cal is not None
 
 
 def test_apply_calibration_recal(cal_spec, chlist, kevlist):
@@ -330,6 +331,7 @@ def test_apply_calibration_recal(cal_spec, chlist, kevlist):
     old_bin_edges = cal_spec.bin_edges_kev
     cal_spec.apply_calibration(cal)
     assert not np.any(old_bin_edges == cal_spec.bin_edges_kev)
+    assert cal_spec.energy_cal is not None
 
 
 def test_rm_calibration(cal_spec):
@@ -338,6 +340,7 @@ def test_rm_calibration(cal_spec):
     assert cal_spec.is_calibrated
     cal_spec.rm_calibration()
     assert not cal_spec.is_calibrated
+    assert cal_spec.energy_cal is None
 
 
 def test_rm_calibration_error(uncal_spec):
