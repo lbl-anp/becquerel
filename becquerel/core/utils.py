@@ -5,6 +5,7 @@ import sys
 import datetime
 from dateutil.parser import parse as dateutil_parse
 from uncertainties import UFloat, unumpy
+import warnings
 import numpy as np
 try:
     # Python 3.x
@@ -105,7 +106,7 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
 
 
 def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
-    """Parse an argument as a datetime, date+time string, or None.
+    """Parse an argument as a date, datetime, date+time string, or None.
 
     Args:
       input_time: the input argument to be converted to a datetime
@@ -115,7 +116,7 @@ def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
         (default: False)
 
     Raises:
-      TypeError: if input_time is not a string, datetime, or None
+      TypeError: if input_time is not a string, datetime, date, or None
 
     Returns:
       a datetime.datetime, or None
@@ -123,6 +124,13 @@ def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
 
     if isinstance(input_time, datetime.datetime):
         return input_time
+    elif isinstance(input_time, datetime.date):
+        warnings.warn(
+            'datetime.date passed in with no time; defaulting to 0:00 on date'
+        )
+        return datetime.datetime(
+            input_time.year, input_time.month, input_time.day
+        )
     elif isstring(input_time):
         return dateutil_parse(input_time)
     elif input_time is None and allow_none:

@@ -4,6 +4,7 @@ from __future__ import print_function
 import datetime
 import copy
 import numpy as np
+import warnings
 from .isotope import Isotope
 from ..core import utils
 from collections import OrderedDict
@@ -263,11 +264,11 @@ class IsotopeQuantity(object):
     #   *_at()
     # ----------------------------
 
-    def quantity_at(self, quantity, date):
+    def quantity_at(self, quantity, date=None):
         """Return a quantity at a given time.
 
         Args:
-          date: the date to calculate for
+          date: the date to calculate for (default now)
 
         Returns:
           a float of the number of atoms at date
@@ -276,16 +277,16 @@ class IsotopeQuantity(object):
           TypeError: if date is not recognized
         """
 
+        date = date if date is not None else datetime.datetime.now()
         t1 = utils.handle_datetime(date)
         dt = (t1 - self.ref_date).total_seconds()
         return self._ref_quantities[quantity] * 2**(-dt / self.half_life)
 
-
-    def atoms_at(self, date):
+    def atoms_at(self, date=None):
         """Calculate the number of atoms at a given time.
 
         Args:
-          date: the date to calculate for
+          date: the date to calculate for (default now)
 
         Returns:
           a float of the number of atoms at date
@@ -296,7 +297,7 @@ class IsotopeQuantity(object):
 
         return self.quantity_at("atoms", date)
 
-    def bq_at(self, date):
+    def bq_at(self, date=None):
         """Calculate the activity [Bq] at a given time.
 
         As atoms_at() except for return value.
@@ -304,7 +305,7 @@ class IsotopeQuantity(object):
 
         return self.quantity_at("bq", date)
 
-    def uci_at(self, date):
+    def uci_at(self, date=None):
         """Calculate the activity [uCi] at a given time.
 
         As atoms_at() except for return value.
@@ -312,7 +313,7 @@ class IsotopeQuantity(object):
 
         return self.quantity_at("uci", date)
 
-    def g_at(self, date):
+    def g_at(self, date=None):
         """Calculate the mass [g] at a given time.
 
         As atoms_at() except for return value.
@@ -331,7 +332,12 @@ class IsotopeQuantity(object):
           a float of the number of atoms at datetime.datetime.now()
         """
 
-        return self.quantity_at("atoms", datetime.datetime.now())
+        warnings.warn(
+            'atoms_now() is deprecated and will be removed in a future release'
+            '. Use atoms_at(date=None) instead.',
+            DeprecationWarning
+        )
+        return self.quantity_at("atoms", date=None)
 
     def bq_now(self):
         """Calculate the activity [Bq] now.
@@ -339,7 +345,12 @@ class IsotopeQuantity(object):
         As atoms_now() except for return value.
         """
 
-        return self.quantity_at("bq", datetime.datetime.now())
+        warnings.warn(
+            'bq_now() is deprecated and will be removed in a future release'
+            '. Use bq_at(date=None) instead.',
+            DeprecationWarning
+        )
+        return self.quantity_at("bq", date=None)
 
     def uci_now(self):
         """Calculate the activity [uCi] now.
@@ -347,7 +358,12 @@ class IsotopeQuantity(object):
         As atoms_now() except for return value.
         """
 
-        return self.quantity_at("uci", datetime.datetime.now())
+        warnings.warn(
+            'uci_now() is deprecated and will be removed in a future release'
+            '. Use uci_at(date=None) instead.',
+            DeprecationWarning
+        )
+        return self.quantity_at("uci", date=None)
 
     def g_now(self):
         """Calculate the mass [g] now.
@@ -355,7 +371,12 @@ class IsotopeQuantity(object):
         As atoms_now() except for return value.
         """
 
-        return self.quantity_at("g", datetime.datetime.now())
+        warnings.warn(
+            'g_now() is deprecated and will be removed in a future release'
+            '. Use g_at(date=None) instead.',
+            DeprecationWarning
+        )
+        return self.quantity_at("g", date=None)
 
     # ----------------------------
     #   *_from()
