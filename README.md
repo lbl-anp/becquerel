@@ -21,6 +21,7 @@ pip install becquerel
 
 * Reading additional `Spectrum` file types (N42, CHN, CSV)
 * Writing `Spectrum` objects to various standard formats
+* Fitting spectral features with Poisson likelihood
 
 If you are interested in contributing or are want to install the package from
 source, please see the instructions in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
