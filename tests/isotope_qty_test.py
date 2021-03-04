@@ -65,6 +65,7 @@ def iq_kwargs(request):
 
 @pytest.fixture(params=[
     datetime.datetime.now(),
+    datetime.date.today(),
     '2015-01-08 00:00:00',
     None
 ])
@@ -143,6 +144,8 @@ def test_isotopequantity_ref_date_rad(radioisotope, iq_date):
     iq = IsotopeQuantity(radioisotope, date=iq_date, atoms=1e24)
     if isinstance(iq_date, datetime.datetime):
         assert iq.ref_date == iq_date
+    elif isinstance(iq_date, datetime.date):
+        assert iq.ref_date.date() == iq_date
     elif bq.core.utils.isstring(iq_date):
         assert iq.ref_date == dateutil_parse(iq_date)
     else:
@@ -155,10 +158,19 @@ def test_isotopequantity_ref_date_stable(stable_isotope, iq_date):
     iq = IsotopeQuantity(stable_isotope, date=iq_date, atoms=1e24)
     if isinstance(iq_date, datetime.datetime):
         assert iq.ref_date == iq_date
+    elif isinstance(iq_date, datetime.date):
+        assert iq.ref_date.date() == iq_date
     elif bq.core.utils.isstring(iq_date):
         assert iq.ref_date == dateutil_parse(iq_date)
     else:
         assert (datetime.datetime.now() - iq.ref_date).total_seconds() < 5
+
+
+@pytest.mark.parametrize('date_in', [
+    '2021-2-20 0:00:00', '2021-2-20', datetime.date(2021, 2, 20)
+])
+def test_handle_datetime(date_in):
+    assert bq.utils.handle_datetime(date_in) == datetime.datetime(2021, 2, 20, 0, 0, 0)
 
 
 @pytest.mark.parametrize('iso, date, kwargs, error', [
@@ -244,10 +256,26 @@ def test_isotopequantity_time_when_error(stable_isotope):
 def test_isotopequantity_activity_now(iq):
     """Test IsotopeQuantity.*_now()"""
 
-    assert np.isclose(iq.bq_now(), iq.bq_at(datetime.datetime.now()))
-    assert np.isclose(iq.uci_now(), iq.uci_at(datetime.datetime.now()))
-    assert np.isclose(iq.atoms_now(), iq.atoms_at(datetime.datetime.now()))
-    assert np.isclose(iq.g_now(), iq.g_at(datetime.datetime.now()))
+    # Test that the *_now() methods are deprecated
+    with pytest.warns(DeprecationWarning):
+        iq.bq_now()
+    with pytest.warns(DeprecationWarning):
+        iq.uci_now()
+    with pytest.warns(DeprecationWarning):
+        iq.atoms_now()
+    with pytest.warns(DeprecationWarning):
+        iq.g_now()
+
+    # Rather than test e.g.,
+    #   assert np.isclose(iq.bq_at(), iq.bq_at(datetime.datetime.now()))
+    # which may fail if the two times are computed after a long delay on a slow
+    # machine, just test that an explicit datetime.now() is sandwiched between
+    # two implicit calls.
+    for q in ["atoms", "bq", "uci", "g"]:
+        x0 = iq.quantity_at(q)
+        x1 = iq.quantity_at(q, datetime.datetime.now())
+        x2 = iq.quantity_at(q)
+        assert x0 >= x1 >= x2
 
 
 def test_isotopequantity_decays_from(iq):
