@@ -806,7 +806,18 @@ class Fitter(object):
         # Best fit
         y = self.eval(x_plot, **self.result.best_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
-        fit_ax.plot(x_plot, y, color='#e31a1c', label='best fit')
+        fit_ax.plot(x_plot, y, color='#e31a1c', label='best fit', zorder=10)
+        if self.result.success:
+            yunc = self.result.eval_uncertainty(x=x_plot, sigma=1)
+            fit_ax.fill_between(
+                x_plot,
+                y-yunc,
+                y+yunc,
+                label=r'$\pm 1\, \sigma$',
+                color='#e31a1c',
+                alpha=0.2,
+                zorder=9
+            )
         # Components (currently will work for <=3 component)
         colors = ['#1f78b4', '#33a02c', '#6a3d9a']
         for i, m in enumerate(self.result.model.components):
