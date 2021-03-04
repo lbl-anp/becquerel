@@ -256,19 +256,26 @@ def test_isotopequantity_time_when_error(stable_isotope):
 def test_isotopequantity_activity_now(iq):
     """Test IsotopeQuantity.*_now()"""
 
+    # Test that the *_now() methods are deprecated
     with pytest.warns(DeprecationWarning):
-        assert np.isclose(iq.bq_now(), iq.bq_at(datetime.datetime.now()))
+        iq.bq_now()
     with pytest.warns(DeprecationWarning):
-        assert np.isclose(iq.uci_now(), iq.uci_at(datetime.datetime.now()))
+        iq.uci_now()
     with pytest.warns(DeprecationWarning):
-        assert np.isclose(iq.atoms_now(), iq.atoms_at(datetime.datetime.now()))
+        iq.atoms_now()
     with pytest.warns(DeprecationWarning):
-        assert np.isclose(iq.g_now(), iq.g_at(datetime.datetime.now()))
+        iq.g_now()
 
-    assert np.isclose(iq.bq_at(), iq.bq_at(datetime.datetime.now()))
-    assert np.isclose(iq.uci_at(), iq.uci_at(datetime.datetime.now()))
-    assert np.isclose(iq.atoms_at(), iq.atoms_at(datetime.datetime.now()))
-    assert np.isclose(iq.g_at(), iq.g_at(datetime.datetime.now()))
+    # Rather than test e.g.,
+    #   assert np.isclose(iq.bq_at(), iq.bq_at(datetime.datetime.now()))
+    # which may fail if the two times are computed after a long delay on a slow
+    # machine, just test that an explicit datetime.now() is sandwiched between
+    # two implicit calls.
+    for q in ["atoms", "bq", "uci", "g"]:
+        x0 = iq.quantity_at(q)
+        x1 = iq.quantity_at(q, datetime.datetime.now())
+        x2 = iq.quantity_at(q)
+        assert x0 >= x1 >= x2
 
 
 def test_isotopequantity_decays_from(iq):
