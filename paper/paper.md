@@ -22,10 +22,14 @@ authors:
     affiliation: 1
   - name: Tenzing H.Y. Joshi
     affiliation: 1
+  - name: J. Ali Hanks
+    affiliation: 2
 affiliations:
   - name: Applied Nuclear Physics group, Lawrence Berkeley National Laboratory
     index: 1
-date: 23 Feb 2021
+  - name: Department of Nuclear Engineering, University of California, Berkeley
+    index: 2
+date: 04 Mar 2021
 bibliography: paper.bib
 ---
 
