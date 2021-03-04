@@ -160,25 +160,14 @@ class GaussModel(Model):
         if dx is None:
             dx = np.ones_like(x)
 
-        # counts = (y - (y[-1] - y[0]) * (x - x[0]) / (x[-1] - x[0]) - y[0])
-        # max_idx = np.argmax(counts)
-        # counts[counts < counts[max_idx] * 0.5] *= 0
-        # amp = np.sum(counts) / 0.8
-        # mu = x[max_idx]
-        # sigma = np.sqrt(np.sum(counts * (x - mu)**2) / amp) * 2
-        # if x is None:
-        #     x = np.arange(0, len(y))
-
         xspan = x[-1] - x[0]
         mu = x[0] + xspan * center_ratio
         msk = ((x >= (mu - xspan * width_ratio)) &
                (x <= mu + xspan * width_ratio))
-        # NOTE: this integration assumes y is NOT normalized to dx (NOW IT IS)
-        amp = np.sum(y[msk]/dx[msk])
-        # c = y[msk]
-        # amp = np.sum(c) - (c[0] + c[-1]) * np.sum(msk) * 0.5
+
         # TODO: update this, minimizer creates NaN's if default sigma used (0)
         sigma = xspan * width_ratio / 10.
+        amp = np.max(y[msk]) * np.sqrt(2*np.pi) * sigma  # new amplitude guess
         return [
             ('{}amp'.format(self.prefix), 'value', amp),
             ('{}amp'.format(self.prefix), 'min', 0.0),
@@ -227,12 +216,15 @@ class GaussErfModel(Model):
         mu = x[0] + xspan * center_ratio
         msk = ((x >= (mu - xspan * width_ratio)) &
                (x <= mu + xspan * width_ratio))
-        amp = np.sum(y[msk]/dx[msk])
+
         sigma = xspan * width_ratio / 10.
+        amp = np.max(y[msk]) * np.sqrt(2*np.pi) * sigma
+        amp_gauss = amp * amp_ratio
+        amp_erf = amp * (1.0 - amp_ratio)/dx[0]/(np.sqrt(2*np.pi) * sigma)
         return [
-            ('{}ampgauss'.format(self.prefix), 'value', amp*amp_ratio),
+            ('{}ampgauss'.format(self.prefix), 'value', amp_gauss),
             ('{}ampgauss'.format(self.prefix), 'min', 0.0),
-            ('{}amperf'.format(self.prefix), 'value', amp*(1.0 - amp_ratio)),
+            ('{}amperf'.format(self.prefix), 'value', amp_erf),
             ('{}amperf'.format(self.prefix), 'min', 0.0),
             ('{}mu'.format(self.prefix), 'value', mu),
             ('{}mu'.format(self.prefix), 'min', x[0]),
@@ -290,10 +282,10 @@ class ExpGaussModel(Model):
         mu = x[0] + xspan * center_ratio
         msk = ((x >= (mu - xspan * width_ratio)) &
                (x <= mu + xspan * width_ratio))
-        # NOTE: this integration assumes y is NOT normalized to dx
-        amp = np.sum(y[msk]/dx[msk])
+
         # TODO: update this, minimizer creates NaN's if default sigma used (0)
         sigma = xspan * width_ratio / 10.
+        amp = np.max(y[msk]) * np.sqrt(2*np.pi) * sigma
         # TODO: We miss gamma here
         return [
             ('{}amp'.format(self.prefix), 'value', amp),
