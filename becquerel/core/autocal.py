@@ -51,15 +51,12 @@ def fit_gain(channels, snrs, energies):
     """
     if len(channels) != len(energies):
         raise AutoCalibratorError(
-            "Number of channels ({}) must equal # of energies ({})".format(
-                len(channels), len(energies)
-            )
+            f"Number of channels ({len(channels)}) must equal # of energies "
+            f"({len(energies)})"
         )
     if len(channels) != len(snrs):
         raise AutoCalibratorError(
-            "Number of channels ({}) must equal # of SNRs ({})".format(
-                len(channels), len(snrs)
-            )
+            f"Number of channels ({len(channels)}) must equal # of SNRs ({len(snrs)})"
         )
     x = np.asarray(channels)
     s = np.asarray(snrs)
@@ -96,15 +93,12 @@ def fom_gain(channels, snrs, energies):
     """
     if len(channels) != len(energies):
         raise AutoCalibratorError(
-            "Number of channels ({}) must equal # of energies ({})".format(
-                len(channels), len(energies)
-            )
+            f"Number of channels ({len(channels)}) must equal # of energies "
+            f"({len(energies)})"
         )
     if len(channels) != len(snrs):
         raise AutoCalibratorError(
-            "Number of channels ({}) must equal # of SNRs ({})".format(
-                len(channels), len(snrs)
-            )
+            f"Number of channels ({len(channels)}) must equal # of SNRs ({len(snrs)})"
         )
     x = np.asarray(channels)
     s = np.asarray(snrs)
@@ -128,25 +122,20 @@ def find_best_gain(
     """Find the gain that gives the best match of peaks to energies."""
     if len(channels) != len(snrs):
         raise AutoCalibratorError(
-            "Number of channels ({}) must equal # of SNRs ({})".format(
-                len(channels), len(snrs)
-            )
+            f"Number of channels ({len(channels)}) must equal # of SNRs ({len(snrs)})"
         )
     if len(channels) < 2:
         raise AutoCalibratorError(
-            "Number of channels ({}) must be at least 2".format(len(channels))
+            f"Number of channels ({len(channels)}) must be at least 2"
         )
     if len(required_energies) < 2:
         raise AutoCalibratorError(
-            "Number of required energies ({}) must be at least 2".format(
-                len(required_energies)
-            )
+            f"Number of required energies ({len(required_energies)}) must be at least 2"
         )
     if len(channels) < len(required_energies):
         raise AutoCalibratorError(
-            "Number of channels ({}) must be >= required energies ({})".format(
-                len(channels), len(required_energies)
-            )
+            f"Number of channels ({len(channels)}) must be >= required energies "
+            f"({len(required_energies)})"
         )
 
     channels = np.array(channels)
@@ -163,7 +152,7 @@ def find_best_gain(
     best_ergs = None
     while n_set >= n_req:
         if verbose:
-            print("Searching groups of {}".format(n_set))
+            print(f"Searching groups of {n_set}")
         # cycle through energy combinations
         for comb_erg in combinations(optional, n_set - n_req):
             comb_erg = np.array(comb_erg)
@@ -195,13 +184,14 @@ def find_best_gain(
                 fom = fom_gain(comb_chan, comb_snr, comb_erg)
                 if verbose:
                     print("v")
-                    s0 = "Valid calibration found:\n"
-                    s0 += "FOM: {:15.9f}".format(fom)
-                    s0 += "  gain: {:6.3f}".format(gain)
-                    s0 += "  ergs: {:50s}".format(str(comb_erg))
-                    s0 += "  de: {:50s}".format(str(de))
-                    s0 += "  chans: {:40s}".format(str(comb_chan))
-                    print(s0)
+                    print(
+                        "Valid calibration found:\n"
+                        f"FOM: {fom:15.9f}"
+                        f"  gain: {gain:6.3f}"
+                        f"  ergs: {comb_erg:50s}"
+                        f"  de: {de:50s}"
+                        f"  chans: {comb_chan:40s}"
+                    )
                 if best_fom is None:
                     best_fom = fom + 1.0
                 if fom < best_fom:
@@ -211,13 +201,14 @@ def find_best_gain(
                     best_snrs = comb_snr
                     best_ergs = comb_erg
                     if verbose:
-                        s0 = "Best calibration so far:\n"
-                        s0 += "FOM: {:15.9f}".format(best_fom)
-                        s0 += "  gain: {:6.3f}".format(best_gain)
-                        s0 += "  ergs: {:50s}".format(str(best_ergs))
-                        s0 += "  de: {:50s}".format(str(de))
-                        s0 += "  chans: {:40s}".format(str(best_chans))
-                        print(s0)
+                        print(
+                            "Best calibration so far:\n"
+                            f"FOM: {best_fom:15.9f}"
+                            f"  gain: {best_gain:6.3f}"
+                            f"  ergs: {best_ergs:50s}"
+                            f"  de: {de:50s}"
+                            f"  chans: {best_chans:40s}"
+                        )
         n_set -= 1
     if best_gain is None:
         return None
@@ -262,7 +253,7 @@ class AutoCalibrator(object):
         """Use the peaks found by the PeakFinder."""
         if not isinstance(peakfinder, PeakFinder):
             raise AutoCalibratorError(
-                "Argument must be a PeakFinder, not {}".format(type(peakfinder))
+                f"Argument must be a PeakFinder, not {type(peakfinder)}"
             )
         self.peakfinder = peakfinder
 
@@ -294,17 +285,16 @@ class AutoCalibrator(object):
         # handle the usual case: multiple lines to match
         if len(self.peakfinder.centroids) < 2:
             raise AutoCalibratorError(
-                "Need more than {} peaks to fit".format(len(self.peakfinder.centroids))
+                f"Need more than {len(self.peakfinder.centroids)}"
             )
         if len(required_energies) < 2:
             raise AutoCalibratorError(
-                "Need more than {} energies to fit".format(len(required_energies))
+                f"Need more than {len(required_energies)} energies to fit"
             )
         if len(self.peakfinder.centroids) < len(required_energies):
             raise AutoCalibratorError(
-                "Require {} energies but only {} peaks are available".format(
-                    len(required_energies), len(self.peakfinder.centroids)
-                )
+                f"Require {len(required_energies)} energies but only "
+                f"{len(self.peakfinder.centroids)} peaks are available"
             )
         fit = find_best_gain(
             self.peakfinder.centroids,

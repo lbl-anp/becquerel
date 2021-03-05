@@ -14,7 +14,7 @@ NAME = "becquerel"
 MAJOR = 0
 MINOR = 3
 MICRO = 0
-VERSION = "{}.{}.{}".format(MAJOR, MINOR, MICRO)
+VERSION = f"{MAJOR}.{MINOR}.{MICRO}"
 
 DESCRIPTION = __doc__.split("\n")[0].split(": ")[-1]
 URL = "https://github.com/lbl-anp/becquerel"
@@ -61,11 +61,11 @@ LONG_DESCRIPTION += "\n" + "## Copyright Notice" + COPYRIGHT
 with open("becquerel/__metadata__.py", "w") as f:
     print('"""Becquerel package metadata."""', file=f)
     print("", file=f)
-    print('__description__ = "{}"'.format(DESCRIPTION), file=f)
-    print('__url__ = "{}"'.format(URL), file=f)
-    print('__version__ = "{}"'.format(VERSION), file=f)
-    print('__license__ = """{}"""'.format(LICENSE), file=f)
-    print('__copyright__ = """{}"""'.format(COPYRIGHT), file=f)
+    print(f'__description__ = "{DESCRIPTION}"', file=f)
+    print(f'__url__ = "{URL}"', file=f)
+    print(f'__version__ = "{VERSION}"', file=f)
+    print(f'__license__ = """{LICENSE}"""', file=f)
+    print(f'__copyright__ = """{COPYRIGHT}"""', file=f)
 
 setup(
     name=NAME,
