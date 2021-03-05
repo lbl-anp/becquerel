@@ -127,7 +127,7 @@ for _e in HIGH_STAT_SIM_PARAMS["methods"]:
             _p["params"] = {}
             _p["method"] = _e
             _p["binning"] = _b
-            if isinstance(_m str):
+            if isinstance(_m, str):
                 _i = deepcopy(_m)
                 _m = [_m]
             else:
