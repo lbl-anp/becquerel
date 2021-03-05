@@ -1,6 +1,5 @@
 """Test Element class."""
 
-from __future__ import print_function
 from becquerel.tools import element
 import pytest
 

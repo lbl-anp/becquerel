@@ -1,6 +1,5 @@
 """Test isotope.py classes."""
 
-from __future__ import print_function
 import numpy as np
 from becquerel.tools import element
 from becquerel.tools import isotope

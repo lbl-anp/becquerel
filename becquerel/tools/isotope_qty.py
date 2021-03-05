@@ -1,6 +1,5 @@
 """Quantities of a nuclear isotope, with decay and activation tools."""
 
-from __future__ import print_function
 import datetime
 import copy
 import numpy as np

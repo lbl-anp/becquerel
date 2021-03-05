@@ -1,6 +1,5 @@
 """Test NIST material data queries."""
 
-from __future__ import print_function
 from becquerel.tools import materials
 import pytest
 

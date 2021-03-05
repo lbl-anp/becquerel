@@ -1,6 +1,5 @@
 """Read in an Ortec SPE file."""
 
-from __future__ import print_function
 import datetime
 import os
 import warnings

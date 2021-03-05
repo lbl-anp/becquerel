@@ -1,6 +1,5 @@
 """Test becquerel's Spectrum."""
 
-from __future__ import print_function
 import pytest
 import datetime
 import numpy as np

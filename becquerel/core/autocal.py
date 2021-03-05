@@ -1,6 +1,5 @@
 """Automatic calibration by associating peaks with energies."""
 
-from __future__ import print_function
 from itertools import combinations
 import matplotlib.pyplot as plt
 import numpy as np

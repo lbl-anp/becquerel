@@ -1,6 +1,5 @@
 """Base class for spectrum file parsers."""
 
-from __future__ import print_function
 import os
 from copy import deepcopy
 import datetime

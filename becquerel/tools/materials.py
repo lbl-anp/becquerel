@@ -7,7 +7,6 @@ References:
 
 """
 
-from __future__ import print_function
 import requests
 import pandas as pd
 from .element import element_symbol

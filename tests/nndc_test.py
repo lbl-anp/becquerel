@@ -1,6 +1,5 @@
 """Test NNDC data queries."""
 
-from __future__ import print_function
 import numpy as np
 import pandas as pd
 from becquerel.tools import nndc

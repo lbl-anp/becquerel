@@ -1,4 +1,3 @@
-from __future__ import print_function
 import datetime
 from dateutil.parser import parse as dateutil_parse
 import copy

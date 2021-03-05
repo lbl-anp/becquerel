@@ -1,6 +1,5 @@
 """Read in an Ortec SPC file."""
 
-from __future__ import print_function
 import os
 import struct
 import dateutil.parser

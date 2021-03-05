@@ -1,6 +1,5 @@
 """A cache of all NNDC wallet card data."""
 
-from __future__ import print_function
 from future.builtins import super
 import pandas as pd
 import uncertainties

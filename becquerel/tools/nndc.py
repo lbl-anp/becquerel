@@ -7,7 +7,6 @@ References:
 
 """
 
-from __future__ import print_function
 from future.builtins import super
 import warnings
 import numpy as np

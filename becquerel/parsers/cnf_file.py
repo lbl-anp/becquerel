@@ -10,7 +10,6 @@ The relevant code is in these files:
 
 """
 
-from __future__ import print_function
 import datetime
 import os
 import struct

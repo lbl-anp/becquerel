@@ -1,6 +1,5 @@
 """Test XCOM data queries."""
 
-from __future__ import print_function
 import numpy as np
 from becquerel.tools import xcom
 import pytest

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Becquerel: Tools for radiation spectral analysis."""
 
-from __future__ import print_function
 import sys
 import site
 from setuptools import setup, find_packages

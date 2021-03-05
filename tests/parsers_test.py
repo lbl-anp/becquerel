@@ -1,6 +1,5 @@
 """Test becquerel spectrum file parsers."""
 
-from __future__ import print_function
 import glob
 import os
 import pytest

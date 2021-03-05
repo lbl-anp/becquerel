@@ -1,6 +1,5 @@
 """A simple class for caching a pandas DataFrame."""
 
-from __future__ import print_function
 import os
 import pandas as pd
 
