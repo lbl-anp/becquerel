@@ -18,29 +18,6 @@ EPS = np.finfo(float).eps
 
 VECTOR_TYPES = (list, tuple, np.ndarray)
 
-if sys.version_info < (3, 2):
-
-    class ResourceWarning(Warning):
-        pass
-
-
-else:
-
-    ResourceWarning = ResourceWarning
-
-if sys.version_info < (3,):
-
-    def isstring(s):
-        """Test for strings in python2"""
-        return isinstance(s, basestring)
-
-
-else:
-
-    def isstring(s):
-        """Test for strings in python3"""
-        return isinstance(s, str)
-
 
 class UncertaintiesError(Exception):
     """Raised when uncertainties are badly specified in an input."""
