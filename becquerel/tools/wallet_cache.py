@@ -5,7 +5,6 @@ import pandas as pd
 import uncertainties
 from . import nndc
 from . import df_cache
-from ..core.utils import isstring
 
 
 def convert_float_ufloat(x):
@@ -15,7 +14,7 @@ def convert_float_ufloat(x):
       x: a string giving the number
     """
 
-    if isstring(x):
+    if isinstance(x, str):
         if "+/-" in x:
             tokens = x.split("+/-")
             return uncertainties.ufloat(float(tokens[0]), float(tokens[1]))

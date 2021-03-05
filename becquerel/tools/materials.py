@@ -9,8 +9,8 @@ References:
 
 import requests
 import pandas as pd
+from collections.abc import Iterable
 from .element import element_symbol
-from ..core.utils import isstring, Iterable
 
 MAX_Z = 92
 N_COMPOUNDS = 48
@@ -128,7 +128,7 @@ def convert_composition(comp):
             "Compound must be an iterable of strings: {}".format(comp)
         )
     for line in comp:
-        if not isstring(line):
+        if not isinstance(line, str):
             raise NISTMaterialsRequestError(
                 "Line must be a string type: {} {}".format(line, type(line))
             )

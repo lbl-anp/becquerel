@@ -147,7 +147,7 @@ def test_isotopequantity_ref_date_rad(radioisotope, iq_date):
         assert iq.ref_date == iq_date
     elif isinstance(iq_date, datetime.date):
         assert iq.ref_date.date() == iq_date
-    elif bq.core.utils.isstring(iq_date):
+    elif isinstance(iq_date, str):
         assert iq.ref_date == dateutil_parse(iq_date)
     else:
         assert (datetime.datetime.now() - iq.ref_date).total_seconds() < 5
@@ -161,7 +161,7 @@ def test_isotopequantity_ref_date_stable(stable_isotope, iq_date):
         assert iq.ref_date == iq_date
     elif isinstance(iq_date, datetime.date):
         assert iq.ref_date.date() == iq_date
-    elif bq.core.utils.isstring(iq_date):
+    elif isinstance(iq_date, str):
         assert iq.ref_date == dateutil_parse(iq_date)
     else:
         assert (datetime.datetime.now() - iq.ref_date).total_seconds() < 5

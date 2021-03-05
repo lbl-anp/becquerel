@@ -4,7 +4,6 @@ import pytest
 from copy import deepcopy
 import numpy as np
 import becquerel as bq
-import matplotlib.pyplot as plt
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
 
@@ -21,7 +20,7 @@ for extension in [".spe", ".spc", ".cnf"]:
 
 
 def get_model_name(x):
-    if bq.core.utils.isstring(x):
+    if isinstance(x, str):
         return x
     else:
         return " ".join(x)
@@ -128,7 +127,7 @@ for _e in HIGH_STAT_SIM_PARAMS["methods"]:
             _p["params"] = {}
             _p["method"] = _e
             _p["binning"] = _b
-            if bq.utils.isstring(_m):
+            if isinstance(_m str):
                 _i = deepcopy(_m)
                 _m = [_m]
             else:

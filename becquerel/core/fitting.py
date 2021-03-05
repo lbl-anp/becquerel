@@ -7,7 +7,6 @@ from lmfit.model import Model
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-from .utils import isstring, bin_centers_from_edges
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
@@ -522,7 +521,7 @@ class Fitter(object):
             cls = m.__class__
             self._model_cls_cnt[cls] = self._model_cls_cnt.get(cls, 0) + 1
             return m
-        elif isstring(m):
+        elif isinstance(m, str):
             cls = MODEL_STR_TO_CLS.get(m.lower(), None)
             if cls is not None:
                 self._model_cls_cnt[cls] = self._model_cls_cnt.get(cls, 0) + 1
@@ -530,7 +529,7 @@ class Fitter(object):
         raise FittingError("Unknown model type: {}".format(m))
 
     def _make_model(self, model):
-        if isstring(model) or isinstance(model, Model):
+        if isinstance(model, str) or isinstance(model, Model):
             model = [model]
         # Convert the model(s) to a list of Model classes / Model instancess
         self._model_cls_cnt = {}

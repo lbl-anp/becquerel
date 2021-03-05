@@ -13,7 +13,6 @@ import numpy as np
 import requests
 import pandas as pd
 import uncertainties
-from ..core.utils import isstring, ResourceWarning
 
 
 PARITIES = ["+", "-", "any"]
@@ -227,9 +226,9 @@ def _parse_float_uncertainty(x, dx):
 
     """
 
-    if not isstring(x):
+    if not isinstance(x, str):
         raise NNDCRequestError("Value must be a string: {}".format(x))
-    if not isstring(dx):
+    if not isinstance(dx, str):
         raise NNDCRequestError("Uncertainty must be a string: {}".format(dx))
     # ignore percents
     if "%" in x:

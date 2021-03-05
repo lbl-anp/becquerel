@@ -34,7 +34,7 @@ def handle_isotope(isotope, error_name=None):
 
     if isinstance(isotope, Isotope):
         return isotope
-    elif utils.isstring(isotope):
+    elif isinstance(isotope, str):
         return Isotope(isotope)
     else:
         raise TypeError(

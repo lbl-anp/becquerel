@@ -6,7 +6,6 @@ from dateutil.parser import parse as dateutil_parse
 from uncertainties import UFloat, unumpy
 import warnings
 import numpy as np
-from collections.abc import Iterable
 
 EPS = np.finfo(float).eps
 
@@ -103,7 +102,7 @@ def handle_datetime(input_time, error_name="datetime arg", allow_none=False):
             "datetime.date passed in with no time; defaulting to 0:00 on date"
         )
         return datetime.datetime(input_time.year, input_time.month, input_time.day)
-    elif isstring(input_time):
+    elif isinstance(input_time, str):
         return dateutil_parse(input_time)
     elif input_time is None and allow_none:
         return None
