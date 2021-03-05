@@ -270,7 +270,7 @@ def _parse_float_uncertainty(x, dx):
     try:
         x2 = float(x)
     except ValueError:
-        raise NNDCRequestError('Value cannot be parsed as float: "{}"'.format(x))
+        raise NNDCRequestError(f'Value cannot be parsed as float: "{x}"')
     if dx == "":
         return x2
     # handle multiple exponents with some uncertainties, e.g., "7E-4E-5"
