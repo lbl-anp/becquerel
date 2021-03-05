@@ -188,9 +188,9 @@ def find_best_gain(
                         "Valid calibration found:\n"
                         f"FOM: {fom:15.9f}"
                         f"  gain: {gain:6.3f}"
-                        f"  ergs: {comb_erg:50s}"
-                        f"  de: {de:50s}"
-                        f"  chans: {comb_chan:40s}"
+                        f"  ergs: {str(comb_erg):50s}"
+                        f"  de: {str(de):50s}"
+                        f"  chans: {str(comb_chan):40s}"
                     )
                 if best_fom is None:
                     best_fom = fom + 1.0
@@ -205,9 +205,9 @@ def find_best_gain(
                             "Best calibration so far:\n"
                             f"FOM: {best_fom:15.9f}"
                             f"  gain: {best_gain:6.3f}"
-                            f"  ergs: {best_ergs:50s}"
-                            f"  de: {de:50s}"
-                            f"  chans: {best_chans:40s}"
+                            f"  ergs: {str(best_ergs):50s}"
+                            f"  de: {str(de):50s}"
+                            f"  chans: {str(best_chans):40s}"
                         )
         n_set -= 1
     if best_gain is None:
