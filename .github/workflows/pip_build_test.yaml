@@ -16,9 +16,11 @@ jobs:
   pip_build_test:
 
     # OS and python combos to test
+    # Ubuntu 20.04 is specified because GHA are currently transitioning from
+    # 18.04 to 20.04 and the `latest` tag could run on either.
     strategy:
       matrix:
-        os: [ 'macos-latest', 'ubuntu-latest']
+        os: [ 'macos-latest', 'ubuntu-20.04', 'windows-latest' ]
         python-version: ['3.6', '3.7', '3.8']
     runs-on: ${{ matrix.os }}
 
