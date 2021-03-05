@@ -325,7 +325,7 @@ def rebin(
     if method == "listmode":
         if (in_spectra < 0).any():
             raise RebinError(
-                "Cannot rebin spectra with negative values with " "listmode method"
+                "Cannot rebin spectra with negative values with listmode method"
             )
         if (in_spectra < 1).all():
             raise RebinError(
