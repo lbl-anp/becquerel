@@ -61,7 +61,7 @@ class TestSpectrumFilePlot(object):
         """Run the test for the given class and file extension."""
         try:
             plt.figure()
-        except:
+        except Exception:
             # TclError on CI bc no display. skip the test
             return
         plt.title("Testing " + cls.__name__)
