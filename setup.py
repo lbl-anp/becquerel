@@ -2,7 +2,13 @@
 """Becquerel: Tools for radiation spectral analysis."""
 
 from __future__ import print_function
+import sys
+import site
 from setuptools import setup, find_packages
+
+# Enables --editable install with --user
+# https://github.com/pypa/pip/issues/7953
+site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 NAME = 'becquerel'
 
