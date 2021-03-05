@@ -183,7 +183,6 @@ class Isotope(element.Element):
       specific_activity: the specific activity in Bq/g
     """
 
-
     def __init__(self, *args):
         """Initialize an Isotope.
 
