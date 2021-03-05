@@ -47,8 +47,9 @@ Use [google standards](https://google.github.io/styleguide/pyguide.html)
 
 ### Linter
 
-* Use `flake8` in your IDE
-* Use `pylint` from command line (as in style guide)
+Use the linter of your choice.
+The code style will be checked with [`black`](https://black.readthedocs.io/en/stable/) in the testing.
+We like to use [`flake8`](https://flake8.pycqa.org/en/latest/) and/or [`pylance`](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance).
 
 ### Checklist for code contributions:
   - [ ] Branch off of `main` and name the branch `feature-XX` or `issue-XX`
@@ -56,10 +57,6 @@ Use [google standards](https://google.github.io/styleguide/pyguide.html)
   - [ ] Write tests to cover all use cases
   - [ ] Ensure all tests pass (`python setup.py test`)
   - [ ] Ensure test coverage is >95%
-  - [ ] Ensure there are no linter issues:
-    - `flake8 becquerel tests`
-    - `pydocstyle becquerel tests`
-    - `pylint becquerel tests`
+  - [ ] Autoformat (`black .`)
   - [ ] Spellcheck your code and docstrings
-  - [ ] Check style is [consistent with Google Python style guide](https://github.com/google/styleguide/blob/gh-pages/pyguide.md)
   - [ ] Push branch to GitHub and create a pull request to `main`
