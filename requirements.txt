@@ -5,7 +5,7 @@ lmfit
 lxml
 matplotlib
 numba>=0.47.0
-llvmlite==0.31.0; python_version < "3"
+llvmlite
 numpy
 pandas
 python-dateutil
