@@ -16,7 +16,7 @@ class RebinWarning(UserWarning):
     pass
 
 
-def _check_monotonic_increasing(arr, arr_name='array'):
+def _check_monotonic_increasing(arr, arr_name="array"):
     """Check that a numpy array is monotonically increasing.
 
     Args:
@@ -30,8 +30,7 @@ def _check_monotonic_increasing(arr, arr_name='array'):
     # neighboring elements are equal
     tmp = np.diff(arr)
     if not ((tmp > 0) | np.isclose(tmp, 0)).all():
-        raise RebinError('{} is not monotonically increasing: {}'.format(
-            arr_name, arr))
+        raise RebinError("{} is not monotonically increasing: {}".format(arr_name, arr))
 
 
 def _check_partial_overlap(in_edges, out_edges):
@@ -55,14 +54,16 @@ def _check_partial_overlap(in_edges, out_edges):
     """
     if (in_edges[..., 0] > out_edges[..., 0]).any():
         warnings.warn(
-            'The first input edge is larger than the first output edge, ' +
-            'zeros will padded on the left side of the new spectrum',
-            RebinWarning)
+            "The first input edge is larger than the first output edge, "
+            + "zeros will padded on the left side of the new spectrum",
+            RebinWarning,
+        )
     if (in_edges[..., -1] < out_edges[..., -1]).any():
         warnings.warn(
-            'The last input edge is smaller than the last output edge, ' +
-            'zeros will padded on the right side of the new spectrum',
-            RebinWarning)
+            "The last input edge is smaller than the last output edge, "
+            + "zeros will padded on the right side of the new spectrum",
+            RebinWarning,
+        )
 
 
 def _check_any_overlap(in_edges, out_edges):
@@ -84,9 +85,9 @@ def _check_any_overlap(in_edges, out_edges):
             new:   └┴┴┴┘
     """
     if (in_edges[..., -1] <= out_edges[..., 0]).any():
-        raise RebinError('Input edges are all smaller than output edges')
+        raise RebinError("Input edges are all smaller than output edges")
     if (in_edges[..., 0] >= out_edges[..., -1]).any():
-        raise RebinError('Input edges are all larger than output edges')
+        raise RebinError("Input edges are all larger than output edges")
 
 
 @nb.vectorize([nb.f8(nb.f8, nb.f8, nb.f8, nb.f8)], nopython=True)
@@ -107,7 +108,7 @@ def _linear_offset(slope, cts, low, high):
     if np.abs(slope) < 1e-6:
         offset = cts / (high - low)
     else:
-        offset = (cts - slope / 2. * (high**2 - low**2)) / (high - low)
+        offset = (cts - slope / 2.0 * (high ** 2 - low ** 2)) / (high - low)
     return offset
 
 
@@ -124,7 +125,7 @@ def _slope_integral(x, m, b):
       The indefinite integral of y = mx + b, with an x value substituted in.
       (m x^2 / 2 + b x)
     """
-    return m * x**2 / 2 + b * x
+    return m * x ** 2 / 2 + b * x
 
 
 @nb.vectorize([nb.f8(nb.f8, nb.f8, nb.f8, nb.f8)], nopython=True)
@@ -148,10 +149,12 @@ def _counts(m, b, x_low, x_high):
     return _slope_integral(x_high, m, b) - _slope_integral(x_low, m, b)
 
 
-@nb.guvectorize([(nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:])],
-                "(n),(N),(m),(n)->(m)")
+@nb.guvectorize(
+    [(nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:], nb.f8[:])], "(n),(N),(m),(n)->(m)"
+)
 def _rebin_interpolation(
-        in_spectrum, in_edges, out_edges_no_rightmost, slopes, out_spectrum):
+    in_spectrum, in_edges, out_edges_no_rightmost, slopes, out_spectrum
+):
     """Rebins a spectrum using linear interpolation.
 
     Keeps a running counter of two loop indices: in_idx & out_idx
@@ -220,10 +223,8 @@ def _rebin_interpolation(
             out_spectrum[out_idx] += _counts(slope, offset, low, high)
 
 
-@nb.guvectorize([(nb.i8[:], nb.f8[:], nb.f8[:], nb.i8[:])],
-                "(n),(N),(m)->(m)")
-def _rebin_listmode(
-        in_spectrum, in_edges, out_edges_no_rightmost, out_spectrum):
+@nb.guvectorize([(nb.i8[:], nb.f8[:], nb.f8[:], nb.i8[:])], "(n),(N),(m)->(m)")
+def _rebin_listmode(in_spectrum, in_edges, out_edges_no_rightmost, out_spectrum):
     """Stochastic rebinning method: spectrum-histogram to listmode then back.
 
     rightmost edge in the parameter out_edges chopped off, in order for
@@ -251,7 +252,8 @@ def _rebin_listmode(
     # knock out leftmost bin edge too, because we put all overflows into
     # first and last bins anyways
     out_edges = np.concatenate(
-        (np.array([-np.inf]), out_edges_no_rightmost[1:], np.array([np.inf])))
+        (np.array([-np.inf]), out_edges_no_rightmost[1:], np.array([np.inf]))
+    )
     energies = np.zeros(np.sum(in_spectrum))
     energy_idx_start = 0
     # loop through input bins:
@@ -262,15 +264,22 @@ def _rebin_listmode(
         in_left_edge = in_edges[in_idx]
         in_right_edge = in_edges[in_idx + 1]
         energies[energy_idx_start:energy_idx_stop] = in_left_edge + (
-            in_right_edge - in_left_edge) * np.random.rand(bin_counts)
+            in_right_edge - in_left_edge
+        ) * np.random.rand(bin_counts)
         energy_idx_start = energy_idx_stop
     # bin the energies (drops the energies outside of the out-binning-range)
     # N.B. use [:] to assign values to full array output with guvectorize:
     out_spectrum[:] = np.histogram(energies, bins=out_edges)[0]
 
 
-def rebin(in_spectra, in_edges, out_edges, method="interpolation",
-          slopes=None, zero_pad_warnings=True):
+def rebin(
+    in_spectra,
+    in_edges,
+    out_edges,
+    method="interpolation",
+    slopes=None,
+    zero_pad_warnings=True,
+):
     """
     Spectra rebinning via deterministic or stochastic methods.
 
@@ -315,11 +324,14 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     # Cast data types and check listmode input
     if method == "listmode":
         if (in_spectra < 0).any():
-            raise RebinError('Cannot rebin spectra with negative values with '
-                             'listmode method')
+            raise RebinError(
+                "Cannot rebin spectra with negative values with " "listmode method"
+            )
         if (in_spectra < 1).all():
-            raise RebinError('Cannot rebin spectra with all values less than '
-                             'one with listmode method')
+            raise RebinError(
+                "Cannot rebin spectra with all values less than "
+                "one with listmode method"
+            )
         if np.issubdtype(in_spectra.dtype.type, np.floating):
             # np.rint is a ufunc: allows using this with tools such as xarray
             in_spectra_rint = np.rint(in_spectra).astype(int)
@@ -328,10 +340,11 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
                 pass
             else:
                 warnings.warn(
-                    'Argument in_spectra contains float value(s) which ' +
-                    'will have decimal precision loss when converting to ' +
-                    'integers for rebin method listmode.',
-                    RebinWarning)
+                    "Argument in_spectra contains float value(s) which "
+                    + "will have decimal precision loss when converting to "
+                    + "integers for rebin method listmode.",
+                    RebinWarning,
+                )
             in_spectra = in_spectra_rint
 
     if slopes is not None:
@@ -344,8 +357,8 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
     # issue should raise an error in guvectorize
     assert in_spectra.shape[-1] == in_edges.shape[-1] - 1
     # Check for increasing bin structure
-    _check_monotonic_increasing(in_edges, 'in_edges')
-    _check_monotonic_increasing(out_edges, 'out_edges')
+    _check_monotonic_increasing(in_edges, "in_edges")
+    _check_monotonic_increasing(out_edges, "out_edges")
     # Check for bin structure overlap
     _check_any_overlap(in_edges, out_edges)
     if zero_pad_warnings:
@@ -355,11 +368,7 @@ def rebin(in_spectra, in_edges, out_edges, method="interpolation",
 
     # Specific calls to (wrapped) nb.guvectorize'd rebinning methods
     if method == "interpolation":
-        return _rebin_interpolation(
-            in_spectra, in_edges, out_edges, slopes
-        )
+        return _rebin_interpolation(in_spectra, in_edges, out_edges, slopes)
     elif method == "listmode":
         return _rebin_listmode(in_spectra, in_edges, out_edges)
-    raise ValueError(
-        "{} is not a valid rebinning method".format(method)
-    )
+    raise ValueError("{} is not a valid rebinning method".format(method))

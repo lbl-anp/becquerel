@@ -8,20 +8,19 @@ import becquerel as bq
 
 
 # read in spectra
-filename1 = os.path.join(
-    os.path.dirname(bq.__file__), '../tests/samples/sim_spec.csv')
+filename1 = os.path.join(os.path.dirname(bq.__file__), "../tests/samples/sim_spec.csv")
 filename2 = os.path.join(
-    os.path.dirname(bq.__file__),
-    '../tests/samples/Mendocino_07-10-13_Acq-10-10-13.Spe')
+    os.path.dirname(bq.__file__), "../tests/samples/Mendocino_07-10-13_Acq-10-10-13.Spe"
+)
 filename3 = os.path.join(
-    os.path.dirname(bq.__file__), '../tests/samples/nai_detector.csv')
-filename4 = os.path.join(
-    os.path.dirname(bq.__file__), '../tests/samples/SGM102432.csv')
+    os.path.dirname(bq.__file__), "../tests/samples/nai_detector.csv"
+)
+filename4 = os.path.join(os.path.dirname(bq.__file__), "../tests/samples/SGM102432.csv")
 
 counts = []
-with open(filename1, 'r') as f:
+with open(filename1, "r") as f:
     for line in f:
-        tokens = line.strip().split(',')
+        tokens = line.strip().split(",")
         if len(tokens) == 2:
             counts.append(float(tokens[1]))
 spec1 = bq.Spectrum(counts=counts)
@@ -29,25 +28,24 @@ spec1 = bq.Spectrum(counts=counts)
 spec2 = bq.Spectrum.from_file(filename2)
 
 counts = []
-with open(filename3, 'r') as f:
+with open(filename3, "r") as f:
     for line in f:
-        tokens = line.strip().split(',')
+        tokens = line.strip().split(",")
         if len(tokens) == 2:
             counts.append(float(tokens[1]))
 spec3 = bq.Spectrum(counts=counts)
 
 counts = []
-with open(filename4, 'r') as f:
+with open(filename4, "r") as f:
     for line in f:
-        tokens = line.strip().split(',')
+        tokens = line.strip().split(",")
         if len(tokens) == 2:
             counts.append(float(tokens[1]))
 spec4 = bq.Spectrum(counts=counts)
 
 
 REQUIRED = [609.32, 1460.82, 2614.3]
-OPTIONAL = [
-    238.63, 338.32, 351.93, 911.20, 1120.294, 1620.50, 1764.49, 2118.514]
+OPTIONAL = [238.63, 338.32, 351.93, 911.20, 1120.294, 1620.50, 1764.49, 2118.514]
 
 
 def test_peakfilter_base():
@@ -68,7 +66,7 @@ def test_peakfilter_exceptions():
         bq.PeakFilter(700, 20, fwhm_at_0=-15)
 
 
-@pytest.mark.parametrize('cls', [bq.GaussianPeakFilter])
+@pytest.mark.parametrize("cls", [bq.GaussianPeakFilter])
 def test_peakfilter(cls):
     """Test basic functionality of PeakFilter."""
     pf = cls(700, 20, fwhm_at_0=15)
@@ -78,7 +76,7 @@ def test_peakfilter(cls):
 
 
 @pytest.mark.plottest
-@pytest.mark.parametrize('cls', [bq.GaussianPeakFilter])
+@pytest.mark.parametrize("cls", [bq.GaussianPeakFilter])
 def test_peakfilter_plot_matrix(cls):
     """Test PeakFilter.plot_matrix."""
     pf = cls(200, 20, fwhm_at_0=10)
@@ -91,7 +89,7 @@ def test_peakfinder():
     """Test basic functionality of PeakFinder."""
     kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
     finder = bq.PeakFinder(spec1, kernel)
-    finder.find_peak(500, min_snr=3.)
+    finder.find_peak(500, min_snr=3.0)
     assert np.isclose(finder.channels[0], 485.5)
     finder.reset()
     finder.find_peaks()
@@ -167,7 +165,7 @@ def test_peakfinder_plot():
     finder.find_peaks(min_snr=0.5, xmin=50, xmax=1000, max_num=10)
 
     plt.figure()
-    finder.plot(linecolor='k')
+    finder.plot(linecolor="k")
     plt.show()
 
 
@@ -201,8 +199,8 @@ def test_autocal_spec1():
     cal.fit(
         REQUIRED,
         optional=OPTIONAL,
-        gain_range=[2.5, 4.],
-        de_max=25.,
+        gain_range=[2.5, 4.0],
+        de_max=25.0,
         verbose=True,
     )
     assert len(cal.fit_channels) == 8
@@ -218,8 +216,8 @@ def test_autocal_one_line():
     assert len(cal.peakfinder.channels) == 1
     cal.fit(
         [1460.82],
-        gain_range=[2.5, 4.],
-        de_max=20.,
+        gain_range=[2.5, 4.0],
+        de_max=20.0,
     )
     assert len(cal.fit_channels) == 1
     assert np.isclose(cal.gain, 3.01, rtol=1e-2)
@@ -239,8 +237,8 @@ def test_autocal_exceptions():
     with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             REQUIRED,
-            gain_range=[2.5, 4.],
-            de_max=20.,
+            gain_range=[2.5, 4.0],
+            de_max=20.0,
         )
     # multiple peaks found, but only one energy given
     finder.reset()
@@ -249,8 +247,8 @@ def test_autocal_exceptions():
     with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             [1460.82],
-            gain_range=[2.5, 4.],
-            de_max=20.,
+            gain_range=[2.5, 4.0],
+            de_max=20.0,
         )
     # more energies required than peaks found
     finder.reset()
@@ -259,8 +257,8 @@ def test_autocal_exceptions():
     with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             [238.63, 351.93, 609.32, 1460.82, 2614.3],
-            gain_range=[2.5, 4.],
-            de_max=20.,
+            gain_range=[2.5, 4.0],
+            de_max=20.0,
         )
 
 
@@ -275,8 +273,8 @@ def test_autocal_no_fit():
         cal.fit(
             REQUIRED,
             optional=OPTIONAL,
-            gain_range=[1, 2.],
-            de_max=20.,
+            gain_range=[1, 2.0],
+            de_max=20.0,
         )
 
 
@@ -291,8 +289,8 @@ def test_autocal_plot():
     cal.fit(
         REQUIRED,
         optional=OPTIONAL,
-        gain_range=[2.5, 4.],
-        de_max=20.,
+        gain_range=[2.5, 4.0],
+        de_max=20.0,
     )
     plt.figure()
     cal.plot()
@@ -310,7 +308,7 @@ def test_autocal_spec2():
         REQUIRED,
         optional=OPTIONAL,
         gain_range=[0.1, 0.6],
-        de_max=5.,
+        de_max=5.0,
     )
     assert len(cal.fit_channels) == 6
     assert np.isclose(cal.gain, 0.3785, rtol=1e-2)
@@ -327,8 +325,8 @@ def test_autocal_spec3():
     cal.fit(
         [609.32, 1460.82],
         optional=[],
-        gain_range=[0.1, 5.],
-        de_max=50.,
+        gain_range=[0.1, 5.0],
+        de_max=50.0,
     )
     assert len(cal.fit_channels) == 2
     assert np.isclose(cal.gain, 3.22, rtol=1e-2)
@@ -336,8 +334,8 @@ def test_autocal_spec3():
     cal.fit(
         [609.32, 1460.82],
         optional=OPTIONAL,
-        gain_range=[0.1, 5.],
-        de_max=50.,
+        gain_range=[0.1, 5.0],
+        de_max=50.0,
     )
     assert len(cal.fit_channels) == 7
     assert np.isclose(cal.gain, 2.02, rtol=1e-2)
@@ -354,7 +352,7 @@ def test_autocal_spec4():
         [356.0129, 661.657, 1460.82],
         optional=[911.20, 1120.294, 1620.50, 1764.49, 2118.514, 2614.3],
         gain_range=[0.3, 0.7],
-        de_max=50.,
+        de_max=50.0,
     )
     assert len(cal.fit_channels) == 3
     assert np.isclose(cal.gain, 0.6133, rtol=1e-2)
