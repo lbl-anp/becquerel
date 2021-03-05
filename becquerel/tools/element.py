@@ -333,7 +333,6 @@ class Element(object):
       atomic_mass (read-only): a float giving the atomic mass in amu
     """
 
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, arg):
         """Instantiate by providing a name, symbol, or Z value.

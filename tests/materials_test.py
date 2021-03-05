@@ -3,8 +3,6 @@
 from becquerel.tools import materials
 import pytest
 
-# pylint: disable=no-self-use
-
 
 @pytest.mark.webtest
 class TestConvertComposition(object):

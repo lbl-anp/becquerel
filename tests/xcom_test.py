@@ -4,7 +4,6 @@ import numpy as np
 from becquerel.tools import xcom
 import pytest
 
-# pylint: disable=protected-access,too-many-public-methods
 XCOM_URL_ORIG = xcom._URL
 
 

@@ -3,8 +3,6 @@
 from becquerel.tools import element
 import pytest
 
-# pylint: disable=protected-access,unused-variable,no-self-use
-
 
 class TestElementFunctions(object):
     """Test Element functions."""

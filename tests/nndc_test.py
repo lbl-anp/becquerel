@@ -5,9 +5,6 @@ import pandas as pd
 from becquerel.tools import nndc
 import pytest
 
-# pylint: disable=protected-access,no-self-use,too-many-public-methods
-# pylint: disable=attribute-defined-outside-init,missing-docstring
-
 
 def ufloats_overlap_range(ufloats, vmin, vmax):
     """Return whether the +/- 1 sigma range overlaps the value range."""
@@ -146,7 +143,7 @@ class NNDCQueryTests(object):
     def setup_method(self):
         self.cls = nndc._NNDCQuery
 
-        def fetch_dummy(**kwargs):  # pylint: disable=unused-argument
+        def fetch_dummy(**kwargs):
             """Dummy fetch_ function for self.fetch."""
             return pd.DataFrame()
 

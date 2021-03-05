@@ -4,8 +4,6 @@ import pandas as pd
 from becquerel.tools.df_cache import DataFrameCache, CacheError
 import pytest
 
-# pylint: disable=no-self-use
-
 
 class ExampleCache(DataFrameCache):
 

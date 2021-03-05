@@ -7,8 +7,6 @@ from . import nndc
 from . import df_cache
 from ..core.utils import isstring
 
-# pylint: disable=no-self-use
-
 
 def convert_float_ufloat(x):
     """Convert string to a float or a ufloat, including None ('') and NaN.

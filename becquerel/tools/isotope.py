@@ -9,9 +9,6 @@ from .wallet_cache import wallet_cache
 N_AV = 6.022141e23  # mol^-1
 
 
-# pylint: disable=no-self-use
-
-
 class IsotopeError(element.ElementError):
     """Problem with isotope properties."""
 
@@ -186,7 +183,6 @@ class Isotope(element.Element):
       specific_activity: the specific activity in Bq/g
     """
 
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, *args):
         """Initialize an Isotope.

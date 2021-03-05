@@ -5,8 +5,6 @@ import uncertainties
 import becquerel.tools.wallet_cache as wallet_cache
 import pytest
 
-# pylint: disable=no-self-use
-
 
 @pytest.mark.parametrize(
     "arg, result",
