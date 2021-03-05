@@ -29,7 +29,6 @@ Intended Audience :: Science/Research
 License :: Other/Proprietary License
 Operating System :: OS Independent
 Programming Language :: Python
-Programming Language :: Python :: 2
 Programming Language :: Python :: 3
 Topic :: Scientific/Engineering
 Topic :: Scientific/Engineering :: Physics
@@ -78,7 +77,7 @@ setup(
     classifiers=[_f for _f in CLASSIFIERS.split("\n") if _f],
     platforms="any",
     packages=find_packages(),
-    python_requires=">=2.6",
+    python_requires=">=3.6",
     install_requires=[_f for _f in REQUIREMENTS.split("\n") if _f],
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "pytest-cov"],
