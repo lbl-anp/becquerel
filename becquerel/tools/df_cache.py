@@ -57,9 +57,9 @@ class DataFrameCache(object):
         """
 
         if not os.path.exists(self.path):
-            raise CacheError("Cache path does not exist: {}".format(self.path))
+            raise CacheError(f"Cache path does not exist: {self.path}")
         if not os.path.isdir(self.path):
-            raise CacheError("Cache path is not a directory: {}".format(self.path))
+            raise CacheError(f"Cache path is not a directory: {self.path}")
 
     def check_file(self):
         """Test that the file exists.
@@ -69,9 +69,9 @@ class DataFrameCache(object):
         """
 
         if not os.path.exists(self.filename):
-            raise CacheError("Cache filename does not exist: {}".format(self.filename))
+            raise CacheError(f"Cache filename does not exist: {self.filename}")
         if not os.path.isfile(self.filename):
-            raise CacheError("Cache filename is not a file: {}".format(self.filename))
+            raise CacheError(f"Cache filename is not a file: {self.filename}")
 
     def write_file(self):
         """Write the DataFrame to the cache file.
@@ -86,7 +86,7 @@ class DataFrameCache(object):
         try:
             self.df.to_csv(self.filename, float_format="%.12f")
         except:
-            raise CacheError("Problem writing cache to file {}".format(self.filename))
+            raise CacheError(f"Problem writing cache to file {self.filename}")
         self.check_file()
 
     def read_file(self):
@@ -100,7 +100,7 @@ class DataFrameCache(object):
         try:
             self.df = pd.read_csv(self.filename)
         except:
-            raise CacheError("Problem reading cache from file {}".format(self.filename))
+            raise CacheError(f"Problem reading cache from file {self.filename}")
         self.loaded = True
 
     def delete_file(self):
@@ -114,13 +114,13 @@ class DataFrameCache(object):
         try:
             os.remove(self.filename)
         except:
-            raise CacheError("Problem deleting cache file {}".format(self.filename))
+            raise CacheError(f"Problem deleting cache file {self.filename}")
         try:
             self.check_file()
         except CacheError:
             pass  # this should be raised
         else:
-            raise CacheError("Cache file was not deleted: {}".format(self.filename))
+            raise CacheError(f"Cache file was not deleted: {self.filename}")
 
     def fetch(self):
         """Fetch the DataFrame to be cached.
