@@ -159,8 +159,8 @@ class Spectrum(object):
             if uncs is None and np.any(np.asarray(counts) < 0):
                 raise SpectrumError(
                     "Negative values encountered in counts. Uncertainties "
-                    + "are most likely not Poisson-distributed. Provide uncs "
-                    + "to force initialization."
+                    "are most likely not Poisson-distributed. Provide uncs "
+                    "to force initialization."
                 )
             self._counts = handle_uncs(
                 counts, uncs, lambda x: np.maximum(np.sqrt(x), 1)
@@ -987,7 +987,7 @@ class Spectrum(object):
 
         if use_kev and not self.is_calibrated:
             raise UncalibratedError(
-                "Cannot access energy bins with an " + "uncalibrated Spectrum."
+                "Cannot access energy bins with an uncalibrated Spectrum."
             )
 
         bin_widths = self.bin_widths_kev if use_kev else self.bin_widths_raw
@@ -1032,7 +1032,7 @@ class Spectrum(object):
 
         if use_kev and not self.is_calibrated:
             raise UncalibratedError(
-                "Cannot access energy bins with an " + "uncalibrated Spectrum."
+                "Cannot access energy bins with an uncalibrated Spectrum."
             )
 
         bin_edges, bin_widths, _ = self.get_bin_properties(use_kev)
@@ -1063,7 +1063,7 @@ class Spectrum(object):
         if use_kev:
             if not self.is_calibrated:
                 raise UncalibratedError(
-                    "Cannot access energy bins with an " + "uncalibrated Spectrum."
+                    "Cannot access energy bins with an uncalibrated Spectrum."
                 )
             return self.bin_edges_kev, self.bin_widths_kev, self.bin_centers_kev
         else:
@@ -1181,7 +1181,7 @@ class Spectrum(object):
         """
         if self.bin_edges_kev is None:
             raise SpectrumError(
-                "Cannot rebin spectrum without energy " "calibration"
+                "Cannot rebin spectrum without energy calibration"
             )  # TODO: why not?
         in_spec = self.counts_vals
         if method.lower() == "listmode":

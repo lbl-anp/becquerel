@@ -477,7 +477,7 @@ class SpectrumPlotter(object):
                 ymin = 0
             elif yscale == "log" and data_min < 0:
                 raise PlottingError(
-                    "Cannot plot negative values on a log " + "scale; use symlog scale"
+                    "Cannot plot negative values on a log scale; use symlog scale"
                 )
             elif yscale == "symlog" and data_min >= 0:
                 ymin = 0
