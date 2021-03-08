@@ -55,13 +55,13 @@ def _check_partial_overlap(in_edges, out_edges):
     if (in_edges[..., 0] > out_edges[..., 0]).any():
         warnings.warn(
             "The first input edge is larger than the first output edge, "
-            + "zeros will padded on the left side of the new spectrum",
+            "zeros will padded on the left side of the new spectrum",
             RebinWarning,
         )
     if (in_edges[..., -1] < out_edges[..., -1]).any():
         warnings.warn(
             "The last input edge is smaller than the last output edge, "
-            + "zeros will padded on the right side of the new spectrum",
+            "zeros will padded on the right side of the new spectrum",
             RebinWarning,
         )
 

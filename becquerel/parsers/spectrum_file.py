@@ -107,7 +107,7 @@ class SpectrumFile(object):
     @property
     def energy_bin_edges(self):
         warnings.warn(
-            "The use of energy_bin_edges is deprecated, " + "use bin_edges_kev instead",
+            "The use of energy_bin_edges is deprecated, use bin_edges_kev instead",
             DeprecationWarning,
         )
         return self.bin_edges_kev
