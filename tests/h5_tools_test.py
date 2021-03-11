@@ -116,8 +116,12 @@ def test_open_h5():
 
 def ensure_string(data):
     """Ensure the data are decoded to a string if they are bytes."""
-    if isinstance(data, bytes):
+    if isinstance(data, str):
+        return data
+    elif isinstance(data, bytes):
         return data.decode("ascii", "replace")
+    else:
+        raise AssertionError(f"Data are neither bytes nor string: {type(data)}")
 
 
 def check_dsets_attrs(dsets1, attrs1, dsets2, attrs2):
