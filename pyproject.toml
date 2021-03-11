@@ -1,0 +1,16 @@
+[tool.black]
+target-version = ['py36', 'py37', 'py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.pytest_cache
+  | htmlcov
+  | figures
+  | build
+  | dist
+  # Specific to this package
+  | becquerel.egg-info
+)/
+'''
