@@ -15,4 +15,4 @@ exclude = '''
 )/
 '''
 [tool.coverage.run]
-relative_files = 'True'
+relative_files = true
