@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  coveralls_test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -31,7 +31,7 @@ jobs:
         flag-name: Unit Test
 
   coveralls_finish:
-    needs: test
+    needs: coveralls_test
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
