@@ -52,10 +52,10 @@ The code style will be checked with [`black`](https://black.readthedocs.io/en/st
 We like to use [`flake8`](https://flake8.pycqa.org/en/latest/) and/or [`pylance`](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance).
 
 ### Checklist for code contributions:
-  - [ ] Branch off of `main` and name the branch `feature-XX` or `issue-XX`
+  - [ ] Branch off of `main`
   - [ ] Develop the feature or fix
   - [ ] Write tests to cover all use cases
-  - [ ] Ensure all tests pass (`python setup.py test`)
+  - [ ] Ensure all tests pass (`pytest`)
   - [ ] Ensure test coverage is >95%
   - [ ] Autoformat (`black .`)
   - [ ] Spellcheck your code and docstrings
