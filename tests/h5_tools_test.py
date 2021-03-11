@@ -114,18 +114,24 @@ def test_open_h5():
             f.create_dataset("group_dset_3", data=[1, 2, 3])
 
 
+def ensure_string(data):
+    """Ensure the data are decoded to a string if they are bytes."""
+    if isinstance(data, bytes):
+        return data.decode("ascii", "replace")
+
+
 def check_dsets_attrs(dsets1, attrs1, dsets2, attrs2):
     """Check that the dataset and attribute dicts are identical."""
     assert set(dsets1.keys()) == set(dsets2.keys())
     assert set(attrs1.keys()) == set(attrs2.keys())
     for key in dsets1.keys():
         if "str" in key:
-            assert dsets1[key] == dsets2[key]
+            assert ensure_string(dsets1[key]) == ensure_string(dsets2[key])
         else:
             assert np.allclose(dsets1[key], dsets2[key])
     for key in attrs1.keys():
         if "str" in key:
-            assert attrs1[key] == attrs2[key]
+            assert ensure_string(attrs1[key]) == ensure_string(attrs2[key])
         else:
             assert np.allclose(attrs1[key], attrs2[key])
 
