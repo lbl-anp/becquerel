@@ -5,7 +5,7 @@ import datetime
 import numpy as np
 from uncertainties import ufloat, UFloat, unumpy
 import becquerel as bq
-from parsers_test import SAMPLES
+
 
 TEST_DATA_LENGTH = 256
 TEST_COUNTS = 4
@@ -110,51 +110,6 @@ def cal_spec_2(spec_data):
     """Generate a calibrated spectrum (2nd instance)."""
 
     return make_spec("cal")
-
-
-# -----------------------------------------------------------------------------
-# File IO
-# -----------------------------------------------------------------------------
-
-
-@pytest.fixture
-def cal_spec_cps(spec_data):
-    """Generate a calibrated spectrum with cps data."""
-
-    return bq.Spectrum(cps=spec_data, bin_edges_kev=TEST_EDGES_KEV)
-
-
-class TestSpectrumFromFile(object):
-    """Test Spectrum.from_file() class method."""
-
-    def run_from_file(self, extension):
-        """Run the test of from_file() for files with the given extension."""
-        filenames = SAMPLES.get(extension, [])
-        assert len(filenames) >= 1
-        for filename in filenames:
-            spec = bq.Spectrum.from_file(filename)
-            assert spec.livetime is not None
-
-    def test_spe(self):
-        """Test Spectrum.from_file for SPE file........................."""
-        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
-            self.run_from_file(".spe")
-
-    def test_spc(self):
-        """Test Spectrum.from_file for SPC file........................."""
-
-        self.run_from_file(".spc")
-
-    def test_cnf(self):
-        """Test Spectrum.from_file for CNF file........................."""
-
-        self.run_from_file(".cnf")
-
-    def test_error(self):
-        """Test _get_file_object() raises error for bad file type"""
-
-        with pytest.raises(NotImplementedError):
-            bq.Spectrum.from_file("foo.bar")
 
 
 # ----------------------------------------------

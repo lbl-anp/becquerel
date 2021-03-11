@@ -6,6 +6,7 @@ import datetime
 import numpy as np
 from uncertainties import UFloat, unumpy
 from .. import parsers
+from .. import io
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
 from .rebin import rebin
 from . import plotting
@@ -587,18 +588,82 @@ class Spectrum(object):
         Raises:
           AssertionError: for a bad filename  # TODO make this an IOError
         """
+        if io.h5.is_h5_filename(infilename):
+            return cls.read_h5(infilename)
+        else:
+            spect_file_obj = _get_file_object(infilename)
 
-        spect_file_obj = _get_file_object(infilename)
+            kwargs = {
+                "counts": spect_file_obj.data,
+                "input_file_object": spect_file_obj,
+                "bin_edges_kev": spect_file_obj.bin_edges_kev,
+            }
 
-        kwargs = {
-            "counts": spect_file_obj.data,
-            "input_file_object": spect_file_obj,
-            "bin_edges_kev": spect_file_obj.bin_edges_kev,
-        }
+            # TODO Get more attributes from self.infileobj
 
-        # TODO Get more attributes from self.infileobj
+            return cls(**kwargs)
 
-        return cls(**kwargs)
+    @classmethod
+    def read_h5(cls, name):
+        """Read a Spectrum from an HDF5 file.
+
+        Parameters
+        ----------
+        name : str, h5py.File, h5py.Group
+            The filename or an open h5py File or Group.
+
+        Returns
+        -------
+        spectrum : becquerel.Spectrum
+        """
+        dsets, attrs, skipped = io.h5.read_h5(name)
+        spec = Spectrum(**dsets, **attrs)
+        return spec
+
+    def write_h5(self, name):
+        """Write the Spectrum to an hdf5 file.
+
+        Parameters
+        ----------
+        name : str, h5py.File, h5py.Group
+            The filename or an open h5py File or Group.
+        """
+        # build datasets dict
+        dsets = {}
+        # handle counts versus CPS data
+        if self._cps is None:
+            assert self._counts is not None
+            # NOTE: integer character of counts has been destroyed
+            dsets["counts"] = self.counts_vals
+            dsets["uncs"] = self.counts_uncs
+        if self._counts is None:
+            assert self._cps is not None
+            dsets["cps"] = self.cps_vals
+            dsets["uncs"] = self.cps_uncs
+        # handle other array data
+        for key in ["bin_edges_raw", "bin_edges_kev"]:
+            val = getattr(self, key)
+            if val is not None:
+                dsets.update({key: val})
+
+        # build attributes dict
+        attrs = {}
+        # convert time attributes to strings
+        for key in ["start_time", "stop_time"]:
+            val = getattr(self, key)
+            if val is not None:
+                iso8601 = f"{val:%Y-%m-%dT%H:%M:%S.%f%z}"
+                attrs.update({key: iso8601})
+        for key in ["livetime", "realtime"]:
+            val = getattr(self, key)
+            if val is not None:
+                attrs.update({key: val})
+        # cannot specify all three of start, stop, and real time
+        if "start_time" in attrs and "stop_time" in attrs and "realtime" in attrs:
+            attrs.pop("realtime")
+
+        # write everything to file
+        io.h5.write_h5(name, dsets, attrs)
 
     @classmethod
     def from_listmode(cls, listmode_data, bins=None, xmin=None, xmax=None, **kwargs):
