@@ -1,9 +1,9 @@
 # This workflow will install dependencies, install becquerel and run tests.
-# It runs on multiple python3 versions on macOS and Ubuntu.
+# It runs on multiple python3 versions on macOS, Ubuntu and Windows.
 # It runs when a commit (merge) is push to the main (default) branch or for updates to a PR targeting main.
 # Based on: https://github.com/actions/starter-workflows/blob/main/ci/python-package.yml
 
-name: Python package
+name: pip installation and testing
 
 on:
 
@@ -38,7 +38,7 @@ jobs:
           pip install -r requirements-dev.txt
       - name: Install package
         run: |
-          pip install -e .
+          pip install .
       - name: Test with pytest
         run: |
           python -c 'import becquerel;'
