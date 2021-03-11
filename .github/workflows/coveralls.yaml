@@ -1,5 +1,9 @@
 name: coveralls
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
 
 jobs:
   test:
