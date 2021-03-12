@@ -1,5 +1,8 @@
 # becquerel
 
+[![tests](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml/badge.svg)](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml)
+[![Coverage Status](https://coveralls.io/repos/github/lbl-anp/becquerel/badge.svg?branch=main)](https://coveralls.io/github/lbl-anp/becquerel?branch=main)
+
 Becquerel is a Python package for analyzing nuclear spectroscopic
 measurements. The core functionalities are reading and writing different
 spectrum file types, fitting spectral features, performing detector
