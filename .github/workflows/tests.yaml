@@ -3,7 +3,7 @@
 # It runs when a commit (merge) is push to the main (default) branch or for updates to a PR targeting main.
 # Based on: https://github.com/actions/starter-workflows/blob/main/ci/python-package.yml
 
-name: pip installation and testing
+name: tests
 
 on:
 
