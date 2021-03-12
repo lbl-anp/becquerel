@@ -20,7 +20,7 @@ jobs:
         pip install --only-binary=numpy,scipy -r requirements-dev.txt
     - name: Install package
       run: |
-        pip install .
+        pip install -e .
     - name: Test with pytest
       run: |
         pytest
