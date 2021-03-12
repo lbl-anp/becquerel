@@ -21,7 +21,7 @@ pip install becquerel
 
 * Reading additional `Spectrum` file types (N42, CHN, CSV)
 * Writing `Spectrum` objects to various standard formats
-* Fitting spectral features (e.g., gaussian lines with different background models)
+* Fitting spectral features with Poisson likelihood
 
 If you are interested in contributing or are want to install the package from
 source, please see the instructions in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
@@ -43,20 +43,17 @@ The dependencies `beautifulsoup4`, `lxml` and `html5lib` are necessary for
 [`pandas`][1].
 
 Developers require additional requirements which are listed in
-`requirements-dev.txt`. We use [`pytest`][2] for unit testing and encourage
-contributors to use [`pylint`][3], [`pycodestyle`][4], [`pydocstyle`][5] and
-[`yapf`][6] for proper code formatting.
+`requirements-dev.txt`. We use [`pytest`][2] for unit testing, [`black`][3] for
+code formatting and are converting to [`numpydoc`][4].
 
 [1]: https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies
-[2]: https://docs.pytest.org
-[3]: https://pylint.readthedocs.io
-[4]: http://pycodestyle.pycqa.org
-[5]: http://www.pydocstyle.org
-[6]: https://github.com/google/yapf
+[2]: https://docs.pytest.org/en/latest/
+[3]: https://black.readthedocs.io/en/stable/
+[4]: https://numpydoc.readthedocs.io/en/latest/format.html
 
 ## Copyright Notice
 
-Becquerel v. 0.2.5, Copyright (c) 2017, The Regents of the University of
+Becquerel v. 0.3.0, Copyright (c) 2017, The Regents of the University of
 California (UC), through Lawrence Berkeley National Laboratory, and the UC
 Berkeley campus (subject to receipt of any required approvals from the U.S.
 Dept. of Energy). All rights reserved. If you have questions about your rights

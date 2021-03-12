@@ -1,6 +1,5 @@
 """Tools for plotting spectra."""
 
-from __future__ import print_function
 import matplotlib.pyplot as plt
 import numpy as np
 from uncertainties import unumpy
@@ -34,8 +33,6 @@ class SpectrumPlotter(object):
                   and ymode='symlog'
         """
 
-        #TODO Marco: maybe we should use tuplets for all the x/y stuff in order
-        #to reduce the number of attributes (pylint ask for 7 we have 23)!
         self._xedges = None
         self._ydata = None
         self._xmode = None
@@ -57,33 +54,33 @@ class SpectrumPlotter(object):
         xlabel = None
         ylabel = None
 
-        if 'xmode' in kwargs:
-            xmode = kwargs.pop('xmode')
-        if 'ymode' in kwargs:
-            ymode = kwargs.pop('ymode')
-        if 'xlim' in kwargs:
-            xlim = kwargs.pop('xlim')
-        if 'ylim' in kwargs:
-            ylim = kwargs.pop('ylim')
-        if 'ax' in kwargs:
-            ax = kwargs.pop('ax')
-        if 'yscale' in kwargs:
-            yscale = kwargs.pop('yscale')
-        if 'title' in kwargs:
-            title = kwargs.pop('title')
-        if 'xlabel' in kwargs:
-            xlabel = kwargs.pop('xlabel')
-        if 'ylabel' in kwargs:
-            ylabel = kwargs.pop('ylabel')
+        if "xmode" in kwargs:
+            xmode = kwargs.pop("xmode")
+        if "ymode" in kwargs:
+            ymode = kwargs.pop("ymode")
+        if "xlim" in kwargs:
+            xlim = kwargs.pop("xlim")
+        if "ylim" in kwargs:
+            ylim = kwargs.pop("ylim")
+        if "ax" in kwargs:
+            ax = kwargs.pop("ax")
+        if "yscale" in kwargs:
+            yscale = kwargs.pop("yscale")
+        if "title" in kwargs:
+            title = kwargs.pop("title")
+        if "xlabel" in kwargs:
+            xlabel = kwargs.pop("xlabel")
+        if "ylabel" in kwargs:
+            ylabel = kwargs.pop("ylabel")
 
         self.spec = spec
 
-        if hasattr(fmt, '__len__') and len(fmt) in [0, 1]:
+        if hasattr(fmt, "__len__") and len(fmt) in [0, 1]:
             self.fmt = fmt
         else:
             raise PlottingError("Wrong number of positional arguments")
 
-        if 'linthreshy' in kwargs:
+        if "linthreshy" in kwargs:
             self._linthreshy = kwargs.pop("linthreshy")
 
         self.xlim = xlim
@@ -100,7 +97,6 @@ class SpectrumPlotter(object):
         self.xlabel = xlabel
         self.ylabel = ylabel
 
-
     @property
     def xmode(self):
         """
@@ -108,7 +104,6 @@ class SpectrumPlotter(object):
         """
 
         return self._xmode
-
 
     @xmode.setter
     def xmode(self, mode):
@@ -120,31 +115,32 @@ class SpectrumPlotter(object):
           mode: energy (or kev), channel (or channels, chn, chns)
         """
 
+        # First, set the _xmode
         if mode is None:
             if self.spec.is_calibrated:
-                self._xmode = 'energy'
+                self._xmode = "energy"
             else:
-                self._xmode = 'channel'
+                self._xmode = "channel"
         else:
-            if mode.lower() in ('kev', 'energy'):
+            if mode.lower() in ("kev", "energy"):
                 if not self.spec.is_calibrated:
-                    raise PlottingError('Spectrum is not calibrated, however'
-                                        ' x axis was requested as energy')
-                self._xmode = 'energy'
-            elif mode.lower() in ('channel', 'channels', 'chn', 'chns'):
-                self._xmode = 'channel'
+                    raise PlottingError(
+                        "Spectrum is not calibrated, however"
+                        " x axis was requested as energy"
+                    )
+                self._xmode = "energy"
+            elif mode.lower() in ("channel", "channels", "chn", "chns"):
+                self._xmode = "channel"
             else:
-                raise PlottingError('Unknown x data mode: {}'.format(mode))
+                raise PlottingError("Unknown x data mode: {}".format(mode))
 
-        if self._xmode == 'energy':
-            self._xedges = self.spec.bin_edges_kev
-            if self._xlabel == 'Channel' or self._xlabel is None:
-                self._xlabel = 'Energy [keV]'
-        elif self._xmode == 'channel':
-            self._xedges = self.spec.bin_edges_raw
-            if self._xlabel == 'Energy [keV]' or self._xlabel is None:
-                self._xlabel = 'Channel'
-
+        # Then, set the _xedges and _xlabel based on the _xmode
+        xedges, xlabel = self.spec.parse_xmode(self._xmode)
+        self._xedges = xedges
+        possible_labels = ["Energy [keV]", "Channel"]
+        if self._xlabel in possible_labels or self._xlabel is None:
+            # Only reset _xlabel if it's an old result from parse_xmode or None
+            self._xlabel = xlabel
 
     @property
     def ymode(self):
@@ -152,7 +148,6 @@ class SpectrumPlotter(object):
         Returns the current y axis plotting mode.
         """
         return self._ymode
-
 
     @ymode.setter
     def ymode(self, mode):
@@ -165,35 +160,30 @@ class SpectrumPlotter(object):
           mode: counts, cps, cpskev
         """
 
+        # First, set the _ymode
         if mode is None:
             if self.spec._counts is not None:
-                self._ymode = 'counts'
+                self._ymode = "counts"
             else:
-                self._ymode = 'cps'
-        elif mode.lower() in ('count', 'counts', 'cnt', 'cnts'):
+                self._ymode = "cps"
+        elif mode.lower() in ("count", "counts", "cnt", "cnts"):
             if self.spec._counts is None:
-                raise PlottingError('Spectrum has counts not defined')
-            self._ymode = 'counts'
-        elif mode.lower() == 'cps':
-            self._ymode = 'cps'
-        elif mode.lower() == 'cpskev':
-            self._ymode = 'cpskev'
+                raise PlottingError("Spectrum has counts not defined")
+            self._ymode = "counts"
+        elif mode.lower() == "cps":
+            self._ymode = "cps"
+        elif mode.lower() == "cpskev":
+            self._ymode = "cpskev"
         else:
-            raise PlottingError('Unknown y data mode: {}'.format(mode))
+            raise PlottingError("Unknown y data mode: {}".format(mode))
 
-        if self._ymode == 'counts':
-            self._ydata = self.spec.counts_vals
-            if self._ylabel in ['Countrate [1/s]', 'Countrate [1/s/keV]'] or self._ylabel is None:
-                self._ylabel = 'Counts'
-        elif self._ymode == 'cps':
-            self._ydata = self.spec.cps_vals
-            if self._ylabel in ['Counts', 'Countrate [1/s/keV]'] or self._ylabel is None:
-                self._ylabel = 'Countrate [1/s]'
-        elif self._ymode == 'cpskev':
-            self._ydata = self.spec.cpskev_vals
-            if self._ylabel in ['Counts', 'Countrate [1/s]'] or self._ylabel is None:
-                self._ylabel = 'Countrate [1/s/keV]'
-
+        # Then, set the _ydata and _ylabel based on the _ymode
+        ydata, _, ylabel = self.spec.parse_ymode(self._ymode)
+        self._ydata = ydata
+        possible_labels = ["Counts", "Countrate [1/s]", "Countrate [1/s/keV]"]
+        if self._ylabel in possible_labels or self._ylabel is None:
+            # Only reset _ylabel if it's an old result from parse_ymode or None
+            self._ylabel = ylabel
 
     @property
     def ax(self):
@@ -205,7 +195,6 @@ class SpectrumPlotter(object):
         if self._ax is None:
             _, self._ax = plt.subplots()
         return self._ax
-
 
     @ax.setter
     def ax(self, ax):
@@ -225,7 +214,6 @@ class SpectrumPlotter(object):
         """
         return self._xlabel
 
-
     @xlabel.setter
     def xlabel(self, label):
         """
@@ -235,7 +223,6 @@ class SpectrumPlotter(object):
         if label is not None:
             self._xlabel = label
 
-
     @property
     def ylabel(self):
         """
@@ -243,7 +230,6 @@ class SpectrumPlotter(object):
         """
 
         return self._ylabel
-
 
     @ylabel.setter
     def ylabel(self, label):
@@ -258,15 +244,15 @@ class SpectrumPlotter(object):
     def yerror(self):
         """
         Returns array of statistical errors for current mode
+        FIXME: now redundant?
         """
 
-        if self._ymode == 'counts':
+        if self._ymode == "counts":
             return self.spec.counts_uncs
-        elif self._ymode == 'cps':
+        elif self._ymode == "cps":
             return self.spec.cps_uncs
-        elif self._ymode == 'cpskev':
+        elif self._ymode == "cpskev":
             return self.spec.cpskev_uncs
-
 
     def get_corners(self):
         """
@@ -278,8 +264,8 @@ class SpectrumPlotter(object):
         """
 
         return self.bin_edges_and_heights_to_steps(
-            self._xedges, unumpy.nominal_values(self._ydata))
-
+            self._xedges, unumpy.nominal_values(self._ydata)
+        )
 
     def _prepare_plot(self, **kwargs):
         """Prepare for the plotting."""
@@ -299,10 +285,9 @@ class SpectrumPlotter(object):
             self.ax.set_xlim(self.xlim)
         if self._ylim is not None:
             self.ax.set_ylim(self.ylim)
-            if self.yscale == 'symlog' and self._ylim == 'default':
+            if self.yscale == "symlog" and self._ylim == "default":
                 self.ax.set_yscale(self.yscale, linthreshy=self.linthreshy)
         return self.get_corners()
-
 
     def plot(self, *fmt, **kwargs):
         """
@@ -314,16 +299,15 @@ class SpectrumPlotter(object):
                   previously defined keywords
         """
 
-        if hasattr(fmt, '__len__') and len(fmt) > 0:
+        if hasattr(fmt, "__len__") and len(fmt) > 0:
             self.fmt = fmt
 
-        if not hasattr(self.fmt, '__len__') or not len(self.fmt) in [0, 1]:
+        if not hasattr(self.fmt, "__len__") or not len(self.fmt) in [0, 1]:
             raise PlottingError("Wrong number of positional argument")
 
         xcorners, ycorners = self._prepare_plot(**kwargs)
         self.ax.plot(xcorners, ycorners, *self.fmt, **self.kwargs)
         return self.ax
-
 
     def fill_between(self, **kwargs):
         """
@@ -338,7 +322,6 @@ class SpectrumPlotter(object):
         self.ax.fill_between(xcorners, ycorners, **self.kwargs)
         return self.ax
 
-
     def errorbar(self, **kwargs):
         """
         Create errorbars with matplotlib's plot errorbar method.
@@ -349,19 +332,20 @@ class SpectrumPlotter(object):
         """
 
         self._prepare_plot(**kwargs)
-        xdata = (self._xedges[0:-1]+self._xedges[1:])*0.5
+        xdata = (self._xedges[0:-1] + self._xedges[1:]) * 0.5
 
-        if 'fmt' in self.kwargs:
-            self.fmt = (self.kwargs.pop('fmt'))
+        if "fmt" in self.kwargs:
+            self.fmt = self.kwargs.pop("fmt")
 
-        if hasattr(self.fmt, '__len__') and len(self.fmt) == 0:
-            self.fmt = (',',)
+        if hasattr(self.fmt, "__len__") and len(self.fmt) == 0:
+            self.fmt = (",",)
 
-        if not hasattr(self.fmt, '__len__') or len(self.fmt) != 1:
+        if not hasattr(self.fmt, "__len__") or len(self.fmt) != 1:
             raise PlottingError("Wrong number of argument for fmt")
 
-        self.ax.errorbar(xdata, self._ydata, yerr=self.yerror, fmt=self.fmt[0], **self.kwargs)
-
+        self.ax.errorbar(
+            xdata, self._ydata, yerr=self.yerror, fmt=self.fmt[0], **self.kwargs
+        )
 
     def errorband(self, **kwargs):
         """
@@ -375,16 +359,17 @@ class SpectrumPlotter(object):
         self._prepare_plot(**kwargs)
 
         alpha = 0.5
-        if 'alpha' in self.kwargs:
+        if "alpha" in self.kwargs:
             alpha = self.kwargs.pop("alpha")
 
         xcorners, ycorlow = self.bin_edges_and_heights_to_steps(
-            self._xedges, unumpy.nominal_values(self._ydata-self.yerror))
+            self._xedges, unumpy.nominal_values(self._ydata - self.yerror)
+        )
         _, ycorhig = self.bin_edges_and_heights_to_steps(
-            self._xedges, unumpy.nominal_values(self._ydata+self.yerror))
+            self._xedges, unumpy.nominal_values(self._ydata + self.yerror)
+        )
         self.ax.fill_between(xcorners, ycorlow, ycorhig, alpha=alpha, **self.kwargs)
         return self.ax
-
 
     @staticmethod
     def bin_edges_and_heights_to_steps(bin_edges, heights):
@@ -399,7 +384,6 @@ class SpectrumPlotter(object):
         y[2:-1:2] = heights.astype(float)
         return x, y
 
-
     @staticmethod
     def dynamic_min(data_min, min_delta_y):
         """Get an axes lower limit (for y) based on data value.
@@ -412,7 +396,7 @@ class SpectrumPlotter(object):
         """
 
         if data_min > 0:
-            ceil10 = 10**(np.ceil(np.log10(data_min)))
+            ceil10 = 10 ** (np.ceil(np.log10(data_min)))
             sig_fig = np.floor(10 * data_min / ceil10)
             if sig_fig <= 3:
                 ymin = ceil10 / 10
@@ -422,7 +406,7 @@ class SpectrumPlotter(object):
             ymin = min_delta_y / 10.0
         else:
             # negative
-            floor10 = 10**(np.floor(np.log10(-data_min)))
+            floor10 = 10 ** (np.floor(np.log10(-data_min)))
             sig_fig = np.floor(-data_min / floor10)
             if sig_fig < 3:
                 ymin = -floor10 * 3
@@ -430,7 +414,6 @@ class SpectrumPlotter(object):
                 ymin = -floor10 * 10
 
         return ymin
-
 
     @staticmethod
     def dynamic_max(data_max, yscale):
@@ -443,9 +426,9 @@ class SpectrumPlotter(object):
           data_max: the maximum of the data (could be integers or floats)
         """
 
-        floor10 = 10**(np.floor(np.log10(data_max)))
+        floor10 = 10 ** (np.floor(np.log10(data_max)))
         sig_fig = np.ceil(data_max / floor10)
-        if yscale == 'linear':
+        if yscale == "linear":
             sig_fig = np.floor(data_max / floor10)
             ymax = floor10 * (sig_fig + 1)
         elif sig_fig < 3:
@@ -455,12 +438,11 @@ class SpectrumPlotter(object):
 
         return np.maximum(ymax, 0)
 
-
     @property
     def xlim(self):
         """Returns the xlim, requires xedges."""
 
-        if self._xlim is None or self._xlim == 'default':
+        if self._xlim is None or self._xlim == "default":
             return np.min(self._xedges), np.max(self._xedges)
 
         return self._xlim
@@ -469,17 +451,19 @@ class SpectrumPlotter(object):
     def xlim(self, limits):
         """Sets xlim."""
 
-        if limits is not None and limits != 'default' and \
-        (not hasattr(limits, '__len__') or len(limits) != 2):
-            raise PlottingError('xlim should be length 2: {}'.format(limits))
+        if (
+            limits is not None
+            and limits != "default"
+            and (not hasattr(limits, "__len__") or len(limits) != 2)
+        ):
+            raise PlottingError("xlim should be length 2: {}".format(limits))
         self._xlim = limits
-
 
     @property
     def ylim(self):
         """Returns ylim, requires yscale, ydata."""
 
-        if self._ylim is None or self._ylim == 'default':
+        if self._ylim is None or self._ylim == "default":
             yscale = self.yscale
             if yscale is None:
                 yscale = self.ax.get_yscale()
@@ -489,12 +473,13 @@ class SpectrumPlotter(object):
             min_delta_y = np.min(delta_y[delta_y > 0])
 
             data_min = np.min(self._ydata)
-            if yscale == 'linear':
+            if yscale == "linear":
                 ymin = 0
-            elif yscale == 'log' and data_min < 0:
-                raise PlottingError('Cannot plot negative values on a log ' +
-                                    'scale; use symlog scale')
-            elif yscale == 'symlog' and data_min >= 0:
+            elif yscale == "log" and data_min < 0:
+                raise PlottingError(
+                    "Cannot plot negative values on a log scale; use symlog scale"
+                )
+            elif yscale == "symlog" and data_min >= 0:
                 ymin = 0
             else:
                 ymin = self.dynamic_min(data_min, min_delta_y)
@@ -505,16 +490,17 @@ class SpectrumPlotter(object):
 
         return self._ylim
 
-
     @ylim.setter
     def ylim(self, limits):
         """Sets ylim."""
 
-        if limits is not None and limits != 'default' and \
-        (not hasattr(limits, '__len__') or len(limits) != 2):
-            raise PlottingError('ylim should be length 2: {}'.format(limits))
+        if (
+            limits is not None
+            and limits != "default"
+            and (not hasattr(limits, "__len__") or len(limits) != 2)
+        ):
+            raise PlottingError("ylim should be length 2: {}".format(limits))
         self._ylim = limits
-
 
     @property
     def linthreshy(self):

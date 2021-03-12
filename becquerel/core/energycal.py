@@ -5,6 +5,7 @@ from future.builtins import dict, super, zip
 from future.utils import viewitems
 import numpy as np
 
+
 class EnergyCalError(Exception):
     """Base class for errors in energycal.py"""
 
@@ -63,14 +64,14 @@ class EnergyCalBase(object):
         """
 
         if chlist is None or kevlist is None:
-            raise BadInput('Channel list and energy list are required')
+            raise BadInput("Channel list and energy list are required")
 
         try:
             cond = len(chlist) != len(kevlist)
         except TypeError:
-            raise BadInput('Inputs must be one dimensional iterables')
+            raise BadInput("Inputs must be one dimensional iterables")
         if cond:
-            raise BadInput('Channels and energies must be same length')
+            raise BadInput("Channels and energies must be same length")
 
         cal = cls()
 
@@ -81,7 +82,7 @@ class EnergyCalBase(object):
             try:
                 cal.new_calpoint(ch, kev)
             except (ValueError, TypeError):
-                raise BadInput('Inputs must be one dimensional iterables')
+                raise BadInput("Inputs must be one dimensional iterables")
         cal.update_fit()
         return cal
 
@@ -166,7 +167,7 @@ class EnergyCalBase(object):
         """
 
         if kev in self._calpoints:
-            raise EnergyCalError('Calibration energy already exists')
+            raise EnergyCalError("Calibration energy already exists")
         self.add_calpoint(ch, kev)
 
     def rm_calpoint(self, kev):
@@ -263,7 +264,7 @@ class EnergyCalBase(object):
         # calibration must be monotonically increasing
         assert (np.diff(_kev) > 0).all()
         # make sure we can interpolate
-        assert (_kev.min() <= kev).all() and (kev <= _kev.max())  
+        assert (_kev.min() <= kev).all() and (kev <= _kev.max())
         ch = np.asarray(np.interp(kev, kev_interp, _ch))
         # Removing because this won't be allowed by the bound search
         # assert (ch >= 0).all()
@@ -293,7 +294,7 @@ class EnergyCalBase(object):
         if name in self.valid_coeffs:
             self._coeffs[name] = val
         else:
-            raise EnergyCalError('Invalid coefficient name: {}'.format(name))
+            raise EnergyCalError("Invalid coefficient name: {}".format(name))
 
     def update_fit(self):
         """Compute the calibration curve from the current points.
@@ -307,9 +308,9 @@ class EnergyCalBase(object):
         num_points = len(self._calpoints)
 
         if num_points == 0:
-            raise EnergyCalError('No calibration points; cannot calibrate')
+            raise EnergyCalError("No calibration points; cannot calibrate")
         elif num_points < num_coeffs:
-            raise EnergyCalError('Not enough calibration points to fit curve')
+            raise EnergyCalError("Not enough calibration points to fit curve")
         else:
             self._perform_fit()
 
@@ -344,15 +345,15 @@ class LinearEnergyCal(EnergyCalBase):
         """
 
         new_coeffs = {}
-        if 'p0' in coeffs and 'p1' in coeffs:
-            new_coeffs['b'] = coeffs['p1']
-            new_coeffs['c'] = coeffs['p0']
-        elif 'slope' in coeffs and 'offset' in coeffs:
-            new_coeffs['b'] = coeffs['slope']
-            new_coeffs['c'] = coeffs['offset']
-        elif 'm' in coeffs and 'b' in coeffs:
-            new_coeffs['b'] = coeffs['m']
-            new_coeffs['c'] = coeffs['b']
+        if "p0" in coeffs and "p1" in coeffs:
+            new_coeffs["b"] = coeffs["p1"]
+            new_coeffs["c"] = coeffs["p0"]
+        elif "slope" in coeffs and "offset" in coeffs:
+            new_coeffs["b"] = coeffs["slope"]
+            new_coeffs["c"] = coeffs["offset"]
+        elif "m" in coeffs and "b" in coeffs:
+            new_coeffs["b"] = coeffs["m"]
+            new_coeffs["c"] = coeffs["b"]
         else:
             new_coeffs = coeffs.copy()
         cal = super().from_coeffs(new_coeffs)
@@ -366,27 +367,25 @@ class LinearEnergyCal(EnergyCalBase):
           a tuple of strings, the names of the coefficients for this curve
         """
 
-        return ('b', 'c')
+        return ("b", "c")
 
     @property
     def slope(self):
         """Return the slope coefficient value."""
 
         try:
-            return self._coeffs['b']
+            return self._coeffs["b"]
         except KeyError:
-            raise EnergyCalError(
-                'Slope coefficient not yet supplied or calculated.')
+            raise EnergyCalError("Slope coefficient not yet supplied or calculated.")
 
     @property
     def offset(self):
         """Return the offset coefficient value."""
 
         try:
-            return self._coeffs['c']
+            return self._coeffs["c"]
         except KeyError:
-            raise EnergyCalError(
-                'Offset coefficient not yet supplied or calculated.')
+            raise EnergyCalError("Offset coefficient not yet supplied or calculated.")
 
     def _ch2kev(self, ch):
         """Convert scalar OR np.array of channel(s) to energies.
