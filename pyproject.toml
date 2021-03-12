@@ -14,5 +14,3 @@ exclude = '''
   | becquerel.egg-info
 )/
 '''
-[tool.coverage.run]
-relative_files = true
