@@ -194,7 +194,7 @@ class Calibration(object):
                 print(node.id, x_appears)
         if not x_appears:
             raise CalibrationError(
-                f"Independent variable \"x\" must appear in the expression:\n{expr}"
+                f'Independent variable "x" must appear in the expression:\n{expr}'
             )
 
         # make sure square brackets only occur with "p"
