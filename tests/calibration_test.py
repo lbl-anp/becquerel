@@ -132,12 +132,15 @@ def test_fit_expression():
 name_cls_args = [
     ["cal1", Calibration, ("p[0] * x", [5.0])],
     ["cal2", Calibration, ("p[0] + p[1] * x", [1.0, 5.0])],
-    ["cal3", Calibration, ("sqrt(p[0] + p[1] * x)", [1.0, 5.0])],
+    [
+        "cal3",
+        Calibration,
+        ("sqrt(p[0] + p[1] * x + p[2] * x ** 2)", [2.0, 1.0, 1.0e-2]),
+    ],
     ["lin", LinearCalibration, ([2.0, 3.0],)],
     ["poly1", PolynomialCalibration, ([2.0, 1.0],)],
-    ["poly2", PolynomialCalibration, ([2.0, 1.0, 1.0e-4],)],
-    ["poly3", PolynomialCalibration, ([2.0, 1.0, 1.0e-4, 1.0e-6],)],
-    ["sqrt3", SqrtPolynomialCalibration, ([2.0, 1.0, 1.0e-4, 1.0e-6],)],
+    ["poly2", PolynomialCalibration, ([2.0, 1.0, 1.0e-2],)],
+    ["sqrt2", SqrtPolynomialCalibration, ([2.0, 1.0, 1.0e-2],)],
     ["interp", InterpolatedCalibration, ()],
 ]
 
@@ -212,7 +215,7 @@ def test_calibration_set_add_points(name, cls, args):
 def test_calibration_fit_from_points(name, cls, args):
     """Test Calibration.fit and from_points methods."""
     points_x = [0, 100, 500, 1000, 1500, 2500]
-    points_y = [0, 8, 47, 120, 150, 230]
+    points_y = [1, 18, 42, 63, 82, 117]
     # test fit()
     cal = cls(*args, comment="Test of class " + cls.__name__)
     cal.add_points(points_x, points_y)
