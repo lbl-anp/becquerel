@@ -4,7 +4,7 @@ import os
 import h5py
 import numpy as np
 import pytest
-from becquerel.io.h5 import is_h5_filename, open_h5, write_h5, read_h5
+from becquerel.io.h5 import ensure_string, is_h5_filename, open_h5, write_h5, read_h5
 
 
 TEST_IO = os.path.join(os.path.split(__file__)[0], "test_io")
@@ -24,6 +24,14 @@ ATTRS = {
     "list": [1, 2, 3],
     "ndarray": np.ones(10),
 }
+
+
+def test_ensure_string():
+    """Test the ensure_string function."""
+    assert "abc" == ensure_string("abc")
+    assert "abc" == ensure_string(b"abc")
+    with pytest.raises(TypeError):
+        ensure_string(None)
 
 
 def test_is_h5_filename():
@@ -112,16 +120,6 @@ def test_open_h5():
         with open_h5(group) as f:
             print(list(f.keys()))
             f.create_dataset("group_dset_3", data=[1, 2, 3])
-
-
-def ensure_string(data):
-    """Ensure the data are decoded to a string if they are bytes."""
-    if isinstance(data, str):
-        return data
-    elif isinstance(data, bytes):
-        return data.decode("ascii", "replace")
-    else:
-        raise AssertionError(f"Data are neither bytes nor string: {type(data)}")
 
 
 def check_dsets_attrs(dsets1, attrs1, dsets2, attrs2):
