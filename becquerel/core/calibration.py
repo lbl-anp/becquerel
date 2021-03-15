@@ -301,7 +301,7 @@ class Calibration(object):
         if "points_x" in dsets and "points_y" in dsets:
             cal.set_points(dsets["points_x"], dsets["points_y"])
         for key in attrs:
-            if isinstance(attrs[key], bytes):
+            if isinstance(attrs[key], (str, bytes)):
                 attrs[key] = io.h5.ensure_string(attrs[key])
         return cal
 

@@ -109,6 +109,11 @@ def test_calibration(name, cls, args):
     # test __init__()
     cal = cls(*args, comment="Test of class " + cls.__name__)
     print("attrs (test):", cal.attrs)
+    # test protections on setting parameters
+    with pytest.raises(CalibrationError):
+        cal.params = None
+    with pytest.raises(CalibrationError):
+        cal.params = np.ones((1, 2))
     # test write()
     cal.write(fname)
     # test read()
@@ -132,6 +137,7 @@ def test_calibration_set_add_points(name, cls, args):
     cal.set_points((0, 100), (0, 100))
     cal.set_points([], [])
     # test add_points
+    cal.add_points()  # does nothing
     for px, py in [[(), ()], [(0, 100), (0, 100)]]:
         cal.add_points(px, py)
     # test write()
@@ -140,3 +146,12 @@ def test_calibration_set_add_points(name, cls, args):
     cal2 = Calibration.read(fname)
     # test __eq__()
     assert cal2 == cal
+
+
+def test_calibration_misc():
+    """Miscellaneous tests to increase test coverage."""
+    cal1 = LinearCalibration([2.0, 3.0])
+    cal2 = PolynomialCalibration([2.0, 3.0, 7.0])
+    with pytest.raises(CalibrationError):
+        cal1 != 0
+    assert cal1 != cal2
