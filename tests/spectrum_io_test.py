@@ -3,7 +3,7 @@
 import os
 import pytest
 import becquerel as bq
-from h5_tools_test import TEST_IO
+from h5_tools_test import TEST_OUTPUTS
 from spectrum_test import make_spec
 from parsers_test import SAMPLES
 
@@ -30,7 +30,7 @@ def test_spectrum_from_file_raises():
 def test_write_h5(kind):
     """Test writing different Spectrums to HDF5 files."""
     spec = make_spec(kind, lt=600.0)
-    fname = os.path.join(TEST_IO, "__test_spectrum_io_" + kind + ".h5")
+    fname = os.path.join(TEST_OUTPUTS, "spectrum_io__test_write_h5__" + kind + ".h5")
     spec.write_h5(fname)
 
 
@@ -39,7 +39,7 @@ def test_write_h5(kind):
 )
 def test_read_h5(kind):
     """Test reading different Spectrums from HDF5 files."""
-    fname = os.path.join(TEST_IO, "__test_spectrum_io_" + kind + ".h5")
+    fname = os.path.join(TEST_OUTPUTS, "spectrum_io__test_write_h5__" + kind + ".h5")
     spec = bq.Spectrum.read_h5(fname)
     assert spec.livetime is not None
 
@@ -47,9 +47,9 @@ def test_read_h5(kind):
 @pytest.mark.parametrize(
     "kind", ["uncal", "cal", "cal_new", "cal_cps", "uncal_long", "uncal_cps"]
 )
-def test_file_file_h5(kind):
+def test_from_file_h5(kind):
     """Test Spectrum.from_file works for HDF5 files."""
-    fname = os.path.join(TEST_IO, "__test_spectrum_io_" + kind + ".h5")
+    fname = os.path.join(TEST_OUTPUTS, "spectrum_io__test_write_h5__" + kind + ".h5")
     spec = bq.Spectrum.from_file(fname)
     assert spec.livetime is not None
 
@@ -62,7 +62,9 @@ def test_spectrum_samples_write_read_h5(extension):
     for filename in filenames:
         spec = bq.Spectrum.from_file(filename)
         fname2 = os.path.splitext(filename)[0] + ".h5"
-        fname2 = os.path.join(TEST_IO, os.path.split(fname2)[1])
+        fname2 = os.path.join(
+            TEST_OUTPUTS, "spectrum_io__sample_write_h5__" + os.path.split(fname2)[1]
+        )
         spec.write_h5(fname2)
         spec = bq.Spectrum.read_h5(fname2)
         spec = bq.Spectrum.from_file(fname2)
