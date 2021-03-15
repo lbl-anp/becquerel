@@ -59,6 +59,9 @@ def test_validate_expression():
     # parentheses not matching
     with pytest.raises(CalibrationError):
         Calibration.validate_expression("p[0] + p[1] * x]")
+    # "x" must appear in the formula
+    with pytest.raises(CalibrationError):
+        Calibration.validate_expression("p[0] + p[1]")
     # square brackets must only occur with "p"
     with pytest.raises(CalibrationError):
         Calibration.validate_expression("s[0] + s[1] * x")
@@ -92,7 +95,7 @@ def test_validate_expression():
 
 
 name_cls_args = [
-    ["cal1", Calibration, ("p[0]", [1.0])],
+    ["cal1", Calibration, ("p[0] * x", [5.0])],
     ["cal2", Calibration, ("p[0] + p[1] * x", [1.0, 5.0])],
     ["cal3", Calibration, ("sqrt(p[0] + p[1] * x)", [1.0, 5.0])],
     ["lin", LinearCalibration, ([2.0, 3.0],)],

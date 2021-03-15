@@ -1,6 +1,7 @@
 """Generic calibration class."""
 
 from abc import abstractmethod
+import ast
 import copy
 import asteval
 import black
@@ -181,7 +182,20 @@ class Calibration(object):
         try:
             expr = black.format_str(expr, mode=black.FileMode())
         except (black.InvalidInput, blib2to3.pgen2.tokenize.TokenError):
-            raise CalibrationError(f"Error while running black on expression {expr}")
+            raise CalibrationError(f"Error while running black on expression:\n{expr}")
+
+        # make sure "x" appears in the formula
+        expr = expr.lower()
+        x_appears = False
+        for node in ast.walk(ast.parse(expr)):
+            if type(node) is ast.Name:
+                if node.id == "x":
+                    x_appears = True
+                print(node.id, x_appears)
+        if not x_appears:
+            raise CalibrationError(
+                f"Independent variable \"x\" must appear in the expression:\n{expr}"
+            )
 
         # make sure square brackets only occur with "p"
         for j in range(1, len(expr)):
