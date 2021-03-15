@@ -3,6 +3,7 @@
 import copy
 import asteval
 import black
+import blib2to3
 import numpy as np
 import scipy.optimize
 from .. import io
@@ -84,20 +85,11 @@ class Calibration(object):
         """
         print("Initial expression:", expr)
         # apply black formatting for consistency and error checking
-        expr = black.format_str(expr, mode=black.FileMode())
+        try:
+            expr = black.format_str(expr, mode=black.FileMode())
+        except (black.InvalidInput, blib2to3.pgen2.tokenize.TokenError):
+            raise CalibrationError(f"Error while running black on expression {expr}")
         print("After black:       ", expr)
-
-        # make sure all parentheses match
-        left_parens = []
-        for j, char in enumerate(expr):
-            if char in ["(", "["]:
-                left_parens.append(char)
-            elif char == ")":
-                assert left_parens[-1] == "("
-                left_parens = left_parens[:-1]
-            elif char == "]":
-                assert left_parens[-1] == "["
-                left_parens = left_parens[:-1]
 
         # make sure square brackets only occur with "p"
         for j in range(1, len(expr)):
