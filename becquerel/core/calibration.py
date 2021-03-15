@@ -56,11 +56,13 @@ class Calibration(object):
         TODO: docstring
         """
         x = np.asarray(x)
-        assert np.all(x >= 0)
+        if not np.all(x >= 0):
+            raise CalibrationError(f"x must be >= 0: {x}")
         safe_eval.symtable["p"] = params
         safe_eval.symtable["x"] = x
         y = safe_eval(expression)
-        assert np.all(y >= 0)
+        if not np.all(y >= 0):
+            raise CalibrationError(f"Calibration function must be >= 0: {y}")
         return y
 
     @staticmethod
@@ -215,9 +217,14 @@ class Calibration(object):
             points_y = []
         points_x = np.asarray(points_x)
         points_y = np.asarray(points_y)
-        assert points_x.ndim == 1
-        assert points_y.ndim == 1
-        assert len(points_x) == len(points_y)
+        if points_x.ndim != 1:
+            raise CalibrationError(f"Calibration x points must be 1-D: {points_x}")
+        if points_y.ndim != 1:
+            raise CalibrationError(f"Calibration y points must be 1-D: {points_y}")
+        if len(points_x) != len(points_y):
+            raise CalibrationError(
+                f"Number of x and y calibration points must match: {len(points_x)}, {len(points_y)}"
+            )
         self._points_x = np.append(self._points_x, points_x)
         self._points_y = np.append(self._points_y, points_y)
         # sort points in increasing order of x
@@ -225,8 +232,14 @@ class Calibration(object):
         self._points_x = self._points_x[i]
         self._points_y = self._points_y[i]
         # check all values are positive
-        assert np.all(self._points_x >= 0)
-        assert np.all(self._points_y >= 0)
+        if not np.all(self._points_x >= 0):
+            raise CalibrationError(
+                f"All calibration x points must be >= 0: {self._points_x}"
+            )
+        if not np.all(self._points_y >= 0):
+            raise CalibrationError(
+                f"All calibration y points must be >= 0: {self._points_y}"
+            )
 
     def set_points(self, points_x=None, points_y=None):
         """Remove existing points and set the calibration point values.
@@ -293,9 +306,15 @@ class Calibration(object):
         calibration : becquerel.Calibration
         """
         dsets, attrs, skipped = io.h5.read_h5(name)
-        assert len(dsets.keys()) in [2, 4]
-        assert "params" in dsets
-        assert "expression" in dsets
+        if "params" not in dsets:
+            raise CalibrationError(f'Expected dataset "params"')
+        if "expression" not in dsets:
+            raise CalibrationError(f'Expected dataset "expression"')
+        if not (len(dsets.keys()) in [2, 4]):
+            unexpected = set(dsets.keys()) - set(
+                ["expression", "params", "points_x", "points_y"]
+            )
+            raise CalibrationError(f"Unexpected dataset names in file: {unexpected}")
         expr = io.h5.ensure_string(dsets["expression"])
         cal = cls(expr, dsets["params"], **attrs)
         if "points_x" in dsets and "points_y" in dsets:
@@ -335,7 +354,8 @@ class LinearCalibration(Calibration):
         attrs : dict
             Other information to be stored with the calibration.
         """
-        assert len(params) == 2
+        if len(params) != 2:
+            raise CalibrationError("LinearCalibration expects 2 parameters")
         expr = "p[0] + p[1] * x"
         super().__init__(expr, params, **attrs)
 
@@ -357,7 +377,10 @@ class PolynomialCalibration(Calibration):
             Other information to be stored with the calibration.
         """
         order = len(params) - 1
-        assert order >= 0
+        if order <= 0:
+            raise CalibrationError(
+                "PolynomialCalibration expects an order of at least 1"
+            )
         expr = "p[0]"
         for n in range(1, order + 1):
             expr += f" + p[{n}] * x ** {n}"
@@ -381,7 +404,10 @@ class SqrtPolynomialCalibration(Calibration):
             Other information to be stored with the calibration.
         """
         order = len(params) - 1
-        assert order >= 0
+        if order <= 0:
+            raise CalibrationError(
+                "SqrtPolynomialCalibration expects an order of at least 1"
+            )
         expr = "sqrt(p[0]"
         for n in range(1, order + 1):
             expr += f" + p[{n}] * x ** {n}"
