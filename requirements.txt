@@ -1,3 +1,4 @@
+asteval
 beautifulsoup4
 future
 h5py
