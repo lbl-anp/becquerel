@@ -112,13 +112,11 @@ class Calibration(object):
         expression : string
             Expression having been validated and reformatted using black.
         """
-        print("Initial expression:", expr)
         # apply black formatting for consistency and error checking
         try:
             expr = black.format_str(expr, mode=black.FileMode())
         except (black.InvalidInput, blib2to3.pgen2.tokenize.TokenError):
             raise CalibrationError(f"Error while running black on expression {expr}")
-        print("After black:       ", expr)
 
         # make sure square brackets only occur with "p"
         for j in range(1, len(expr)):
@@ -133,7 +131,6 @@ class Calibration(object):
             param_indices = Calibration.param_indices(expr)
         except ValueError:
             raise CalibrationError(f"Unable to extract indices to parameters:\n{expr}")
-        print("indices:", param_indices)
         if param_indices.min() != 0:
             raise CalibrationError(
                 f"Minimum parameter index in expression is not 0:\n{expr}\n{param_indices}"
@@ -152,20 +149,17 @@ class Calibration(object):
         if params is not None:
             try:
                 y = Calibration.eval_expression(expr, params, 200.0)
-                print("y:", y)
             except TypeError:
                 raise CalibrationError(
                     f"Cannot evaluate expression for a float:\n{expr}\n{safe_eval.symtable['x']}"
                 )
             try:
                 y = Calibration.eval_expression(expr, params, [200.0, 500.0])
-                print("y:", y)
             except TypeError:
                 raise CalibrationError(
                     f"Cannot evaluate expression for an array:\n{expr}\n{safe_eval.symtable['x']}"
                 )
 
-        print("Final expression:  ", expr)
         return expr
 
     @property
