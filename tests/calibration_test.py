@@ -18,6 +18,8 @@ from h5_tools_test import TEST_OUTPUTS
 def test_eval_expression():
     """Test Calibration.eval_expression."""
     Calibration.eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2.0)
+    # no parameters
+    Calibration.eval_expression("1.0 + 5.0 * x", [], 2.0)
     # bad syntax
     with pytest.raises(CalibrationError):
         Calibration.eval_expression("p[0] + p[1] x", [1.0, 5.0], 2.0)
@@ -38,6 +40,8 @@ def test_expression_param_indices():
     assert np.allclose(Calibration.param_indices("p[0] + p[2] * x"), [0, 2])
     # neither does this, but notice the order!
     assert np.allclose(Calibration.param_indices("p[0] + p[-1] * x"), [-1, 0])
+    # having no parameters is supported
+    assert len(Calibration.param_indices("1.0 + 5.0 * x")) == 0
     # error if indices are not integers
     with pytest.raises(ValueError):
         Calibration.param_indices("p[0.2] + p[1] * x")
@@ -63,10 +67,10 @@ def test_validate_expression():
     # "x" must appear in the formula
     with pytest.raises(CalibrationError):
         Calibration.validate_expression("p[0] + p[1]")
-    # square brackets must only occur with "p"
-    with pytest.raises(CalibrationError):
-        Calibration.validate_expression("s[0] + s[1] * x")
-    # square brackets must only enclose integers
+    # having no parameters is supported
+    assert Calibration.validate_expression("1.0 + 5.0 * x")
+    assert Calibration.validate_expression("1.0 + 5.0 * x", params=[])
+    # square brackets after "p" must only enclose integers
     with pytest.raises(CalibrationError):
         Calibration.validate_expression("p[0.2] + p[1] * x")
     with pytest.raises(CalibrationError):

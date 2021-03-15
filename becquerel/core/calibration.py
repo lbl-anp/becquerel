@@ -195,27 +195,20 @@ class Calibration(object):
                 f'Independent variable "x" must appear in the expression:\n{expr}'
             )
 
-        # make sure square brackets only occur with "p"
-        for j in range(1, len(expr)):
-            if expr[j] == "[":
-                if expr[j - 1] != "p":
-                    raise CalibrationError(
-                        f"Character preceding '[' must be 'p':\n{expr[:j]}  {expr[j:]}"
-                    )
-
         # make sure each parameter appears at least once
         try:
             param_indices = Calibration.param_indices(expr)
         except ValueError:
             raise CalibrationError(f"Unable to extract indices to parameters:\n{expr}")
-        if param_indices.min() != 0:
-            raise CalibrationError(
-                f"Minimum parameter index in expression is not 0:\n{expr}\n{param_indices}"
-            )
-        if not np.allclose(np.diff(param_indices), 1):
-            raise CalibrationError(
-                f"Parameter indices in expression are not contiguous:\n{expr}\n{param_indices}"
-            )
+        if len(param_indices) > 0:
+            if param_indices.min() != 0:
+                raise CalibrationError(
+                    f"Minimum parameter index in expression is not 0:\n{expr}\n{param_indices}"
+                )
+            if not np.allclose(np.diff(param_indices), 1):
+                raise CalibrationError(
+                    f"Parameter indices in expression are not contiguous:\n{expr}\n{param_indices}"
+                )
         if params is not None:
             if len(param_indices) != len(params):
                 raise CalibrationError(
