@@ -270,7 +270,7 @@ class Calibration(object):
         # check that we have the expected number of parameters
         n_params = len(Calibration.param_indices(expr))
         if params0 is None:
-            params0 = np.ones(n_params)
+            params0 = np.zeros(n_params)
         else:
             params0 = np.asarray(params0).flatten()
         if len(params0) != n_params:
