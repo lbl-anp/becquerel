@@ -143,10 +143,6 @@ class Calibration(object):
                 f"Parameter indices in expression are not contiguous:\n{expr}\n{param_indices}"
             )
         if params is not None:
-            if param_indices.max() != len(params) - 1:
-                raise CalibrationError(
-                    f"Maximum parameter index in expression is not {len(params) - 1}:\n{expr}\n{param_indices}"
-                )
             if len(param_indices) != len(params):
                 raise CalibrationError(
                     f"Not enough parameter indices in expression:\n{expr}\n{param_indices}"
