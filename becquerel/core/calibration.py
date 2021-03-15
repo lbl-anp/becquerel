@@ -50,6 +50,7 @@ class Calibration(object):
         self.expression = expression
         self.params = params
         self.attrs = attrs
+        self.set_points()
 
     @staticmethod
     def eval_expression(expression, params, x):
@@ -183,6 +184,61 @@ class Calibration(object):
     def attrs(self, attrs):
         self._attrs = copy.deepcopy(attrs)
 
+    @property
+    def points_x(self):
+        return self._points_x
+
+    @property
+    def points_y(self):
+        return self._points_y
+
+    def add_points(self, points_x=None, points_y=None):
+        """Add the calibration point values to the internal list.
+
+        Parameters
+        ----------
+        points_x : float or array_like
+            The x-value or values of calibration points
+        points_y : float or array_like
+            The y-value or values of calibration points
+        """
+        if points_x is None:
+            points_x = []
+        if points_y is None:
+            points_y = []
+        points_x = np.asarray(points_x)
+        points_y = np.asarray(points_y)
+        assert points_x.ndim == 1
+        assert points_y.ndim == 1
+        assert len(points_x) == len(points_y)
+        self._points_x = np.append(self._points_x, points_x)
+        self._points_y = np.append(self._points_y, points_y)
+        # sort points in increasing order of x
+        i = np.argsort(self._points_x)
+        self._points_x = self._points_x[i]
+        self._points_y = self._points_y[i]
+        # check all values are positive
+        assert np.all(self._points_x >= 0)
+        assert np.all(self._points_y >= 0)
+
+    def set_points(self, points_x=None, points_y=None):
+        """Remove existing points and set the calibration point values.
+
+        Parameters
+        ----------
+        points_x : float or array_like
+            The x-value or values of calibration points
+        points_y : float or array_like
+            The y-value or values of calibration points
+        """
+        self._points_x = []
+        self._points_y = []
+        if points_x is None:
+            points_x = []
+        if points_y is None:
+            points_y = []
+        self.add_points(points_x=points_x, points_y=points_y)
+
     def __eq__(self, other):
         """Determine if the two calibrations are identical."""
         if not isinstance(other, Calibration):
@@ -197,7 +253,9 @@ class Calibration(object):
 
     def copy(self):
         """Make a complete copy of the calibration."""
-        return Calibration(self.expression, self.params, **self.attrs)
+        cal = Calibration(self.expression, self.params, **self.attrs)
+        cal.set_points(cal.points_x, cal.points_y)
+        return cal
 
     def __call__(self, x):
         """Call the calibration function.
@@ -228,11 +286,16 @@ class Calibration(object):
         calibration : becquerel.Calibration
         """
         dsets, attrs, skipped = io.h5.read_h5(name)
-        assert len(dsets.keys()) == 1
-        assert "params" in dsets.keys()
-        assert "expression" in attrs.keys()
-        expr = attrs.pop("expression")
+        assert len(dsets.keys()) in [2, 4]
+        assert "params" in dsets
+        assert "expression" in dsets
+        expr = io.h5.ensure_string(dsets["expression"])
         cal = cls(expr, dsets["params"], **attrs)
+        if "points_x" in dsets and "points_y" in dsets:
+            cal.set_points(dsets["points_x"], dsets["points_y"])
+        for key in attrs:
+            if isinstance(attrs[key], bytes):
+                attrs[key] = io.h5.ensure_string(attrs[key])
         return cal
 
     def write(self, name):
@@ -240,9 +303,13 @@ class Calibration(object):
 
         TODO: docstring
         """
-        dsets = {"params": self.params}
+        dsets = {
+            "expression": self.expression,
+            "params": self.params,
+            "points_x": self.points_x,
+            "points_y": self.points_y,
+        }
         attrs = copy.deepcopy(self.attrs)
-        attrs["expression"] = self.expression
         io.h5.write_h5(name, dsets, attrs)
 
 
