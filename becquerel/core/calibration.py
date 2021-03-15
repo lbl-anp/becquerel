@@ -185,7 +185,6 @@ class Calibration(object):
             raise CalibrationError(f"Error while running black on expression:\n{expr}")
 
         # make sure "x" appears in the formula
-        expr = expr.lower()
         x_appears = False
         for node in ast.walk(ast.parse(expr)):
             if type(node) is ast.Name:
