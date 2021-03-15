@@ -53,7 +53,19 @@ class Calibration(object):
     def eval_expression(expression, params, x):
         """Evaluate the expression at x.
 
-        TODO: docstring
+        Parameters
+        ----------
+        expression : string
+            The expression that defines the calibration function.
+        params : array_like
+            List of floating point parameters for the calibration function
+        x : float or array_like
+            The argument at which to evaluate the expression.
+
+        Returns
+        -------
+        y : float or array_like
+            Result of evaluating the expression for x.
         """
         x = np.asarray(x)
         if not np.all(x >= 0):
@@ -327,7 +339,10 @@ class Calibration(object):
     def write(self, name):
         """Write the class to HDF5.
 
-        TODO: docstring
+        Parameters
+        ----------
+        name : str, h5py.File, h5py.Group
+            The filename or an open h5py File or Group.
         """
         dsets = {
             "expression": self.expression,
