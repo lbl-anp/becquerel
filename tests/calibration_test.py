@@ -1,6 +1,7 @@
 """Test Calibration class."""
 
 import os
+import matplotlib.pyplot as plt
 import numpy as np
 from becquerel.core.calibration import (
     CalibrationError,
@@ -95,10 +96,10 @@ name_cls_args = [
     ["cal2", Calibration, ("p[0] + p[1] * x", [1.0, 5.0])],
     ["cal3", Calibration, ("sqrt(p[0] + p[1] * x)", [1.0, 5.0])],
     ["lin", LinearCalibration, ([2.0, 3.0],)],
-    ["poly2", PolynomialCalibration, ([2.0, 3.0],)],
-    ["poly3", PolynomialCalibration, ([2.0, 3.0, 7.0],)],
-    ["poly4", PolynomialCalibration, ([2.0, 3.0, 7.0, 5.0],)],
-    ["sqrt4", SqrtPolynomialCalibration, ([2.0, 3.0, 7.0, 5.0],)],
+    ["poly1", PolynomialCalibration, ([2.0, 3.0],)],
+    ["poly2", PolynomialCalibration, ([2.0, 3.0, 7.0],)],
+    ["poly3", PolynomialCalibration, ([2.0, 3.0, 7.0, 5.0],)],
+    ["sqrt3", SqrtPolynomialCalibration, ([2.0, 3.0, 7.0, 5.0],)],
 ]
 
 
@@ -146,6 +147,35 @@ def test_calibration_set_add_points(name, cls, args):
     cal2 = Calibration.read(fname)
     # test __eq__()
     assert cal2 == cal
+
+
+@pytest.mark.parametrize("name, cls, args", name_cls_args)
+def test_calibration_fit_from_points(name, cls, args):
+    """Test Calibration.fit and from_points methods."""
+    points_x = [0, 100, 500, 1000, 1500, 2500]
+    points_y = [0, 8, 47, 120, 150, 230]
+    # test fit()
+    cal = cls(*args, comment="Test of class " + cls.__name__)
+    cal.add_points(points_x, points_y)
+    cal.fit()
+    # test from_points()
+    if cls == Calibration:
+        cal2 = cls.from_points(args[0], points_x, points_y, args[1])
+    else:
+        cal2 = cls.from_points(points_x, points_y, args[0])
+    assert cal2 == cal
+
+    plt.figure()
+    plt.title(cal.expression)
+    x_fine = np.linspace(min(points_x), max(points_x), num=500)
+    plt.plot(x_fine, cal(x_fine), "b-", label="fitted function")
+    plt.plot(points_x, points_y, "ro", label="calibration points")
+    plt.xlabel("x")
+    plt.xlabel("y")
+    plt.xlim(0)
+    plt.ylim(0)
+    plt.legend()
+    plt.savefig(os.path.join(TEST_IO, f"__test_calibration_{name}_fit.png"))
 
 
 def test_calibration_misc():
