@@ -157,14 +157,14 @@ class Calibration(object):
             try:
                 y = Calibration.eval_expression(expr, params, 200.0)
                 print("y:", y)
-            except (NotImplementedError,):
+            except TypeError:
                 raise CalibrationError(
                     f"Cannot evaluate expression for a float:\n{expr}\n{safe_eval.symtable['x']}"
                 )
             try:
                 y = Calibration.eval_expression(expr, params, [200.0, 500.0])
                 print("y:", y)
-            except (NotImplementedError,):
+            except TypeError:
                 raise CalibrationError(
                     f"Cannot evaluate expression for an array:\n{expr}\n{safe_eval.symtable['x']}"
                 )
