@@ -5,6 +5,21 @@ from typing import Union, Tuple
 import h5py
 
 
+def ensure_string(data):
+    """Ensure the data are decoded to a string if they are bytes.
+
+    Parameters
+    ----------
+    data : str or bytes
+    """
+    if isinstance(data, str):
+        return data
+    elif isinstance(data, bytes):
+        return data.decode("ascii", "replace")
+    else:
+        raise TypeError(f"Data are neither bytes nor string: {type(data)}")
+
+
 def is_h5_filename(name: str):
     """Return True if the lowercase filename ends with h5 or hdf5.
 
