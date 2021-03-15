@@ -17,6 +17,53 @@ class CalibrationError(Exception):
     pass
 
 
+def _check_points(points_x, points_y):
+    """Perform various checks on the sets of calibration points.
+
+    Ensure the arrays of points are both 1-D and have the same length,
+    that all values are >= 0, and then put them in the order of ascending
+    x values.
+
+    Parameters
+    ----------
+    points_x : float or array_like
+        The x-value or values of calibration points
+    points_y : float or array_like
+        The y-value or values of calibration points
+
+    Returns
+    -------
+    points_x : array_like
+        The x-value or values of calibration points
+    points_y : array_like
+        The y-value or values of calibration points
+    """
+    if points_x is None:
+        points_x = []
+    if points_y is None:
+        points_y = []
+    points_x = np.asarray(points_x)
+    points_y = np.asarray(points_y)
+    if points_x.ndim != 1:
+        raise CalibrationError(f"Calibration x points must be 1-D: {points_x}")
+    if points_y.ndim != 1:
+        raise CalibrationError(f"Calibration y points must be 1-D: {points_y}")
+    if len(points_x) != len(points_y):
+        raise CalibrationError(
+            f"Number of x and y calibration points must match: {len(points_x)}, {len(points_y)}"
+        )
+    # sort points in increasing order of x
+    i = np.argsort(points_x)
+    points_x = points_x[i]
+    points_y = points_y[i]
+    # check all values are positive
+    if not np.all(points_x >= 0):
+        raise CalibrationError(f"All calibration x points must be >= 0: {points_x}")
+    if not np.all(points_y >= 0):
+        raise CalibrationError(f"All calibration y points must be >= 0: {points_y}")
+    return points_x, points_y
+
+
 class Calibration(object):
     """Base class for calibrations.
 
@@ -226,35 +273,10 @@ class Calibration(object):
         points_y : float or array_like
             The y-value or values of calibration points
         """
-        if points_x is None:
-            points_x = []
-        if points_y is None:
-            points_y = []
-        points_x = np.asarray(points_x)
-        points_y = np.asarray(points_y)
-        if points_x.ndim != 1:
-            raise CalibrationError(f"Calibration x points must be 1-D: {points_x}")
-        if points_y.ndim != 1:
-            raise CalibrationError(f"Calibration y points must be 1-D: {points_y}")
-        if len(points_x) != len(points_y):
-            raise CalibrationError(
-                f"Number of x and y calibration points must match: {len(points_x)}, {len(points_y)}"
-            )
+        points_x, points_y = _check_points(points_x, points_y)
         self._points_x = np.append(self._points_x, points_x)
         self._points_y = np.append(self._points_y, points_y)
-        # sort points in increasing order of x
-        i = np.argsort(self._points_x)
-        self._points_x = self._points_x[i]
-        self._points_y = self._points_y[i]
-        # check all values are positive
-        if not np.all(self._points_x >= 0):
-            raise CalibrationError(
-                f"All calibration x points must be >= 0: {self._points_x}"
-            )
-        if not np.all(self._points_y >= 0):
-            raise CalibrationError(
-                f"All calibration y points must be >= 0: {self._points_y}"
-            )
+        self._points_x, self._points_y = _check_points(self._points_x, self._points_y)
 
     def set_points(self, points_x=None, points_y=None):
         """Remove existing points and set the calibration point values.
@@ -268,10 +290,6 @@ class Calibration(object):
         """
         self._points_x = []
         self._points_y = []
-        if points_x is None:
-            points_x = []
-        if points_y is None:
-            points_y = []
         self.add_points(points_x=points_x, points_y=points_y)
 
     def __eq__(self, other):
