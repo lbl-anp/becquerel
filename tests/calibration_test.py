@@ -134,10 +134,10 @@ name_cls_args = [
     ["cal2", Calibration, ("p[0] + p[1] * x", [1.0, 5.0])],
     ["cal3", Calibration, ("sqrt(p[0] + p[1] * x)", [1.0, 5.0])],
     ["lin", LinearCalibration, ([2.0, 3.0],)],
-    ["poly1", PolynomialCalibration, ([2.0, 3.0],)],
-    ["poly2", PolynomialCalibration, ([2.0, 3.0, 7.0],)],
-    ["poly3", PolynomialCalibration, ([2.0, 3.0, 7.0, 5.0],)],
-    ["sqrt3", SqrtPolynomialCalibration, ([2.0, 3.0, 7.0, 5.0],)],
+    ["poly1", PolynomialCalibration, ([2.0, 1.0],)],
+    ["poly2", PolynomialCalibration, ([2.0, 1.0, 1.0e-4],)],
+    ["poly3", PolynomialCalibration, ([2.0, 1.0, 1.0e-4, 1.0e-6],)],
+    ["sqrt3", SqrtPolynomialCalibration, ([2.0, 1.0, 1.0e-4, 1.0e-6],)],
     ["interp", InterpolatedCalibration, ()],
 ]
 
