@@ -16,14 +16,14 @@ from h5_tools_test import TEST_IO
 def test_eval_expression():
     """Test Calibration.eval_expression."""
     Calibration.eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2.0)
-    # bad syntax results in a TypeError
-    with pytest.raises(TypeError):
+    # bad syntax
+    with pytest.raises(CalibrationError):
         Calibration.eval_expression("p[0] + p[1] x", [1.0, 5.0], 2.0)
-    # unknown symbol results in a TypeError
-    with pytest.raises(TypeError):
+    # unknown symbol
+    with pytest.raises(CalibrationError):
         Calibration.eval_expression("p[0] + p[1] * x + z", [1.0, 5.0], 2.0)
-    # unknown function results in a TypeError
-    with pytest.raises(TypeError):
+    # unknown function
+    with pytest.raises(CalibrationError):
         Calibration.eval_expression(
             "p[0] + p[1] * scipy.special.xlogy(x, x)", [1.0, 5.0], 2.0
         )

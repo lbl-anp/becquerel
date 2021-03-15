@@ -73,8 +73,11 @@ class Calibration(object):
         safe_eval.symtable["p"] = params
         safe_eval.symtable["x"] = x
         y = safe_eval(expression)
-        if not np.all(y >= 0):
-            raise CalibrationError(f"Calibration function must be >= 0: {y}")
+        if len(safe_eval.error) > 0:
+            raise CalibrationError(
+                f"asteval failed with errors:\n"
+                + "\n".join(str(err.get_error()) for err in safe_eval.error)
+            )
         return y
 
     @staticmethod
@@ -163,18 +166,18 @@ class Calibration(object):
         if params is not None:
             try:
                 y = Calibration.eval_expression(expr, params, 200.0)
-            except TypeError:
+            except (TypeError, NameError):
                 raise CalibrationError(
                     f"Cannot evaluate expression for a float:\n{expr}\n{safe_eval.symtable['x']}"
                 )
             try:
                 y = Calibration.eval_expression(expr, params, [200.0, 500.0])
-            except TypeError:
+            except (TypeError, NameError):
                 raise CalibrationError(
                     f"Cannot evaluate expression for an array:\n{expr}\n{safe_eval.symtable['x']}"
                 )
 
-        return expr
+        return expr.strip()
 
     @property
     def expression(self):
