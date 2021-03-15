@@ -9,6 +9,7 @@ from becquerel.core.calibration import (
     LinearCalibration,
     PolynomialCalibration,
     SqrtPolynomialCalibration,
+    InterpolatedCalibration,
 )
 import pytest
 from h5_tools_test import TEST_OUTPUTS
@@ -103,6 +104,7 @@ name_cls_args = [
     ["poly2", PolynomialCalibration, ([2.0, 3.0, 7.0],)],
     ["poly3", PolynomialCalibration, ([2.0, 3.0, 7.0, 5.0],)],
     ["sqrt3", SqrtPolynomialCalibration, ([2.0, 3.0, 7.0, 5.0],)],
+    ["interp", InterpolatedCalibration, ()],
 ]
 
 
@@ -138,11 +140,11 @@ def test_calibration_set_add_points(name, cls, args):
     cal = cls(*args, comment="Test of class " + cls.__name__)
     # test set_points
     cal.set_points()
-    cal.set_points((0, 100), (0, 100))
+    cal.set_points((0, 1000), (0, 1000))
     cal.set_points([], [])
     # test add_points
     cal.add_points()  # does nothing
-    for px, py in [[(), ()], [(0, 100), (0, 100)]]:
+    for px, py in [[(), ()], [(0, 1000), (0, 1000)]]:
         cal.add_points(px, py)
     # test write()
     cal.write(fname)
@@ -164,12 +166,17 @@ def test_calibration_fit_from_points(name, cls, args):
     # test from_points()
     if cls == Calibration:
         cal2 = cls.from_points(args[0], points_x, points_y, args[1])
+    elif cls == InterpolatedCalibration:
+        cal2 = cls.from_points(points_x, points_y)
     else:
         cal2 = cls.from_points(points_x, points_y, args[0])
     assert cal2 == cal
 
     plt.figure()
-    plt.title(cal.expression)
+    if cls == InterpolatedCalibration:
+        plt.title(cls.__name__)
+    else:
+        plt.title(cal.expression)
     x_fine = np.linspace(min(points_x), max(points_x), num=500)
     plt.plot(x_fine, cal(x_fine), "b-", label="fitted function")
     plt.plot(points_x, points_y, "ro", label="calibration points")

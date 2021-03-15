@@ -622,3 +622,89 @@ class SqrtPolynomialCalibration(AutoExpressionCalibration):
         return expr
 
 
+class InterpolatedCalibration(Calibration):
+    """A calibration that works by interpolating a series of points."""
+
+    @staticmethod
+    def make_expression(points_x, points_y):
+        """Build the interpolation expression given the points.
+
+        Parameters
+        ---------
+        points_x : float or array_like
+            The x-value or values of calibration points
+        points_y : float or array_like
+            The y-value or values of calibration points
+
+        Returns
+        -------
+        expr : string
+            The expression that defines the calibration function.
+        """
+        points_x, points_y = _check_points(points_x, points_y)
+        xp = ", ".join([f"{x:.9e}" for x in points_x])
+        yp = ", ".join([f"{y:.9e}" for y in points_y])
+        expr = ""
+        expr += f"assert all(x >= {points_x.min():.9e})\n"
+        expr += f"assert all(x <= {points_x.max():.9e})\n"
+        expr += f"interp(x, [{xp}], [{yp}])"
+        return expr
+
+    def __init__(self, **attrs):
+        """Create a calibration that interpolates the points.
+
+        The calibration will be valid until at least two points are added.
+
+        Parameters
+        ----------
+        attrs : dict
+            Other information to be stored with the calibration.
+        """
+        super().__init__("x", [], **attrs)
+
+    def add_points(self, points_x=None, points_y=None):
+        """Add the calibration point values to the internal list.
+
+        Update the interpolation expression once there are at least two points.
+
+        Parameters
+        ----------
+        points_x : float or array_like
+            The x-value or values of calibration points
+        points_y : float or array_like
+            The y-value or values of calibration points
+        """
+        super().add_points(points_x, points_y)
+        if len(self.points_x) >= 2:
+            self.expression = self.make_expression(self.points_x, self.points_y)
+
+    @classmethod
+    def from_points(cls, points_x, points_y, **attrs):
+        """Create a calibration class that interpolates the points.
+
+        Parameters
+        ----------
+        points_x : float or array_like
+            The x-value or values of calibration points
+        points_y : float or array_like
+            The y-value or values of calibration points
+        attrs : dict
+            Other information to be stored with the calibration.
+
+        Returns
+        -------
+        cal : Calibration
+            The Calibration instance with the given expression fitted to
+            the points.
+        """
+        cal = cls(**attrs)
+        cal.add_points(points_x, points_y)
+        return cal
+
+    def fit(self):
+        """Fit the calibration to the stored calibration points.
+
+        Since this function is interpolated, do nothing if this method is
+        called.
+        """
+        pass
