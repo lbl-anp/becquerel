@@ -1,5 +1,6 @@
 """Generic calibration class."""
 
+from abc import abstractmethod
 import copy
 import asteval
 import black
@@ -226,6 +227,67 @@ class Calibration(object):
 
         return expr.strip()
 
+    @staticmethod
+    def fit_expression(expr, points_x, points_y, params0=None):
+        """Fit the expression using the calibration points.
+
+        Performs least squares via scipy.optimize.least_squares.
+
+        Parameters
+        ----------
+        expression : string
+            The expression that defines the calibration function.
+        points_x : float or array_like
+            The x-value or values of calibration points
+        points_y : float or array_like
+            The y-value or values of calibration points
+        params0 : float or array_like
+            Initial guesses for the parameters. By default an array of ones
+            with its length inferred from the number of parameters
+            referenced in the expression.
+
+        Returns
+        -------
+        params : array_like
+            Parameters that result from the fit.
+        """
+        expr = Calibration.validate_expression(expr)
+        points_x, points_y = _check_points(points_x, points_y)
+
+        # check that we have the expected number of parameters
+        n_params = len(Calibration.param_indices(expr))
+        if params0 is None:
+            params0 = np.ones(n_params)
+        else:
+            params0 = np.asarray(params0).flatten()
+        if len(params0) != n_params:
+            raise CalibrationError(
+                f"Starting parameters have length {len(params0)}, but expression requires {n_params} parameters"
+            )
+        expr = Calibration.validate_expression(expr, params=params0)
+
+        # check that we have enough points
+        if len(points_x) < n_params:
+            raise CalibrationError(
+                f"Expression has {n_params} free parameters but there are only {len(points_x)} points to fit"
+            )
+
+        # define the residuals for least squares
+        def residuals(p, xs, ys):
+            fs = Calibration.eval_expression(expr, p, xs)
+            return ys - fs
+
+        # perform the fit
+        results = scipy.optimize.least_squares(
+            residuals,
+            params0,
+            args=(points_x, points_y),
+        )
+        if not results.success:
+            raise CalibrationError(results.message)
+        params = results.x
+        return params
+
     @property
     def expression(self):
         return self._expression
@@ -374,43 +436,142 @@ class Calibration(object):
         attrs = copy.deepcopy(self.attrs)
         io.h5.write_h5(name, dsets, attrs)
 
+    def fit(self):
+        """Fit the calibration to the stored calibration points."""
+        params = self.fit_expression(
+            self.expression, self.points_x, self.points_y, params0=self.params
+        )
+        self.params = params
 
-class LinearCalibration(Calibration):
-    """Linear calibration."""
+    @classmethod
+    def from_points(cls, expr, points_x, points_y, params0=None, **attrs):
+        """Create a calibration with the expression and fit the points.
+
+        Parameters
+        ----------
+        expr : string
+            The expression that defines the calibration function.
+        points_x : float or array_like
+            The x-value or values of calibration points
+        points_y : float or array_like
+            The y-value or values of calibration points
+        params0 : float or array_like
+            Initial guesses for the parameters. By default an array of ones
+            with its length inferred from the number of parameters
+            referenced in the expression.
+        attrs : dict
+            Other information to be stored with the calibration.
+
+        Returns
+        -------
+        cal : Calibration
+            The Calibration instance with the given expression fitted to
+            the points.
+        """
+        params = cls.fit_expression(expr, points_x, points_y, params0=params0)
+        cal = cls(expr, params, **attrs)
+        cal.add_points(points_x, points_y)
+        return cal
+
+
+class AutoExpressionCalibration(Calibration):
+    """A Calibration class that automatically generates its expression."""
+
+    @staticmethod
+    @abstractmethod
+    def make_expression(params):
+        """Build the expression for this class given the parameters.
+
+        Parameters
+        ---------
+        params : array_like
+            List of floating point parameters for the calibration function
+
+        Returns
+        -------
+        expr : string
+            The expression that defines the calibration function.
+        """
+        pass
 
     def __init__(self, params, **attrs):
-        """Create a linear calibration with the given parameters.
+        """Create a calibration with an auto-generated formula.
 
-        Calibration expression is "p[0] + p[1] * x".
+        Parameters
+        ----------
+        params : array_like
+            Coefficients of the calibration function, used to infer the
+            calibration function formula.
+        attrs : dict
+            Other information to be stored with the calibration.
+        """
+        expr = self.make_expression(params)
+        super().__init__(expr, params, **attrs)
+
+    @classmethod
+    def from_points(cls, points_x, points_y, params0, **attrs):
+        """Create a calibration instance and fit the points.
+
+        Parameters
+        ----------
+        points_x : float or array_like
+            The x-value or values of calibration points
+        points_y : float or array_like
+            The y-value or values of calibration points
+        params0 : float or array_like
+            Initial guesses for the parameters. By default an array of ones
+            with its length inferred from the number of parameters
+            referenced in the expression.
+        attrs : dict
+            Other information to be stored with the calibration.
+
+        Returns
+        -------
+        cal : Calibration
+            The Calibration instance with the given expression fitted to
+            the points.
+        """
+        expr = cls.make_expression(params0)
+        params = cls.fit_expression(expr, points_x, points_y, params0=params0)
+        print("test:", cls, super())
+        cal = Calibration(expr, params, **attrs)
+        cal.add_points(points_x, points_y)
+        return cal
+
+
+class LinearCalibration(AutoExpressionCalibration):
+    """Linear calibration."""
+
+    @staticmethod
+    def make_expression(params):
+        """Create a linear expression.
+
+        The calibration expression is "p[0] + p[1] * x".
 
         Parameters
         ----------
         params : array_like
             Coefficients beginning with 0th order.
-        attrs : dict
-            Other information to be stored with the calibration.
         """
         if len(params) != 2:
             raise CalibrationError("LinearCalibration expects 2 parameters")
-        expr = "p[0] + p[1] * x"
-        super().__init__(expr, params, **attrs)
+        return "p[0] + p[1] * x"
 
 
-class PolynomialCalibration(Calibration):
+class PolynomialCalibration(AutoExpressionCalibration):
     """Polynomial calibration of any order."""
 
-    def __init__(self, params, **attrs):
-        """Create a polynomial calibration with the given parameters.
+    @staticmethod
+    def make_expression(params):
+        """Create a polynomial expression for the given parameters.
 
-        Calibration expression is
+        The calibration expression is
             "p[0] + p[1] * x + p[2] * x**2 + ..."
 
         Parameters
         ----------
         params : array_like
             Coefficients beginning with 0th order.
-        attrs : dict
-            Other information to be stored with the calibration.
         """
         order = len(params) - 1
         if order <= 0:
@@ -420,24 +581,23 @@ class PolynomialCalibration(Calibration):
         expr = "p[0]"
         for n in range(1, order + 1):
             expr += f" + p[{n}] * x ** {n}"
-        super().__init__(expr, params, **attrs)
+        return expr
 
 
-class SqrtPolynomialCalibration(Calibration):
+class SqrtPolynomialCalibration(AutoExpressionCalibration):
     """Square root of a polynomial of any order."""
 
-    def __init__(self, params, **attrs):
-        """Create a square root of a polynomial with the given parameters.
+    @staticmethod
+    def make_expression(params):
+        """Create a square root polynomial expression for the given parameters.
 
-        Calibration expression is
+        The calibration expression is
             "sqrt(p[0] + p[1] * x + p[2] * x**2 + ...)"
 
         Parameters
         ----------
         params : array_like
             Coefficients beginning with 0th order.
-        attrs : dict
-            Other information to be stored with the calibration.
         """
         order = len(params) - 1
         if order <= 0:
@@ -448,5 +608,6 @@ class SqrtPolynomialCalibration(Calibration):
         for n in range(1, order + 1):
             expr += f" + p[{n}] * x ** {n}"
         expr += ")"
-        super().__init__(expr, params, **attrs)
+        return expr
+
 
