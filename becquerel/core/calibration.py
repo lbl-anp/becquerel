@@ -37,8 +37,8 @@ class Calibration(object):
             The expression that defines the calibration function as a
             function of argument "x". Parameters are referenced as "p",
             i.e., "p[j]" is the jth parameter, and all parameters must be
-            present in the expression. Can be a single-line formula like
-            "p[0] + p[1] * x" or a code block.
+            explicitly indexed in the expression. Can be a single-line formula
+            like "p[0] + p[1] * x" or a code block.
         params : array_like
             List of floating point parameters for the calibration function
         attrs : dict
@@ -64,8 +64,37 @@ class Calibration(object):
         return y
 
     @staticmethod
+    def param_indices(expr):
+        """Find all integer parameter indices of the expression.
+
+        The expression must explicitly call each parameter as "p[j]", where
+        j is the index of the parameter.
+
+        Parameters
+        ----------
+        expression : string
+            The expression that defines the calibration function.
+
+        Returns
+        -------
+        param_indices : array_like
+            List of integer parameter indices appearing in the expression.
+        """
+        # find parameter indices
+        tokens = expr.split("p[")
+        param_indices = [int(token.split("]")[0]) for token in tokens[1:]]
+        param_indices = np.array(sorted(np.unique(param_indices)))
+        return param_indices
+
+    @staticmethod
     def validate_expression(expr, params=None):
         """Perform checks on the expression.
+
+        The expression must explicitly call each parameter as "p[j]", where
+        j is the index of the parameter, and the indices for n parameters
+        range from 0 to n - 1. The expression is checked for how many
+        parameters there are and their length is checked if `params` is given
+        to ensure each is used at least once.
 
         Parameters
         ----------
@@ -100,10 +129,10 @@ class Calibration(object):
                     )
 
         # make sure each parameter appears at least once
-        tokens = expr.split("p[")
-        print("tokens:", tokens)
-        param_indices = [int(token.split("]")[0]) for token in tokens[1:]]
-        param_indices = np.array(sorted(np.unique(param_indices)))
+        try:
+            param_indices = Calibration.param_indices(expr)
+        except ValueError:
+            raise CalibrationError(f"Unable to extract indices to parameters:\n{expr}")
         print("indices:", param_indices)
         if param_indices.min() != 0:
             raise CalibrationError(
