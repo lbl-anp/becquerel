@@ -137,6 +137,7 @@ name_cls_args = [
         Calibration,
         ("sqrt(p[0] + p[1] * x + p[2] * x ** 2)", [2.0, 1.0, 1.0e-2]),
     ],
+    ["cal4", Calibration, ("p[0] + p[1] * exp(x / p[2])", [1.0, 5.0, 1000.0])],
     ["lin", LinearCalibration, ([2.0, 3.0],)],
     ["poly1", PolynomialCalibration, ([2.0, 1.0],)],
     ["poly2", PolynomialCalibration, ([2.0, 1.0, 1.0e-2],)],
