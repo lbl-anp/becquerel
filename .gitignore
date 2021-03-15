@@ -1,5 +1,5 @@
 # Becquerel-specific files
-tests/test_io
+tests/test_outputs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

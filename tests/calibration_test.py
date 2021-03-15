@@ -11,7 +11,7 @@ from becquerel.core.calibration import (
     SqrtPolynomialCalibration,
 )
 import pytest
-from h5_tools_test import TEST_IO
+from h5_tools_test import TEST_OUTPUTS
 
 
 def test_eval_expression():
@@ -109,7 +109,7 @@ name_cls_args = [
 @pytest.mark.parametrize("name, cls, args", name_cls_args)
 def test_calibration(name, cls, args):
     """Test the Calibration class."""
-    fname = os.path.join(TEST_IO, f"__test_calibration_{name}.h5")
+    fname = os.path.join(TEST_OUTPUTS, f"calibration__init__{name}.h5")
     # test __init__()
     cal = cls(*args, comment="Test of class " + cls.__name__)
     print("attrs (test):", cal.attrs)
@@ -134,7 +134,7 @@ def test_calibration(name, cls, args):
 @pytest.mark.parametrize("name, cls, args", name_cls_args)
 def test_calibration_set_add_points(name, cls, args):
     """Test Calibration.set_points and add_points methods."""
-    fname = os.path.join(TEST_IO, f"__test_calibration_{name}_points.h5")
+    fname = os.path.join(TEST_OUTPUTS, f"calibration__add_points__{name}.h5")
     cal = cls(*args, comment="Test of class " + cls.__name__)
     # test set_points
     cal.set_points()
@@ -178,7 +178,7 @@ def test_calibration_fit_from_points(name, cls, args):
     plt.xlim(0)
     plt.ylim(0)
     plt.legend()
-    plt.savefig(os.path.join(TEST_IO, f"__test_calibration_{name}_fit.png"))
+    plt.savefig(os.path.join(TEST_OUTPUTS, f"calibration__fit__{name}.png"))
 
 
 def test_calibration_misc():
