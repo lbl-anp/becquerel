@@ -43,10 +43,6 @@ class Calibration(object):
         attrs : dict
             Other information to be stored with the calibration.
         """
-        if "expression" in attrs.keys():
-            raise CalibrationError(
-                f'Keyword "expression" cannot be used in attrs: {attrs}'
-            )
         self.expression = expression
         self.params = params
         self.attrs = attrs
