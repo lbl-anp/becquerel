@@ -189,7 +189,7 @@ class Calibration(object):
 
     @attrs.setter
     def attrs(self, attrs):
-        self._attrs = copy.deepcopy(attrs)
+        self._attrs = dict(copy.deepcopy(attrs))
 
     @property
     def points_x(self):
