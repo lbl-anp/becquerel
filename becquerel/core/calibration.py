@@ -190,7 +190,6 @@ class Calibration(object):
             if type(node) is ast.Name:
                 if node.id == "x":
                     x_appears = True
-                print(node.id, x_appears)
         if not x_appears:
             raise CalibrationError(
                 f'Independent variable "x" must appear in the expression:\n{expr}'
@@ -546,7 +545,6 @@ class AutoExpressionCalibration(Calibration):
         """
         expr = cls.make_expression(params0)
         params = cls.fit_expression(expr, points_x, points_y, params0=params0)
-        print("test:", cls, super())
         cal = Calibration(expr, params, **attrs)
         cal.add_points(points_x, points_y)
         return cal
