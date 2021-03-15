@@ -10,6 +10,8 @@ import numpy as np
 import scipy.optimize
 from .. import io
 
+CLIP_MAX = 1e6  # maximum value for a calibration function
+
 safe_eval = asteval.Interpreter(use_numpy=True)
 
 
@@ -127,6 +129,12 @@ class Calibration(object):
                 f"asteval failed with errors:\n"
                 + "\n".join(str(err.get_error()) for err in safe_eval.error)
             )
+        if not np.all(np.isreal(y)):
+            raise CalibrationError(
+                f"Function evaluation resulted in complex values: {y}"
+            )
+        # clip values of y
+        y = np.clip(y, 0, CLIP_MAX)
         return y
 
     @staticmethod
@@ -219,13 +227,13 @@ class Calibration(object):
         if params is not None:
             try:
                 y = Calibration.eval_expression(expr, params, 200.0)
-            except (TypeError, NameError):
+            except CalibrationError:
                 raise CalibrationError(
                     f"Cannot evaluate expression for a float:\n{expr}\n{safe_eval.symtable['x']}"
                 )
             try:
                 y = Calibration.eval_expression(expr, params, [200.0, 500.0])
-            except (TypeError, NameError):
+            except CalibrationError:
                 raise CalibrationError(
                     f"Cannot evaluate expression for an array:\n{expr}\n{safe_eval.symtable['x']}"
                 )
@@ -410,10 +418,10 @@ class Calibration(object):
             raise CalibrationError(f'Expected dataset "params"')
         if "expression" not in dsets:
             raise CalibrationError(f'Expected dataset "expression"')
-        if not (len(dsets.keys()) in [2, 4]):
-            unexpected = set(dsets.keys()) - set(
-                ["expression", "params", "points_x", "points_y"]
-            )
+        unexpected = set(dsets.keys()) - set(
+            ["expression", "params", "points_x", "points_y"]
+        )
+        if len(unexpected) > 0:
             raise CalibrationError(f"Unexpected dataset names in file: {unexpected}")
         expr = io.h5.ensure_string(dsets["expression"])
         cal = cls(expr, dsets["params"], **attrs)

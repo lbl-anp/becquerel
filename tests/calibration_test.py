@@ -3,6 +3,7 @@
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+from becquerel.io import h5
 from becquerel.core.calibration import (
     CalibrationError,
     Calibration,
@@ -31,6 +32,12 @@ def test_eval_expression():
         Calibration.eval_expression(
             "p[0] + p[1] * scipy.special.xlogy(x, x)", [1.0, 5.0], 2.0
         )
+    # negative argument
+    with pytest.raises(CalibrationError):
+        Calibration.eval_expression("p[0] + p[1] * x", [1.0, 5.0], -2.0)
+    # result is a complex number
+    with pytest.raises(CalibrationError):
+        Calibration.eval_expression("p[0] + p[1] * x", [1j, 5.0], 2.0)
 
 
 def test_expression_param_indices():
@@ -97,6 +104,29 @@ def test_validate_expression():
         Calibration.validate_expression(
             "p[0] + p[1] * scipy.special.xlogy(x, x)", [1.0, 5.0]
         )
+    # expression looks okay until it is evaluated
+    with pytest.raises(CalibrationError):
+        Calibration.validate_expression("sqrt(p[0] + p[1] * x)", [1j, 5.0])
+
+
+def test_fit_expression():
+    """Test Calibration.fit_expression."""
+    # this case should work
+    Calibration.fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000])
+    # provide initial guesses
+    Calibration.fit_expression(
+        "p[0] + p[1] * x", [0, 1000], [0, 1000], params0=[0.0, 1.0]
+    )
+    # bad number of guesses
+    with pytest.raises(CalibrationError):
+        Calibration.fit_expression(
+            "p[0] + p[1] * x", [0, 1000], [0, 1000], params0=[0.0, 1.0, 2.0]
+        )
+    # not enough points
+    with pytest.raises(CalibrationError):
+        Calibration.fit_expression(
+            "p[0] + p[1] * x", [1000], [1000], params0=[0.0, 1.0]
+        )
 
 
 name_cls_args = [
@@ -118,7 +148,6 @@ def test_calibration(name, cls, args):
     fname = os.path.join(TEST_OUTPUTS, f"calibration__init__{name}.h5")
     # test __init__()
     cal = cls(*args, comment="Test of class " + cls.__name__)
-    print("attrs (test):", cal.attrs)
     # test protections on setting parameters
     with pytest.raises(CalibrationError):
         cal.params = None
@@ -156,6 +185,27 @@ def test_calibration_set_add_points(name, cls, args):
     cal2 = Calibration.read(fname)
     # test __eq__()
     assert cal2 == cal
+    # points_x is not 1D
+    with pytest.raises(CalibrationError):
+        points_1d = np.array([0, 1000, 2000])
+        points_2d = np.reshape(points_1d, (1, 3))
+        cal.add_points(points_2d, points_1d)
+    # points_y is not 1D
+    with pytest.raises(CalibrationError):
+        points_1d = np.array([0, 1000, 2000])
+        points_2d = np.reshape(points_1d, (1, 3))
+        cal.add_points(points_1d, points_2d)
+    # points have different lengths
+    with pytest.raises(CalibrationError):
+        points_1d = np.array([0, 1000, 2000])
+        points_2d = np.reshape(points_1d, (1, 3))
+        cal.add_points([0, 1000, 2000], [0, 2000])
+    # points_x contains negative values
+    with pytest.raises(CalibrationError):
+        cal.add_points([0, -2000], [0, 2000])
+    # points_y contains negative values
+    with pytest.raises(CalibrationError):
+        cal.add_points([0, 2000], [0, -2000])
 
 
 @pytest.mark.parametrize("name, cls, args", name_cls_args)
@@ -199,3 +249,56 @@ def test_calibration_misc():
     with pytest.raises(CalibrationError):
         cal1 != 0
     assert cal1 != cal2
+
+    # bad number of arguments
+    with pytest.raises(CalibrationError):
+        LinearCalibration([2.0])
+    LinearCalibration([2.0, 3.0])
+    with pytest.raises(CalibrationError):
+        LinearCalibration([2.0, 3.0, 4.0])
+
+    # bad number of arguments
+    with pytest.raises(CalibrationError):
+        PolynomialCalibration([2.0])
+    PolynomialCalibration([2.0, 3.0])
+    PolynomialCalibration([2.0, 3.0, 4.0])
+
+    # bad number of arguments
+    with pytest.raises(CalibrationError):
+        SqrtPolynomialCalibration([2.0])
+    SqrtPolynomialCalibration([2.0, 3.0])
+    SqrtPolynomialCalibration([2.0, 3.0, 4.0])
+
+
+def test_calibration_read_failures():
+    """Test miscellaneous HDF5 reading failures."""
+    fname = os.path.join(TEST_OUTPUTS, "calibration__read_failures.h5")
+    cal = LinearCalibration([2.0, 3.0])
+    cal.add_points([0, 1000, 2000], [0, 1000, 2000])
+
+    # remove the params from the file
+    cal.write(fname)
+    with h5.open_h5(fname, "r+") as f:
+        del f["params"]
+    with pytest.raises(CalibrationError):
+        Calibration.read(fname)
+
+    # remove the expression from the file
+    cal.write(fname)
+    with h5.open_h5(fname, "r+") as f:
+        del f["expression"]
+    with pytest.raises(CalibrationError):
+        Calibration.read(fname)
+
+    # remove points_x from the file
+    cal.write(fname)
+    with h5.open_h5(fname, "r+") as f:
+        del f["points_x"]
+    Calibration.read(fname)
+
+    # add unexpected dataset to the file
+    cal.write(fname)
+    with h5.open_h5(fname, "r+") as f:
+        f.create_dataset("unexpected", data=[0, 1, 2])
+    with pytest.raises(CalibrationError):
+        Calibration.read(fname)
