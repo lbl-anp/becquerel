@@ -216,28 +216,48 @@ def test_calibration_set_add_points(name, cls, args):
 @pytest.mark.parametrize("name, cls, args", name_cls_args)
 def test_calibration_fit_from_points(name, cls, args):
     """Test Calibration.fit and from_points methods."""
-    points_x = [0, 100, 500, 1000, 1500, 2500]
-    points_y = [1, 18, 42, 63, 82, 117]
+    points_x = [100, 500, 1000, 1500, 2500]
+    points_y = [18, 42, 63, 82, 117]
     # test fit()
-    cal = cls(*args, comment="Test of class " + cls.__name__)
-    cal.add_points(points_x, points_y)
-    cal.fit()
+    cal1 = cls(*args, comment="Test of class " + cls.__name__)
+    cal1.add_points(points_x, points_y)
+    cal1.fit()
     # test from_points()
     if cls == Calibration:
         cal2 = cls.from_points(args[0], points_x, points_y, args[1])
+        cal3 = cls.from_points(
+            args[0], points_x, points_y, args[1], include_origin=True
+        )
     elif cls == InterpolatedCalibration:
         cal2 = cls.from_points(points_x, points_y)
+        cal3 = cls.from_points(points_x, points_y, include_origin=True)
     else:
         cal2 = cls.from_points(points_x, points_y, args[0])
-    assert cal2 == cal
+        cal3 = cls.from_points(points_x, points_y, args[0], include_origin=True)
+    assert cal2 == cal1
 
     plt.figure()
     if cls == InterpolatedCalibration:
         plt.title(cls.__name__)
     else:
-        plt.title(cal.expression)
-    x_fine = np.linspace(min(points_x), max(points_x), num=500)
-    plt.plot(x_fine, cal(x_fine), "b-", label="fitted function")
+        plt.title(cal1.expression)
+    x_fine1 = np.linspace(min(points_x), max(points_x), num=500)
+    x_fine3 = np.linspace(0, max(points_x), num=500)
+    plt.plot(
+        x_fine1,
+        cal1(x_fine1),
+        "b-",
+        lw=2,
+        alpha=0.5,
+        label="fitted function (include_origin=False)",
+    )
+    plt.plot(
+        x_fine3,
+        cal3(x_fine3),
+        "g-",
+        alpha=0.5,
+        label="fitted function (include_origin=True)",
+    )
     plt.plot(points_x, points_y, "ro", label="calibration points")
     plt.xlabel("x")
     plt.xlabel("y")
