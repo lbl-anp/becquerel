@@ -457,7 +457,9 @@ class Calibration(object):
         self.params = params
 
     @classmethod
-    def from_points(cls, expr, points_x, points_y, params0=None, **attrs):
+    def from_points(
+        cls, expr, points_x, points_y, params0=None, include_origin=False, **attrs
+    ):
         """Create a calibration with the expression and fit the points.
 
         Parameters
@@ -472,6 +474,9 @@ class Calibration(object):
             Initial guesses for the parameters. By default an array of ones
             with its length inferred from the number of parameters
             referenced in the expression.
+        include_origin : bool
+            Whether to add and fit with the point (0, 0) in addition to the
+            others.
         attrs : dict
             Other information to be stored with the calibration.
 
@@ -484,6 +489,8 @@ class Calibration(object):
         params = cls.fit_expression(expr, points_x, points_y, params0=params0)
         cal = cls(expr, params, **attrs)
         cal.add_points(points_x, points_y)
+        if include_origin:
+            cal.add_points(0, 0)
         return cal
 
 
@@ -522,7 +529,7 @@ class AutoExpressionCalibration(Calibration):
         super().__init__(expr, params, **attrs)
 
     @classmethod
-    def from_points(cls, points_x, points_y, params0, **attrs):
+    def from_points(cls, points_x, points_y, params0, include_origin=False, **attrs):
         """Create a calibration instance and fit the points.
 
         Parameters
@@ -535,6 +542,9 @@ class AutoExpressionCalibration(Calibration):
             Initial guesses for the parameters. By default an array of ones
             with its length inferred from the number of parameters
             referenced in the expression.
+        include_origin : bool
+            Whether to add and fit with the point (0, 0) in addition to the
+            others.
         attrs : dict
             Other information to be stored with the calibration.
 
@@ -548,6 +558,8 @@ class AutoExpressionCalibration(Calibration):
         params = cls.fit_expression(expr, points_x, points_y, params0=params0)
         cal = Calibration(expr, params, **attrs)
         cal.add_points(points_x, points_y)
+        if include_origin:
+            cal.add_points(0, 0)
         return cal
 
 
@@ -680,7 +692,7 @@ class InterpolatedCalibration(Calibration):
             self.expression = self.make_expression(self.points_x, self.points_y)
 
     @classmethod
-    def from_points(cls, points_x, points_y, **attrs):
+    def from_points(cls, points_x, points_y, include_origin=False, **attrs):
         """Create a calibration class that interpolates the points.
 
         Parameters
@@ -689,6 +701,9 @@ class InterpolatedCalibration(Calibration):
             The x-value or values of calibration points
         points_y : float or array_like
             The y-value or values of calibration points
+        include_origin : bool
+            Whether to add and fit with the point (0, 0) in addition to the
+            others.
         attrs : dict
             Other information to be stored with the calibration.
 
@@ -700,6 +715,8 @@ class InterpolatedCalibration(Calibration):
         """
         cal = cls(**attrs)
         cal.add_points(points_x, points_y)
+        if include_origin:
+            cal.add_points(0, 0)
         return cal
 
     def fit(self):
