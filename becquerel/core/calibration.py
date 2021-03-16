@@ -285,6 +285,10 @@ class Calibration(object):
                 f"Expression has {n_params} free parameters but there are only {len(points_x)} points to fit"
             )
 
+        # skip fitting if there are zero parameters to fit
+        if n_params == 0:
+            return np.array([])
+
         # define the residuals for least squares
         def residuals(p, xs, ys):
             fs = Calibration.eval_expression(expr, p, xs)
@@ -718,11 +722,3 @@ class InterpolatedCalibration(Calibration):
         if include_origin:
             cal.add_points(0, 0)
         return cal
-
-    def fit(self):
-        """Fit the calibration to the stored calibration points.
-
-        Since this function is interpolated, do nothing if this method is
-        called.
-        """
-        pass
