@@ -46,8 +46,8 @@ def _check_points(points_x, points_y):
         points_x = []
     if points_y is None:
         points_y = []
-    points_x = np.asarray(points_x)
-    points_y = np.asarray(points_y)
+    points_x = np.atleast_1d(points_x)
+    points_y = np.atleast_1d(points_y)
     if points_x.ndim != 1:
         raise CalibrationError(f"Calibration x points must be 1-D: {points_x}")
     if points_y.ndim != 1:

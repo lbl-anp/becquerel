@@ -177,11 +177,12 @@ def test_calibration_set_add_points(name, cls, args):
     cal = cls(*args, comment="Test of class " + cls.__name__)
     # test set_points
     cal.set_points()
+    cal.set_points(1000, 1000)
     cal.set_points((0, 1000), (0, 1000))
     cal.set_points([], [])
     # test add_points
     cal.add_points()  # does nothing
-    for px, py in [[(), ()], [(0, 1000), (0, 1000)]]:
+    for px, py in [[(), ()], [1000, 1000], [(0, 1000), (0, 1000)]]:
         cal.add_points(px, py)
     # test write()
     cal.write(fname)
