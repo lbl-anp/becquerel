@@ -574,7 +574,6 @@ class AutoExpressionCalibration(Calibration):
         expr : string
             The expression that defines the calibration function.
         """
-        pass
 
     def __init__(self, params, **attrs):
         """Create a calibration with an auto-generated formula.

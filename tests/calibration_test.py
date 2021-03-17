@@ -126,6 +126,18 @@ def test_fit_expression():
         Calibration.fit_expression(
             "p[0] + p[1] * x", [1000], [1000], params0=[0.0, 1.0]
         )
+    # fit returns success=False (not allowed sufficient # of evaluations)
+    with pytest.raises(CalibrationError):
+        Calibration.fit_expression(
+            "p[0] + p[1] * x",
+            [0, 500, 1000],
+            [0, 500, 1000],
+            params0=[1.0, 1.0],
+            max_nfev=1,
+            ftol=1e-15,
+            gtol=1e-15,
+            xtol=1e-15,
+        )
 
 
 name_cls_args = [
@@ -185,6 +197,9 @@ def test_calibration_set_add_points(name, cls, args):
     cal.add_points()  # does nothing
     for px, py in [[(), ()], [1000, 1000], [(0, 1000), (0, 1000)]]:
         cal.add_points(px, py)
+    # test __str__() and __repr__()
+    str(cal)
+    repr(cal)
     # test write()
     cal.write(fname)
     # test read()
