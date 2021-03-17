@@ -29,9 +29,7 @@ def test_eval_expression():
         Calibration.eval_expression("p[0] + p[1] * x + z", [1.0, 5.0], 2.0)
     # unknown function
     with pytest.raises(CalibrationError):
-        Calibration.eval_expression(
-            "p[0] + p[1] * scipy.special.xlogy(x, x)", [1.0, 5.0], 2.0
-        )
+        Calibration.eval_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0], 2.0)
     # negative argument
     with pytest.raises(CalibrationError):
         Calibration.eval_expression("p[0] + p[1] * x", [1.0, 5.0], -2.0)
@@ -101,12 +99,13 @@ def test_validate_expression():
         Calibration.validate_expression("p[0] + p[1] * x", params=[1.0, 5.0, 2.0])
     # expression is okay except for an unknown function
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression(
-            "p[0] + p[1] * scipy.special.xlogy(x, x)", [1.0, 5.0]
-        )
-    # expression looks okay until it is evaluated
+        Calibration.validate_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0])
+    # expression looks okay until it is evaluated on a float
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("sqrt(p[0] + p[1] * x)", [1j, 5.0])
+        Calibration.validate_expression("np.sqrt(p[0] + p[1] * x)", [1j, 5.0])
+    # expression looks okay until it is evaluated on an array
+    with pytest.raises(CalibrationError):
+        Calibration.validate_expression("sqrt(p[0] + p[1] * x)", [1.0, 5.0])
 
 
 def test_fit_expression():
@@ -135,9 +134,9 @@ name_cls_args = [
     [
         "cal3",
         Calibration,
-        ("sqrt(p[0] + p[1] * x + p[2] * x ** 2)", [2.0, 1.0, 1.0e-2]),
+        ("np.sqrt(p[0] + p[1] * x + p[2] * x ** 2)", [2.0, 1.0, 1.0e-2]),
     ],
-    ["cal4", Calibration, ("p[0] + p[1] * exp(x / p[2])", [1.0, 5.0, 1000.0])],
+    ["cal4", Calibration, ("p[0] + p[1] * np.exp(x / p[2])", [1.0, 5.0, 1000.0])],
     ["lin", LinearCalibration, ([2.0, 3.0],)],
     ["poly1", PolynomialCalibration, ([2.0, 1.0],)],
     ["poly2", PolynomialCalibration, ([2.0, 1.0, 1.0e-2],)],

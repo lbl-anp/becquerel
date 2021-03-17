@@ -7,12 +7,16 @@ import asteval
 import black
 import blib2to3
 import numpy as np
+import scipy
 import scipy.optimize
 from .. import io
 
 CLIP_MAX = 1e6  # maximum value for a calibration function
 
-safe_eval = asteval.Interpreter(use_numpy=True)
+safe_eval = asteval.Interpreter(use_numpy=False)
+safe_eval.symtable["np"] = np
+safe_eval.symtable["numpy"] = np
+safe_eval.symtable["scipy"] = scipy
 
 
 class CalibrationError(Exception):
@@ -650,7 +654,7 @@ class SqrtPolynomialCalibration(AutoExpressionCalibration):
         """Create a square root polynomial expression for the given parameters.
 
         The calibration expression is
-            "sqrt(p[0] + p[1] * x + p[2] * x**2 + ...)"
+            "np.sqrt(p[0] + p[1] * x + p[2] * x**2 + ...)"
 
         Parameters
         ----------
@@ -662,7 +666,7 @@ class SqrtPolynomialCalibration(AutoExpressionCalibration):
             raise CalibrationError(
                 "SqrtPolynomialCalibration expects an order of at least 1"
             )
-        expr = "sqrt(p[0]"
+        expr = "np.sqrt(p[0]"
         for n in range(1, order + 1):
             expr += f" + p[{n}] * x ** {n}"
         expr += ")"
@@ -689,12 +693,12 @@ class InterpolatedCalibration(Calibration):
             The expression that defines the calibration function.
         """
         points_x, points_y = _check_points(points_x, points_y)
-        xp = ", ".join([f"{x:.9e}" for x in points_x])
-        yp = ", ".join([f"{y:.9e}" for y in points_y])
+        xp = np.array2string(points_x, precision=9, separator=", ")
+        yp = np.array2string(points_y, precision=9, separator=", ")
         expr = ""
-        expr += f"assert all(x >= {points_x.min():.9e})\n"
-        expr += f"assert all(x <= {points_x.max():.9e})\n"
-        expr += f"interp(x, [{xp}], [{yp}])"
+        expr += f"assert np.all(x >= {points_x.min():.9e})\n"
+        expr += f"assert np.all(x <= {points_x.max():.9e})\n"
+        expr += f"np.interp(x, {xp}, {yp})"
         return expr
 
     def __init__(self, **attrs):
