@@ -275,7 +275,7 @@ class Calibration(object):
         return expr.strip()
 
     @staticmethod
-    def fit_expression(expr, points_x, points_y, params0=None):
+    def fit_expression(expr, points_x, points_y, params0=None, **kwargs):
         """Fit the expression using the calibration points.
 
         Performs least squares via scipy.optimize.least_squares.
@@ -292,6 +292,8 @@ class Calibration(object):
             Initial guesses for the parameters. By default an array of ones
             with its length inferred from the number of parameters
             referenced in the expression.
+        kwargs : dict
+            Kwargs to pass to the minimization routine.
 
         Returns
         -------
@@ -333,6 +335,7 @@ class Calibration(object):
             residuals,
             params0,
             args=(points_x, points_y),
+            **kwargs,
         )
         if not results.success:
             raise CalibrationError(results.message)
@@ -487,16 +490,33 @@ class Calibration(object):
         attrs = copy.deepcopy(self.attrs)
         io.h5.write_h5(name, dsets, attrs)
 
-    def fit(self):
-        """Fit the calibration to the stored calibration points."""
+    def fit(self, **kwargs):
+        """Fit the calibration to the stored calibration points.
+
+        Parameters
+        ----------
+        kwargs : dict
+            Kwargs to pass to the minimization routine.
+        """
         params = self.fit_expression(
-            self.expression, self.points_x, self.points_y, params0=self.params
+            self.expression,
+            self.points_x,
+            self.points_y,
+            params0=self.params,
+            **kwargs,
         )
         self.params = params
 
     @classmethod
     def from_points(
-        cls, expr, points_x, points_y, params0=None, include_origin=False, **attrs
+        cls,
+        expr,
+        points_x,
+        points_y,
+        params0=None,
+        include_origin=False,
+        fit_kwargs={},
+        **attrs,
     ):
         """Create a calibration with the expression and fit the points.
 
@@ -515,6 +535,8 @@ class Calibration(object):
         include_origin : bool
             Whether to add and fit with the point (0, 0) in addition to the
             others.
+        fit_kwargs : dict
+            Kwargs to pass to the minimization routine.
         attrs : dict
             Other information to be stored with the calibration.
 
@@ -524,7 +546,9 @@ class Calibration(object):
             The Calibration instance with the given expression fitted to
             the points.
         """
-        params = cls.fit_expression(expr, points_x, points_y, params0=params0)
+        params = cls.fit_expression(
+            expr, points_x, points_y, params0=params0, **fit_kwargs
+        )
         cal = cls(expr, params, **attrs)
         cal.add_points(points_x, points_y)
         if include_origin:
@@ -567,7 +591,9 @@ class AutoExpressionCalibration(Calibration):
         super().__init__(expr, params, **attrs)
 
     @classmethod
-    def from_points(cls, points_x, points_y, params0, include_origin=False, **attrs):
+    def from_points(
+        cls, points_x, points_y, params0, include_origin=False, fit_kwargs={}, **attrs
+    ):
         """Create a calibration instance and fit the points.
 
         Parameters
@@ -583,6 +609,8 @@ class AutoExpressionCalibration(Calibration):
         include_origin : bool
             Whether to add and fit with the point (0, 0) in addition to the
             others.
+        fit_kwargs : dict
+            Kwargs to pass to the minimization routine.
         attrs : dict
             Other information to be stored with the calibration.
 
@@ -593,7 +621,9 @@ class AutoExpressionCalibration(Calibration):
             the points.
         """
         expr = cls.make_expression(params0)
-        params = cls.fit_expression(expr, points_x, points_y, params0=params0)
+        params = cls.fit_expression(
+            expr, points_x, points_y, params0=params0, **fit_kwargs
+        )
         cal = Calibration(expr, params, **attrs)
         cal.add_points(points_x, points_y)
         if include_origin:
