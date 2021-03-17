@@ -531,9 +531,9 @@ class Calibration(object):
 class AutoExpressionCalibration(Calibration):
     """A Calibration class that automatically generates its expression."""
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def make_expression(params):
+    def make_expression(cls, params):
         """Build the expression for this class given the parameters.
 
         Parameters
@@ -600,8 +600,8 @@ class AutoExpressionCalibration(Calibration):
 class LinearCalibration(AutoExpressionCalibration):
     """Linear calibration."""
 
-    @staticmethod
-    def make_expression(params):
+    @classmethod
+    def make_expression(cls, params):
         """Create a linear expression.
 
         The calibration expression is "p[0] + p[1] * x".
@@ -619,8 +619,8 @@ class LinearCalibration(AutoExpressionCalibration):
 class PolynomialCalibration(AutoExpressionCalibration):
     """Polynomial calibration of any order."""
 
-    @staticmethod
-    def make_expression(params):
+    @classmethod
+    def make_expression(cls, params):
         """Create a polynomial expression for the given parameters.
 
         The calibration expression is
@@ -645,8 +645,8 @@ class PolynomialCalibration(AutoExpressionCalibration):
 class SqrtPolynomialCalibration(AutoExpressionCalibration):
     """Square root of a polynomial of any order."""
 
-    @staticmethod
-    def make_expression(params):
+    @classmethod
+    def make_expression(cls, params):
         """Create a square root polynomial expression for the given parameters.
 
         The calibration expression is
@@ -672,8 +672,8 @@ class SqrtPolynomialCalibration(AutoExpressionCalibration):
 class InterpolatedCalibration(Calibration):
     """A calibration that works by interpolating a series of points."""
 
-    @staticmethod
-    def make_expression(points_x, points_y):
+    @classmethod
+    def make_expression(cls, points_x, points_y):
         """Build the interpolation expression given the points.
 
         Parameters
