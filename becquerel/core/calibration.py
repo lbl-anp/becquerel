@@ -100,6 +100,36 @@ class Calibration(object):
         self.attrs = attrs
         self.set_points()
 
+    def __str__(self):
+        """A string version of the calibration."""
+        result = ""
+        result += "expression:\n"
+        lines = str(self.expression).split("\n")
+        for line in lines:
+            result += " " * 4 + line + "\n"
+        result += "params:\n"
+        result += " " * 4 + str(self.params) + "\n"
+        if len(self.points_x) > 0:
+            result += "calibration points (x):\n"
+            result += " " * 4 + str(self.points_x) + "\n"
+            result += "calibration points (y):\n"
+            result += " " * 4 + str(self.points_y) + "\n"
+        if len(self.attrs.keys()) > 0:
+            result += "other attributes:\n"
+            result += " " * 4 + str(self.attrs)
+        return result
+
+    def __repr__(self):
+        """A string representation of the calibration."""
+        result = "Calibration("
+        result += repr(self.expression) + ", "
+        result += repr(self.params)
+        if len(self.attrs) > 0:
+            for key in self.attrs:
+                result += f", {key}={repr(self.attrs[key])}"
+        result += ")"
+        return result
+
     @staticmethod
     def eval_expression(expression, params, x):
         """Evaluate the expression at x.

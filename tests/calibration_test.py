@@ -168,6 +168,8 @@ def test_calibration(name, cls, args):
     assert cal3 == cal
     # test __call__()
     cal(1.0)
+    str(cal)
+    repr(cal)
 
 
 @pytest.mark.parametrize("name, cls, args", name_cls_args)
