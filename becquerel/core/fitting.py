@@ -604,12 +604,14 @@ class Fitter(object):
         y_roi_norm = self.y_roi
         if self.dx is not None:
             y_roi_norm = self.y_roi / self.dx_roi
+
         if backend.lower().strip() == "lmfit":
             # Perform the fit, weighted by 1/uncertainties.
             weights = self.y_unc_roi ** -1.0
             self.result = self.model.fit(
                 y_roi_norm, self.params, x=self.x_roi, weights=weights
             )
+
         elif backend.lower().strip() == "lmfit-pml":
             self._set_likelihood_residual()
             # Perform the fit. PML automatically applies 1/sqrt(y) weights, so
@@ -624,6 +626,10 @@ class Fitter(object):
                 calc_covar=False,
             )  # no, bounds, default would be L-BFGS-B'
             # TODO: Calculate errors breaks minimization right now
+
+        elif backend.lower().strip() in ["iminuit", "minuit"]:
+            from iminuit import Minuit
+
         else:
             raise FittingError("Unknown fitting backend: {}".format(backend))
 
