@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from future.builtins import dict, super, zip
 from future.utils import viewitems
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class EnergyCalError(Exception):
@@ -294,6 +295,34 @@ class EnergyCalBase(object):
         """Do the actual curve fitting."""
 
         pass
+
+    def plot(self, ax=None):
+        """Plot the calibration.
+
+        Parameters
+        ----------
+        ax : np.ndarray, shape (2,), optional
+            Plot axes to use. If None, create new axes.
+        """
+
+        if ax is None:
+            fig, ax = plt.subplots(2, 1, sharex=True)
+        assert ax.shape == (2,)
+
+        # Plot calibration points
+        ax[0].scatter(self.channels, self.energies)
+        ax[0].set_ylabel("energy [keV]")
+
+        # Plot calibration curve
+        xx = np.linspace(self.channels.min(), self.channels.max(), 1000)
+        yy = self.ch2kev(xx)
+        ax[0].plot(xx, yy, alpha=0.3)
+
+        # Plot residuals
+        ax[1].scatter(self.channels, self.ch2kev(self.channels) - self.energies)
+        ax[1].set_xlabel("channel")
+        ax[1].set_ylabel("fit-data [keV]")
+        ax[1].axhline(0, linestyle="dashed", linewidth=1, c="k")
 
 
 # TODO: dummy class for testing?
