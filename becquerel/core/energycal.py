@@ -301,28 +301,41 @@ class EnergyCalBase(object):
 
         Parameters
         ----------
-        ax : np.ndarray, shape (2,), optional
+        ax : np.ndarray of shape (2,), or matplotlib axes object, optional
             Plot axes to use. If None, create new axes.
         """
 
-        if ax is None:
-            fig, ax = plt.subplots(2, 1, sharex=True)
-        assert ax.shape == (2,)
+        # Handle whether we have fit points or just a fit function
+        has_points = self.channels.size > 0
 
-        # Plot calibration points
-        ax[0].scatter(self.channels, self.energies)
-        ax[0].set_ylabel("energy [keV]")
+        if ax is None:
+            fig, ax = plt.subplots(1 + has_points, 1, sharex=True)
+
+        if has_points:
+            assert ax.shape == (2,)
+            ax_cal, ax_res = ax
+            xmin, xmax = self.channels.min(), self.channels.max()
+        else:
+            ax_cal = ax
+            xmin, xmax = 0, 3000
 
         # Plot calibration curve
-        xx = np.linspace(self.channels.min(), self.channels.max(), 1000)
+        xx = np.linspace(xmin, xmax, 1000)
         yy = self.ch2kev(xx)
-        ax[0].plot(xx, yy, alpha=0.3)
+        ax_cal.plot(xx, yy, alpha=1.0 - 0.7 * has_points)
+        ax_cal.set_ylabel("energy [keV]")
 
-        # Plot residuals
-        ax[1].scatter(self.channels, self.ch2kev(self.channels) - self.energies)
-        ax[1].set_xlabel("channel")
-        ax[1].set_ylabel("fit-data [keV]")
-        ax[1].axhline(0, linestyle="dashed", linewidth=1, c="k")
+        if has_points:
+            # Plot calibration points
+            ax_cal.scatter(self.channels, self.energies)
+
+            # Plot residuals
+            ax_res.scatter(self.channels, self.ch2kev(self.channels) - self.energies)
+            ax_res.set_xlabel("channel")
+            ax_res.set_ylabel("fit-data [keV]")
+            ax_res.axhline(0, linestyle="dashed", linewidth=1, c="k")
+        else:
+            ax_cal.set_xlabel("channel")
 
 
 # TODO: dummy class for testing?
