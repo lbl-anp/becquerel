@@ -617,14 +617,16 @@ class Fitter(object):
         if self.dx is not None:
             y_roi_norm = self.y_roi / self.dx_roi
 
-        if backend.lower().strip() == "lmfit":
+        self.backend = backend.lower().strip()
+
+        if self.backend == "lmfit":
             # Perform the fit, weighted by 1/uncertainties.
             weights = self.y_unc_roi ** -1.0
             self.result = self.model.fit(
                 y_roi_norm, self.params, x=self.x_roi, weights=weights
             )
 
-        elif backend.lower().strip() == "lmfit-pml":
+        elif self.backend == "lmfit-pml":
             self._set_likelihood_residual()
             # Perform the fit. PML automatically applies 1/sqrt(y) weights, so
             # additional weights here just convert back to counts.
@@ -639,14 +641,15 @@ class Fitter(object):
             )  # no, bounds, default would be L-BFGS-B'
             # TODO: Calculate errors breaks minimization right now
 
-        elif backend.lower().strip() in ["iminuit", "minuit"]:
+        elif self.backend in ["iminuit", "minuit"]:
             # Translate a model from lmfit to minuit
             from iminuit import Minuit
 
             # Poisson loss given the model specified by args
             # TODO: check bin errors here. This assumes no scaling of counts...
             def model_loss(*args):
-                # Convert args to kwargs. TODO: this feels dangerous!
+                # Convert args to kwargs as lmfit.model.eval _requires_ kwargs.
+                # TODO: this feels dangerous!
                 kwargs = {self.model.param_names[i]: args[i] for i in range(len(args))}
                 print(kwargs)
                 y_eval = self.model.eval(x=self.x_roi, **kwargs)
@@ -659,6 +662,7 @@ class Fitter(object):
                 try:
                     guess = self.model.guess()
                 except NotImplementedError:
+                    # Many composite models do not have a guess() method
                     guess = {}
 
             # Set up the Minuit minimizer
@@ -672,6 +676,7 @@ class Fitter(object):
             self.result.errordef = Minuit.LIKELIHOOD
 
             # Handle user parameter limits
+            # Supplying guesses and/or bounds seems more important for minuit
             # TODO: are some already specified?
             if limits is not None:
                 for k, v in limits.items():
@@ -727,12 +732,17 @@ class Fitter(object):
         """
         if self.result is None:
             return None
-        if param in self.result.params:
+        if "lmfit" in self.backend:
+            if param in self.result.params:
+                return self.result.params[param].value
+            elif param in self.fit.best_values:
+                return self.result.best_values[param]
+            else:
+                raise FittingError("Unknown param: {}", param)
+        elif "minuit" in self.backend:
             return self.result.params[param].value
-        elif param in self.fit.best_values:
-            return self.result.best_values[param]
         else:
-            raise FittingError("Unknown param: {}", param)
+            raise FittingError("Unknown backend: {}", self.backend)
 
     def param_unc(self, param):
         """
@@ -740,13 +750,18 @@ class Fitter(object):
         """
         if self.result is None:
             return None
-        if param in self.result.params:
-            return self.result.params[param].stderr
-        elif param in self.result.best_values:
-            # This is the case for the `erf_form` key
-            return np.nan
+        if "lmfit" in self.backend:
+            if param in self.result.params:
+                return self.result.params[param].stderr
+            elif param in self.result.best_values:
+                # This is the case for the `erf_form` key
+                return np.nan
+            else:
+                raise FittingError("Unknown param: {}", param)
+        elif "minuit" in self.backend:
+            return self.result.params[param].error  # TODO minos vs hesse?
         else:
-            raise FittingError("Unknown param: {}", param)
+            raise FittingError("Unknown backend: {}", self.backend)
 
     @property
     def best_values(self):
@@ -824,6 +839,7 @@ class Fitter(object):
         """
 
         x_plot = np.linspace(self.x_roi[0], self.x_roi[-1], npts)
+        print(self.best_values)
         y = self.eval(x_plot, **self.best_values)
         plt.plot(x_plot, y, **kwargs)
 
