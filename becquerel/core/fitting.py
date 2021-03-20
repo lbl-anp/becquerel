@@ -65,6 +65,15 @@ def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
 
 
 # -----------------------------------------------------------------------------
+# Custom loss functions
+# -----------------------------------------------------------------------------
+
+
+def poisson_loss(y_eval, y_data):
+    return np.sum(y_eval - scipy.special.xlogy(y_data, y_eval))
+
+
+# -----------------------------------------------------------------------------
 # Fitting models
 # -----------------------------------------------------------------------------
 
@@ -583,13 +592,16 @@ class Fitter(object):
                     self.set_param(*dp)
         return defaults
 
-    def fit(self, backend="lmfit"):
+    def fit(self, backend="lmfit", guess=None, limits=None):
         """Perform the weighted fit to data.
 
         Parameters
         ----------
         backend : {'lmfit', 'lmfit-pml'}
             Backend fitting module to use.
+        guess : dict of {str: numeric}, optional
+            User-specified parameter guesses. Overrides self.model.guess().
+            Required if self.model.guess() is not implemented.
 
         Raises
         ------
@@ -628,7 +640,53 @@ class Fitter(object):
             # TODO: Calculate errors breaks minimization right now
 
         elif backend.lower().strip() in ["iminuit", "minuit"]:
+            # Translate a model from lmfit to minuit
             from iminuit import Minuit
+
+            # Poisson loss given the model specified by args
+            # TODO: check bin errors here. This assumes no scaling of counts...
+            def model_loss(*args):
+                # Convert args to kwargs. TODO: this feels dangerous!
+                kwargs = {self.model.param_names[i]: args[i] for i in range(len(args))}
+                print(kwargs)
+                y_eval = self.model.eval(x=self.x_roi, **kwargs)
+                print(y_eval)
+                lp = poisson_loss(y_eval, self.y_roi)
+                return lp
+
+            # Parameter guesses
+            if guess is None:
+                try:
+                    guess = self.model.guess()
+                except NotImplementedError:
+                    guess = {}
+
+            # Set up the Minuit minimizer
+            self.result = Minuit(model_loss, name=self.model.param_names, **guess)
+
+            # Handle fixed parameters
+            for p in self.params:
+                self.result.fixed[p] = not self.params[p].vary
+
+            # Specify proper error definition for likelihood model
+            self.result.errordef = Minuit.LIKELIHOOD
+
+            # Handle user parameter limits
+            # TODO: are some already specified?
+            if limits is not None:
+                for k, v in limits.items():
+                    self.result.limits[k] = v
+
+            # Run the minimizer
+            self.result.migrad()
+            self._best_values = {
+                self.result.parameters[i]: self.result.values[i]
+                for i in range(self.result.npar)
+            }
+
+            # Compute errors
+            self.result.hesse()
+            self.result.minos()
 
         else:
             raise FittingError("Unknown fitting backend: {}".format(backend))
@@ -690,6 +748,14 @@ class Fitter(object):
         else:
             raise FittingError("Unknown param: {}", param)
 
+    @property
+    def best_values(self):
+        """Wrapper for dictionary of best_values."""
+        try:
+            return self.result.best_values
+        except AttributeError:
+            return self._best_values
+
     def param_dataframe(self, sort_by_model=False):
         """
         Dataframe of all fit parameters value and fit error
@@ -726,7 +792,7 @@ class Fitter(object):
             Array of residuals
         """
         dx_roi = np.ones_like(self.x_roi) if self.dx_roi is None else self.dx_roi
-        y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
+        y_eval = self.eval(self.x_roi, **self.best_values) * dx_roi
         y_res = self.y_roi - y_eval
 
         if residual_type == "rel":
@@ -758,7 +824,7 @@ class Fitter(object):
         """
 
         x_plot = np.linspace(self.x_roi[0], self.x_roi[-1], npts)
-        y = self.eval(x_plot, **self.result.best_values)
+        y = self.eval(x_plot, **self.best_values)
         plt.plot(x_plot, y, **kwargs)
 
     def custom_plot(
@@ -841,7 +907,7 @@ class Fitter(object):
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
         fit_ax.plot(x_plot, y, "k--", label="init")
         # Best fit
-        y = self.eval(x_plot, **self.result.best_values)
+        y = self.eval(x_plot, **self.best_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
         fit_ax.plot(x_plot, y, color="#e31a1c", label="best fit", zorder=10)
         if self.result.success:
@@ -858,7 +924,7 @@ class Fitter(object):
         # Components (currently will work for <=3 component)
         colors = ["#1f78b4", "#33a02c", "#6a3d9a"]
         for i, m in enumerate(self.result.model.components):
-            y = m.eval(x=x_plot, **self.result.best_values)
+            y = m.eval(x=x_plot, **self.best_values)
             if isinstance(y, float):
                 y = np.ones(x_plot.shape) * y
             ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
@@ -895,7 +961,7 @@ class Fitter(object):
         # ---------
         # Residuals
         # ---------
-        y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
+        y_eval = self.eval(self.x_roi, **self.best_values) * dx_roi
         res_kwargs = dict(fmt="o", color="k", markersize=5, label="residuals")
 
         # Y-values of the residual plot, depending on residual_type
