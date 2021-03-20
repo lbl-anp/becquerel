@@ -597,11 +597,13 @@ class Fitter(object):
 
         Parameters
         ----------
-        backend : {'lmfit', 'lmfit-pml'}
+        backend : {'lmfit', 'lmfit-pml', '[i]minuit'}
             Backend fitting module to use.
         guess : dict of {str: numeric}, optional
             User-specified parameter guesses. Overrides self.model.guess().
             Required if self.model.guess() is not implemented.
+        limits : dict of {str: tuple}, optional
+            User-specified parameter limits.
 
         Raises
         ------
@@ -648,12 +650,17 @@ class Fitter(object):
             # Poisson loss given the model specified by args
             # TODO: check bin errors here. This assumes no scaling of counts...
             def model_loss(*args):
-                # Convert args to kwargs as lmfit.model.eval _requires_ kwargs.
+                # Convert args to kwargs as lmfit.model.eval _requires_ kwargs,
+                # while (I think) the cost function passed to the Minuit object
+                # _requires_ args.
+                # TODO: check if the above is true for Minuit
                 # TODO: this feels dangerous!
                 kwargs = {self.model.param_names[i]: args[i] for i in range(len(args))}
                 y_eval = self.model.eval(x=self.x_roi, **kwargs)
                 lp = poisson_loss(y_eval, self.y_roi)
                 return lp
+
+            # TODO: we could add the option for iminuit with least-squares
 
             # Parameter guesses
             if guess is None:
@@ -682,6 +689,8 @@ class Fitter(object):
 
             # Run the minimizer
             self.result.migrad()
+
+            # Update the interface to best_values
             self._best_values = {
                 self.result.parameters[i]: self.result.values[i]
                 for i in range(self.result.npar)
