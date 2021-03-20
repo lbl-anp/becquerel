@@ -651,9 +651,7 @@ class Fitter(object):
                 # Convert args to kwargs as lmfit.model.eval _requires_ kwargs.
                 # TODO: this feels dangerous!
                 kwargs = {self.model.param_names[i]: args[i] for i in range(len(args))}
-                print(kwargs)
                 y_eval = self.model.eval(x=self.x_roi, **kwargs)
-                print(y_eval)
                 lp = poisson_loss(y_eval, self.y_roi)
                 return lp
 
