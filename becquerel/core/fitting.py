@@ -666,7 +666,8 @@ class Fitter(object):
             if guess is None:
                 try:
                     guess = self.model.guess()
-                except NotImplementedError:
+                except (NotImplementedError, TypeError):
+                    # FIXME: remove TypeError and fix self.model.guess() call
                     # Many composite models do not have a guess() method
                     guess = {}
 
@@ -674,8 +675,8 @@ class Fitter(object):
             self.result = Minuit(model_loss, name=self.model.param_names, **guess)
 
             # Handle fixed parameters
-            for p in self.params:
-                self.result.fixed[p] = not self.params[p].vary
+            # for p in self.params:
+            #    self.result.fixed[p] = not self.params[p].vary
 
             # Specify proper error definition for likelihood model
             self.result.errordef = Minuit.LIKELIHOOD
@@ -690,11 +691,12 @@ class Fitter(object):
             # Run the minimizer
             self.result.migrad()
 
-            # Update the interface to best_values
-            self._best_values = {
-                self.result.parameters[i]: self.result.values[i]
-                for i in range(self.result.npar)
-            }
+            # Update the interfaces to best_values and init_values
+            self._best_values, self._init_values = {}, {}
+            for i in range(self.result.npar):
+                p = self.result.parameters[i]
+                self._best_values[p] = self.result.values[i]
+                self._init_values[p] = self.result.init_params[p].value
 
             # Compute errors
             self.result.hesse()
@@ -773,10 +775,31 @@ class Fitter(object):
     @property
     def best_values(self):
         """Wrapper for dictionary of best_values."""
-        try:
+        if "lmfit" in self.backend:
             return self.result.best_values
-        except AttributeError:
+        elif "minuit" in self.backend:
             return self._best_values
+        else:
+            raise FittingError("Unknown backend: {}", self.backend)
+
+    @property
+    def init_values(self):
+        """Wrapper for dictionary of init_values."""
+        if "lmfit" in self.backend:
+            return self.result.init_values
+        elif "minuit" in self.backend:
+            return self._init_values
+        else:
+            raise FittingError("Unknown backend: {}", self.backend)
+
+    @property
+    def success(self):
+        if "lmfit" in self.backend:
+            return self.result.success
+        elif "minuit" in self.backend:
+            return self.result.valid
+        else:
+            raise FittingError("Unknown backend: {}", self.backend)
 
     def param_dataframe(self, sort_by_model=False):
         """
@@ -926,14 +949,14 @@ class Fitter(object):
             label="data",
         )
         # Init fit
-        y = self.eval(x_plot, **self.result.init_values)
+        y = self.eval(x_plot, **self.init_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
         fit_ax.plot(x_plot, y, "k--", label="init")
         # Best fit
         y = self.eval(x_plot, **self.best_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
         fit_ax.plot(x_plot, y, color="#e31a1c", label="best fit", zorder=10)
-        if self.result.success:
+        if self.success and "lmfit" in self.backend:  # TODO: with iminuit?
             yunc = self.result.eval_uncertainty(x=x_plot, sigma=1)
             fit_ax.fill_between(
                 x_plot,
