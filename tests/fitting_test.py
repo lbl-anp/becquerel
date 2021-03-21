@@ -43,12 +43,8 @@ def sim_data(x_min, x_max, y_func, num_x=200, binning="linear", **params):
 
 
 def compare_params(true_params, fit_params, rtol, fitter):
-    for p, v in fit_params.items():
-        # TODO: Remove
-        # if not np.isclose(v, true_params[p], rtol=rtol):
-        #     fitter.custom_plot()
-        #     plt.show()
-        assert np.isclose(v, true_params[p], rtol=rtol), p
+    for p, v in true_params.items():
+        assert np.isclose(v, fit_params[p], rtol=rtol), p
 
 
 def compare_counts(fitter):

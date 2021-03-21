@@ -701,6 +701,17 @@ class Fitter(object):
                     limits = {}
 
             # Set up the Minuit minimizer with initial guess
+            # Since Minuit requires guesses for every parameter, if we don't
+            # have a guess, use limits midpoint, or zero barring that.
+            for p in self.model.param_names:
+                if p not in guess:
+                    warn_str = f"No guess provided for parameter {p}. "
+                    if p in limits:
+                        warnings.warn(warn_str + "Setting to limits midpoint.")
+                        guess[p] = 0.5 * (limits[0] + limits[1])
+                    else:
+                        warnings.warn(warn_str + "Setting to 0.")
+                        guess[p] = 0.0
             self.result = Minuit(model_loss, name=self.model.param_names, **guess)
 
             # Note:
