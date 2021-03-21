@@ -903,7 +903,6 @@ class Fitter(object):
         """
 
         x_plot = np.linspace(self.x_roi[0], self.x_roi[-1], npts)
-        print(self.best_values)
         y = self.eval(x_plot, **self.best_values)
         plt.plot(x_plot, y, **kwargs)
 
@@ -1069,9 +1068,7 @@ class Fitter(object):
         # -------------------
         # Fit report (txt_ax)
         # -------------------
-        props = dict(
-            boxstyle="round", facecolor="white", edgecolor="black", alpha=1
-        )
+        props = dict(boxstyle="round", facecolor="white", edgecolor="black", alpha=1)
         props = dict(facecolor="white", edgecolor="none", alpha=0)
         fp = FontProperties(family="monospace", size=8)
         if "lmfit" in self.backend:
