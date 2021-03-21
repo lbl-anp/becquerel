@@ -926,6 +926,8 @@ class Fitter(object):
         fit_ax = fig.add_subplot(gs[0, 0])
         res_ax = fig.add_subplot(gs[1, 0], sharex=fit_ax)
         txt_ax = fig.add_subplot(gs[:, 1])
+        txt_ax.get_xaxis().set_visible(False)
+        txt_ax.get_yaxis().set_visible(False)
         # Set fig title
         if title is not None:
             fig.suptitle(
@@ -1033,54 +1035,58 @@ class Fitter(object):
         # -------------------
         # Fit report (txt_ax)
         # -------------------
-        txt_ax.get_xaxis().set_visible(False)
-        txt_ax.get_yaxis().set_visible(False)
-        best_fit_values = ""
-        op = self.result.params
-        for p in self.result.params:
-            if op[p].stderr is None:
-                pass
-                # TODO: Calculate errors breaks minimization right now
-                # warnings.warn(
-                #     "Package numdifftools is required to have "
-                #     "stderr calculated.", FittingWarning)
-            else:
-                best_fit_values += "{:15} {: .6e} +/- {:.5e} ({:6.1%})\n".format(
-                    p, op[p].value, op[p].stderr, abs(op[p].stderr / op[p].value)
-                )
-        best_fit_values += "{:15} {: .6e}\n".format("Chi Squared:", self.result.chisqr)
-        best_fit_values += "{:15} {: .6e}".format("Reduced Chi Sq:", self.result.redchi)
-        props = dict(boxstyle="round", facecolor="white", edgecolor="black", alpha=1)
-        props = dict(facecolor="white", edgecolor="none", alpha=0)
-        fp = FontProperties(family="monospace", size=8)
-        # Remove first 2 lines of fit report (long model description)
-        s = "\n".join(self.result.fit_report().split("\n")[2:])
-        # Add some more parameter details
-        s += "\n"
-        param_df = self.param_dataframe(sort_by_model=True)
-        for model_name, sdf in param_df.groupby(level="model"):
-            s += model_name + "\n"
-            for (_, param_name), param_data in sdf.iterrows():
-                v = param_data["val"]
-                e = param_data["unc"]
-                s += "    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n".format(
-                    param_name, v, e, np.abs(e / v)
-                )
-        # Add info about the ROI and units
-        s += "ROI: [{0:.3f}, {1:.3f}]\n".format(*self.roi)
-        s += "X units: {:s}\n".format(self.xmode if self.xmode else "None")
-        s += "Y units: {:s}\n".format(self.ymode if self.ymode else "None")
-        # Add to empty axis
-        txt_ax.text(
-            x=0.01,
-            y=0.99,
-            s=s,
-            fontproperties=fp,
-            ha="left",
-            va="top",
-            transform=txt_ax.transAxes,
-            bbox=props,
-        )
+        if "lmfit" in self.backend:
+            best_fit_values = ""
+            op = self.result.params
+            for p in self.result.params:
+                if op[p].stderr is None:
+                    pass
+                    # TODO: Calculate errors breaks minimization right now
+                    # warnings.warn(
+                    #     "Package numdifftools is required to have "
+                    #     "stderr calculated.", FittingWarning)
+                else:
+                    best_fit_values += "{:15} {: .6e} +/- {:.5e} ({:6.1%})\n".format(
+                        p, op[p].value, op[p].stderr, abs(op[p].stderr / op[p].value)
+                    )
+            best_fit_values += "{:15} {: .6e}\n".format("Chi Squared:", self.result.chisqr)
+            best_fit_values += "{:15} {: .6e}".format("Reduced Chi Sq:", self.result.redchi)
+            props = dict(boxstyle="round", facecolor="white", edgecolor="black", alpha=1)
+            props = dict(facecolor="white", edgecolor="none", alpha=0)
+            fp = FontProperties(family="monospace", size=8)
+            # Remove first 2 lines of fit report (long model description)
+            s = "\n".join(self.result.fit_report().split("\n")[2:])
+            # Add some more parameter details
+            s += "\n"
+            param_df = self.param_dataframe(sort_by_model=True)
+            for model_name, sdf in param_df.groupby(level="model"):
+                s += model_name + "\n"
+                for (_, param_name), param_data in sdf.iterrows():
+                    v = param_data["val"]
+                    e = param_data["unc"]
+                    s += "    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n".format(
+                        param_name, v, e, np.abs(e / v)
+                    )
+            # Add info about the ROI and units
+            s += "ROI: [{0:.3f}, {1:.3f}]\n".format(*self.roi)
+            s += "X units: {:s}\n".format(self.xmode if self.xmode else "None")
+            s += "Y units: {:s}\n".format(self.ymode if self.ymode else "None")
+            # Add to empty axis
+            txt_ax.text(
+                x=0.01,
+                y=0.99,
+                s=s,
+                fontproperties=fp,
+                ha="left",
+                va="top",
+                transform=txt_ax.transAxes,
+                bbox=props,
+            )
+
+        elif "minuit" in self.backend:
+            pass
+            # text_ax not yet implemented for minuit results
+
         if savefname is not None:
             fig.savefig(savefname)
             plt.close(fig)
