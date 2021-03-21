@@ -969,7 +969,7 @@ class Fitter(object):
             )
         # Components (currently will work for <=3 component)
         colors = ["#1f78b4", "#33a02c", "#6a3d9a"]
-        for i, m in enumerate(self.result.model.components):
+        for i, m in enumerate(self.model.components):
             y = m.eval(x=x_plot, **self.best_values)
             if isinstance(y, float):
                 y = np.ones(x_plot.shape) * y
