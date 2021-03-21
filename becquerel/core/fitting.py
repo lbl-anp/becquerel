@@ -665,28 +665,63 @@ class Fitter(object):
             # Parameter guesses
             if guess is None:
                 try:
-                    guess = self.model.guess()
-                except (NotImplementedError, TypeError):
-                    # FIXME: remove TypeError and fix self.model.guess() call
+                    # Parse the lmfit guess, a list of tuples
+                    guess_lm = self.model.guess(
+                        self.y_roi, x=self.x_roi, dx=self.dx_roi
+                    )
+                    guess = {g[0]: g[2] for g in guess_lm if g[1] == "value"}
+                    # It seems we also have to provide a guess for fixed
+                    # parameters, like the FWHM. For now, set to zero, but we
+                    # could evaluate the expr in the future.
+                    for p in self.params:
+                        if self.params[p].expr:
+                            guess[p] = 0.0
+                except NotImplementedError:
                     # Many composite models do not have a guess() method
                     guess = {}
-
-            # Set up the Minuit minimizer
-            self.result = Minuit(model_loss, name=self.model.param_names, **guess)
-
-            # Handle fixed parameters
-            # for p in self.params:
-            #    self.result.fixed[p] = not self.params[p].vary
-
-            # Specify proper error definition for likelihood model
-            self.result.errordef = Minuit.LIKELIHOOD
 
             # Handle user parameter limits
             # Supplying guesses and/or bounds seems more important for minuit
             # TODO: are some already specified?
-            if limits is not None:
-                for k, v in limits.items():
-                    self.result.limits[k] = v
+            if limits is None:
+                try:
+                    limits_lm = self.model.guess(
+                        self.y_roi, x=self.x_roi, dx=self.dx_roi
+                    )
+                    min_vals, max_vals = {}, {}
+                    for lim in limits_lm:
+                        if lim[1] == "min":
+                            min_vals[lim[0]] = lim[2]
+                        elif lim[1] == "max":
+                            max_vals[lim[0]] = lim[2]
+                    limits = {
+                        p: (min_vals.get(p, None), max_vals.get(p, None))
+                        for p in self.param_names
+                    }
+                except NotImplementedError:
+                    limits = {}
+
+            # Set up the Minuit minimizer with initial guess
+            self.result = Minuit(model_loss, name=self.model.param_names, **guess)
+
+            # Note:
+            # - self.params has type lmfit.parameter.Parameters, and includes
+            #   fixed params like 'gauss_fwhm'
+            # - self.result.params has type iminuit.util.Params, and does not
+            #   include fixed params like 'gauss_fwhm'
+            # - self.result.parameters is a tuple of parameter string names,
+            #   and does not include fixed params like 'gauss_fwhm'
+
+            # Handle fixed parameters
+            for p in self.result.parameters:
+                self.result.fixed[p] = not self.params[p].vary
+
+            # User parameter limits
+            for k, v in limits.items():
+                self.result.limits[k] = v
+
+            # Specify proper error definition for likelihood model
+            self.result.errordef = Minuit.LIKELIHOOD
 
             # Run the minimizer
             self.result.migrad()
@@ -1035,6 +1070,11 @@ class Fitter(object):
         # -------------------
         # Fit report (txt_ax)
         # -------------------
+        props = dict(
+            boxstyle="round", facecolor="white", edgecolor="black", alpha=1
+        )
+        props = dict(facecolor="white", edgecolor="none", alpha=0)
+        fp = FontProperties(family="monospace", size=8)
         if "lmfit" in self.backend:
             best_fit_values = ""
             op = self.result.params
@@ -1049,11 +1089,12 @@ class Fitter(object):
                     best_fit_values += "{:15} {: .6e} +/- {:.5e} ({:6.1%})\n".format(
                         p, op[p].value, op[p].stderr, abs(op[p].stderr / op[p].value)
                     )
-            best_fit_values += "{:15} {: .6e}\n".format("Chi Squared:", self.result.chisqr)
-            best_fit_values += "{:15} {: .6e}".format("Reduced Chi Sq:", self.result.redchi)
-            props = dict(boxstyle="round", facecolor="white", edgecolor="black", alpha=1)
-            props = dict(facecolor="white", edgecolor="none", alpha=0)
-            fp = FontProperties(family="monospace", size=8)
+            best_fit_values += "{:15} {: .6e}\n".format(
+                "Chi Squared:", self.result.chisqr
+            )
+            best_fit_values += "{:15} {: .6e}".format(
+                "Reduced Chi Sq:", self.result.redchi
+            )
             # Remove first 2 lines of fit report (long model description)
             s = "\n".join(self.result.fit_report().split("\n")[2:])
             # Add some more parameter details
@@ -1067,25 +1108,24 @@ class Fitter(object):
                     s += "    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n".format(
                         param_name, v, e, np.abs(e / v)
                     )
-            # Add info about the ROI and units
-            s += "ROI: [{0:.3f}, {1:.3f}]\n".format(*self.roi)
-            s += "X units: {:s}\n".format(self.xmode if self.xmode else "None")
-            s += "Y units: {:s}\n".format(self.ymode if self.ymode else "None")
-            # Add to empty axis
-            txt_ax.text(
-                x=0.01,
-                y=0.99,
-                s=s,
-                fontproperties=fp,
-                ha="left",
-                va="top",
-                transform=txt_ax.transAxes,
-                bbox=props,
-            )
-
         elif "minuit" in self.backend:
-            pass
-            # text_ax not yet implemented for minuit results
+            s = str(self.result) + "\n"
+
+        # Add info about the ROI and units
+        s += "ROI: [{0:.3f}, {1:.3f}]\n".format(*self.roi)
+        s += "X units: {:s}\n".format(self.xmode if self.xmode else "None")
+        s += "Y units: {:s}\n".format(self.ymode if self.ymode else "None")
+        # Add to empty axis
+        txt_ax.text(
+            x=0.01,
+            y=0.99,
+            s=s,
+            fontproperties=fp,
+            ha="left",
+            va="top",
+            transform=txt_ax.transAxes,
+            bbox=props,
+        )
 
         if savefname is not None:
             fig.savefig(savefname)
