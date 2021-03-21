@@ -54,7 +54,7 @@ def compare_params(true_params, fit_params, rtol, fitter):
 def compare_counts(fitter):
     data_counts = np.sum(fitter.y_roi)
     model_counts = np.sum(
-        fitter.eval(fitter.x_roi, **fitter.result.best_values) * fitter.dx_roi
+        fitter.eval(fitter.x_roi, **fitter.best_values) * fitter.dx_roi
     )
     assert np.allclose(data_counts, model_counts, atol=1e-2)
 
@@ -209,7 +209,7 @@ class TestFittingHighStatSimData(object):
         fitter.fit(sim_high_stat["method"])
         compare_params(
             true_params=sim_high_stat["params"],
-            fit_params=fitter.result.best_values,
+            fit_params=fitter.best_values,
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
@@ -225,7 +225,7 @@ class TestFittingHighStatSimData(object):
         fitter.fit(sim_high_stat["method"])
         compare_params(
             true_params=sim_high_stat["params"],
-            fit_params=fitter.result.best_values,
+            fit_params=fitter.best_values,
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
@@ -242,7 +242,7 @@ class TestFittingHighStatSimData(object):
         fitter.fit(sim_high_stat["method"])
         compare_params(
             true_params=sim_high_stat["params"],
-            fit_params=fitter.result.best_values,
+            fit_params=fitter.best_values,
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
