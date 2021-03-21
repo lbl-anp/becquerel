@@ -682,7 +682,6 @@ class Fitter(object):
 
             # Handle user parameter limits
             # Supplying guesses and/or bounds seems more important for minuit
-            # TODO: are some already specified?
             if limits is None:
                 try:
                     limits_lm = self.model.guess(
