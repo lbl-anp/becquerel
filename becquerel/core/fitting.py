@@ -662,6 +662,10 @@ class Fitter(object):
 
             # TODO: we could add the option for iminuit with least-squares
 
+            # Filter out fixed params and have one consistent variable name
+            # instead of all the params / param_names / parameters / etc.
+            free_vars = [p for p in self.params if self.params[p].vary]
+
             # Parameter guesses
             if guess is None:
                 try:
@@ -670,7 +674,7 @@ class Fitter(object):
                     guess = {
                         g[0]: g[2]
                         for g in guess_lm
-                        if (g[1] == "value" and self.params[g[0]].vary)
+                        if (g[1] == "value" and g[0] in free_vars)
                     }
                 except NotImplementedError:
                     # If the model/component does not have a guess() method
@@ -689,7 +693,7 @@ class Fitter(object):
                             max_vals[lim[0]] = lim[2]
                     limits = {
                         p: (min_vals.get(p, None), max_vals.get(p, None))
-                        for p in self.param_names
+                        for p in free_vars
                     }
                 except NotImplementedError:
                     limits = {}
@@ -697,7 +701,7 @@ class Fitter(object):
             # Set up the Minuit minimizer with initial guess
             # Since Minuit requires guesses for every parameter, if we don't
             # have a guess, use limits midpoint, or zero barring that.
-            for p in self.model.param_names:
+            for p in free_vars:
                 if p not in guess:
                     warn_str = f"No guess provided for parameter {p}. "
                     lim = limits[p]
@@ -707,7 +711,7 @@ class Fitter(object):
                     else:
                         warnings.warn(warn_str + "Setting to 0.")
                         guess[p] = 0.0
-            self.result = Minuit(model_loss, name=self.model.param_names, **guess)
+            self.result = Minuit(model_loss, name=free_vars, **guess)
 
             # Note:
             # - self.params has type lmfit.parameter.Parameters, and includes
@@ -715,8 +719,8 @@ class Fitter(object):
             # - self.result.params has type iminuit.util.Params, and does not
             #   include fixed params like 'gauss_fwhm'
             # - self.result.parameters is a tuple of parameter string names,
-            #   and does not include fixed params like 'gauss_fwhm'
-            # - self.model.param_names should be identical
+            #   and may or may not include fixed params like 'gauss_fwhm'
+            # - self.model.param_names ?
 
             # Handle fixed parameters
             for p in self.result.parameters:
