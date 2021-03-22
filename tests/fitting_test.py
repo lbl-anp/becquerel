@@ -43,6 +43,7 @@ def sim_data(x_min, x_max, y_func, num_x=200, binning="linear", **params):
 
 
 def compare_params(true_params, fit_params, rtol, fitter):
+    print(fitter.dx_roi)
     for p, v in true_params.items():
         assert np.isclose(v, fit_params[p], rtol=rtol), p
 
@@ -111,7 +112,7 @@ HIGH_STAT_SIM_PARAMS = {
         "params": [],
         "ids": [],
     },
-    "methods": ["lmfit", "lmfit-pml"],
+    "methods": ["lmfit", "lmfit-pml", "minuit"],
     "binnings": ["linear", "sqrt"],
 }
 
@@ -209,7 +210,7 @@ class TestFittingHighStatSimData(object):
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
-        if sim_high_stat["method"] == "lmfit-pml":
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit"]:
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()
@@ -225,7 +226,7 @@ class TestFittingHighStatSimData(object):
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
-        if sim_high_stat["method"] == "lmfit-pml":
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit"]:
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()
@@ -242,7 +243,7 @@ class TestFittingHighStatSimData(object):
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
-        if sim_high_stat["method"] == "lmfit-pml":
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit"]:
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()

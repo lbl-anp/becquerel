@@ -648,7 +648,6 @@ class Fitter(object):
             from iminuit import Minuit
 
             # Poisson loss given the model specified by args
-            # TODO: check bin errors here. This assumes no scaling of counts...
             def model_loss(*args):
                 # Convert args to kwargs as lmfit.model.eval _requires_ kwargs,
                 # while (I think) the cost function passed to the Minuit object
@@ -657,6 +656,8 @@ class Fitter(object):
                 # TODO: this feels dangerous!
                 kwargs = {self.model.param_names[i]: arg for i, arg in enumerate(args)}
                 y_eval = self.model.eval(x=self.x_roi, **kwargs)
+                if self.dx_roi is not None:
+                    y_eval *= self.dx_roi
                 lp = poisson_loss(y_eval, self.y_roi)
                 return lp
 
