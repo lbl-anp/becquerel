@@ -721,6 +721,9 @@ class Fitter(object):
             # Specify proper error definition for likelihood model
             self.result.errordef = Minuit.LIKELIHOOD
 
+            # Specify extra checks
+            self.result.strategy = 2
+
             # Run the minimizer
             self.result.migrad()
 
@@ -1110,7 +1113,8 @@ class Fitter(object):
             s = str(self.result) + "\n"
 
         # Add info about the ROI and units
-        s += "ROI: [{0:.3f}, {1:.3f}]\n".format(*self.roi)
+        if self.roi:
+            s += "ROI: [{0:.3f}, {1:.3f}]\n".format(*self.roi)
         s += "X units: {:s}\n".format(self.xmode if self.xmode else "None")
         s += "Y units: {:s}\n".format(self.ymode if self.ymode else "None")
         # Add to empty axis
