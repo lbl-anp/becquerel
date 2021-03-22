@@ -666,27 +666,21 @@ class Fitter(object):
             if guess is None:
                 try:
                     # Parse the lmfit guess, a list of tuples
-                    guess_lm = self.model.guess(
-                        self.y_roi, x=self.x_roi, dx=self.dx_roi
-                    )
-                    guess = {g[0]: g[2] for g in guess_lm if g[1] == "value"}
-                    # It seems we also have to provide a guess for fixed
-                    # parameters, like the FWHM. For now, set to zero, but we
-                    # could evaluate the expr in the future.
-                    for p in self.params:
-                        if self.params[p].expr:
-                            guess[p] = 0.0
+                    guess_lm = self.guess_param_defaults()
+                    guess = {
+                        g[0]: g[2]
+                        for g in guess_lm
+                        if (g[1] == "value" and self.params[g[0]].vary)
+                    }
                 except NotImplementedError:
-                    # Many composite models do not have a guess() method
+                    # If the model/component does not have a guess() method
                     guess = {}
 
             # Handle user parameter limits
             # Supplying guesses and/or bounds seems more important for minuit
             if limits is None:
                 try:
-                    limits_lm = self.model.guess(
-                        self.y_roi, x=self.x_roi, dx=self.dx_roi
-                    )
+                    limits_lm = self.guess_param_defaults()
                     min_vals, max_vals = {}, {}
                     for lim in limits_lm:
                         if lim[1] == "min":
@@ -706,9 +700,10 @@ class Fitter(object):
             for p in self.model.param_names:
                 if p not in guess:
                     warn_str = f"No guess provided for parameter {p}. "
-                    if p in limits:
+                    lim = limits[p]
+                    if p in limits and lim[0] is not None and lim[1] is not None:
                         warnings.warn(warn_str + "Setting to limits midpoint.")
-                        guess[p] = 0.5 * (limits[0] + limits[1])
+                        guess[p] = 0.5 * (lim[0] + lim[1])
                     else:
                         warnings.warn(warn_str + "Setting to 0.")
                         guess[p] = 0.0
@@ -721,12 +716,13 @@ class Fitter(object):
             #   include fixed params like 'gauss_fwhm'
             # - self.result.parameters is a tuple of parameter string names,
             #   and does not include fixed params like 'gauss_fwhm'
+            # - self.model.param_names should be identical
 
             # Handle fixed parameters
             for p in self.result.parameters:
                 self.result.fixed[p] = not self.params[p].vary
 
-            # User parameter limits
+            # Set user parameter limits
             for k, v in limits.items():
                 self.result.limits[k] = v
 
@@ -736,16 +732,19 @@ class Fitter(object):
             # Run the minimizer
             self.result.migrad()
 
+            # Compute errors
+            self.result.hesse()
+            try:
+                self.result.minos()
+            except RuntimeError as exc:
+                warnings.warn(f"Could not compute Minos errors: {exc}")
+
             # Update the interfaces to best_values and init_values
             self._best_values, self._init_values = {}, {}
             for i in range(self.result.npar):
                 p = self.result.parameters[i]
                 self._best_values[p] = self.result.values[i]
                 self._init_values[p] = self.result.init_params[p].value
-
-            # Compute errors
-            self.result.hesse()
-            self.result.minos()
 
         else:
             raise FittingError("Unknown fitting backend: {}".format(backend))
