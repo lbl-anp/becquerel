@@ -655,7 +655,7 @@ class Fitter(object):
                 # _requires_ args.
                 # TODO: check if the above is true for Minuit
                 # TODO: this feels dangerous!
-                kwargs = {self.model.param_names[i]: args[i] for i in range(len(args))}
+                kwargs = {self.model.param_names[i]: arg for i, arg in enumerate(args)}
                 y_eval = self.model.eval(x=self.x_roi, **kwargs)
                 lp = poisson_loss(y_eval, self.y_roi)
                 return lp
@@ -698,7 +698,6 @@ class Fitter(object):
                 except NotImplementedError:
                     limits = {}
 
-            # Set up the Minuit minimizer with initial guess
             # Since Minuit requires guesses for every parameter, if we don't
             # have a guess, use limits midpoint, or zero barring that.
             for p in free_vars:
@@ -711,20 +710,9 @@ class Fitter(object):
                     else:
                         warnings.warn(warn_str + "Setting to 0.")
                         guess[p] = 0.0
+
+            # Set up the Minuit minimizer with initial guess
             self.result = Minuit(model_loss, name=free_vars, **guess)
-
-            # Note:
-            # - self.params has type lmfit.parameter.Parameters, and includes
-            #   fixed params like 'gauss_fwhm'
-            # - self.result.params has type iminuit.util.Params, and does not
-            #   include fixed params like 'gauss_fwhm'
-            # - self.result.parameters is a tuple of parameter string names,
-            #   and may or may not include fixed params like 'gauss_fwhm'
-            # - self.model.param_names ?
-
-            # Handle fixed parameters
-            for p in self.result.parameters:
-                self.result.fixed[p] = not self.params[p].vary
 
             # Set user parameter limits
             for k, v in limits.items():
