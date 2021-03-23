@@ -602,10 +602,13 @@ class Fitter(object):
         backend : {'lmfit', 'lmfit-pml', '[i]minuit'}
             Backend fitting module to use.
         guess : dict of {str: numeric}, optional
-            User-specified parameter guesses. Overrides self.model.guess().
-            Required if self.model.guess() is not implemented.
+            User-specified parameter guesses that override guesses provided by
+            the Model.guess() or Fitter.guess_param_defaults() methods.
+            Currently only implemented for backend="lmfit".
         limits : dict of {str: tuple}, optional
-            User-specified parameter limits.
+            User-specified parameter limits that override limits provided by
+            the Model.guess() or Fitter.guess_param_defaults() methods.
+            Currently only implemented for backend="lmfit".
 
         Raises
         ------
@@ -1008,7 +1011,10 @@ class Fitter(object):
         y = self.eval(x_plot, **self.best_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
         fit_ax.plot(x_plot, y, color="#e31a1c", label="best fit", zorder=10)
-        if self.success and "lmfit" in self.backend:  # TODO: with iminuit?
+        # Plot 1 sigma uncertainty bands
+        # This is not built into iminuit AFAIK, and might change whether the
+        # cost function is Poisson or least-squares.
+        if self.success and "lmfit" in self.backend:
             yunc = self.result.eval_uncertainty(x=x_plot, sigma=1)
             fit_ax.fill_between(
                 x_plot,
