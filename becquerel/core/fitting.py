@@ -135,7 +135,7 @@ class ConstantModel(Model):
         c = (y[-1] / dx[-1] + y[0] / dx[0]) * 0.5
         return [
             ("{}c".format(self.prefix), "value", c),
-            ("{}c".format(self.prefix), "min", 0.0)
+            ("{}c".format(self.prefix), "min", 0.0),
         ]
 
 
@@ -705,7 +705,11 @@ class Fitter(object):
             for p in free_vars:
                 if p not in guess:
                     warn_str = f"No guess provided for parameter {p}. "
-                    if p in limits and limits[p][0] is not None and limits[p][1] is not None:
+                    if (
+                        p in limits
+                        and limits[p][0] is not None
+                        and limits[p][1] is not None
+                    ):
                         warnings.warn(warn_str + "Setting to limits midpoint.")
                         guess[p] = 0.5 * (limits[p][0] + limits[p][1])
                     else:
