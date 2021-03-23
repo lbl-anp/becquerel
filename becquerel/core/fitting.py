@@ -697,8 +697,7 @@ class Fitter(object):
                     elif lim[1] == "max":
                         max_vals[lim[0]] = lim[2]
                 limits_i = {
-                   p: (min_vals.get(p, None), max_vals.get(p, None))
-                   for p in free_vars
+                    p: (min_vals.get(p, None), max_vals.get(p, None)) for p in free_vars
                 }
             except NotImplementedError:
                 # If the model/component does not have a guess() method
