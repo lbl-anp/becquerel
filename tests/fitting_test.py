@@ -250,6 +250,17 @@ class TestFittingHighStatSimData(object):
         # fitter.custom_plot()
         # plt.show()
 
+        # Test some other properties while we're at it
+        assert isinstance(str(fitter), str)
+        assert fitter.name is None or isinstance(fitter.name, str)
+        assert fitter.xmode is None or isinstance(fitter.xmode, str)
+        assert fitter.ymode is None or isinstance(fitter.ymode, str)
+        assert isinstance(fitter.param_names, list)
+        assert len(fitter.param_names) > 0
+        assert len(fitter.init_values) > 0
+        assert len(fitter.best_values) > 0
+        assert fitter.success
+
     @pytest.mark.filterwarnings("ignore")
     def test_no_roi(self, sim_high_stat):
         fitter = bq.Fitter(sim_high_stat["model"])
