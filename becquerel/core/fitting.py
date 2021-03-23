@@ -658,6 +658,7 @@ class Fitter(object):
                 # _requires_ args.
                 # TODO: check if the above is true for Minuit
                 # TODO: this feels dangerous!
+                # TODO: test out-of-order kwargs
                 kwargs = {self.model.param_names[i]: arg for i, arg in enumerate(args)}
                 y_eval = self.model.eval(x=self.x_roi, **kwargs)
                 if self.dx_roi is not None:
@@ -725,6 +726,7 @@ class Fitter(object):
                     else:
                         warnings.warn(warn_str + "Setting to 0.")
                         guess_i[p] = 0.0
+
 
             # Set up the Minuit minimizer with initial guess
             self.result = Minuit(model_loss, name=free_vars, **guess_i)
