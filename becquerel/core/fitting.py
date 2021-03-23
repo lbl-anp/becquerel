@@ -7,6 +7,7 @@ from lmfit.model import Model
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
+from iminuit import Minuit
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
@@ -646,7 +647,6 @@ class Fitter(object):
 
         elif self.backend in ["iminuit", "minuit"]:
             # Translate a model from lmfit to minuit
-            from iminuit import Minuit
 
             # Poisson loss given the model specified by args
             def model_loss(*args):
@@ -669,58 +669,66 @@ class Fitter(object):
             free_vars = [p for p in self.params if self.params[p].vary]
 
             # Parameter guesses
-            if guess is None:
-                try:
-                    # Parse the lmfit guess, a list of tuples
-                    guess_lm = self.guess_param_defaults()
-                    guess = {
-                        g[0]: g[2]
-                        for g in guess_lm
-                        if (g[1] == "value" and g[0] in free_vars)
-                    }
-                except NotImplementedError:
-                    # If the model/component does not have a guess() method
-                    guess = {}
+            try:
+                # First try parsing the lmfit guess into iminuit
+                guess_l = self.guess_param_defaults()
+                guess_i = {
+                    g[0]: g[2]
+                    for g in guess_l
+                    if (g[1] == "value" and g[0] in free_vars)
+                }
+            except NotImplementedError:
+                # If the model/component does not have a guess() method
+                guess_i = {}
+            # Then override with user input
+            if guess is not None:
+                guess_i.update(guess)
+                del guess  # eliminate subscript confusion
 
             # Handle user parameter limits
             # Supplying guesses and/or bounds seems more important for minuit
-            if limits is None:
-                try:
-                    limits_lm = self.guess_param_defaults()
-                    min_vals, max_vals = {}, {}
-                    for lim in limits_lm:
-                        if lim[1] == "min":
-                            min_vals[lim[0]] = lim[2]
-                        elif lim[1] == "max":
-                            max_vals[lim[0]] = lim[2]
-                    limits = {
-                        p: (min_vals.get(p, None), max_vals.get(p, None))
-                        for p in free_vars
-                    }
-                except NotImplementedError:
-                    limits = {}
+            try:
+                # First try parsing the lmfit limits into iminuit
+                limits_l = self.guess_param_defaults()
+                min_vals, max_vals = {}, {}
+                for lim in limits_l:
+                    if lim[1] == "min":
+                        min_vals[lim[0]] = lim[2]
+                    elif lim[1] == "max":
+                        max_vals[lim[0]] = lim[2]
+                limits_i = {
+                   p: (min_vals.get(p, None), max_vals.get(p, None))
+                   for p in free_vars
+                }
+            except NotImplementedError:
+                # If the model/component does not have a guess() method
+                limits_i = {}
+            # Then override with user input
+            if limits is not None:
+                limits_i.update(limits)
+                del limits  # eliminate subscript confusion
 
             # Since Minuit requires guesses for every parameter, if we don't
-            # have a guess, use limits midpoint, or zero barring that.
+            # have a guess, use limits_i midpoint, or zero barring that.
             for p in free_vars:
-                if p not in guess:
+                if p not in guess_i:
                     warn_str = f"No guess provided for parameter {p}. "
                     if (
                         p in limits
-                        and limits[p][0] is not None
-                        and limits[p][1] is not None
+                        and limits_i[p][0] is not None
+                        and limits_i[p][1] is not None
                     ):
                         warnings.warn(warn_str + "Setting to limits midpoint.")
-                        guess[p] = 0.5 * (limits[p][0] + limits[p][1])
+                        guess_i[p] = 0.5 * (limits_i[p][0] + limits_i[p][1])
                     else:
                         warnings.warn(warn_str + "Setting to 0.")
-                        guess[p] = 0.0
+                        guess_i[p] = 0.0
 
             # Set up the Minuit minimizer with initial guess
-            self.result = Minuit(model_loss, name=free_vars, **guess)
+            self.result = Minuit(model_loss, name=free_vars, **guess_i)
 
             # Set user parameter limits
-            for k, v in limits.items():
+            for k, v in limits_i.items():
                 self.result.limits[k] = v
 
             # Specify proper error definition for likelihood model
