@@ -43,17 +43,52 @@ def sim_data(x_min, x_max, y_func, num_x=200, binning="linear", **params):
 
 
 def compare_params(true_params, fit_params, rtol, fitter):
-    print(fitter.dx_roi)
+    """Test that the fit parameters are close to the true parameters.
+
+    Since minuit can be sensitive to initial values, first try the assert
+    normally. If it fails, seed it with lmfit-pml and allow it to try again.
+    """
+    test = {}
     for p, v in true_params.items():
-        assert np.isclose(v, fit_params[p], rtol=rtol), p
+        test[p] = np.isclose(v, fit_params[p], rtol=rtol)
+
+    if not np.all(list(test.values())) and "minuit" in fitter.backend:
+        fitter.fit(backend="lmfit-pml")
+        fitter.fit(backend="minuit", guess=fitter.best_values)
+
+        # Just copy the code, since if we recursively called compare_params(),
+        # a failed test could raise a potentially-misleading recursion error.
+        test = {}
+        fit_params = fitter.best_values
+        for p, v in true_params.items():
+            test[p] = np.isclose(v, fit_params[p], rtol=rtol)
+    assert np.all(list(test.values()))
 
 
 def compare_counts(fitter):
+    """Test that the data and model counts match to high accuracy.
+
+    Since minuit can be sensitive to initial values, first try the assert
+    normally. If it fails, seed it with lmfit-pml and allow it to try again.
+    """
+
     data_counts = np.sum(fitter.y_roi)
     model_counts = np.sum(
         fitter.eval(fitter.x_roi, **fitter.best_values) * fitter.dx_roi
     )
-    assert np.allclose(data_counts, model_counts, atol=1e-2)
+    test = np.allclose(data_counts, model_counts, atol=1e-2)
+    if not test and "minuit" in fitter.backend:
+        fitter.fit(backend="lmfit-pml")
+        fitter.fit(backend="minuit", guess=fitter.best_values)
+
+        # Just copy the code, since if we recursively called compare_counts(),
+        # a failed test could raise a potentially-misleading recursion error.
+        data_counts = np.sum(fitter.y_roi)
+        model_counts = np.sum(
+            fitter.eval(fitter.x_roi, **fitter.best_values) * fitter.dx_roi
+        )
+        test = np.allclose(data_counts, model_counts, atol=1e-2)
+    assert test
 
 
 # -----------------------------------------------------------------------------
