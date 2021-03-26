@@ -727,7 +727,6 @@ class Fitter(object):
                         warnings.warn(warn_str + "Setting to 0.")
                         guess_i[p] = 0.0
 
-
             # Set up the Minuit minimizer with initial guess
             self.result = Minuit(model_loss, name=free_vars, **guess_i)
 
