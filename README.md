@@ -43,16 +43,13 @@ The dependencies `beautifulsoup4`, `lxml` and `html5lib` are necessary for
 [`pandas`][1].
 
 Developers require additional requirements which are listed in
-`requirements-dev.txt`. We use [`pytest`][2] for unit testing and encourage
-contributors to use [`pylint`][3], [`pycodestyle`][4], [`pydocstyle`][5] and
-[`yapf`][6] for proper code formatting.
+`requirements-dev.txt`. We use [`pytest`][2] for unit testing, [`black`][3] for
+code formatting and are converting to [`numpydoc`][4].
 
 [1]: https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies
-[2]: https://docs.pytest.org
-[3]: https://pylint.readthedocs.io
-[4]: http://pycodestyle.pycqa.org
-[5]: http://www.pydocstyle.org
-[6]: https://github.com/google/yapf
+[2]: https://docs.pytest.org/en/latest/
+[3]: https://black.readthedocs.io/en/stable/
+[4]: https://numpydoc.readthedocs.io/en/latest/format.html
 
 ## Copyright Notice
 

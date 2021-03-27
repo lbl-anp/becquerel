@@ -1,43 +1,15 @@
 """General utility functions to be shared among core modules."""
 
-from __future__ import print_function
 import sys
 import datetime
 from dateutil.parser import parse as dateutil_parse
 from uncertainties import UFloat, unumpy
 import warnings
 import numpy as np
-try:
-    # Python 3.x
-    from collections.abc import Iterable
-except ImportError:
-    # Python 2.x
-    from collections import Iterable
 
 EPS = np.finfo(float).eps
 
 VECTOR_TYPES = (list, tuple, np.ndarray)
-
-if sys.version_info < (3, 2):
-
-    class ResourceWarning(Warning):
-        pass
-
-else:
-
-    ResourceWarning = ResourceWarning
-
-if sys.version_info < (3,):
-
-    def isstring(s):
-        """Test for strings in python2"""
-        return isinstance(s, basestring)
-
-else:
-
-    def isstring(s):
-        """Test for strings in python3"""
-        return isinstance(s, str)
 
 
 class UncertaintiesError(Exception):
@@ -68,8 +40,7 @@ def all_ufloats(x):
         if all(are_ufloats):
             return True
         elif any(are_ufloats):
-            raise UncertaintiesError(
-                'Input should be all UFloats or no UFloats')
+            raise UncertaintiesError("Input should be all UFloats or no UFloats")
         else:
             return False
 
@@ -97,15 +68,17 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
     if ufloats and x_uncs is None:
         return np.asarray(x_array)
     elif ufloats:
-        raise UncertaintiesError('Specify uncertainties with UFloats or ' +
-                                 'by separate argument, but not both')
+        raise UncertaintiesError(
+            "Specify uncertainties with UFloats or "
+            + "by separate argument, but not both"
+        )
     elif x_uncs is not None:
         return unumpy.uarray(x_array, x_uncs)
     else:
         return unumpy.uarray(x_array, default_unc_func(x_array))
 
 
-def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
+def handle_datetime(input_time, error_name="datetime arg", allow_none=False):
     """Parse an argument as a date, datetime, date+time string, or None.
 
     Args:
@@ -126,18 +99,15 @@ def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
         return input_time
     elif isinstance(input_time, datetime.date):
         warnings.warn(
-            'datetime.date passed in with no time; defaulting to 0:00 on date'
+            "datetime.date passed in with no time; defaulting to 0:00 on date"
         )
-        return datetime.datetime(
-            input_time.year, input_time.month, input_time.day
-        )
-    elif isstring(input_time):
+        return datetime.datetime(input_time.year, input_time.month, input_time.day)
+    elif isinstance(input_time, str):
         return dateutil_parse(input_time)
     elif input_time is None and allow_none:
         return None
     else:
-        raise TypeError(
-            'Unknown type for {}: {}'.format(error_name, input_time))
+        raise TypeError("Unknown type for {}: {}".format(error_name, input_time))
 
 
 def bin_centers_from_edges(edges_kev):
