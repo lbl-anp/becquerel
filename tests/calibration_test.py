@@ -5,6 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from becquerel.io import h5
 from becquerel.core.calibration import (
+    _eval_expression,
+    _param_indices,
+    _validate_expression,
+    _fit_expression,
     CalibrationError,
     Calibration,
     LinearCalibration,
@@ -17,118 +21,114 @@ from h5_tools_test import TEST_OUTPUTS
 
 
 def test_eval_expression():
-    """Test Calibration.eval_expression."""
-    Calibration.eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2.0)
+    """Test calibration._eval_expression."""
+    _eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2.0)
     # no parameters
-    Calibration.eval_expression("1.0 + 5.0 * x", [], 2.0)
+    _eval_expression("1.0 + 5.0 * x", [], 2.0)
     # bad syntax
     with pytest.raises(CalibrationError):
-        Calibration.eval_expression("p[0] + p[1] x", [1.0, 5.0], 2.0)
+        _eval_expression("p[0] + p[1] x", [1.0, 5.0], 2.0)
     # unknown symbol
     with pytest.raises(CalibrationError):
-        Calibration.eval_expression("p[0] + p[1] * x + z", [1.0, 5.0], 2.0)
+        _eval_expression("p[0] + p[1] * x + z", [1.0, 5.0], 2.0)
     # unknown function
     with pytest.raises(CalibrationError):
-        Calibration.eval_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0], 2.0)
+        _eval_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0], 2.0)
     # negative argument
     with pytest.raises(CalibrationError):
-        Calibration.eval_expression("p[0] + p[1] * x", [1.0, 5.0], -2.0)
+        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], -2.0)
     # result is a complex number
     with pytest.raises(CalibrationError):
-        Calibration.eval_expression("p[0] + p[1] * x", [1j, 5.0], 2.0)
+        _eval_expression("p[0] + p[1] * x", [1j, 5.0], 2.0)
 
 
 def test_expression_param_indices():
-    """Test Calibration.expression_param_indices."""
-    assert np.allclose(Calibration.param_indices("p[0] + p[1] * x"), [0, 1])
+    """Test calibration._param_indices."""
+    assert np.allclose(_param_indices("p[0] + p[1] * x"), [0, 1])
     # does not result in an error when calling this function
-    assert np.allclose(Calibration.param_indices("p[0] + p[2] * x"), [0, 2])
+    assert np.allclose(_param_indices("p[0] + p[2] * x"), [0, 2])
     # neither does this, but notice the order!
-    assert np.allclose(Calibration.param_indices("p[0] + p[-1] * x"), [-1, 0])
+    assert np.allclose(_param_indices("p[0] + p[-1] * x"), [-1, 0])
     # having no parameters is supported
-    assert len(Calibration.param_indices("1.0 + 5.0 * x")) == 0
+    assert len(_param_indices("1.0 + 5.0 * x")) == 0
     # error if indices are not integers
     with pytest.raises(ValueError):
-        Calibration.param_indices("p[0.2] + p[1] * x")
+        _param_indices("p[0.2] + p[1] * x")
     with pytest.raises(ValueError):
-        Calibration.param_indices("p[:] + p[1] * x")
+        _param_indices("p[:] + p[1] * x")
     with pytest.raises(ValueError):
-        Calibration.param_indices("p[] + p[1] * x")
+        _param_indices("p[] + p[1] * x")
     with pytest.raises(ValueError):
-        Calibration.param_indices("p[a] + p[1] * x")
+        _param_indices("p[a] + p[1] * x")
 
 
 def test_validate_expression():
-    """Test Calibration.validate_expression."""
+    """Test calibration._validate_expression."""
     # python syntax error
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[0] + p[1] None")
+        _validate_expression("p[0] + p[1] None")
     # parentheses not matching
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("(p[0] + p[1] * x")
+        _validate_expression("(p[0] + p[1] * x")
     # parentheses not matching
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[0] + p[1] * x]")
+        _validate_expression("p[0] + p[1] * x]")
     # "x" must appear in the formula
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[0] + p[1]")
+        _validate_expression("p[0] + p[1]")
     # having no parameters is supported
-    assert Calibration.validate_expression("1.0 + 5.0 * x")
-    assert Calibration.validate_expression("1.0 + 5.0 * x", params=[])
+    assert _validate_expression("1.0 + 5.0 * x")
+    assert _validate_expression("1.0 + 5.0 * x", params=[])
     # square brackets after "p" must only enclose integers
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[0.2] + p[1] * x")
+        _validate_expression("p[0.2] + p[1] * x")
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[:] + p[1] * x")
+        _validate_expression("p[:] + p[1] * x")
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[] + p[1] * x")
+        _validate_expression("p[] + p[1] * x")
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[a] + p[1] * x")
+        _validate_expression("p[a] + p[1] * x")
     # minimum parameter index is > 0
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[1] + p[2] * x")
+        _validate_expression("p[1] + p[2] * x")
     # parameter indices not consecutive
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[0] + p[2] * x")
+        _validate_expression("p[0] + p[2] * x")
     # mismtach between number of parameters in expression and length of params
-    Calibration.validate_expression("p[0] + p[1] * x")
+    _validate_expression("p[0] + p[1] * x")
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[0] + p[1] * x", params=[1.0])
-    Calibration.validate_expression("p[0] + p[1] * x", params=[1.0, 5.0])
+        _validate_expression("p[0] + p[1] * x", params=[1.0])
+    _validate_expression("p[0] + p[1] * x", params=[1.0, 5.0])
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[0] + p[1] * x", params=[1.0, 5.0, 2.0])
+        _validate_expression("p[0] + p[1] * x", params=[1.0, 5.0, 2.0])
     # expression is okay except for an unknown function
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0])
+        _validate_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0])
     # expression looks okay until it is evaluated on a float
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("np.sqrt(p[0] + p[1] * x)", [1j, 5.0])
+        _validate_expression("np.sqrt(p[0] + p[1] * x)", [1j, 5.0])
     # expression looks okay until it is evaluated on an array
     with pytest.raises(CalibrationError):
-        Calibration.validate_expression("sqrt(p[0] + p[1] * x)", [1.0, 5.0])
+        _validate_expression("sqrt(p[0] + p[1] * x)", [1.0, 5.0])
 
 
 def test_fit_expression():
-    """Test Calibration.fit_expression."""
+    """Test calibration._fit_expression."""
     # this case should work
-    Calibration.fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000])
+    _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000])
     # provide initial guesses
-    Calibration.fit_expression(
-        "p[0] + p[1] * x", [0, 1000], [0, 1000], params0=[0.0, 1.0]
-    )
+    _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000], params0=[0.0, 1.0])
     # bad number of guesses
     with pytest.raises(CalibrationError):
-        Calibration.fit_expression(
+        _fit_expression(
             "p[0] + p[1] * x", [0, 1000], [0, 1000], params0=[0.0, 1.0, 2.0]
         )
     # not enough points
     with pytest.raises(CalibrationError):
-        Calibration.fit_expression(
-            "p[0] + p[1] * x", [1000], [1000], params0=[0.0, 1.0]
-        )
+        _fit_expression("p[0] + p[1] * x", [1000], [1000], params0=[0.0, 1.0])
     # fit returns success=False (not allowed sufficient # of evaluations)
     with pytest.raises(CalibrationError):
-        Calibration.fit_expression(
+        _fit_expression(
             "p[0] + p[1] * x",
             [0, 500, 1000],
             [0, 500, 1000],
