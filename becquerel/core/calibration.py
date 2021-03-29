@@ -60,7 +60,7 @@ def _eval_expression(expression, params, x):
     return y
 
 
-def _param_indices(expr):
+def _param_indices(expression):
     """Find all integer parameter indices of the expression.
 
     The expression must explicitly call each parameter as "p[j]", where
@@ -77,13 +77,13 @@ def _param_indices(expr):
         List of integer parameter indices appearing in the expression.
     """
     # find parameter indices
-    tokens = expr.split("p[")
+    tokens = expression.split("p[")
     param_indices = [int(token.split("]")[0]) for token in tokens[1:]]
     param_indices = np.array(sorted(np.unique(param_indices)))
     return param_indices
 
 
-def _validate_expression(expr, params=None):
+def _validate_expression(expression, params=None):
     """Perform checks on the expression.
 
     The expression must explicitly call each parameter as "p[j]", where
@@ -110,60 +110,64 @@ def _validate_expression(expr, params=None):
     """
     # apply black formatting for consistency and error checking
     try:
-        expr = black.format_str(expr, mode=black.FileMode())
+        expression = black.format_str(expression, mode=black.FileMode())
     except (black.InvalidInput, blib2to3.pgen2.tokenize.TokenError):
-        raise CalibrationError(f"Error while running black on expression:\n{expr}")
+        raise CalibrationError(
+            f"Error while running black on expression:\n{expression}"
+        )
 
     # make sure "x" appears in the formula
     x_appears = False
-    for node in ast.walk(ast.parse(expr)):
+    for node in ast.walk(ast.parse(expression)):
         if type(node) is ast.Name:
             if node.id == "x":
                 x_appears = True
     if not x_appears:
         raise CalibrationError(
-            f'Independent variable "x" must appear in the expression:\n{expr}'
+            f'Independent variable "x" must appear in the expression:\n{expression}'
         )
 
     # make sure each parameter appears at least once
     try:
-        param_indices = _param_indices(expr)
+        param_indices = _param_indices(expression)
     except ValueError:
-        raise CalibrationError(f"Unable to extract indices to parameters:\n{expr}")
+        raise CalibrationError(
+            f"Unable to extract indices to parameters:\n{expression}"
+        )
     if len(param_indices) > 0:
         if param_indices.min() != 0:
             raise CalibrationError(
-                f"Minimum parameter index in expression is not 0:\n{expr}\n{param_indices}"
+                f"Minimum parameter index in expression is not 0:\n{expression}\n{param_indices}"
             )
         if not np.allclose(np.diff(param_indices), 1):
             raise CalibrationError(
-                f"Parameter indices in expression are not contiguous:\n{expr}\n{param_indices}"
+                f"Parameter indices in expression are not contiguous:\n{expression}\n{param_indices}"
             )
     if params is not None:
         if len(param_indices) != len(params):
             raise CalibrationError(
-                f"Not enough parameter indices in expression:\n{expr}\n{param_indices}"
+                f"Not enough parameter indices in expression:\n{expression}\n{param_indices}"
             )
 
     # make sure the expression can be evaluated
     if params is not None:
         try:
-            y = _eval_expression(expr, params, 200.0)
+            y = _eval_expression(expression, params, 200.0)
         except CalibrationError:
             raise CalibrationError(
-                f"Cannot evaluate expression for a float:\n{expr}\n{safe_eval.symtable['x']}"
+                f"Cannot evaluate expression for a float:\n{expression}\n{safe_eval.symtable['x']}"
             )
         try:
-            y = _eval_expression(expr, params, [200.0, 500.0])
+            y = _eval_expression(expression, params, [200.0, 500.0])
         except CalibrationError:
             raise CalibrationError(
-                f"Cannot evaluate expression for an array:\n{expr}\n{safe_eval.symtable['x']}"
+                f"Cannot evaluate expression for an array:\n{expression}\n{safe_eval.symtable['x']}"
             )
 
-    return expr.strip()
+    return expression.strip()
 
 
-def _fit_expression(expr, points_x, points_y, params0=None, **kwargs):
+def _fit_expression(expression, points_x, points_y, params0=None, **kwargs):
     """Fit the expression using the calibration points.
 
     Performs least squares via scipy.optimize.least_squares.
@@ -188,11 +192,11 @@ def _fit_expression(expr, points_x, points_y, params0=None, **kwargs):
     params : array_like
         Parameters that result from the fit.
     """
-    expr = _validate_expression(expr)
+    expression = _validate_expression(expression)
     points_x, points_y = _check_points(points_x, points_y)
 
     # check that we have the expected number of parameters
-    n_params = len(_param_indices(expr))
+    n_params = len(_param_indices(expression))
     if params0 is None:
         params0 = np.ones(n_params)
     else:
@@ -201,7 +205,7 @@ def _fit_expression(expr, points_x, points_y, params0=None, **kwargs):
         raise CalibrationError(
             f"Starting parameters have length {len(params0)}, but expression requires {n_params} parameters"
         )
-    expr = _validate_expression(expr, params=params0)
+    expression = _validate_expression(expression, params=params0)
 
     # check that we have enough points
     if len(points_x) < n_params:
@@ -215,7 +219,7 @@ def _fit_expression(expr, points_x, points_y, params0=None, **kwargs):
 
     # define the residuals for least squares
     def residuals(p, xs, ys):
-        fs = _eval_expression(expr, p, xs)
+        fs = _eval_expression(expression, p, xs)
         return ys - fs
 
     # perform the fit
@@ -370,9 +374,9 @@ class Calibration(object):
         return self._expression
 
     @expression.setter
-    def expression(self, expr):
-        expr = _validate_expression(expr)
-        self._expression = expr
+    def expression(self, expression):
+        expression = _validate_expression(expression)
+        self._expression = expression
 
     @property
     def params(self):
@@ -533,7 +537,7 @@ class Calibration(object):
     @classmethod
     def from_points(
         cls,
-        expr,
+        expression,
         points_x,
         points_y,
         params0=None,
@@ -545,7 +549,7 @@ class Calibration(object):
 
         Parameters
         ----------
-        expr : string
+        expression : string
             The expression that defines the calibration function.
         points_x : float or array_like
             The x-value or values of calibration points
@@ -575,9 +579,9 @@ class Calibration(object):
             points_y = np.append(0, points_y)
         points_x, points_y = _check_points(points_x, points_y)
         params = _fit_expression(
-            expr, points_x, points_y, params0=params0, **fit_kwargs
+            expression, points_x, points_y, params0=params0, **fit_kwargs
         )
-        cal = cls(expr, params, **attrs)
+        cal = cls(expression, params, **attrs)
         cal.set_points(points_x, points_y)
         return cal
 
