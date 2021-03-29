@@ -11,10 +11,6 @@ from becquerel.core.calibration import (
     _fit_expression,
     CalibrationError,
     Calibration,
-    LinearCalibration,
-    PolynomialCalibration,
-    SqrtPolynomialCalibration,
-    InterpolatedCalibration,
 )
 import pytest
 from h5_tools_test import TEST_OUTPUTS
@@ -140,29 +136,43 @@ def test_fit_expression():
         )
 
 
-name_cls_args = [
-    ["cal1", Calibration, ("p[0] * x", [5.0])],
-    ["cal2", Calibration, ("p[0] + p[1] * x", [1.0, 5.0])],
-    [
-        "cal3",
-        Calibration,
-        ("np.sqrt(p[0] + p[1] * x + p[2] * x ** 2)", [2.0, 1.0, 1.0e-2]),
-    ],
-    ["cal4", Calibration, ("p[0] + p[1] * np.exp(x / p[2])", [1.0, 5.0, 1000.0])],
-    ["lin", LinearCalibration, ([2.0, 3.0],)],
-    ["poly1", PolynomialCalibration, ([2.0, 1.0],)],
-    ["poly2", PolynomialCalibration, ([2.0, 1.0, 1.0e-2],)],
-    ["sqrt2", SqrtPolynomialCalibration, ([2.0, 1.0, 1.0e-2],)],
-    ["interp", InterpolatedCalibration, ()],
+name_args = [
+    ["cal1", ("p[0] * x", [5.0])],
+    ["cal2", ("p[0] + p[1] * x", [1.0, 5.0])],
+    ["cal3", ("np.sqrt(p[0] + p[1] * x + p[2] * x ** 2)", [2.0, 1.0, 1.0e-2])],
+    ["cal4", ("p[0] + p[1] * np.exp(x / p[2])", [1.0, 5.0, 1000.0])],
+    ["lin", ([2.0, 3.0],)],
+    ["poly1", ([2.0, 1.0],)],
+    ["poly2", ([2.0, 1.0, 1.0e-2],)],
+    ["sqrt2", ([2.0, 1.0, 1.0e-2],)],
+    ["interp", ()],
 ]
+points_x = [100, 500, 1000, 1500, 2500]
+points_y = [18, 42, 63, 82, 117]
 
 
-@pytest.mark.parametrize("name, cls, args", name_cls_args)
-def test_calibration(name, cls, args):
+def make_calibration(name, args):
+    """Make an instance of the desired Calibration type."""
+    attrs = {"comment": "Test of Calibration class", "name": name}
+    if name.startswith("lin"):
+        cal = Calibration.from_linear(*args, **attrs)
+    elif name.startswith("poly"):
+        cal = Calibration.from_polynomial(*args, **attrs)
+    elif name.startswith("sqrt"):
+        cal = Calibration.from_sqrt_polynomial(*args, **attrs)
+    elif name.startswith("interp"):
+        cal = Calibration.from_interpolation(points_x, points_y, **attrs)
+    else:
+        cal = Calibration(*args, **attrs)
+    return cal
+
+
+@pytest.mark.parametrize("name, args", name_args)
+def test_calibration(name, args):
     """Test the Calibration class."""
     fname = os.path.join(TEST_OUTPUTS, f"calibration__init__{name}.h5")
     # test __init__()
-    cal = cls(*args, comment="Test of class " + cls.__name__)
+    cal = make_calibration(name, args)
     # test protections on setting parameters
     with pytest.raises(CalibrationError):
         cal.params = None
@@ -178,16 +188,16 @@ def test_calibration(name, cls, args):
     cal3 = cal.copy()
     assert cal3 == cal
     # test __call__()
-    cal(1.0)
+    cal(100.0)
     str(cal)
     repr(cal)
 
 
-@pytest.mark.parametrize("name, cls, args", name_cls_args)
-def test_calibration_set_add_points(name, cls, args):
+@pytest.mark.parametrize("name, args", name_args)
+def test_calibration_set_add_points(name, args):
     """Test Calibration.set_points and add_points methods."""
     fname = os.path.join(TEST_OUTPUTS, f"calibration__add_points__{name}.h5")
-    cal = cls(*args, comment="Test of class " + cls.__name__)
+    cal = make_calibration(name, args)
     # test set_points
     cal.set_points()
     cal.set_points(1000, 1000)
@@ -229,32 +239,28 @@ def test_calibration_set_add_points(name, cls, args):
         cal.add_points([0, 2000], [0, -2000])
 
 
-@pytest.mark.parametrize("name, cls, args", name_cls_args)
-def test_calibration_fit_from_points(name, cls, args):
+@pytest.mark.parametrize("name, args", name_args)
+def test_calibration_fit_from_points(name, args):
     """Test Calibration.fit and from_points methods."""
-    points_x = [100, 500, 1000, 1500, 2500]
-    points_y = [18, 42, 63, 82, 117]
     # test fit()
-    cal1 = cls(*args, comment="Test of class " + cls.__name__)
+    cal1 = make_calibration(name, args)
     cal1.add_points(points_x, points_y)
     cal1.fit()
-    # test from_points()
-    if cls == Calibration:
-        cal2 = cls.from_points(args[0], points_x, points_y, args[1])
-        cal3 = cls.from_points(
+
+    # skip any instances that require a factory method
+    if len(args) != 2:
+        cal2, cal3 = None, None
+    else:
+        # test from_points()
+        cal2 = Calibration.from_points(args[0], points_x, points_y, args[1])
+        cal3 = Calibration.from_points(
             args[0], points_x, points_y, args[1], include_origin=True
         )
-    elif cls == InterpolatedCalibration:
-        cal2 = cls.from_points(points_x, points_y)
-        cal3 = cls.from_points(points_x, points_y, include_origin=True)
-    else:
-        cal2 = cls.from_points(points_x, points_y, args[0])
-        cal3 = cls.from_points(points_x, points_y, args[0], include_origin=True)
-    assert cal2 == cal1
+        assert cal2 == cal1
 
     plt.figure()
-    if cls == InterpolatedCalibration:
-        plt.title(cls.__name__)
+    if "np.interp" in cal1.expression:
+        plt.title("Interpolated")
     else:
         plt.title(cal1.expression)
     x_fine1 = np.linspace(min(points_x), max(points_x), num=500)
@@ -267,13 +273,14 @@ def test_calibration_fit_from_points(name, cls, args):
         alpha=0.5,
         label="fitted function (include_origin=False)",
     )
-    plt.plot(
-        x_fine3,
-        cal3(x_fine3),
-        "g-",
-        alpha=0.5,
-        label="fitted function (include_origin=True)",
-    )
+    if cal3 is not None:
+        plt.plot(
+            x_fine3,
+            cal3(x_fine3),
+            "g-",
+            alpha=0.5,
+            label="fitted function (include_origin=True)",
+        )
     plt.plot(points_x, points_y, "ro", label="calibration points")
     plt.xlabel("x")
     plt.xlabel("y")
@@ -285,36 +292,36 @@ def test_calibration_fit_from_points(name, cls, args):
 
 def test_calibration_misc():
     """Miscellaneous tests to increase test coverage."""
-    cal1 = LinearCalibration([2.0, 3.0])
-    cal2 = PolynomialCalibration([2.0, 3.0, 7.0])
+    cal1 = Calibration.from_linear([2.0, 3.0])
+    cal2 = Calibration.from_polynomial([2.0, 3.0, 7.0])
     with pytest.raises(CalibrationError):
         cal1 != 0
     assert cal1 != cal2
 
     # bad number of arguments
     with pytest.raises(CalibrationError):
-        LinearCalibration([2.0])
-    LinearCalibration([2.0, 3.0])
+        Calibration.from_linear([2.0])
+    Calibration.from_linear([2.0, 3.0])
     with pytest.raises(CalibrationError):
-        LinearCalibration([2.0, 3.0, 4.0])
+        Calibration.from_linear([2.0, 3.0, 4.0])
 
     # bad number of arguments
     with pytest.raises(CalibrationError):
-        PolynomialCalibration([2.0])
-    PolynomialCalibration([2.0, 3.0])
-    PolynomialCalibration([2.0, 3.0, 4.0])
+        Calibration.from_polynomial([2.0])
+    Calibration.from_polynomial([2.0, 3.0])
+    Calibration.from_polynomial([2.0, 3.0, 4.0])
 
     # bad number of arguments
     with pytest.raises(CalibrationError):
-        SqrtPolynomialCalibration([2.0])
-    SqrtPolynomialCalibration([2.0, 3.0])
-    SqrtPolynomialCalibration([2.0, 3.0, 4.0])
+        Calibration.from_sqrt_polynomial([2.0])
+    Calibration.from_sqrt_polynomial([2.0, 3.0])
+    Calibration.from_sqrt_polynomial([2.0, 3.0, 4.0])
 
 
 def test_calibration_read_failures():
     """Test miscellaneous HDF5 reading failures."""
     fname = os.path.join(TEST_OUTPUTS, "calibration__read_failures.h5")
-    cal = LinearCalibration([2.0, 3.0])
+    cal = Calibration.from_linear([2.0, 3.0])
     cal.add_points([0, 1000, 2000], [0, 1000, 2000])
 
     # remove the params from the file

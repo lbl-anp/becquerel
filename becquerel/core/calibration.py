@@ -278,6 +278,31 @@ def _check_points(points_x, points_y):
     return points_x, points_y
 
 
+def _polynomial_expression(params):
+    """Create a polynomial expression of any order.
+
+    The calibration function expression is
+        "p[0] + p[1] * x + p[2] * x**2 + ..."
+
+    Parameters
+    ----------
+    params : array_like
+        Coefficients beginning with 0th order.
+
+    Returns
+    -------
+    expression : str
+        The polynomial expression.
+    """
+    order = len(params) - 1
+    if order <= 0:
+        raise CalibrationError("Polynomial expression expects an order of at least 1")
+    expr = "p[0]"
+    for n in range(1, order + 1):
+        expr += f" + p[{n}] * x ** {n}"
+    return expr
+
+
 class Calibration(object):
     """Base class for calibrations.
 
@@ -553,233 +578,77 @@ class Calibration(object):
             cal.add_points(0, 0)
         return cal
 
-
-class AutoExpressionCalibration(Calibration):
-    """A Calibration class that automatically generates its expression."""
-
     @classmethod
-    @abstractmethod
-    def make_expression(cls, params):
-        """Build the expression for this class given the parameters.
-
-        Parameters
-        ---------
-        params : array_like
-            List of floating point parameters for the calibration function
-
-        Returns
-        -------
-        expr : string
-            The expression that defines the calibration function.
-        """
-
-    def __init__(self, params, **attrs):
-        """Create a calibration with an auto-generated formula.
-
-        Parameters
-        ----------
-        params : array_like
-            Coefficients of the calibration function, used to infer the
-            calibration function formula.
-        attrs : dict
-            Other information to be stored with the calibration.
-        """
-        expr = self.make_expression(params)
-        super().__init__(expr, params, **attrs)
-
-    @classmethod
-    def from_points(
-        cls, points_x, points_y, params0, include_origin=False, fit_kwargs={}, **attrs
-    ):
-        """Create a calibration instance and fit the points.
-
-        Parameters
-        ----------
-        points_x : float or array_like
-            The x-value or values of calibration points
-        points_y : float or array_like
-            The y-value or values of calibration points
-        params0 : float or array_like
-            Initial guesses for the parameters. By default an array of ones
-            with its length inferred from the number of parameters
-            referenced in the expression.
-        include_origin : bool
-            Whether to add and fit with the point (0, 0) in addition to the
-            others.
-        fit_kwargs : dict
-            Kwargs to pass to the minimization routine.
-        attrs : dict
-            Other information to be stored with the calibration.
-
-        Returns
-        -------
-        cal : Calibration
-            The Calibration instance with the given expression fitted to
-            the points.
-        """
-        expr = cls.make_expression(params0)
-        params = _fit_expression(
-            expr, points_x, points_y, params0=params0, **fit_kwargs
-        )
-        cal = Calibration(expr, params, **attrs)
-        cal.add_points(points_x, points_y)
-        if include_origin:
-            cal.add_points(0, 0)
-        return cal
-
-
-class LinearCalibration(AutoExpressionCalibration):
-    """Linear calibration."""
-
-    @classmethod
-    def make_expression(cls, params):
-        """Create a linear expression.
-
-        The calibration expression is "p[0] + p[1] * x".
+    def from_linear(cls, params, **attrs):
+        """Create a Calibration with a linear function.
 
         Parameters
         ----------
         params : array_like
             Coefficients beginning with 0th order.
+        attrs : dict
+            Other information to be stored with the calibration.
         """
+        expr = "p[0] + p[1] * x"
         if len(params) != 2:
-            raise CalibrationError("LinearCalibration expects 2 parameters")
-        return "p[0] + p[1] * x"
-
-
-class PolynomialCalibration(AutoExpressionCalibration):
-    """Polynomial calibration of any order."""
+            raise CalibrationError("Linear calibration expects 2 parameters")
+        return cls(expr, params, **attrs)
 
     @classmethod
-    def make_expression(cls, params):
-        """Create a polynomial expression for the given parameters.
+    def from_polynomial(cls, params, **attrs):
+        """Create a Calibration with a polynomial function of any order.
 
-        The calibration expression is
+        The calibration function expression is
             "p[0] + p[1] * x + p[2] * x**2 + ..."
 
         Parameters
         ----------
         params : array_like
             Coefficients beginning with 0th order.
+        attrs : dict
+            Other information to be stored with the calibration.
         """
-        order = len(params) - 1
-        if order <= 0:
-            raise CalibrationError(
-                "PolynomialCalibration expects an order of at least 1"
-            )
-        expr = "p[0]"
-        for n in range(1, order + 1):
-            expr += f" + p[{n}] * x ** {n}"
-        return expr
-
-
-class SqrtPolynomialCalibration(AutoExpressionCalibration):
-    """Square root of a polynomial of any order."""
+        expr = _polynomial_expression(params)
+        return cls(expr, params, **attrs)
 
     @classmethod
-    def make_expression(cls, params):
-        """Create a square root polynomial expression for the given parameters.
+    def from_sqrt_polynomial(cls, params, **attrs):
+        """Create a square root of a polynomial function of any order.
 
-        The calibration expression is
+        The calibration function expression is
             "np.sqrt(p[0] + p[1] * x + p[2] * x**2 + ...)"
 
         Parameters
         ----------
         params : array_like
             Coefficients beginning with 0th order.
+        attrs : dict
+            Other information to be stored with the calibration.
         """
-        order = len(params) - 1
-        if order <= 0:
-            raise CalibrationError(
-                "SqrtPolynomialCalibration expects an order of at least 1"
-            )
-        expr = "np.sqrt(p[0]"
-        for n in range(1, order + 1):
-            expr += f" + p[{n}] * x ** {n}"
-        expr += ")"
-        return expr
-
-
-class InterpolatedCalibration(Calibration):
-    """A calibration that works by interpolating a series of points."""
+        expr = _polynomial_expression(params)
+        expr = "np.sqrt(" + expr + ")"
+        return cls(expr, params, **attrs)
 
     @classmethod
-    def make_expression(cls, points_x, points_y):
-        """Build the interpolation expression given the points.
+    def from_interpolation(cls, points_x, points_y, **attrs):
+        """Create a Calibration that interpolates the calibration points.
 
         Parameters
-        ---------
+        ----------
         points_x : float or array_like
             The x-value or values of calibration points
         points_y : float or array_like
             The y-value or values of calibration points
-
-        Returns
-        -------
-        expr : string
-            The expression that defines the calibration function.
+        attrs : dict
+            Other information to be stored with the calibration.
         """
         points_x, points_y = _check_points(points_x, points_y)
+        if len(points_x) < 2:
+            raise CalibrationError("Interpolated calibration expects at least 2 points")
         xp = np.array2string(points_x, precision=9, separator=", ")
         yp = np.array2string(points_y, precision=9, separator=", ")
         expr = ""
         expr += f"assert np.all(x >= {points_x.min():.9e})\n"
         expr += f"assert np.all(x <= {points_x.max():.9e})\n"
         expr += f"np.interp(x, {xp}, {yp})"
-        return expr
-
-    def __init__(self, **attrs):
-        """Create a calibration that interpolates the points.
-
-        The calibration will be valid until at least two points are added.
-
-        Parameters
-        ----------
-        attrs : dict
-            Other information to be stored with the calibration.
-        """
-        super().__init__("x", [], **attrs)
-
-    def add_points(self, points_x=None, points_y=None):
-        """Add the calibration point values to the internal list.
-
-        Update the interpolation expression once there are at least two points.
-
-        Parameters
-        ----------
-        points_x : float or array_like
-            The x-value or values of calibration points
-        points_y : float or array_like
-            The y-value or values of calibration points
-        """
-        super().add_points(points_x, points_y)
-        if len(self.points_x) >= 2:
-            self.expression = self.make_expression(self.points_x, self.points_y)
-
-    @classmethod
-    def from_points(cls, points_x, points_y, include_origin=False, **attrs):
-        """Create a calibration class that interpolates the points.
-
-        Parameters
-        ----------
-        points_x : float or array_like
-            The x-value or values of calibration points
-        points_y : float or array_like
-            The y-value or values of calibration points
-        include_origin : bool
-            Whether to add and fit with the point (0, 0) in addition to the
-            others.
-        attrs : dict
-            Other information to be stored with the calibration.
-
-        Returns
-        -------
-        cal : Calibration
-            The Calibration instance with the given expression fitted to
-            the points.
-        """
-        cal = cls(**attrs)
-        cal.add_points(points_x, points_y)
-        if include_origin:
-            cal.add_points(0, 0)
-        return cal
+        return cls(expr, [], **attrs)
