@@ -541,7 +541,7 @@ class Calibration(object):
         fit_kwargs={},
         **attrs,
     ):
-        """Create a calibration with the expression and fit the points.
+        """Create a Calibration with the expression and fit the points.
 
         Parameters
         ----------
@@ -569,13 +569,16 @@ class Calibration(object):
             The Calibration instance with the given expression fitted to
             the points.
         """
+        points_x, points_y = _check_points(points_x, points_y)
+        if include_origin:
+            points_x = np.append(0, points_x)
+            points_y = np.append(0, points_y)
+        points_x, points_y = _check_points(points_x, points_y)
         params = _fit_expression(
             expr, points_x, points_y, params0=params0, **fit_kwargs
         )
         cal = cls(expr, params, **attrs)
-        cal.add_points(points_x, points_y)
-        if include_origin:
-            cal.add_points(0, 0)
+        cal.set_points(points_x, points_y)
         return cal
 
     @classmethod
