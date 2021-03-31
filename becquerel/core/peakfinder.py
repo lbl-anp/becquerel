@@ -57,7 +57,7 @@ class PeakFilter(object):
         f0 = self.fwhm_at_0
         f1 = self.ref_fwhm
         x1 = self.ref_x
-        fwhm_sqr = f0 ** 2 + (f1 ** 2 - f0 ** 2) * (x / x1) ** 2
+        fwhm_sqr = f0 ** 2 + (f1 ** 2 - f0 ** 2) * (x / x1)
         return np.sqrt(fwhm_sqr)
 
     def kernel(self, x, edges):
