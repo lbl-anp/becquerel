@@ -265,6 +265,11 @@ class PeakFinder(object):
             fwhm0 = self.kernel.fwhm(xpeak)
             bw = self.spectrum.bin_widths_raw[0]
             h = int(max(1, 0.2 * fwhm0 / bw))
+
+            # skip peaks that are too close to the edge
+            if (xbin - h < 0) or (xbin + h > len(self.snr) - 1):
+                return
+
             d2 = (
                 (1 * self.snr[xbin - h] - 2 * self.snr[xbin] + 1 * self.snr[xbin + h])
                 / h ** 2
