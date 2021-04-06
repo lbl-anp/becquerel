@@ -134,7 +134,7 @@ for _e in HIGH_STAT_SIM_PARAMS["methods"]:
                 _i = "".join([_bm.capitalize() for _bm in _m])
             for _bm in _m:
                 for _bmp, _v in HIGH_STAT_SIM_PARAMS["base_model_params"][_bm].items():
-                    _p["params"]["{}_{}".format(_bm, _bmp)] = _v
+                    _p["params"][f"{_bm}_{_bmp}"] = _v
             HIGH_STAT_SIM_PARAMS["fixture"]["params"].append(_p)
             HIGH_STAT_SIM_PARAMS["fixture"]["ids"].append(_i)
 
@@ -193,7 +193,7 @@ def sim_high_stat(request):
 
 # TODO: add fit plotting
 # TODO: improve parameter value testing?
-class TestFittingHighStatSimData(object):
+class TestFittingHighStatSimData:
     """Test core.fitting.Fitter with high stat generated data"""
 
     @pytest.mark.filterwarnings("ignore")

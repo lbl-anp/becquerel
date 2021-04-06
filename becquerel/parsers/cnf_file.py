@@ -102,7 +102,7 @@ class CnfFile(SpectrumFile):
 
     def __init__(self, filename):
         """Initialize the CNF file."""
-        super(CnfFile, self).__init__(filename)
+        super().__init__(filename)
         _, ext = os.path.splitext(self.filename)
         if ext.lower() != ".cnf":
             raise CnfFileParsingError("File extension is incorrect: " + ext)
@@ -253,12 +253,12 @@ class CnfFile(SpectrumFile):
         self.livetime = _convert_time(data, offset_date + 16)
         if verbose:
             print("livetime: ", self.livetime)
-            print("{:%Y-%m-%d %H:%M:%S}".format(self.collection_start))
+            print(f"{self.collection_start:%Y-%m-%d %H:%M:%S}")
         self.collection_stop = self.collection_start + datetime.timedelta(
             seconds=self.realtime
         )
         if verbose:
-            print("{:%Y-%m-%d %H:%M:%S}".format(self.collection_stop))
+            print(f"{self.collection_stop:%Y-%m-%d %H:%M:%S}")
 
         # extract energy calibration information
         offset_cal = offset_enc + 48 + 32 + offset1
@@ -300,13 +300,13 @@ class CnfFile(SpectrumFile):
         # finished
         if self.realtime <= 0.0:
             raise CnfFileParsingError(
-                "Realtime not parsed correctly: {}".format(self.realtime)
+                f"Realtime not parsed correctly: {self.realtime}"
             )
         if self.livetime <= 0.0:
             raise CnfFileParsingError(
-                "Livetime not parsed correctly: {}".format(self.livetime)
+                f"Livetime not parsed correctly: {self.livetime}"
             )
         if self.livetime > self.realtime:
             raise CnfFileParsingError(
-                "Livetime > realtime: {} > {}".format(self.livetime, self.realtime)
+                f"Livetime > realtime: {self.livetime} > {self.realtime}"
             )

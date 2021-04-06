@@ -11,7 +11,7 @@ class PlottingError(Exception):
     pass
 
 
-class SpectrumPlotter(object):
+class SpectrumPlotter:
     """Class for handling spectrum plotting."""
 
     def __init__(self, spec, *fmt, **kwargs):
@@ -132,7 +132,7 @@ class SpectrumPlotter(object):
             elif mode.lower() in ("channel", "channels", "chn", "chns"):
                 self._xmode = "channel"
             else:
-                raise PlottingError("Unknown x data mode: {}".format(mode))
+                raise PlottingError(f"Unknown x data mode: {mode}")
 
         # Then, set the _xedges and _xlabel based on the _xmode
         xedges, xlabel = self.spec.parse_xmode(self._xmode)
@@ -175,7 +175,7 @@ class SpectrumPlotter(object):
         elif mode.lower() == "cpskev":
             self._ymode = "cpskev"
         else:
-            raise PlottingError("Unknown y data mode: {}".format(mode))
+            raise PlottingError(f"Unknown y data mode: {mode}")
 
         # Then, set the _ydata and _ylabel based on the _ymode
         ydata, _, ylabel = self.spec.parse_ymode(self._ymode)
@@ -456,7 +456,7 @@ class SpectrumPlotter(object):
             and limits != "default"
             and (not hasattr(limits, "__len__") or len(limits) != 2)
         ):
-            raise PlottingError("xlim should be length 2: {}".format(limits))
+            raise PlottingError(f"xlim should be length 2: {limits}")
         self._xlim = limits
 
     @property
@@ -499,7 +499,7 @@ class SpectrumPlotter(object):
             and limits != "default"
             and (not hasattr(limits, "__len__") or len(limits) != 2)
         ):
-            raise PlottingError("ylim should be length 2: {}".format(limits))
+            raise PlottingError(f"ylim should be length 2: {limits}")
         self._ylim = limits
 
     @property

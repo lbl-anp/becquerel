@@ -7,7 +7,6 @@ References:
 
 """
 
-from future.builtins import super
 import warnings
 import numpy as np
 import requests
@@ -153,8 +152,8 @@ def _parse_headers(headers):
     if len(set(headers_new)) != len(headers_new):
         raise NNDCRequestError(
             "Duplicate headers after parsing\n"
-            + '    Original headers: "{}"\n'.format(headers)
-            + '    Parsed headers:   "{}"'.format(headers_new)
+            + f'    Original headers: "{headers}"\n'
+            + f'    Parsed headers:   "{headers_new}"'
         )
     return headers_new
 
@@ -180,7 +179,7 @@ def _parse_table(text):
         text = text.split("To save this output")[0]
         lines = text.split("\n")
     except Exception as exc:
-        raise NNDCRequestError("Unable to parse text:\n{}\n{}".format(exc, text))
+        raise NNDCRequestError(f"Unable to parse text:\n{exc}\n{text}")
     table = {}
     headers = None
     for line in lines:
@@ -197,8 +196,8 @@ def _parse_table(text):
             if len(tokens) != len(headers):
                 raise NNDCRequestError(
                     "Too few data in table row\n"
-                    + '    Headers: "{}"\n'.format(headers)
-                    + '    Row:     "{}"'.format(tokens)
+                    + f'    Headers: "{headers}"\n'
+                    + f'    Row:     "{tokens}"'
                 )
             for header, token in zip(headers, tokens):
                 table[header].append(token)
@@ -227,9 +226,9 @@ def _parse_float_uncertainty(x, dx):
     """
 
     if not isinstance(x, str):
-        raise NNDCRequestError("Value must be a string: {}".format(x))
+        raise NNDCRequestError(f"Value must be a string: {x}")
     if not isinstance(dx, str):
-        raise NNDCRequestError("Uncertainty must be a string: {}".format(dx))
+        raise NNDCRequestError(f"Uncertainty must be a string: {dx}")
     # ignore percents
     if "%" in x:
         x = x.replace("%", "")
@@ -283,7 +282,7 @@ def _parse_float_uncertainty(x, dx):
     try:
         dx2 = float(dx) * factor
     except ValueError:
-        raise NNDCRequestError('Uncertainty cannot be parsed as float: "{}"'.format(dx))
+        raise NNDCRequestError(f'Uncertainty cannot be parsed as float: "{dx}"')
     return uncertainties.ufloat(x2, dx2)
 
 
@@ -306,18 +305,18 @@ def _format_range(x_range):
         x1, x2 = x_range
     except (TypeError, ValueError):
         raise NNDCInputError(
-            'Range keyword arg must have two elements: "{}"'.format(x_range)
+            f'Range keyword arg must have two elements: "{x_range}"'
         )
     try:
         if np.isfinite(x1):
-            x1 = "{}".format(x1)
+            x1 = f"{x1}"
         else:
             x1 = ""
     except TypeError:
         x1 = ""
     try:
         if np.isfinite(x2):
-            x2 = "{}".format(x2)
+            x2 = f"{x2}"
         else:
             x2 = ""
     except TypeError:
@@ -325,7 +324,7 @@ def _format_range(x_range):
     return x1, x2
 
 
-class _NNDCQuery(object):
+class _NNDCQuery:
     """National Nuclear Data Center database query base class.
 
     Args:
@@ -459,7 +458,7 @@ class _NNDCQuery(object):
         """Update the search criteria."""
         for kwarg in kwargs:
             if kwarg not in self._ALLOWED_KEYWORDS:
-                raise NNDCInputError('Unknown keyword: "{}"'.format(kwarg))
+                raise NNDCInputError(f'Unknown keyword: "{kwarg}"')
         if "nuc" in kwargs:
             self._data["spnuc"] = "name"
             self._data["nuc"] = kwargs["nuc"]
@@ -547,7 +546,7 @@ class _NNDCQuery(object):
                 self.df.loc[isomer, "M"] = M
                 if M > 0:
                     if len(e_levels) > 2:
-                        self.df.loc[isomer, "m"] = "m{}".format(M)
+                        self.df.loc[isomer, "m"] = f"m{M}"
                     else:
                         self.df.loc[isomer, "m"] = "m"
 

@@ -210,7 +210,7 @@ class SpcFile(SpectrumFile):
 
     def __init__(self, filename):
         """Initialize the SPC file."""
-        super(SpcFile, self).__init__(filename)
+        super().__init__(filename)
         _, ext = os.path.splitext(self.filename)
         if ext.lower() != ".spc":
             raise SpcFileParsingError("File extension is incorrect: " + ext)
@@ -236,7 +236,7 @@ class SpcFile(SpectrumFile):
                     data_records.append(binary_data)
                 try:
                     binary_data = f.read(128)
-                except IOError:
+                except OSError:
                     raise SpcFileParsingError("Unable to read 128 bytes from file")
                 if len(binary_data) < 128:
                     break
@@ -378,15 +378,15 @@ class SpcFile(SpectrumFile):
         self.realtime = float(self.metadata["Real Time"])
         if self.realtime <= 0.0:
             raise SpcFileParsingError(
-                "Realtime not parsed correctly: {}".format(self.realtime)
+                f"Realtime not parsed correctly: {self.realtime}"
             )
         if self.livetime <= 0.0:
             raise SpcFileParsingError(
-                "Livetime not parsed correctly: {}".format(self.livetime)
+                f"Livetime not parsed correctly: {self.livetime}"
             )
         if self.livetime > self.realtime:
             raise SpcFileParsingError(
-                "Livetime > realtime: {} > {}".format(self.livetime, self.realtime)
+                f"Livetime > realtime: {self.livetime} > {self.realtime}"
             )
         self.num_channels = len(self.channels)
         try:

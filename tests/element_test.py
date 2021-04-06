@@ -4,7 +4,7 @@ from becquerel.tools import element
 import pytest
 
 
-class TestElementFunctions(object):
+class TestElementFunctions:
     """Test Element functions."""
 
     def test_validated_z_good(self):
@@ -138,7 +138,7 @@ def test_element(z, sym, name):
         assert elem.name == name
 
 
-class TestElementInitExceptions(object):
+class TestElementInitExceptions:
     """Test Element class throws exceptions."""
 
     def test_bad_arg_symbol(self):
@@ -157,7 +157,7 @@ class TestElementInitExceptions(object):
             element.Element(0)
 
 
-class TestElementsEqual(object):
+class TestElementsEqual:
     """Test Element class equality."""
 
     def test_h(self):
@@ -175,7 +175,7 @@ class TestElementsEqual(object):
             elem == 0
 
 
-class TestElementStrFormat(object):
+class TestElementStrFormat:
     """Test Element class string formatting."""
 
     def test_h(self):

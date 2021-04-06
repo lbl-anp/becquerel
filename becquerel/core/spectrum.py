@@ -31,7 +31,7 @@ class UncalibratedError(SpectrumError):
     pass
 
 
-class Spectrum(object):
+class Spectrum:
     """
     Represents an energy spectrum.
 
@@ -936,7 +936,7 @@ class Spectrum(object):
             new_livetime = self.livetime / f
         else:
             raise ValueError(
-                "Illegal value for handle_livetime: {}".format(handle_livetime)
+                f"Illegal value for handle_livetime: {handle_livetime}"
             )
 
         # TODO handle uncertainty?
@@ -1238,7 +1238,7 @@ class Spectrum(object):
             xedges = self.bin_edges_raw
             xlabel = "Channel"
         else:
-            raise ValueError("Unsupported xmode: {0:s}".format(xmode))
+            raise ValueError(f"Unsupported xmode: {xmode:s}")
         return xedges, xlabel
 
     def parse_ymode(self, ymode):
@@ -1272,7 +1272,7 @@ class Spectrum(object):
             yuncs = self.cpskev_uncs
             ylabel = "Countrate [1/s/keV]"
         else:
-            raise ValueError("Unsupported ymode: {0:s}".format(ymode))
+            raise ValueError(f"Unsupported ymode: {ymode:s}")
         return ydata, yuncs, ylabel
 
     def plot(self, *fmt, **kwargs):
@@ -1410,4 +1410,4 @@ def _get_file_object(infilename):
     elif extension.lower() == ".cnf":
         return parsers.CnfFile(infilename)
     else:
-        raise NotImplementedError("File type {} can not be read".format(extension))
+        raise NotImplementedError(f"File type {extension} can not be read")

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Spectral peak search using convolutions."""
 
 import matplotlib.pyplot as plt
@@ -14,7 +12,7 @@ class PeakFilterError(Exception):
     pass
 
 
-class PeakFilter(object):
+class PeakFilter:
     """An energy-dependent kernel that can be convolved with a spectrum.
 
     To detect lines, a kernel should have a positive component in the center
@@ -153,7 +151,7 @@ class PeakFinderError(Exception):
     pass
 
 
-class PeakFinder(object):
+class PeakFinder:
     """Find peaks in a spectrum after convolving it with a kernel."""
 
     def __init__(self, spectrum, kernel, min_sep=5, fwhm_tol=(0.5, 1.5)):
@@ -249,7 +247,7 @@ class PeakFinder(object):
 
         if xpeak < xmin or xpeak > xmax:
             raise PeakFinderError(
-                "Peak x {} is outside of range {}-{}".format(xpeak, xmin, xmax)
+                f"Peak x {xpeak} is outside of range {xmin}-{xmax}"
             )
         is_new_x = True
         for cent in self.centroids:
@@ -314,7 +312,7 @@ class PeakFinder(object):
 
         if xpeak < xmin or xpeak > xmax:
             raise PeakFinderError(
-                "Guess xpeak {} is outside of range {}-{}".format(xpeak, xmin, xmax)
+                f"Guess xpeak {xpeak} is outside of range {xmin}-{xmax}"
             )
         if (
             frac_range[0] < 0
@@ -326,7 +324,7 @@ class PeakFinder(object):
                 "Fractional range {}-{} is invalid".format(*frac_range)
             )
         if min_snr < 0:
-            raise PeakFinderError("Minimum SNR {:.3f} must be > 0".format(min_snr))
+            raise PeakFinderError(f"Minimum SNR {min_snr:.3f} must be > 0")
         if self.snr.max() < min_snr:
             raise PeakFinderError(
                 "SNR threshold is {:.3f} but maximum SNR is {:.3f}".format(
@@ -339,7 +337,7 @@ class PeakFinder(object):
         peak_snr = self.snr[x_range].max()
         if peak_snr < min_snr:
             raise PeakFinderError(
-                "No peak found in range {}-{} with SNR > {}".format(x0, x1, min_snr)
+                f"No peak found in range {x0}-{x1} with SNR > {min_snr}"
             )
 
         peak_index = np.where((self.snr == peak_snr) & x_range)[0][0]
@@ -363,9 +361,9 @@ class PeakFinder(object):
             or xmax < bin_edges.min()
             or xmin > xmax
         ):
-            raise PeakFinderError("x-axis range {}-{} is invalid".format(xmin, xmax))
+            raise PeakFinderError(f"x-axis range {xmin}-{xmax} is invalid")
         if min_snr < 0:
-            raise PeakFinderError("Minimum SNR {:.3f} must be > 0".format(min_snr))
+            raise PeakFinderError(f"Minimum SNR {min_snr:.3f} must be > 0")
         if self.snr.max() < min_snr:
             raise PeakFinderError(
                 "SNR threshold is {:.3f} but maximum SNR is {:.3f}".format(
@@ -374,7 +372,7 @@ class PeakFinder(object):
             )
         max_num = int(max_num)
         if max_num < 1:
-            raise PeakFinderError("Must keep at least 1 peak, not {}".format(max_num))
+            raise PeakFinderError(f"Must keep at least 1 peak, not {max_num}")
         # calculate the first derivative and second derivatives of the SNR
         d1 = (self.snr[2:] - self.snr[:-2]) / 2
         d1 = np.append(0, d1)

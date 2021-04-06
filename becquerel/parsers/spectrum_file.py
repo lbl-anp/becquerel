@@ -20,7 +20,7 @@ class SpectrumFileParsingError(Exception):
     pass
 
 
-class SpectrumFile(object):
+class SpectrumFile:
     """Spectrum file parser base class.
 
     Just instantiate a class with a filename:
@@ -67,12 +67,12 @@ class SpectrumFile(object):
         print_channels = False
 
         s = ""
-        s += "Filename:              {:s}\n".format(self.filename)
-        s += "Spectrum ID:           {:s}\n".format(self.spectrum_id)
-        s += "Sample description:    {:s}\n".format(self.sample_description)
-        s += "Detector description:  {:s}\n".format(self.detector_description)
-        s += "Location Description:  {:s}\n".format(self.location_description)
-        s += "Hardware Status:       {:s}\n".format(self.hardware_status)
+        s += f"Filename:              {self.filename:s}\n"
+        s += f"Spectrum ID:           {self.spectrum_id:s}\n"
+        s += f"Sample description:    {self.sample_description:s}\n"
+        s += f"Detector description:  {self.detector_description:s}\n"
+        s += f"Location Description:  {self.location_description:s}\n"
+        s += f"Hardware Status:       {self.hardware_status:s}\n"
         if self.collection_start is not None:
             s += "Collection Start:      {:%Y-%m-%d %H:%M:%S}\n".format(
                 self.collection_start
@@ -85,21 +85,21 @@ class SpectrumFile(object):
             )
         else:
             s += "Collection Stop:       None\n"
-        s += "Livetime:              {:.2f} sec\n".format(self.livetime)
-        s += "Realtime:              {:.2f} sec\n".format(self.realtime)
+        s += f"Livetime:              {self.livetime:.2f} sec\n"
+        s += f"Realtime:              {self.realtime:.2f} sec\n"
         if len(self.metadata.keys()) > 0:
             s += "Metadata:\n"
             for key, value in self.metadata.items():
-                s += "    {} : {}\n".format(key, value)
-        s += "Number of channels:    {:d}\n".format(self.num_channels)
+                s += f"    {key} : {value}\n"
+        s += f"Number of channels:    {self.num_channels:d}\n"
         if len(self.cal_coeff) > 0:
             s += "Calibration coeffs:    "
-            s += " ".join(["{:E}".format(x) for x in self.cal_coeff])
+            s += " ".join([f"{x:E}" for x in self.cal_coeff])
             s += "\n"
         s += "Data:                  \n"
         if print_channels:
             for ch, dt in zip(self.channels, self.data):
-                s += "    {:5.0f}    {:5.0f}\n".format(ch, dt)
+                s += f"    {ch:5.0f}    {dt:5.0f}\n"
         else:
             s += "    [length {}]\n".format(len(self.data))
         return s

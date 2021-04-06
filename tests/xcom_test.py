@@ -122,7 +122,7 @@ GE_GRID_ENERGIES_PLUS_3 = [
 
 
 @pytest.mark.webtest
-class TestFetchXCOMData(object):
+class TestFetchXCOMData:
     """Test fetch_xcom_data function."""
 
     def test_sym_energy(self):

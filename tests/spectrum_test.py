@@ -124,7 +124,7 @@ def cal_spec_cps(spec_data):
     return bq.Spectrum(cps=spec_data, bin_edges_kev=TEST_EDGES_KEV)
 
 
-class TestSpectrumFromFile(object):
+class TestSpectrumFromFile:
     """Test Spectrum.from_file() class method."""
 
     def run_from_file(self, extension):

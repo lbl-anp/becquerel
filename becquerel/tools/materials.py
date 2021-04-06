@@ -125,7 +125,7 @@ def convert_composition(comp):
     comp_sym = []
     if not isinstance(comp, Iterable):
         raise NISTMaterialsRequestError(
-            "Compound must be an iterable of strings: {}".format(comp)
+            f"Compound must be an iterable of strings: {comp}"
         )
     for line in comp:
         if not isinstance(line, str):
@@ -136,17 +136,17 @@ def convert_composition(comp):
             z, weight = line.split(":")
         except ValueError:
             raise NISTMaterialsRequestError(
-                "Unable to split compound line: {}".format(line)
+                f"Unable to split compound line: {line}"
             )
         try:
             z = int(z)
         except ValueError:
             raise NISTMaterialsRequestError(
-                "Unable to convert Z {} to integer: {}".format(z, line)
+                f"Unable to convert Z {z} to integer: {line}"
             )
         if z < 1 or z > MAX_Z:
             raise NISTMaterialsRequestError(
-                "Z {} out of range [1, {}]: {}".format(z, line, MAX_Z)
+                f"Z {z} out of range [1, {line}]: {MAX_Z}"
             )
         comp_sym.append(element_symbol(z) + " " + weight.strip())
     return comp_sym

@@ -47,7 +47,7 @@ class SpeFile(SpectrumFile):
 
     def __init__(self, filename):
         """Initialize the SPE file."""
-        super(SpeFile, self).__init__(filename)
+        super().__init__(filename)
         _, ext = os.path.splitext(self.filename)
         if ext.lower() != ".spe":
             raise SpeFileParsingError("File extension is incorrect: " + ext)
@@ -68,7 +68,7 @@ class SpeFile(SpectrumFile):
         self.channels = np.array([], dtype=np.float)
         self.data = np.array([], dtype=np.float)
         self.cal_coeff = []
-        with open(self.filename, "r") as f:
+        with open(self.filename) as f:
             # read & remove newlines from end of each line
             lines = [line.strip() for line in f.readlines()]
             i = 0
@@ -106,7 +106,7 @@ class SpeFile(SpectrumFile):
                     # I don't know why it would be nonzero
                     if self.first_channel != 0:
                         raise SpeFileParsingError(
-                            "First channel is not 0: {}".format(self.first_channel)
+                            f"First channel is not 0: {self.first_channel}"
                         )
                     self.num_channels = int(lines[i].split(" ")[1])
                     if verbose:
@@ -167,15 +167,15 @@ class SpeFile(SpectrumFile):
                 i += 1
         if self.realtime <= 0.0:
             raise SpeFileParsingError(
-                "Realtime not parsed correctly: {}".format(self.realtime)
+                f"Realtime not parsed correctly: {self.realtime}"
             )
         if self.livetime <= 0.0:
             raise SpeFileParsingError(
-                "Livetime not parsed correctly: {}".format(self.livetime)
+                f"Livetime not parsed correctly: {self.livetime}"
             )
         if self.livetime > self.realtime:
             raise SpeFileParsingError(
-                "Livetime > realtime: {} > {}".format(self.livetime, self.realtime)
+                f"Livetime > realtime: {self.livetime} > {self.realtime}"
             )
         self.collection_stop = self.collection_start + datetime.timedelta(
             seconds=self.realtime
@@ -190,11 +190,11 @@ class SpeFile(SpectrumFile):
         s += self.sample_description + "\n"
         if self.collection_start is not None:
             s += "$DATE_MEA:\n"
-            s += "{:%m/%d/%Y %H:%M:%S}\n".format(self.collection_start)
+            s += f"{self.collection_start:%m/%d/%Y %H:%M:%S}\n"
         s += "$MEAS_TIM:\n"
-        s += "{:.0f} {:.0f}\n".format(self.livetime, self.realtime)
+        s += f"{self.livetime:.0f} {self.realtime:.0f}\n"
         s += "$DATA:\n"
-        s += "{:.0f} {:d}\n".format(self.first_channel, self.num_channels)
+        s += f"{self.first_channel:.0f} {self.num_channels:d}\n"
         for j in range(self.num_channels):
             s += "       {:.0f}\n".format(self.data[j])
         s += "$ROI:\n"
@@ -206,7 +206,7 @@ class SpeFile(SpectrumFile):
         if len(self.cal_coeff) > 0:
             s += "$MCA_CAL:\n"
             n_coeff = len(self.cal_coeff)
-            s += "{:d}\n".format(n_coeff)
+            s += f"{n_coeff:d}\n"
             s += "{:E}".format(self.cal_coeff[0])
             for j in range(1, n_coeff):
                 s += " {:E}".format(self.cal_coeff[j])
@@ -214,7 +214,7 @@ class SpeFile(SpectrumFile):
         if len(self.shape_cal) > 0:
             s += "$SHAPE_CAL:\n"
             n_coeff = len(self.shape_cal)
-            s += "{:d}\n".format(n_coeff)
+            s += f"{n_coeff:d}\n"
             s += "{:E}".format(self.shape_cal[0])
             for j in range(1, n_coeff):
                 s += " {:E}".format(self.shape_cal[j])

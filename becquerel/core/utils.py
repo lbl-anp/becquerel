@@ -107,7 +107,7 @@ def handle_datetime(input_time, error_name="datetime arg", allow_none=False):
     elif input_time is None and allow_none:
         return None
     else:
-        raise TypeError("Unknown type for {}: {}".format(error_name, input_time))
+        raise TypeError(f"Unknown type for {error_name}: {input_time}")
 
 
 def bin_centers_from_edges(edges_kev):

@@ -69,7 +69,7 @@ def make_fake_spec_array(lam, size, dtype=np.float):
     return np.random.poisson(lam=lam, size=size).astype(dtype)
 
 
-class TestRebin(object):
+class TestRebin:
     """Tests for core.rebin()"""
 
     def test_total_counts(self, lam, old_edges, new_edges):

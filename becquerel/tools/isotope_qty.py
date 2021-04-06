@@ -38,11 +38,11 @@ def handle_isotope(isotope, error_name=None):
         return Isotope(isotope)
     else:
         raise TypeError(
-            "{} needs an Isotope instance or string, not {}".format(error_name, isotope)
+            f"{error_name} needs an Isotope instance or string, not {isotope}"
         )
 
 
-class IsotopeQuantity(object):
+class IsotopeQuantity:
     """An amount of an isotope.
 
     Can be multiplied or divided by a scalar, to produce a copy with the same
@@ -194,7 +194,7 @@ class IsotopeQuantity(object):
         val *= 1.0  # convert to float, or preserve ufloat, as appropriate
         if val < 0:
             raise ValueError(
-                "Mass or activity must be a positive quantity: {}".format(val)
+                f"Mass or activity must be a positive quantity: {val}"
             )
         return val
 
@@ -558,7 +558,7 @@ class NeutronIrradiationError(Exception):
     pass
 
 
-class NeutronIrradiation(object):
+class NeutronIrradiation:
     """Represents an irradiation period with thermal neutrons.
 
     Data attributes:
@@ -623,7 +623,7 @@ class NeutronIrradiation(object):
         """
 
         if self.duration == 0:
-            return "{} neutrons/cm2 at {}".format(self.n_cm2, self.start_time)
+            return f"{self.n_cm2} neutrons/cm2 at {self.start_time}"
         else:
             return "{} n/cm2/s from {} to {}".format(
                 self.n_cm2_s, self.start_time, self.stop_time
@@ -682,7 +682,7 @@ class NeutronIrradiation(object):
         ):
             raise NeutronIrradiationError(
                 "Two IsotopeQuantity's in args, nothing left to calculate!"
-                + "Args: {}, {}".format(initial, activated)
+                + f"Args: {initial}, {activated}"
             )
         elif isinstance(initial, IsotopeQuantity) and isinstance(activated, Isotope):
             forward = True
@@ -691,12 +691,12 @@ class NeutronIrradiation(object):
         elif isinstance(initial, Isotope) and isinstance(activated, Isotope):
             raise NeutronIrradiationError(
                 "No IsotopeQuantity specified, not enough data. "
-                + "Args: {}, {}".format(initial, activated)
+                + f"Args: {initial}, {activated}"
             )
         else:
             raise TypeError(
                 "Input args should be Isotope or IsotopeQuantity objects: "
-                + "{}, {}".format(initial, activated)
+                + f"{initial}, {activated}"
             )
 
         if not initial.is_stable:
@@ -759,20 +759,20 @@ def decay_normalize(isotope, interval1, interval2):
 
     isotope = handle_isotope(isotope, error_name="decay_normalize")
     if len(interval1) != 2:
-        raise IsotopeQuantityError("interval1 should be length 2: {}".format(interval1))
+        raise IsotopeQuantityError(f"interval1 should be length 2: {interval1}")
     elif len(interval2) != 2:
-        raise IsotopeQuantityError("interval2 should be length 2: {}".format(interval2))
+        raise IsotopeQuantityError(f"interval2 should be length 2: {interval2}")
     start1 = utils.handle_datetime(interval1[0], error_name="decay_normalize")
     stop1 = utils.handle_datetime(interval1[1], error_name="decay_normalize")
     start2 = utils.handle_datetime(interval2[0], error_name="decay_normalize")
     stop2 = utils.handle_datetime(interval2[1], error_name="decay_normalize")
     if stop1 < start1:
         raise ValueError(
-            "Timestamps in interval1 out of order: {}, {}".format(start1, stop1)
+            f"Timestamps in interval1 out of order: {start1}, {stop1}"
         )
     elif stop2 < start2:
         raise ValueError(
-            "Timestamps in interval2 out of order: {}, {}".format(start2, stop2)
+            f"Timestamps in interval2 out of order: {start2}, {stop2}"
         )
 
     # TODO base this on countrate, not counts

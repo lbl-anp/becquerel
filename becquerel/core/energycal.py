@@ -1,8 +1,6 @@
 """"Energy calibration classes"""
 
-from abc import ABCMeta, abstractmethod, abstractproperty
-from future.builtins import dict, super, zip
-from future.utils import viewitems
+from abc import ABC, abstractmethod, abstractproperty
 import numpy as np
 
 
@@ -18,7 +16,7 @@ class BadInput(EnergyCalError):
     pass
 
 
-class EnergyCalBase(object):
+class EnergyCalBase(ABC):
     """Abstract base class for energy calibration.
 
     A note on nomenclature: for historic reasons, 'channels' is used in
@@ -33,8 +31,6 @@ class EnergyCalBase(object):
       valid_coeffs (property)
       _perform_fit (method)
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self):
         """Create an empty calibration instance.
@@ -97,7 +93,7 @@ class EnergyCalBase(object):
 
         cal = cls()
 
-        for coeff, val in viewitems(coeffs):
+        for coeff, val in coeffs.items():
             cal._set_coeff(coeff, val)
 
         # TODO make sure all coefficients are specified
@@ -269,7 +265,7 @@ class EnergyCalBase(object):
         if name in self.valid_coeffs:
             self._coeffs[name] = val
         else:
-            raise EnergyCalError("Invalid coefficient name: {}".format(name))
+            raise EnergyCalError(f"Invalid coefficient name: {name}")
 
     def update_fit(self):
         """Compute the calibration curve from the current points.

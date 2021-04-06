@@ -116,23 +116,23 @@ def _xy_left(y, x=None, num=4):
 
 class ConstantModel(Model):
     def __init__(self, *args, **kwargs):
-        super(ConstantModel, self).__init__(constant, *args, **kwargs)
+        super().__init__(constant, *args, **kwargs)
         # TODO: remove this min setting?
-        self.set_param_hint("{}c".format(self.prefix), min=0.0)
+        self.set_param_hint(f"{self.prefix}c", min=0.0)
 
     def guess(self, y, x=None, dx=None, num=2):
         if dx is None:
             dx = np.ones_like(x)
         c = (y[-1] / dx[-1] + y[0] / dx[0]) * 0.5
         return [
-            ("{}c".format(self.prefix), "value", c),
-            ("{}c".format(self.prefix), "min", 0.0),
+            (f"{self.prefix}c", "value", c),
+            (f"{self.prefix}c", "min", 0.0),
         ]
 
 
 class LineModel(Model):
     def __init__(self, *args, **kwargs):
-        super(LineModel, self).__init__(line, *args, **kwargs)
+        super().__init__(line, *args, **kwargs)
 
     def guess(self, y, x=None, dx=None, num=2):
         if dx is None:
@@ -140,17 +140,17 @@ class LineModel(Model):
         m = (y[-1] / dx[-1] - y[0] / dx[0]) / (x[-1] - x[0])
         b = ((y[-1] / dx[-1] + y[0] / dx[0]) - m * (x[1] + x[0])) * 0.5
         return [
-            ("{}m".format(self.prefix), "value", m),
-            ("{}b".format(self.prefix), "value", b),
+            (f"{self.prefix}m", "value", m),
+            (f"{self.prefix}b", "value", b),
         ]
 
 
 class GaussModel(Model):
     def __init__(self, *args, **kwargs):
-        super(GaussModel, self).__init__(gauss, *args, **kwargs)
+        super().__init__(gauss, *args, **kwargs)
         self.set_param_hint(
-            "{}fwhm".format(self.prefix),
-            expr="{} * {}sigma".format(FWHM_SIG_RATIO, self.prefix),
+            f"{self.prefix}fwhm",
+            expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
     def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5):
@@ -174,36 +174,36 @@ class GaussModel(Model):
         sigma = xspan * width_ratio / 10.0
         amp = np.max(y[msk]) * np.sqrt(2 * np.pi) * sigma  # new amplitude guess
         return [
-            ("{}amp".format(self.prefix), "value", amp),
-            ("{}amp".format(self.prefix), "min", 0.0),
-            ("{}mu".format(self.prefix), "value", mu),
-            ("{}mu".format(self.prefix), "min", x[0]),
-            ("{}mu".format(self.prefix), "max", x[-1]),
-            ("{}sigma".format(self.prefix), "value", sigma),
-            ("{}sigma".format(self.prefix), "min", 0.0),
+            (f"{self.prefix}amp", "value", amp),
+            (f"{self.prefix}amp", "min", 0.0),
+            (f"{self.prefix}mu", "value", mu),
+            (f"{self.prefix}mu", "min", x[0]),
+            (f"{self.prefix}mu", "max", x[-1]),
+            (f"{self.prefix}sigma", "value", sigma),
+            (f"{self.prefix}sigma", "min", 0.0),
         ]
 
 
 class ErfModel(Model):
     def __init__(self, *args, **kwargs):
-        super(ErfModel, self).__init__(erf, *args, **kwargs)
+        super().__init__(erf, *args, **kwargs)
 
     def guess(self, y, x=None, dx=None, center_ratio=0):
         xspan = x[-1] - x[0]
         mu = x[0] + xspan * center_ratio
         return [
-            ("{}amp".format(self.prefix), "value", y[0] - y[-1]),
-            ("{}mu".format(self.prefix), "value", mu),
-            ("{}sigma".format(self.prefix), "expr", "gauss_sigma"),
+            (f"{self.prefix}amp", "value", y[0] - y[-1]),
+            (f"{self.prefix}mu", "value", mu),
+            (f"{self.prefix}sigma", "expr", "gauss_sigma"),
         ]
 
 
 class GaussErfModel(Model):
     def __init__(self, *args, **kwargs):
-        super(GaussErfModel, self).__init__(gausserf, *args, **kwargs)
+        super().__init__(gausserf, *args, **kwargs)
         self.set_param_hint(
-            "{}fwhm".format(self.prefix),
-            expr="{} * {}sigma".format(FWHM_SIG_RATIO, self.prefix),
+            f"{self.prefix}fwhm",
+            expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
     def guess(
@@ -228,23 +228,23 @@ class GaussErfModel(Model):
         amp_gauss = amp * amp_ratio
         amp_erf = amp * (1.0 - amp_ratio) / dx[0] / (np.sqrt(2 * np.pi) * sigma)
         return [
-            ("{}ampgauss".format(self.prefix), "value", amp_gauss),
-            ("{}ampgauss".format(self.prefix), "min", 0.0),
-            ("{}amperf".format(self.prefix), "value", amp_erf),
-            ("{}amperf".format(self.prefix), "min", 0.0),
-            ("{}mu".format(self.prefix), "value", mu),
-            ("{}mu".format(self.prefix), "min", x[0]),
-            ("{}mu".format(self.prefix), "max", x[-1]),
-            ("{}sigma".format(self.prefix), "value", sigma),
-            ("{}sigma".format(self.prefix), "min", 0.0),
+            (f"{self.prefix}ampgauss", "value", amp_gauss),
+            (f"{self.prefix}ampgauss", "min", 0.0),
+            (f"{self.prefix}amperf", "value", amp_erf),
+            (f"{self.prefix}amperf", "min", 0.0),
+            (f"{self.prefix}mu", "value", mu),
+            (f"{self.prefix}mu", "min", x[0]),
+            (f"{self.prefix}mu", "max", x[-1]),
+            (f"{self.prefix}sigma", "value", sigma),
+            (f"{self.prefix}sigma", "min", 0.0),
         ]
 
 
 class ExpModel(Model):
     def __init__(self, *args, **kwargs):
-        super(ExpModel, self).__init__(exp, *args, **kwargs)
-        self.set_param_hint("{}amp".format(self.prefix), min=0.0)
-        self.set_param_hint("{}lam".format(self.prefix), max=0.0)
+        super().__init__(exp, *args, **kwargs)
+        self.set_param_hint(f"{self.prefix}amp", min=0.0)
+        self.set_param_hint(f"{self.prefix}lam", max=0.0)
 
     def guess(self, y, x=None, dx=None, num=1):
         xl, yl = _xy_left(y, x=x, num=num)
@@ -253,10 +253,10 @@ class ExpModel(Model):
         lam = (xl - xr) / np.log(yl / (yr + 0.0001))
         amp = yl / np.exp(xl / lam)
         return [
-            ("{}lam".format(self.prefix), "value", lam),
-            ("{}lam".format(self.prefix), "max", -1e-3),
-            ("{}amp".format(self.prefix), "value", amp),
-            ("{}amp".format(self.prefix), "min", 0.0),
+            (f"{self.prefix}lam", "value", lam),
+            (f"{self.prefix}lam", "max", -1e-3),
+            (f"{self.prefix}amp", "value", amp),
+            (f"{self.prefix}amp", "min", 0.0),
         ]
 
 
@@ -266,13 +266,13 @@ class ExpGaussModel(Model):
     """
 
     def __init__(self, *args, **kwargs):
-        super(ExpGaussModel, self).__init__(expgauss, **kwargs)
-        self.set_param_hint("{}sigma".format(self.prefix), min=0)
-        self.set_param_hint("{}gamma".format(self.prefix), min=0, max=1)
+        super().__init__(expgauss, **kwargs)
+        self.set_param_hint(f"{self.prefix}sigma", min=0)
+        self.set_param_hint(f"{self.prefix}gamma", min=0, max=1)
         # TODO: This is obviously wrong
         self.set_param_hint(
-            "{}fwhm".format(self.prefix),
-            expr="{} * {}sigma".format(FWHM_SIG_RATIO, self.prefix),
+            f"{self.prefix}fwhm",
+            expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
     def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5):
@@ -295,15 +295,15 @@ class ExpGaussModel(Model):
         amp = np.max(y[msk]) * np.sqrt(2 * np.pi) * sigma
         # TODO: We miss gamma here
         return [
-            ("{}amp".format(self.prefix), "value", amp),
-            ("{}amp".format(self.prefix), "min", 0.0),
-            ("{}mu".format(self.prefix), "value", mu),
-            ("{}mu".format(self.prefix), "min", x[0]),
-            ("{}mu".format(self.prefix), "max", x[-1]),
-            ("{}sigma".format(self.prefix), "value", sigma),
-            ("{}sigma".format(self.prefix), "min", 0.0),
-            ("{}gamma".format(self.prefix), "value", 0.95),
-            ("{}gamma".format(self.prefix), "min", 0.0),
+            (f"{self.prefix}amp", "value", amp),
+            (f"{self.prefix}amp", "min", 0.0),
+            (f"{self.prefix}mu", "value", mu),
+            (f"{self.prefix}mu", "min", x[0]),
+            (f"{self.prefix}mu", "max", x[-1]),
+            (f"{self.prefix}sigma", "value", sigma),
+            (f"{self.prefix}sigma", "min", 0.0),
+            (f"{self.prefix}gamma", "value", 0.95),
+            (f"{self.prefix}gamma", "min", 0.0),
         ]
 
 
@@ -329,7 +329,7 @@ MODEL_STR_TO_CLS = {
 # -----------------------------------------------------------------------------
 
 
-class Fitter(object):
+class Fitter:
     """Base class for more specialized fit objects.
 
     A note on interpreting fit results: ascribing meaning to histogram fit
@@ -362,15 +362,15 @@ class Fitter(object):
     def __str__(self):
         return (
             "bq.Fitter instance\n"
-            + "     name: {}\n".format(self.name)
-            + "    model: {}\n".format(self.model)
-            + "        x: {}\n".format(self.x)
-            + "        y: {}\n".format(self.y)
-            + "    y_unc: {}\n".format(self.y_unc)
-            + "    xmode: {}\n".format(self.xmode)
-            + "    ymode: {}\n".format(self.ymode)
-            + "       dx: {}\n".format(self.dx)
-            + "      roi: {}".format(self.roi)
+            + f"     name: {self.name}\n"
+            + f"    model: {self.model}\n"
+            + f"        x: {self.x}\n"
+            + f"        y: {self.y}\n"
+            + f"    y_unc: {self.y_unc}\n"
+            + f"    xmode: {self.xmode}\n"
+            + f"    ymode: {self.ymode}\n"
+            + f"       dx: {self.dx}\n"
+            + f"      roi: {self.roi}"
         )
 
     __repr__ = __str__
@@ -414,7 +414,7 @@ class Fitter(object):
                 min_v = np.min(self._y_unc[self._y_unc > 0.0])
                 warnings.warn(
                     "Negative or zero uncertainty not supported. Changing "
-                    + "them to {}. If you have Poisson data, ".format(min_v)
+                    + f"them to {min_v}. If you have Poisson data, "
                     + "this should be 1."
                 )
                 self._y_unc[self._y_unc <= 0.0] = min_v
@@ -514,7 +514,7 @@ class Fitter(object):
         if inspect.isclass(m):
             if not issubclass(m, Model):
                 raise FittingError(
-                    "Input model is not a subclass of Model: {}".format(m)
+                    f"Input model is not a subclass of Model: {m}"
                 )
             self._model_cls_cnt[m] = self._model_cls_cnt.get(m, 0) + 1
             return m
@@ -527,7 +527,7 @@ class Fitter(object):
             if cls is not None:
                 self._model_cls_cnt[cls] = self._model_cls_cnt.get(cls, 0) + 1
                 return cls
-        raise FittingError("Unknown model type: {}".format(m))
+        raise FittingError(f"Unknown model type: {m}")
 
     def _make_model(self, model):
         if isinstance(model, str) or isinstance(model, Model):
@@ -545,10 +545,10 @@ class Fitter(object):
                 if prefix_base.endswith("model"):
                     prefix_base = prefix_base[:-5]
                 if self._model_cls_cnt[m] == 1:
-                    prefix = "{}_".format(prefix_base)
+                    prefix = f"{prefix_base}_"
                 else:
                     for i in range(self._model_cls_cnt[m]):
-                        prefix = "{}{}_".format(prefix_base, i)
+                        prefix = f"{prefix_base}{i}_"
                         if prefix not in model_prefixes:
                             break
                 m_instance = m(prefix=prefix)
@@ -557,8 +557,8 @@ class Fitter(object):
             if m_instance.prefix in model_prefixes:
                 raise FittingError(
                     "A model prefix is not unique: "
-                    + "{} ".format(m_instance.prefix)
-                    + "All models: {}".format(model_translated)
+                    + f"{m_instance.prefix} "
+                    + f"All models: {model_translated}"
                 )
             model_prefixes.add(m_instance.prefix)
             models.append(m_instance)
@@ -626,7 +626,7 @@ class Fitter(object):
             )  # no, bounds, default would be L-BFGS-B'
             # TODO: Calculate errors breaks minimization right now
         else:
-            raise FittingError("Unknown fitting backend: {}".format(backend))
+            raise FittingError(f"Unknown fitting backend: {backend}")
 
     def _set_likelihood_residual(self):
         def _likelihood_residual(self, params, data, weights, **kwargs):
@@ -734,7 +734,7 @@ class Fitter(object):
             # Absolute residuals
             return y_res
         else:
-            raise ValueError("Unknown residuals type: {0:s}".format(residual_type))
+            raise ValueError(f"Unknown residuals type: {residual_type:s}")
 
     def plot(self, npts=1000, **kwargs):
         """Plot the fit result on the current axis.
@@ -907,7 +907,7 @@ class Fitter(object):
             yerr_plot = self.y_unc_roi
             ylabel = "Residuals"
         else:
-            raise ValueError("Unknown residuals option: {0:s}".format(residual_type))
+            raise ValueError(f"Unknown residuals option: {residual_type:s}")
         res_ax.errorbar(x=self.x_roi, y=y_plot, yerr=yerr_plot, **res_kwargs)
         res_ax.axhline(0.0, linestyle="dashed", c="k", linewidth=1.0)
         res_ax.set_ylabel(ylabel)
@@ -950,7 +950,7 @@ class Fitter(object):
                     param_name, v, e, np.abs(e / v)
                 )
         # Add info about the ROI and units
-        s += "ROI: [{0:.3f}, {1:.3f}]\n".format(*self.roi)
+        s += "ROI: [{:.3f}, {:.3f}]\n".format(*self.roi)
         s += "X units: {:s}\n".format(self.xmode if self.xmode else "None")
         s += "Y units: {:s}\n".format(self.ymode if self.ymode else "None")
         # Add to empty axis

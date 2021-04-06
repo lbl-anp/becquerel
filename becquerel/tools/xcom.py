@@ -119,7 +119,7 @@ class XCOMRequestError(XCOMError):
     pass
 
 
-class _XCOMQuery(object):
+class _XCOMQuery:
     """Query photon cross section data from NIST XCOM database.
 
     After the data have been successfully queried, they are stored in a
@@ -220,7 +220,7 @@ class _XCOMQuery(object):
         elif isinstance(arg, Iterable):
             return {"mixture": arg}
         raise XCOMInputError(
-            "Cannot determine if argument {}".format(arg)
+            f"Cannot determine if argument {arg}"
             + " is a symbol, Z, compound, or mixture"
         )
 
@@ -230,21 +230,21 @@ class _XCOMQuery(object):
         zint = int(zstr)
         if zint < 1 or zint > 100:
             raise XCOMInputError(
-                "XCOM only supports Z from 1 to 100 (z={})".format(zstr)
+                f"XCOM only supports Z from 1 to 100 (z={zstr})"
             )
 
     @staticmethod
     def _check_compound(formula):
         """Check whether the compound is valid. Raise XCOMInputError if not."""
         if not formula.isalnum():
-            raise XCOMInputError("Formula not valid: {}".format(formula))
+            raise XCOMInputError(f"Formula not valid: {formula}")
 
     @staticmethod
     def _check_mixture(formulae):
         """Check whether the mixture is valid. Raise XCOMInputError if not."""
         if not isinstance(formulae, Iterable):
             raise XCOMInputError(
-                "Mixture formulae must be an iterable: {}".format(formulae)
+                f"Mixture formulae must be an iterable: {formulae}"
             )
         for formula in formulae:
             try:
@@ -266,7 +266,7 @@ class _XCOMQuery(object):
                 float(weight)
             except (ValueError, TypeError):
                 raise XCOMInputError(
-                    'Mixture formulae "{}" has bad weight "{}"'.format(formulae, weight)
+                    f'Mixture formulae "{formulae}" has bad weight "{weight}"'
                 )
 
     def update(self, **kwargs):
@@ -304,7 +304,7 @@ class _XCOMQuery(object):
                 "energies_kev",
                 "perform",
             ]:
-                raise XCOMInputError('Unknown keyword: "{}"'.format(kwarg))
+                raise XCOMInputError(f'Unknown keyword: "{kwarg}"')
 
         # determine the search method (element, compound, or mixture)
         if "symbol" in kwargs:
@@ -386,7 +386,7 @@ class _XCOMQuery(object):
             for energy in kwargs["energies_kev"]:
                 if energy < 1 or energy > 1e8:
                     raise XCOMInputError(
-                        "XCOM energy must be >= 1 and <= 1E8 keV: {}".format(energy)
+                        f"XCOM energy must be >= 1 and <= 1E8 keV: {energy}"
                     )
             self._data["Energies"] = ";".join(
                 ["{:.6f}".format(erg / 1000.0) for erg in kwargs["energies_kev"]]
@@ -402,7 +402,7 @@ class _XCOMQuery(object):
                 )
             )
         if "Error" in self._req.text:
-            raise XCOMRequestError("XCOM returned an error:\n{}".format(self._req.text))
+            raise XCOMRequestError(f"XCOM returned an error:\n{self._req.text}")
 
     def _parse_text(self):
         """Parse table contained in the text into a dictionary."""

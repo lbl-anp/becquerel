@@ -18,7 +18,7 @@ filename3 = os.path.join(
 filename4 = os.path.join(os.path.dirname(bq.__file__), "../tests/samples/SGM102432.csv")
 
 counts = []
-with open(filename1, "r") as f:
+with open(filename1) as f:
     for line in f:
         tokens = line.strip().split(",")
         if len(tokens) == 2:
@@ -28,7 +28,7 @@ spec1 = bq.Spectrum(counts=counts)
 spec2 = bq.Spectrum.from_file(filename2)
 
 counts = []
-with open(filename3, "r") as f:
+with open(filename3) as f:
     for line in f:
         tokens = line.strip().split(",")
         if len(tokens) == 2:
@@ -36,7 +36,7 @@ with open(filename3, "r") as f:
 spec3 = bq.Spectrum(counts=counts)
 
 counts = []
-with open(filename4, "r") as f:
+with open(filename4) as f:
     for line in f:
         tokens = line.strip().split(",")
         if len(tokens) == 2:
