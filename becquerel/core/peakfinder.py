@@ -268,6 +268,10 @@ class PeakFinder(object):
 
             # skip peaks that are too close to the edge
             if (xbin - h < 0) or (xbin + h > len(self.snr) - 1):
+                print(
+                    f"[Warning] Skipping peak @{xpeak}; too close to the edge of the spectrum",
+                    flush=True,
+                )
                 return
 
             d2 = (
