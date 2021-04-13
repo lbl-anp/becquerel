@@ -274,7 +274,6 @@ class PeakFinder(object):
                 raise PeakFinderError("Second derivative must be negative at peak")
             d2 *= -1
             fwhm = 2 * np.sqrt(self.snr[xbin] / d2)
-            self.fwhms.append(fwhm)
             # add the peak if it has a similar FWHM to the kernel's FWHM
             if self.fwhm_tol[0] * fwhm0 <= fwhm <= self.fwhm_tol[1] * fwhm0:
                 self.centroids.append(xpeak)
