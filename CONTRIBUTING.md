@@ -10,11 +10,16 @@ Please follow these guidelines when contributing to this project.
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 python setup.py develop
+
+pip install pre-commit
+pre-commit install
 ```
 
 (It is more convenient to use `develop` so that the code is soft-linked
 from the installation directory, and the installed package will always use
 the current version of code.)
+
+We use [`pre-commit`](https://pre-commit.com/) to automatically run black.
 
 ### Running the tests
 
