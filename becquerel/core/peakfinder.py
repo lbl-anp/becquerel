@@ -153,6 +153,12 @@ class PeakFinderError(Exception):
     pass
 
 
+class PeakFinderWarning(UserWarning):
+    """Warnings displayed during peak fitting."""
+
+    pass
+
+
 class PeakFinder(object):
     """Find peaks in a spectrum after convolving it with a kernel."""
 
@@ -268,6 +274,10 @@ class PeakFinder(object):
 
             # skip peaks that are too close to the edge
             if (xbin - h < 0) or (xbin + h > len(self.snr) - 1):
+                warnings.warn(
+                    f"Skipping peak @{xpeak}; too close to the edge of the spectrum",
+                    PeakFinderWarning,
+                )
                 return
 
             d2 = (
@@ -279,7 +289,6 @@ class PeakFinder(object):
                 raise PeakFinderError("Second derivative must be negative at peak")
             d2 *= -1
             fwhm = 2 * np.sqrt(self.snr[xbin] / d2)
-            self.fwhms.append(fwhm)
             # add the peak if it has a similar FWHM to the kernel's FWHM
             if self.fwhm_tol[0] * fwhm0 <= fwhm <= self.fwhm_tol[1] * fwhm0:
                 self.centroids.append(xpeak)
