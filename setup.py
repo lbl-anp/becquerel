@@ -51,6 +51,9 @@ with open("LICENSE.txt", "r") as fh:
 with open("requirements.txt", "r") as fh:
     REQUIREMENTS = fh.read()
 
+with open("requirements-dev.txt", "r") as fh:
+    REQUIREMENTS_DEV = [l.strip() for l in fh.readlines() if not l.startswith("-r")]
+
 # make long description from README and CONTRIBUTING
 # but move copyright notice to the end
 LONG_DESCRIPTION, COPYRIGHT = README.split("## Copyright Notice")
@@ -83,6 +86,6 @@ setup(
     python_requires=">=3.6",
     install_requires=[_f for _f in REQUIREMENTS.split("\n") if _f],
     setup_requires=["pytest-runner"],
-    tests_require=["pytest", "pytest-cov", "pytest-black"],
+    tests_require=REQUIREMENTS_DEV,
     license="Other/Proprietary License (see LICENSE.txt)",
 )
