@@ -14,12 +14,6 @@ class PeakFilterError(Exception):
     pass
 
 
-class PeakFindingWarning(UserWarning):
-    """Warnings displayed during peak fitting"""
-
-    pass
-
-
 class PeakFilter(object):
     """An energy-dependent kernel that can be convolved with a spectrum.
 
@@ -159,6 +153,12 @@ class PeakFinderError(Exception):
     pass
 
 
+class PeakFinderWarning(UserWarning):
+    """Warnings displayed during peak fitting."""
+
+    pass
+
+
 class PeakFinder(object):
     """Find peaks in a spectrum after convolving it with a kernel."""
 
@@ -276,7 +276,7 @@ class PeakFinder(object):
             if (xbin - h < 0) or (xbin + h > len(self.snr) - 1):
                 warnings.warn(
                     f"Skipping peak @{xpeak}; too close to the edge of the spectrum",
-                    PeakFindingWarning,
+                    PeakFinderWarning,
                 )
                 return
 
