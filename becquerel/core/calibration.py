@@ -666,6 +666,7 @@ class Calibration(object):
         expr += f"np.interp(x, {xp}, {yp})"
         return cls(expr, [], **attrs)
 
+    @property
     def fit_R_squared(self):
         """Calibration fit R^2 value.
 
@@ -683,6 +684,7 @@ class Calibration(object):
         # r-squared
         return 1 - (ss_res / ss_tot)
 
+    @property
     def fit_chi_squared(self):
         """Calibration fit chi^2 value."""
 
@@ -694,6 +696,16 @@ class Calibration(object):
         fit_y = self.fit_y[self.points_y > 0]
         points_y = self.points_y[self.points_y > 0]
         return np.sum((points_y - fit_y) ** 2 / points_y)
+
+    @property
+    def fit_degrees_of_freedom(self):
+        """Calibration fit number of degrees of freedom."""
+        return len(self.points_x) - len(self.params)
+
+    @property
+    def fit_reduced_chi_squared(self):
+        """Calibration fit reduced chi^2 value."""
+        return self.fit_chi_squared / self.fit_degrees_of_freedom
 
     def plot(self, ax=None):
         """Plot the calibration.
