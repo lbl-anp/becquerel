@@ -9,6 +9,7 @@ import blib2to3
 import numpy as np
 import scipy
 import scipy.optimize
+import matplotlib.pyplot as plt
 from .. import io
 
 CLIP_MAX = 1e6  # maximum value for a calibration function
@@ -693,3 +694,44 @@ class Calibration(object):
         fit_y = self.fit_y[self.points_y > 0]
         points_y = self.points_y[self.points_y > 0]
         return np.sum((points_y - fit_y) ** 2 / points_y)
+
+    def plot(self, ax=None):
+        """Plot the calibration.
+
+        Parameters
+        ----------
+        ax : np.ndarray of shape (2,), or matplotlib axes object, optional
+            Plot axes to use. If None, create new axes.
+        """
+
+        # Handle whether we have fit points or just a fit function
+        has_points = self.points_x.size > 0
+
+        if ax is None:
+            fig, ax = plt.subplots(1 + has_points, 1, sharex=True)
+
+        if has_points:
+            assert ax.shape == (2,)
+            ax_cal, ax_res = ax
+            xmin, xmax = self.points_x.min(), self.points_x.max()
+        else:
+            ax_cal = ax
+            xmin, xmax = 0, 3000
+
+        # Plot calibration curve
+        xx = np.linspace(xmin, xmax, 1000)
+        yy = self(xx)
+        ax_cal.plot(xx, yy, alpha=1.0 - 0.7 * has_points)
+        ax_cal.set_ylabel("$y$")
+
+        if has_points:
+            # Plot calibration points
+            ax_cal.scatter(self.points_x, self.points_y)
+
+            # Plot residuals
+            ax_res.scatter(self.points_x, self(self.points_x) - self.points_y)
+            ax_res.set_xlabel("$x$")
+            ax_res.set_ylabel("$y-x$")
+            ax_res.axhline(0, linestyle="dashed", linewidth=1, c="k")
+        else:
+            ax_cal.set_xlabel("x")
