@@ -319,7 +319,7 @@ class Calibration(object):
     detected).
     """
 
-    def __init__(self, expression: str, params, **attrs):
+    def __init__(self, expression: str, params, inv_expression=None, **attrs):
         """Create a calibration described by the expression and parameters.
 
         Parameters
@@ -332,11 +332,15 @@ class Calibration(object):
             like "p[0] + p[1] * x" or a code block.
         params : array_like
             List of floating point parameters for the calibration function
+        inv_expression : str
+            String giving the inverse of the function. If such an expression
+            is available in closed form, it will speed up calls to inverse().
         attrs : dict
             Other information to be stored with the calibration.
         """
         self.expression = expression
         self.params = params
+        self.inv_expression = inv_expression
         self.attrs = attrs
         self.set_points()
 
@@ -349,6 +353,11 @@ class Calibration(object):
             result += " " * 4 + line + "\n"
         result += "params:\n"
         result += " " * 4 + str(self.params) + "\n"
+        if self.inv_expression is not None:
+            result += "inv_expression:\n"
+            lines = str(self.inv_expression).split("\n")
+            for line in lines:
+                result += " " * 4 + line + "\n"
         if len(self.points_x) > 0:
             result += "calibration points (x):\n"
             result += " " * 4 + str(self.points_x) + "\n"
@@ -362,11 +371,16 @@ class Calibration(object):
     def __repr__(self):
         """A string representation of the calibration."""
         result = "Calibration("
-        result += repr(self.expression) + ", "
+        result += repr(self.expression)
+        result += ", "
         result += repr(self.params)
+        if self.inv_expression is not None:
+            result += ", "
+            result += repr(self.inv_expression)
         if len(self.attrs) > 0:
             for key in self.attrs:
-                result += f", {key}={repr(self.attrs[key])}"
+                result += ", "
+                result += f"{key}={repr(self.attrs[key])}"
         result += ")"
         return result
 
@@ -390,6 +404,18 @@ class Calibration(object):
             raise CalibrationError(f"Parameters must be a 1-D array: {params}")
         _validate_expression(self.expression, params=params)
         self._params = params
+
+    @property
+    def inv_expression(self):
+        return self._inv_expression
+
+    @inv_expression.setter
+    def inv_expression(self, inv_expression):
+        if inv_expression is None:
+            self._inv_expression = inv_expression
+        else:
+            inv_expression = _validate_expression(inv_expression)
+            self._inv_expression = inv_expression
 
     @property
     def attrs(self):
@@ -474,6 +500,53 @@ class Calibration(object):
         """
         return _eval_expression(self.expression, self.params, x)
 
+    def inverse(self, y, x0=None, **kwargs):
+        """Call the inverse of the calibration function.
+
+        Parameters
+        ----------
+        y : float or array_like
+            The value of the calibration function that we want to find the
+            argument for.
+        x0 : float or array_like
+            A guess of the inverse of the function. If inverse expression
+            does not exist, this can speed up the process of calculating
+            the inverse.
+        kwargs : dict
+            Kwargs to be sent to scipy.optimize.root_scalar.
+
+        Returns
+        -------
+        x : float or np.ndarray
+            The argument of the inverse of the calibration function at y.
+        """
+        if self.inv_expression is None:
+            bracket = [0, 1e5]  # TODO: replace later with function domain
+            if isinstance(y, float):
+                result = scipy.optimize.root_scalar(
+                    lambda _x: self(_x) - y, x0=x0, bracket=bracket, **kwargs
+                )
+                x = result.root
+            else:
+                y = np.asarray(y)
+                x = np.zeros_like(y)
+                if x0 is not None:
+                    x0 = np.asarray(x0)
+                for j in range(len(x)):
+                    if x0 is not None:
+                        x0j = x0[j]
+                    else:
+                        x0j = None
+                    result = scipy.optimize.root_scalar(
+                        lambda _x: self(_x) - y[j], x0=x0j, bracket=bracket, **kwargs
+                    )
+                    x[j] = result.root
+        else:
+            x = _eval_expression(self.inv_expression, self.params, y)
+        # perform a final check on the calculated inverse
+        assert np.allclose(self(x), y)
+        return x
+
     @classmethod
     def read(cls, name):
         """Read the class from HDF5.
@@ -493,12 +566,16 @@ class Calibration(object):
         if "expression" not in dsets:
             raise CalibrationError(f'Expected dataset "expression"')
         unexpected = set(dsets.keys()) - set(
-            ["expression", "params", "points_x", "points_y"]
+            ["expression", "params", "inv_expression", "points_x", "points_y"]
         )
         if len(unexpected) > 0:
             raise CalibrationError(f"Unexpected dataset names in file: {unexpected}")
         expr = io.h5.ensure_string(dsets["expression"])
-        cal = cls(expr, dsets["params"], **attrs)
+        if "inv_expression" in dsets:
+            inv_expr = io.h5.ensure_string(dsets["inv_expression"])
+        else:
+            inv_expr = None
+        cal = cls(expr, dsets["params"], inv_expression=inv_expr, **attrs)
         if "points_x" in dsets and "points_y" in dsets:
             cal.set_points(dsets["points_x"], dsets["points_y"])
         for key in attrs:
@@ -520,6 +597,8 @@ class Calibration(object):
             "points_x": self.points_x,
             "points_y": self.points_y,
         }
+        if self.inv_expression is not None:
+            dsets["inv_expression"] = self.inv_expression
         attrs = copy.deepcopy(self.attrs)
         io.h5.write_h5(name, dsets, attrs)
 

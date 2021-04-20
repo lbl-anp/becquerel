@@ -296,6 +296,56 @@ def test_calibration_fit_from_points(name, args):
     cal1.plot()
 
 
+def test_calibration_inverse():
+    """Test calibrations with and without inverse expression."""
+    fname = os.path.join(TEST_OUTPUTS, "calibration__inverse.h5")
+
+    # cal1 has an explicit inverse expression, cal2 does not
+    cal1 = Calibration(
+        "p[0] + p[1] * x", [5.0, 4.0], inv_expression="(x - p[0]) / p[1]"
+    )
+    cal2 = Calibration(cal1.expression, [5.0, 4.0])
+    assert cal1 == cal2
+
+    # evaluate the inverse for a scalar
+    y = 100.0
+    x1 = cal1.inverse(y)
+    x2 = cal2.inverse(y)
+    assert np.isclose(x1, (y - 5.0) / 4.0)
+    assert np.isclose(x1, x2)
+
+    # evaluate the inverse for a scalar with initial guess
+    x1 = cal1.inverse(y, x0=25.0)
+    x2 = cal2.inverse(y, x0=25.0)
+    assert np.isclose(x1, (y - 5.0) / 4.0)
+    assert np.isclose(x1, x2)
+
+    # evaluate the inverse for an array
+    y = np.linspace(20.0, 500.0, num=100)
+    x1 = cal1.inverse(y)
+    x2 = cal2.inverse(y)
+    assert np.allclose(x1, (y - 5.0) / 4.0)
+    assert np.allclose(x1, x2)
+
+    # evaluate the inverse for an array with initial guesses
+    y = np.linspace(20.0, 500.0, num=100)
+    x0 = np.arange(len(y)) / 4.0
+    x1 = cal1.inverse(y, x0=x0)
+    x2 = cal2.inverse(y, x0=x0)
+    assert np.allclose(x1, (y - 5.0) / 4.0)
+    assert np.allclose(x1, x2)
+
+    # test __str__() and __repr__()
+    str(cal1)
+    repr(cal1)
+
+    # test write() and read()
+    cal1.write(fname)
+    cal3 = Calibration.read(fname)
+    assert cal3.inv_expression is not None
+    assert cal3.inv_expression == cal1.inv_expression
+
+
 def test_calibration_misc():
     """Miscellaneous tests to increase test coverage."""
     cal1 = Calibration.from_linear([2.0, 3.0])
