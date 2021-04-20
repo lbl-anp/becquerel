@@ -668,19 +668,20 @@ class Calibration(object):
         # stackoverflow.com/questions/19189362
 
         # residual sum of squares
-        ss_res = np.sum((self.y_points - self.y_fit) ** 2)
+        ss_res = np.sum((self.points_y - self.fit_y) ** 2)
 
         # total sum of squares
-        ss_tot = np.sum((self.y_points - np.mean(self.y_points)) ** 2)
+        ss_tot = np.sum((self.points_y - np.mean(self.points_y)) ** 2)
 
         # r-squared
         return 1 - (ss_res / ss_tot)
 
     def fit_chi_squared(self):
-        if self.y_points.shape != self.y_fit.shape:
+        if self.points_y.shape != self.fit_y.shape:
             raise ValueError(
-                'y and y_fit must have same shapes:', self.y.shape, self.y_fit.shape
+                'y and fit_y must have same shapes:', self.y.shape, self.fit_y.shape
             )
-        self.y_fit = self.y_fit[self.y_points > 0]
-        self.y_points = self.y_points[self.y_points > 0]
-        return np.sum((self.y_points - self.y_fit)**2 / self.y_points)
+        # Mask out zeros
+        fit_y = self.fit_y[self.points_y > 0]
+        points_y = self.points_y[self.points_y > 0]
+        return np.sum((points_y - fit_y)**2 / points_y)
