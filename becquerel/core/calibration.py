@@ -408,6 +408,7 @@ class Calibration(object):
 
     @property
     def fit_y(self):
+        """Calibration evaluated at the input x values."""
         return self(self.points_x)
 
     def add_points(self, points_x=None, points_y=None):
@@ -665,7 +666,12 @@ class Calibration(object):
         return cls(expr, [], **attrs)
 
     def fit_R_squared(self):
-        # stackoverflow.com/questions/19189362
+        """Calibration fit R^2 value.
+
+        Reference
+        ---------
+        stackoverflow.com/questions/19189362
+        """
 
         # residual sum of squares
         ss_res = np.sum((self.points_y - self.fit_y) ** 2)
@@ -677,6 +683,8 @@ class Calibration(object):
         return 1 - (ss_res / ss_tot)
 
     def fit_chi_squared(self):
+        """Calibration fit chi^2 value."""
+
         if self.points_y.shape != self.fit_y.shape:
             raise ValueError(
                 'y and fit_y must have same shapes:', self.y.shape, self.fit_y.shape
