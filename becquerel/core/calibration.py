@@ -659,3 +659,28 @@ class Calibration(object):
         expr += f"assert np.all(x <= {points_x.max():.9e})\n"
         expr += f"np.interp(x, {xp}, {yp})"
         return cls(expr, [], **attrs)
+
+    @property
+    def fit_y(self):
+        return self(self.points_x)
+
+    def fit_R_squared(self):
+        # stackoverflow.com/questions/19189362
+
+        # residual sum of squares
+        ss_res = np.sum((self.y_points - self.y_fit) ** 2)
+
+        # total sum of squares
+        ss_tot = np.sum((self.y_points - np.mean(self.y_points)) ** 2)
+
+        # r-squared
+        return 1 - (ss_res / ss_tot)
+
+    def fit_chi_squared(self):
+        if self.y_points.shape != self.y_fit.shape:
+            raise ValueError(
+                'y and y_fit must have same shapes:', self.y.shape, self.y_fit.shape
+            )
+        self.y_fit = self.y_fit[self.y_points > 0]
+        self.y_points = self.y_points[self.y_points > 0]
+        return np.sum((self.y_points - self.y_fit)**2 / self.y_points)
