@@ -687,9 +687,9 @@ class Calibration(object):
 
         if self.points_y.shape != self.fit_y.shape:
             raise ValueError(
-                'y and fit_y must have same shapes:', self.y.shape, self.fit_y.shape
+                "y and fit_y must have same shapes:", self.y.shape, self.fit_y.shape
             )
         # Mask out zeros
         fit_y = self.fit_y[self.points_y > 0]
         points_y = self.points_y[self.points_y > 0]
-        return np.sum((points_y - fit_y)**2 / points_y)
+        return np.sum((points_y - fit_y) ** 2 / points_y)
