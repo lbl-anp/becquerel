@@ -289,6 +289,12 @@ def test_calibration_fit_from_points(name, args):
     plt.legend()
     plt.savefig(os.path.join(TEST_OUTPUTS, f"calibration__fit__{name}.png"))
 
+    # Test statistics
+    assert len(cal1.fit_y) > 0
+    assert cal1.fit_R_squared > 0.8  # note: this is flexible
+    assert 0 <= cal1.fit_reduced_chi_squared <= 10  # note: this is flexible
+    cal1.plot()
+
 
 def test_calibration_misc():
     """Miscellaneous tests to increase test coverage."""

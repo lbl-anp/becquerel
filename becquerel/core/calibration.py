@@ -9,6 +9,7 @@ import blib2to3
 import numpy as np
 import scipy
 import scipy.optimize
+import matplotlib.pyplot as plt
 from .. import io
 
 CLIP_MAX = 1e6  # maximum value for a calibration function
@@ -406,6 +407,11 @@ class Calibration(object):
     def points_y(self):
         return self._points_y
 
+    @property
+    def fit_y(self):
+        """Calibration evaluated at the input x values."""
+        return self(self.points_x)
+
     def add_points(self, points_x=None, points_y=None):
         """Add the calibration point values to the internal list.
 
@@ -659,3 +665,85 @@ class Calibration(object):
         expr += f"assert np.all(x <= {points_x.max():.9e})\n"
         expr += f"np.interp(x, {xp}, {yp})"
         return cls(expr, [], **attrs)
+
+    @property
+    def fit_R_squared(self):
+        """Calibration fit R^2 value.
+
+        Reference
+        ---------
+        stackoverflow.com/questions/19189362
+        """
+
+        # residual sum of squares
+        ss_res = np.sum((self.points_y - self.fit_y) ** 2)
+
+        # total sum of squares
+        ss_tot = np.sum((self.points_y - np.mean(self.points_y)) ** 2)
+
+        # r-squared
+        return 1 - (ss_res / ss_tot)
+
+    @property
+    def fit_chi_squared(self):
+        """Calibration fit chi^2 value."""
+
+        if self.points_y.shape != self.fit_y.shape:
+            raise ValueError(
+                "y and fit_y must have same shapes:", self.y.shape, self.fit_y.shape
+            )
+        # Mask out zeros
+        fit_y = self.fit_y[self.points_y > 0]
+        points_y = self.points_y[self.points_y > 0]
+        return np.sum((points_y - fit_y) ** 2 / points_y)
+
+    @property
+    def fit_degrees_of_freedom(self):
+        """Calibration fit number of degrees of freedom."""
+        return len(self.points_x) - len(self.params)
+
+    @property
+    def fit_reduced_chi_squared(self):
+        """Calibration fit reduced chi^2 value."""
+        return self.fit_chi_squared / self.fit_degrees_of_freedom
+
+    def plot(self, ax=None):
+        """Plot the calibration, and residuals if points exist.
+
+        Parameters
+        ----------
+        ax : np.ndarray of shape (2,), or matplotlib axes object, optional
+            Plot axes to use. If None, create new axes.
+        """
+
+        # Handle whether we have fit points or just a fit function
+        has_points = self.points_x.size > 0
+
+        if ax is None:
+            fig, ax = plt.subplots(1 + has_points, 1, sharex=True)
+
+        if has_points:
+            assert ax.shape == (2,)
+            ax_cal, ax_res = ax
+            xmin, xmax = self.points_x.min(), self.points_x.max()
+        else:
+            ax_cal = ax
+            xmin, xmax = 0, 3000
+
+        # Plot calibration curve
+        xx = np.linspace(xmin, xmax, 1000)
+        yy = self(xx)
+        ax_cal.plot(xx, yy, alpha=1.0 - 0.7 * has_points)
+        ax_cal.set_ylabel("$y$")
+
+        if has_points:
+            # Plot calibration points
+            ax_cal.scatter(self.points_x, self.points_y)
+
+            # Plot residuals
+            ax_res.scatter(self.points_x, self(self.points_x) - self.points_y)
+            ax_res.set_xlabel("$x$")
+            ax_res.set_ylabel("$y-x$")
+            ax_res.axhline(0, linestyle="dashed", linewidth=1, c="k")
+        else:
+            ax_cal.set_xlabel("x")
