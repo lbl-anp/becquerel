@@ -619,6 +619,36 @@ class Calibration(object):
         )
         self.params = params
 
+    def fit_points(
+        self, points_x, points_y, params0=None, include_origin=False, **kwargs
+    ):
+        """Set the calibration point values and fit them.
+
+        Convenience function for calling set_points() and fit().
+
+        Parameters
+        ----------
+        points_x : float or array_like
+            The x-value or values of calibration points
+        points_y : float or array_like
+            The y-value or values of calibration points
+        params0 : float or array_like
+            Initial guesses for the parameters. By default an array of ones
+            with its length inferred from the number of parameters
+            referenced in the expression.
+        include_origin : bool
+            Whether to add and fit with the point (0, 0) in addition to the
+            others.
+        kwargs : dict
+            Kwargs to pass to the minimization routine.
+        """
+        self.set_points(points_x=points_x, points_y=points_y)
+        if include_origin:
+            self.add_points(0, 0)
+        if params0 is not None:
+            self.params = params0
+        self.fit(**kwargs)
+
     @classmethod
     def from_points(
         cls,

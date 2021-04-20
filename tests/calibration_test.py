@@ -246,6 +246,8 @@ def test_calibration_fit_from_points(name, args):
     cal1 = make_calibration(name, args)
     cal1.add_points(points_x, points_y)
     cal1.fit()
+    # alternate: call fit_points() instead of add_points() and fit()
+    cal1.fit_points(points_x, points_y)
 
     # skip any instances that require a factory method
     if len(args) != 2:
