@@ -406,6 +406,10 @@ class Calibration(object):
     def points_y(self):
         return self._points_y
 
+    @property
+    def fit_y(self):
+        return self(self.points_x)
+
     def add_points(self, points_x=None, points_y=None):
         """Add the calibration point values to the internal list.
 
@@ -659,10 +663,6 @@ class Calibration(object):
         expr += f"assert np.all(x <= {points_x.max():.9e})\n"
         expr += f"np.interp(x, {xp}, {yp})"
         return cls(expr, [], **attrs)
-
-    @property
-    def fit_y(self):
-        return self(self.points_x)
 
     def fit_R_squared(self):
         # stackoverflow.com/questions/19189362
