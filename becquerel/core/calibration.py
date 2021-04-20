@@ -708,7 +708,7 @@ class Calibration(object):
         return self.fit_chi_squared / self.fit_degrees_of_freedom
 
     def plot(self, ax=None):
-        """Plot the calibration.
+        """Plot the calibration, and residuals if points exist.
 
         Parameters
         ----------
