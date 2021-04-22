@@ -132,7 +132,7 @@ def _is_count_like(y):
     y : array-like
         Y-data
     """
-    if np.any(y) < 0:
+    if np.any(y < 0):
         return False
     if not np.allclose(y.astype(np.int), y):
         return False
