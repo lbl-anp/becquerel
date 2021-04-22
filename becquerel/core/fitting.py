@@ -134,7 +134,7 @@ def _is_count_like(y):
     """
     if np.any(y < 0):
         return False
-    if not np.allclose(y.astype(np.int), y):
+    if not np.allclose(np.rint(y).astype(int), y):
         return False
     return True
 
