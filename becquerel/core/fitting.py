@@ -126,6 +126,7 @@ class ConstantModel(Model):
         c = (y[-1] / dx[-1] + y[0] / dx[0]) * 0.5
         return [
             ("{}c".format(self.prefix), "value", c),
+            ("{}c".format(self.prefix), "min", 0.0),
         ]
 
 
