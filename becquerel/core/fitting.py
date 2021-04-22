@@ -124,6 +124,21 @@ def _xy_left(y, x=None, num=4):
     return len(y) * 0.5, np.mean(y[:num])
 
 
+def _is_count_like(y):
+    """Determine whether data 'looks like' it could be counts.
+
+    Parameters
+    ----------
+    y : array-like
+        Y-data
+    """
+    if np.any(y) < 0:
+        return False
+    if not np.allclose(y.astype(np.int), y):
+        return False
+    return True
+
+
 class ConstantModel(Model):
     def __init__(self, *args, **kwargs):
         super(ConstantModel, self).__init__(constant, *args, **kwargs)
@@ -650,6 +665,11 @@ class Fitter(object):
 
         elif self.backend in ["iminuit", "minuit"]:
             # Translate a model from lmfit to minuit
+
+            if not _is_count_like(self.y_roi):
+                warnings.warn(
+                    "Passing non-count-like data to a Poisson loss fit", FittingWarning
+                )
 
             # Poisson loss given the model specified by args
             def model_loss(*args):
