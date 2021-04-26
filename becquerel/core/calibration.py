@@ -1,4 +1,4 @@
-"""Generic calibration class."""
+"""Class to describe a generic calibration function."""
 
 from abc import abstractmethod
 import ast
@@ -408,12 +408,11 @@ def _polynomial_expression(params):
 class Calibration(object):
     """Base class for calibrations.
 
-    A calibration is a nonnegative scalar function of a nonnegative scalar
-    argument, parametrized by an array of scalars. Examples of calibrations are
-    energy calibrations (mapping raw channels to energy in keV), energy
-    resolution calibrations (mapping energy to energy FWHM or sigma), and
-    efficiency calibrations (mapping energy to fraction of photopeak
-    detected).
+    A calibration is a scalar function of a scalar argument, parametrized by
+    an array of scalars. Examples of calibrations are energy calibrations
+    (mapping raw channels to energy in keV), energy resolution calibrations
+    (mapping energy to energy FWHM or sigma), and efficiency calibrations
+    (mapping energy to fraction of photopeak counts detected).
     """
 
     def __init__(
@@ -642,12 +641,12 @@ class Calibration(object):
         Parameters
         ----------
         x : float or array_like
-            The nonnegative scalar argument to the function (e.g., raw channel).
+            The scalar argument(s) to the function (e.g., raw channel).
 
         Returns
         -------
         calibration : float or np.ndarray
-            The value of the calibration function at x.
+            The value(s) of the calibration function at x.
         """
         return _eval_expression(
             self.expression, self.params, x, domain=self.domain, rng=self.range
