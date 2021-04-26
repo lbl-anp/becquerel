@@ -36,7 +36,7 @@ def _validate_domain_range(domain, rng):
         The domain of the function. Will raise an error if the independent
         variable is outside this interval. Must be finite.
         By default DEFAULT_DOMAIN.
-    rnge : array_like
+    rng : array_like
         The range of the function. Expression outputs will be clipped to this
         interval. Must be finite. By default DEFAULT_RANGE.
     """
@@ -86,7 +86,7 @@ def _eval_expression(
         The domain of the function. Will raise an error if the independent
         variable is outside this interval. Must be finite. By default
         DEFAULT_DOMAIN.
-    rnge : array_like
+    rng : array_like
         The range of the function. Expression outputs will be clipped to this
         interval. Must be finite. By default DEFAULT_RANGE.
 
@@ -167,7 +167,7 @@ def _validate_expression(
     domain : array_like
         The domain of the function. Will draw test values from inside this
         interval. Must be finite. By default DEFAULT_DOMAIN.
-    rnge : array_like
+    rng : array_like
         The range of the function. Expression outputs will be clipped to this
         interval. Must be finite. By default DEFAULT_RANGE.
 
@@ -270,7 +270,7 @@ def _fit_expression(
         The domain of the function. Will raise an error if the independent
         variable is outside this interval. Must be finite. By default
         DEFAULT_DOMAIN.
-    rnge : array_like
+    rng : array_like
         The range of the function. Expression outputs will be clipped to this
         interval. Must be finite. By default DEFAULT_RANGE.
     kwargs : dict
@@ -341,7 +341,7 @@ def _check_points(points_x, points_y, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE):
         The domain of the function. Will raise an error if the independent
         variable is outside this interval. Must be finite. By default
         DEFAULT_DOMAIN.
-    rnge : array_like
+    rng : array_like
         The range of the function. Expression outputs will be clipped to this
         interval. Must be finite. By default DEFAULT_RANGE.
 
@@ -443,7 +443,7 @@ class Calibration(object):
             The domain of the function. Will raise an error if the independent
             variable is outside this interval. Must be finite. By default
             DEFAULT_DOMAIN.
-        rnge : array_like
+        rng : array_like
             The range of the function. Expression outputs will be clipped to
             this interval. Must be finite. By default DEFAULT_RANGE.
         attrs : dict
@@ -868,7 +868,7 @@ class Calibration(object):
             The domain of the function. Will raise an error if the independent
             variable is outside this interval. Must be finite. By default
             DEFAULT_DOMAIN.
-        rnge : array_like
+        rng : array_like
             The range of the function. Expression outputs will be clipped to
             this interval. Must be finite. By default DEFAULT_RANGE.
         fit_kwargs : dict
