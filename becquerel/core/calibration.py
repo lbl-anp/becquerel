@@ -705,7 +705,8 @@ class Calibration(object):
                 rng=self.domain,
             )
         # perform a final check on the calculated inverse
-        assert np.allclose(self(x), y)
+        if not np.allclose(self(x), y):
+            raise CalibrationError(f"Inverse function did not result in matching y values:\n{self(x)}\n{y}")
         return x
 
     @classmethod
