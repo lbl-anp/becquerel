@@ -754,7 +754,7 @@ class Calibration(object):
             dsets["params"],
             inv_expression=inv_expr,
             domain=dsets["domain"],
-            range=dsets["range"],
+            rng=dsets["range"],
             **attrs,
         )
         if "points_x" in dsets and "points_y" in dsets:
