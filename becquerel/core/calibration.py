@@ -26,7 +26,7 @@ class CalibrationError(Exception):
     pass
 
 
-def _eval_expression(expression, params, x):
+def _eval_expression(expression, params, x, ind_var="x"):
     """Evaluate the expression at x.
 
     Parameters
@@ -37,6 +37,8 @@ def _eval_expression(expression, params, x):
         List of floating point parameters for the calibration function
     x : float or array_like
         The argument at which to evaluate the expression.
+    ind_var : str
+        The symbol of the independent variable. Default "x", "y" also allowed.
 
     Returns
     -------
@@ -46,8 +48,10 @@ def _eval_expression(expression, params, x):
     x = np.asarray(x)
     if not np.all(x >= 0):
         raise CalibrationError(f"x must be >= 0: {x}")
+    if ind_var not in ["x", "y"]:
+        raise CalibrationError(f"Independent variable {ind_var} must be 'x' or 'y'")
     safe_eval.symtable["p"] = params
-    safe_eval.symtable["x"] = x
+    safe_eval.symtable[ind_var] = x
     y = safe_eval(expression)
     if len(safe_eval.error) > 0:
         raise CalibrationError(
@@ -84,7 +88,7 @@ def _param_indices(expression):
     return param_indices
 
 
-def _validate_expression(expression, params=None):
+def _validate_expression(expression, params=None, ind_var="x"):
     """Perform checks on the expression.
 
     The expression must explicitly call each parameter as "p[j]", where
@@ -103,6 +107,8 @@ def _validate_expression(expression, params=None):
         List of floating point parameters for the calibration function.
         The expression will be checked whether it includes all of
         the parameters.
+    ind_var : str
+        The symbol of the independent variable. Default "x", "y" also allowed.
 
     Returns
     -------
@@ -117,15 +123,17 @@ def _validate_expression(expression, params=None):
             f"Error while running black on expression:\n{expression}"
         )
 
-    # make sure "x" appears in the formula
-    x_appears = False
+    # make sure `ind_var` appears in the formula
+    if ind_var not in ["x", "y"]:
+        raise CalibrationError(f"Independent variable {ind_var} must be 'x' or 'y'")
+    ind_var_appears = False
     for node in ast.walk(ast.parse(expression)):
         if type(node) is ast.Name:
-            if node.id == "x":
-                x_appears = True
-    if not x_appears:
+            if node.id == ind_var:
+                ind_var_appears = True
+    if not ind_var_appears:
         raise CalibrationError(
-            f'Independent variable "x" must appear in the expression:\n{expression}'
+            f'Independent variable "{ind_var}" must appear in the expression:\n{expression}'
         )
 
     # make sure each parameter appears at least once
@@ -153,13 +161,13 @@ def _validate_expression(expression, params=None):
     # make sure the expression can be evaluated
     if params is not None:
         try:
-            y = _eval_expression(expression, params, 200.0)
+            y = _eval_expression(expression, params, 200.0, ind_var=ind_var)
         except CalibrationError:
             raise CalibrationError(
                 f"Cannot evaluate expression for a float:\n{expression}\n{safe_eval.symtable['x']}"
             )
         try:
-            y = _eval_expression(expression, params, [200.0, 500.0])
+            y = _eval_expression(expression, params, [200.0, 500.0], ind_var=ind_var)
         except CalibrationError:
             raise CalibrationError(
                 f"Cannot evaluate expression for an array:\n{expression}\n{safe_eval.symtable['x']}"
@@ -414,7 +422,7 @@ class Calibration(object):
         if inv_expression is None:
             self._inv_expression = inv_expression
         else:
-            inv_expression = _validate_expression(inv_expression)
+            inv_expression = _validate_expression(inv_expression, ind_var="y")
             self._inv_expression = inv_expression
 
     @property
@@ -542,7 +550,7 @@ class Calibration(object):
                     )
                     x[j] = result.root
         else:
-            x = _eval_expression(self.inv_expression, self.params, y)
+            x = _eval_expression(self.inv_expression, self.params, y, ind_var="y")
         # perform a final check on the calculated inverse
         assert np.allclose(self(x), y)
         return x

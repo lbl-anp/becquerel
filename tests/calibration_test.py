@@ -304,7 +304,7 @@ def test_calibration_inverse():
 
     # cal1 has an explicit inverse expression, cal2 does not
     cal1 = Calibration(
-        "p[0] + p[1] * x", [5.0, 4.0], inv_expression="(x - p[0]) / p[1]"
+        "p[0] + p[1] * x", [5.0, 4.0], inv_expression="(y - p[0]) / p[1]"
     )
     cal2 = Calibration(cal1.expression, [5.0, 4.0])
     assert cal1 == cal2
