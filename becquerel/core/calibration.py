@@ -142,7 +142,7 @@ def _param_indices(expression):
 
 
 def _validate_expression(
-    expression, params=None, ind_var="x", domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE
+    expression, params=None, ind_var="x", domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE, n_eval=100
 ):
     """Perform checks on the expression.
 
@@ -170,6 +170,8 @@ def _validate_expression(
     rng : array_like
         The range of the function. Expression outputs will be clipped to this
         interval. Must be finite. By default DEFAULT_RANGE.
+    n_eval : int
+        Number of points in the domain the evaluate at for testing.
 
     Returns
     -------
@@ -223,19 +225,19 @@ def _validate_expression(
 
     # make sure the expression can be evaluated
     if params is not None:
-        x_val = np.random.uniform(domain[0], domain[1])
+        x_arr = np.linspace(domain[0], domain[1], num=n_eval)
+        for x_val in x_arr:
+            try:
+                y = _eval_expression(expression, params, x_val, ind_var=ind_var, domain=domain, rng=rng)
+            except CalibrationError:
+                raise CalibrationError(
+                    f"Cannot evaluate expression for float {ind_var} = {x_val}:\n{expression}\n{safe_eval.symtable['x']}"
+                )
         try:
-            y = _eval_expression(expression, params, x_val, ind_var=ind_var)
+            y = _eval_expression(expression, params, x_arr, ind_var=ind_var, domain=domain, rng=rng)
         except CalibrationError:
             raise CalibrationError(
-                f"Cannot evaluate expression for a float:\n{expression}\n{safe_eval.symtable['x']}"
-            )
-        x_arr = np.random.uniform(domain[0], domain[1], size=5)
-        try:
-            y = _eval_expression(expression, params, x_arr, ind_var=ind_var)
-        except CalibrationError:
-            raise CalibrationError(
-                f"Cannot evaluate expression for an array:\n{expression}\n{safe_eval.symtable['x']}"
+                f"Cannot evaluate expression for array {ind_var} = {x_arr}:\n{expression}\n{safe_eval.symtable['x']}"
             )
 
     return expression.strip()
