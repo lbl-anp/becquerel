@@ -294,7 +294,7 @@ def _fit_expression(
         raise CalibrationError(
             f"Starting parameters have length {len(params0)}, but expression requires {n_params} parameters"
         )
-    expression = _validate_expression(expression, params=params0)
+    expression = _validate_expression(expression, params=params0, domain=domain, rng=rng)
 
     # check that we have enough points
     if len(points_x) < n_params:
@@ -308,7 +308,7 @@ def _fit_expression(
 
     # define the residuals for least squares
     def residuals(p, xs, ys):
-        fs = _eval_expression(expression, p, xs)
+        fs = _eval_expression(expression, p, xs, domain=domain, rng=rng)
         return ys - fs
 
     # perform the fit
