@@ -302,12 +302,12 @@ def test_calibration_fit_from_points(name, args):
         assert cal2 == cal1
 
     plt.figure()
-    if "np.interp" in cal1.expression:
+    if "interp" in cal1.expression:
         plt.title("Interpolated")
     else:
         plt.title(cal1.expression)
-    x_fine1 = np.linspace(min(points_x), max(points_x), num=500)
-    x_fine3 = np.linspace(0, max(points_x), num=500)
+    x_fine1 = np.linspace(0, 3000, num=500)
+    x_fine3 = np.linspace(0, 3000, num=500)
     plt.plot(
         x_fine1,
         cal1(x_fine1),
@@ -421,6 +421,13 @@ def test_calibration_misc():
         Calibration.from_sqrt_polynomial([2.0])
     Calibration.from_sqrt_polynomial([2.0, 3.0])
     Calibration.from_sqrt_polynomial([2.0, 3.0, 4.0])
+
+
+def test_calibration_interpolation():
+    """Test Calibration.from_interpolation."""
+    Calibration.from_interpolation(points_x[:2], points_y[:2])
+    with pytest.raises(CalibrationError):
+        Calibration.from_interpolation(points_x[:1], points_y[:1])
 
 
 def test_calibration_read_failures():

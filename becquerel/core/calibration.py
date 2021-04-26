@@ -974,9 +974,7 @@ class Calibration(object):
         xp = np.array2string(points_x, precision=9, separator=", ")
         yp = np.array2string(points_y, precision=9, separator=", ")
         expr = ""
-        expr += f"assert np.all(x >= {domain[0]:.9e})\n"
-        expr += f"assert np.all(x <= {domain[1]:.9e})\n"
-        expr += f"np.interp(x, {xp}, {yp})"
+        expr += f"scipy.interpolate.interp1d({xp}, {yp}, fill_value='extrapolate')(x)"
         return cls(expr, [], domain=domain, rng=rng, **attrs)
 
     @property
