@@ -55,6 +55,9 @@ def test_eval_expression():
     # unknown symbol
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * x + z", [1.0, 5.0], 2.0)
+    # z cannot be ind_var
+    with pytest.raises(CalibrationError):
+        _eval_expression("p[0] + p[1] * z", [1.0, 5.0], 2.0, ind_var="z")
     # unknown function
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0], 2.0)
@@ -99,9 +102,17 @@ def test_validate_expression():
     # parentheses not matching
     with pytest.raises(CalibrationError):
         _validate_expression("p[0] + p[1] * x]")
-    # "x" must appear in the formula
+    # "x" must appear in the formula by default
     with pytest.raises(CalibrationError):
         _validate_expression("p[0] + p[1]")
+    # y okay as ind_var
+    _validate_expression("p[0] + p[1] * y", ind_var="y")
+    # y okay as ind_var but must appear in formula
+    with pytest.raises(CalibrationError):
+        _validate_expression("p[0] + p[1] * x", ind_var="y")
+    # z cannot be ind_var
+    with pytest.raises(CalibrationError):
+        _validate_expression("p[0] + p[1] * z", ind_var="z")
     # having no parameters is supported
     assert _validate_expression("1.0 + 5.0 * x")
     assert _validate_expression("1.0 + 5.0 * x", params=[])
@@ -366,6 +377,12 @@ def test_calibration_inverse():
     x2 = cal2.inverse(y, x0=x0)
     assert np.allclose(x1, (y - 5.0) / 4.0)
     assert np.allclose(x1, x2)
+
+    # evaluate the inverse for a value outside the range
+    with pytest.raises(CalibrationError):
+        cal1.inverse(-10.0)
+    with pytest.raises(CalibrationError):
+        cal1.inverse(2e6)
 
     # test __str__() and __repr__()
     str(cal1)
