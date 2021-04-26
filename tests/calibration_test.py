@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from becquerel.io import h5
 from becquerel.core.calibration import (
+    _validate_domain_range,
     _eval_expression,
     _param_indices,
     _validate_expression,
@@ -14,6 +15,33 @@ from becquerel.core.calibration import (
 )
 import pytest
 from h5_tools_test import TEST_OUTPUTS
+
+
+def test_validate_domain_range():
+    """Test calibration._validate_domain_range."""
+    # arguments must be length-two iterables
+    with pytest.raises(CalibrationError):
+        _validate_domain_range(None, [0, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1], None)
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1, 2], [0, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1], [0, 1, 2])
+    # ranges must be finite
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([-np.inf, 1], [0, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, np.inf], [0, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1], [-np.inf, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1], [0, np.inf])
+    # ranges must be in ascending order
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([1, 0], [0, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1], [1, 0])
 
 
 def test_eval_expression():
@@ -30,9 +58,11 @@ def test_eval_expression():
     # unknown function
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0], 2.0)
-    # negative argument
+    # argument outside of domain
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * x", [1.0, 5.0], -2.0)
+    with pytest.raises(CalibrationError):
+        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2e6)
     # result is a complex number
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * x", [1j, 5.0], 2.0)
@@ -382,27 +412,22 @@ def test_calibration_read_failures():
     cal = Calibration.from_linear([2.0, 3.0])
     cal.add_points([0, 1000, 2000], [0, 1000, 2000])
 
-    # remove the params from the file
-    cal.write(fname)
-    with h5.open_h5(fname, "r+") as f:
-        del f["params"]
-    with pytest.raises(CalibrationError):
+    # remove datasets from the file and show that read raises an error
+    for dset_name in ["params", "expression", "domain", "range"]:
+        cal.write(fname)
+        with h5.open_h5(fname, "r+") as f:
+            del f[dset_name]
+        with pytest.raises(CalibrationError):
+            Calibration.read(fname)
+
+    # remove datasets from the file and show that read does *not* raise error
+    for dset_name in ["points_x", "points_y"]:
+        cal.write(fname)
+        with h5.open_h5(fname, "r+") as f:
+            del f[dset_name]
         Calibration.read(fname)
 
-    # remove the expression from the file
-    cal.write(fname)
-    with h5.open_h5(fname, "r+") as f:
-        del f["expression"]
-    with pytest.raises(CalibrationError):
-        Calibration.read(fname)
-
-    # remove points_x from the file
-    cal.write(fname)
-    with h5.open_h5(fname, "r+") as f:
-        del f["points_x"]
-    Calibration.read(fname)
-
-    # add unexpected dataset to the file
+    # add unexpected dataset to the file and show that read raises an error
     cal.write(fname)
     with h5.open_h5(fname, "r+") as f:
         f.create_dataset("unexpected", data=[0, 1, 2])

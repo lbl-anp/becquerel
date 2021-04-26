@@ -12,7 +12,8 @@ import scipy.optimize
 import matplotlib.pyplot as plt
 from .. import io
 
-CLIP_MAX = 1e6  # maximum value for a calibration function
+DEFAULT_DOMAIN = (0, 1e5)
+DEFAULT_RANGE = (0, 1e5)
 
 safe_eval = asteval.Interpreter(use_numpy=False)
 safe_eval.symtable["np"] = np
@@ -26,7 +27,49 @@ class CalibrationError(Exception):
     pass
 
 
-def _eval_expression(expression, params, x, ind_var="x"):
+def _validate_domain_range(domain, rng):
+    """Validate that domain and range contain finite values.
+
+    Parameters
+    ----------
+    domain : array_like
+        The domain of the function. Will raise an error if the independent
+        variable is outside this interval. Must be finite.
+        By default DEFAULT_DOMAIN.
+    rnge : array_like
+        The range of the function. Expression outputs will be clipped to this
+        interval. Must be finite. By default DEFAULT_RANGE.
+    """
+    # must be length-2 iterables
+    try:
+        len(domain)
+    except TypeError:
+        raise CalibrationError(f"Domain must be length-2 iterable: {domain}")
+    domain = np.asarray(domain)
+    if not (len(domain) == 2 and domain.ndim == 1):
+        raise CalibrationError(f"Domain must be length-2 iterable: {domain}")
+    try:
+        len(rng)
+    except TypeError:
+        raise CalibrationError(f"Range must be length-2 iterable: {rng}")
+    rng = np.asarray(rng)
+    if not (len(rng) == 2 and rng.ndim == 1):
+        raise CalibrationError(f"Range must contain two values: {rng}")
+    # must contain finite values
+    if not np.isfinite(domain[0]) or not np.isfinite(domain[1]):
+        raise CalibrationError(f"Domain must contain finite values: {domain}")
+    if not np.isfinite(rng[0]) or not np.isfinite(rng[1]):
+        raise CalibrationError(f"Range must contain finite values: {rng}")
+    # must be in ascending order
+    if not (domain[1] > domain[0]):
+        raise CalibrationError(f"Domain must contain ascending values: {domain}")
+    if not (rng[1] > rng[0]):
+        raise CalibrationError(f"Range must contain ascending values: {rng}")
+
+
+def _eval_expression(
+    expression, params, x, ind_var="x", domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE
+):
     """Evaluate the expression at x.
 
     Parameters
@@ -39,15 +82,25 @@ def _eval_expression(expression, params, x, ind_var="x"):
         The argument at which to evaluate the expression.
     ind_var : str
         The symbol of the independent variable. Default "x", "y" also allowed.
+    domain : array_like
+        The domain of the function. Will raise an error if the independent
+        variable is outside this interval. Must be finite. By default
+        DEFAULT_DOMAIN.
+    rnge : array_like
+        The range of the function. Expression outputs will be clipped to this
+        interval. Must be finite. By default DEFAULT_RANGE.
 
     Returns
     -------
     y : float or array_like
         Result of evaluating the expression for x.
     """
+    _validate_domain_range(domain, rng)
     x = np.asarray(x)
-    if not np.all(x >= 0):
-        raise CalibrationError(f"x must be >= 0: {x}")
+    if not np.all(x >= domain[0]):
+        raise CalibrationError(f"{ind_var} must be >= {domain[0]}: {x}")
+    if not np.all(x <= domain[1]):
+        raise CalibrationError(f"{ind_var} must be <= {domain[1]}: {x}")
     if ind_var not in ["x", "y"]:
         raise CalibrationError(f"Independent variable {ind_var} must be 'x' or 'y'")
     safe_eval.symtable["p"] = params
@@ -60,8 +113,8 @@ def _eval_expression(expression, params, x, ind_var="x"):
         )
     if not np.all(np.isreal(y)):
         raise CalibrationError(f"Function evaluation resulted in complex values: {y}")
-    # clip values of y
-    y = np.clip(y, 0, CLIP_MAX)
+    # clip values of y to the range
+    y = np.clip(y, rng[0], rng[1])
     return y
 
 
@@ -88,7 +141,9 @@ def _param_indices(expression):
     return param_indices
 
 
-def _validate_expression(expression, params=None, ind_var="x"):
+def _validate_expression(
+    expression, params=None, ind_var="x", domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE
+):
     """Perform checks on the expression.
 
     The expression must explicitly call each parameter as "p[j]", where
@@ -109,12 +164,20 @@ def _validate_expression(expression, params=None, ind_var="x"):
         the parameters.
     ind_var : str
         The symbol of the independent variable. Default "x", "y" also allowed.
+    domain : array_like
+        The domain of the function. Will draw test values from inside this
+        interval. Must be finite. By default DEFAULT_DOMAIN.
+    rnge : array_like
+        The range of the function. Expression outputs will be clipped to this
+        interval. Must be finite. By default DEFAULT_RANGE.
 
     Returns
     -------
     expression : string
         Expression having been validated and reformatted using black.
     """
+    _validate_domain_range(domain, rng)
+
     # apply black formatting for consistency and error checking
     try:
         expression = black.format_str(expression, mode=black.FileMode())
@@ -160,14 +223,16 @@ def _validate_expression(expression, params=None, ind_var="x"):
 
     # make sure the expression can be evaluated
     if params is not None:
+        x_val = np.random.uniform(domain[0], domain[1])
         try:
-            y = _eval_expression(expression, params, 200.0, ind_var=ind_var)
+            y = _eval_expression(expression, params, x_val, ind_var=ind_var)
         except CalibrationError:
             raise CalibrationError(
                 f"Cannot evaluate expression for a float:\n{expression}\n{safe_eval.symtable['x']}"
             )
+        x_arr = np.random.uniform(domain[0], domain[1], size=5)
         try:
-            y = _eval_expression(expression, params, [200.0, 500.0], ind_var=ind_var)
+            y = _eval_expression(expression, params, x_arr, ind_var=ind_var)
         except CalibrationError:
             raise CalibrationError(
                 f"Cannot evaluate expression for an array:\n{expression}\n{safe_eval.symtable['x']}"
@@ -176,7 +241,15 @@ def _validate_expression(expression, params=None, ind_var="x"):
     return expression.strip()
 
 
-def _fit_expression(expression, points_x, points_y, params0=None, **kwargs):
+def _fit_expression(
+    expression,
+    points_x,
+    points_y,
+    params0=None,
+    domain=DEFAULT_DOMAIN,
+    rng=DEFAULT_RANGE,
+    **kwargs,
+):
     """Fit the expression using the calibration points.
 
     Performs least squares via scipy.optimize.least_squares.
@@ -193,6 +266,13 @@ def _fit_expression(expression, points_x, points_y, params0=None, **kwargs):
         Initial guesses for the parameters. By default an array of ones
         with its length inferred from the number of parameters
         referenced in the expression.
+    domain : array_like
+        The domain of the function. Will raise an error if the independent
+        variable is outside this interval. Must be finite. By default
+        DEFAULT_DOMAIN.
+    rnge : array_like
+        The range of the function. Expression outputs will be clipped to this
+        interval. Must be finite. By default DEFAULT_RANGE.
     kwargs : dict
         Kwargs to pass to the minimization routine.
 
@@ -201,8 +281,8 @@ def _fit_expression(expression, points_x, points_y, params0=None, **kwargs):
     params : array_like
         Parameters that result from the fit.
     """
-    expression = _validate_expression(expression)
-    points_x, points_y = _check_points(points_x, points_y)
+    expression = _validate_expression(expression, domain=domain, rng=rng)
+    points_x, points_y = _check_points(points_x, points_y, domain=domain, rng=rng)
 
     # check that we have the expected number of parameters
     n_params = len(_param_indices(expression))
@@ -244,12 +324,12 @@ def _fit_expression(expression, points_x, points_y, params0=None, **kwargs):
     return params
 
 
-def _check_points(points_x, points_y):
+def _check_points(points_x, points_y, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE):
     """Perform various checks on the sets of calibration points.
 
     Ensure the arrays of points are both 1-D and have the same length,
-    that all values are >= 0, and then put them in the order of ascending
-    x values.
+    that all values are >= 0, that they fall within the domain and range,
+    and then put them in the order of ascending x values.
 
     Parameters
     ----------
@@ -257,6 +337,13 @@ def _check_points(points_x, points_y):
         The x-value or values of calibration points
     points_y : float or array_like
         The y-value or values of calibration points
+    domain : array_like
+        The domain of the function. Will raise an error if the independent
+        variable is outside this interval. Must be finite. By default
+        DEFAULT_DOMAIN.
+    rnge : array_like
+        The range of the function. Expression outputs will be clipped to this
+        interval. Must be finite. By default DEFAULT_RANGE.
 
     Returns
     -------
@@ -283,11 +370,13 @@ def _check_points(points_x, points_y):
     i = np.argsort(points_x)
     points_x = points_x[i]
     points_y = points_y[i]
-    # check all values are positive
-    if not np.all(points_x >= 0):
-        raise CalibrationError(f"All calibration x points must be >= 0: {points_x}")
-    if not np.all(points_y >= 0):
-        raise CalibrationError(f"All calibration y points must be >= 0: {points_y}")
+    # check domain and range
+    if np.any((points_x < domain[0]) | (domain[1] < points_x)):
+        raise CalibrationError(
+            f"Some x points are outside of domain {domain}: {points_x}"
+        )
+    if np.any((points_y < rng[0]) | (rng[1] < points_y)):
+        raise CalibrationError(f"Some y points are outside of range {rng}: {points_y}")
     return points_x, points_y
 
 
@@ -327,7 +416,15 @@ class Calibration(object):
     detected).
     """
 
-    def __init__(self, expression: str, params, inv_expression=None, **attrs):
+    def __init__(
+        self,
+        expression: str,
+        params,
+        inv_expression=None,
+        domain=DEFAULT_DOMAIN,
+        rng=DEFAULT_RANGE,
+        **attrs,
+    ):
         """Create a calibration described by the expression and parameters.
 
         Parameters
@@ -343,12 +440,21 @@ class Calibration(object):
         inv_expression : str
             String giving the inverse of the function. If such an expression
             is available in closed form, it will speed up calls to inverse().
+        domain : array_like
+            The domain of the function. Will raise an error if the independent
+            variable is outside this interval. Must be finite. By default
+            DEFAULT_DOMAIN.
+        rnge : array_like
+            The range of the function. Expression outputs will be clipped to
+            this interval. Must be finite. By default DEFAULT_RANGE.
         attrs : dict
             Other information to be stored with the calibration.
         """
         self.expression = expression
         self.params = params
         self.inv_expression = inv_expression
+        self.domain = domain
+        self.range = rng
         self.attrs = attrs
         self.set_points()
 
@@ -366,6 +472,10 @@ class Calibration(object):
             lines = str(self.inv_expression).split("\n")
             for line in lines:
                 result += " " * 4 + line + "\n"
+        result += "domain:\n"
+        result += " " * 4 + str(self.domain) + "\n"
+        result += "range:\n"
+        result += " " * 4 + str(self.range) + "\n"
         if len(self.points_x) > 0:
             result += "calibration points (x):\n"
             result += " " * 4 + str(self.points_x) + "\n"
@@ -385,6 +495,10 @@ class Calibration(object):
         if self.inv_expression is not None:
             result += ", "
             result += repr(self.inv_expression)
+        result += ", "
+        result += repr(self.domain)
+        result += ", "
+        result += repr(self.range)
         if len(self.attrs) > 0:
             for key in self.attrs:
                 result += ", "
@@ -426,6 +540,24 @@ class Calibration(object):
             self._inv_expression = inv_expression
 
     @property
+    def domain(self):
+        return self._domain
+
+    @domain.setter
+    def domain(self, domain):
+        _validate_domain_range(domain, (0, 1))
+        self._domain = tuple(domain)
+
+    @property
+    def range(self):
+        return self._range
+
+    @range.setter
+    def range(self, rng):
+        _validate_domain_range((0, 1), rng)
+        self._range = tuple(rng)
+
+    @property
     def attrs(self):
         return self._attrs
 
@@ -456,10 +588,14 @@ class Calibration(object):
         points_y : float or array_like
             The y-value or values of calibration points
         """
-        points_x, points_y = _check_points(points_x, points_y)
+        points_x, points_y = _check_points(
+            points_x, points_y, domain=self.domain, rng=self.range
+        )
         self._points_x = np.append(self._points_x, points_x)
         self._points_y = np.append(self._points_y, points_y)
-        self._points_x, self._points_y = _check_points(self._points_x, self._points_y)
+        self._points_x, self._points_y = _check_points(
+            self._points_x, self._points_y, domain=self.domain, rng=self.range
+        )
 
     def set_points(self, points_x=None, points_y=None):
         """Remove existing points and set the calibration point values.
@@ -489,7 +625,14 @@ class Calibration(object):
 
     def copy(self):
         """Make a complete copy of the calibration."""
-        cal = Calibration(self.expression, self.params, **self.attrs)
+        cal = Calibration(
+            self.expression,
+            self.params,
+            inv_expression=self.inv_expression,
+            domain=self.domain,
+            rng=self.range,
+            **self.attrs,
+        )
         cal.set_points(cal.points_x, cal.points_y)
         return cal
 
@@ -506,7 +649,9 @@ class Calibration(object):
         calibration : float or np.ndarray
             The value of the calibration function at x.
         """
-        return _eval_expression(self.expression, self.params, x)
+        return _eval_expression(
+            self.expression, self.params, x, domain=self.domain, rng=self.range
+        )
 
     def inverse(self, y, x0=None, **kwargs):
         """Call the inverse of the calibration function.
@@ -528,8 +673,10 @@ class Calibration(object):
         x : float or np.ndarray
             The argument of the inverse of the calibration function at y.
         """
+        if np.any((y < self.range[0]) | (self.range[1] < y)):
+            raise CalibrationError(f"Value {y} is outside the range {self.range}")
         if self.inv_expression is None:
-            bracket = [0, 1e5]  # TODO: replace later with function domain
+            bracket = self.domain
             if isinstance(y, float):
                 result = scipy.optimize.root_scalar(
                     lambda _x: self(_x) - y, x0=x0, bracket=bracket, **kwargs
@@ -550,7 +697,14 @@ class Calibration(object):
                     )
                     x[j] = result.root
         else:
-            x = _eval_expression(self.inv_expression, self.params, y, ind_var="y")
+            x = _eval_expression(
+                self.inv_expression,
+                self.params,
+                y,
+                ind_var="y",
+                domain=self.range,  # domain and range are swapped for inverse
+                rng=self.domain,
+            )
         # perform a final check on the calculated inverse
         assert np.allclose(self(x), y)
         return x
@@ -570,11 +724,23 @@ class Calibration(object):
         """
         dsets, attrs, skipped = io.h5.read_h5(name)
         if "params" not in dsets:
-            raise CalibrationError(f'Expected dataset "params"')
+            raise CalibrationError('Expected dataset "params"')
         if "expression" not in dsets:
-            raise CalibrationError(f'Expected dataset "expression"')
+            raise CalibrationError('Expected dataset "expression"')
+        if "domain" not in dsets:
+            raise CalibrationError('Expected dataset "domain"')
+        if "range" not in dsets:
+            raise CalibrationError('Expected dataset "range"')
         unexpected = set(dsets.keys()) - set(
-            ["expression", "params", "inv_expression", "points_x", "points_y"]
+            [
+                "expression",
+                "params",
+                "inv_expression",
+                "domain",
+                "range",
+                "points_x",
+                "points_y",
+            ]
         )
         if len(unexpected) > 0:
             raise CalibrationError(f"Unexpected dataset names in file: {unexpected}")
@@ -583,7 +749,14 @@ class Calibration(object):
             inv_expr = io.h5.ensure_string(dsets["inv_expression"])
         else:
             inv_expr = None
-        cal = cls(expr, dsets["params"], inv_expression=inv_expr, **attrs)
+        cal = cls(
+            expr,
+            dsets["params"],
+            inv_expression=inv_expr,
+            domain=dsets["domain"],
+            range=dsets["range"],
+            **attrs,
+        )
         if "points_x" in dsets and "points_y" in dsets:
             cal.set_points(dsets["points_x"], dsets["points_y"])
         for key in attrs:
@@ -602,6 +775,8 @@ class Calibration(object):
         dsets = {
             "expression": self.expression,
             "params": self.params,
+            "domain": self.domain,
+            "range": self.range,
             "points_x": self.points_x,
             "points_y": self.points_y,
         }
@@ -623,6 +798,8 @@ class Calibration(object):
             self.points_x,
             self.points_y,
             params0=self.params,
+            domain=self.domain,
+            rng=self.range,
             **kwargs,
         )
         self.params = params
@@ -665,6 +842,8 @@ class Calibration(object):
         points_y,
         params0=None,
         include_origin=False,
+        domain=DEFAULT_DOMAIN,
+        rng=DEFAULT_RANGE,
         fit_kwargs={},
         **attrs,
     ):
@@ -685,6 +864,13 @@ class Calibration(object):
         include_origin : bool
             Whether to add and fit with the point (0, 0) in addition to the
             others.
+        domain : array_like
+            The domain of the function. Will raise an error if the independent
+            variable is outside this interval. Must be finite. By default
+            DEFAULT_DOMAIN.
+        rnge : array_like
+            The range of the function. Expression outputs will be clipped to
+            this interval. Must be finite. By default DEFAULT_RANGE.
         fit_kwargs : dict
             Kwargs to pass to the minimization routine.
         attrs : dict
@@ -696,20 +882,26 @@ class Calibration(object):
             The Calibration instance with the given expression fitted to
             the points.
         """
-        points_x, points_y = _check_points(points_x, points_y)
+        points_x, points_y = _check_points(points_x, points_y, domain=domain, rng=rng)
         if include_origin:
             points_x = np.append(0, points_x)
             points_y = np.append(0, points_y)
-        points_x, points_y = _check_points(points_x, points_y)
+        points_x, points_y = _check_points(points_x, points_y, domain=domain, rng=rng)
         params = _fit_expression(
-            expression, points_x, points_y, params0=params0, **fit_kwargs
+            expression,
+            points_x,
+            points_y,
+            params0=params0,
+            domain=domain,
+            rng=rng,
+            **fit_kwargs,
         )
-        cal = cls(expression, params, **attrs)
+        cal = cls(expression, params, domain=domain, rng=rng, **attrs)
         cal.set_points(points_x, points_y)
         return cal
 
     @classmethod
-    def from_linear(cls, params, **attrs):
+    def from_linear(cls, params, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE, **attrs):
         """Create a Calibration with a linear function.
 
         Parameters
@@ -722,10 +914,10 @@ class Calibration(object):
         expr = "p[0] + p[1] * x"
         if len(params) != 2:
             raise CalibrationError("Linear calibration expects 2 parameters")
-        return cls(expr, params, **attrs)
+        return cls(expr, params, domain=domain, rng=rng, **attrs)
 
     @classmethod
-    def from_polynomial(cls, params, **attrs):
+    def from_polynomial(cls, params, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE, **attrs):
         """Create a Calibration with a polynomial function of any order.
 
         The calibration function expression is
@@ -739,10 +931,12 @@ class Calibration(object):
             Other information to be stored with the calibration.
         """
         expr = _polynomial_expression(params)
-        return cls(expr, params, **attrs)
+        return cls(expr, params, domain=domain, rng=rng, **attrs)
 
     @classmethod
-    def from_sqrt_polynomial(cls, params, **attrs):
+    def from_sqrt_polynomial(
+        cls, params, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE, **attrs
+    ):
         """Create a square root of a polynomial function of any order.
 
         The calibration function expression is
@@ -757,10 +951,12 @@ class Calibration(object):
         """
         expr = _polynomial_expression(params)
         expr = "np.sqrt(" + expr + ")"
-        return cls(expr, params, **attrs)
+        return cls(expr, params, domain=domain, rng=rng, **attrs)
 
     @classmethod
-    def from_interpolation(cls, points_x, points_y, **attrs):
+    def from_interpolation(
+        cls, points_x, points_y, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE, **attrs
+    ):
         """Create a Calibration that interpolates the calibration points.
 
         Parameters
@@ -772,16 +968,16 @@ class Calibration(object):
         attrs : dict
             Other information to be stored with the calibration.
         """
-        points_x, points_y = _check_points(points_x, points_y)
+        points_x, points_y = _check_points(points_x, points_y, domain=domain, rng=rng)
         if len(points_x) < 2:
             raise CalibrationError("Interpolated calibration expects at least 2 points")
         xp = np.array2string(points_x, precision=9, separator=", ")
         yp = np.array2string(points_y, precision=9, separator=", ")
         expr = ""
-        expr += f"assert np.all(x >= {points_x.min():.9e})\n"
-        expr += f"assert np.all(x <= {points_x.max():.9e})\n"
+        expr += f"assert np.all(x >= {domain[0]:.9e})\n"
+        expr += f"assert np.all(x <= {domain[1]:.9e})\n"
         expr += f"np.interp(x, {xp}, {yp})"
-        return cls(expr, [], **attrs)
+        return cls(expr, [], domain=domain, rng=rng, **attrs)
 
     @property
     def fit_R_squared(self):
@@ -845,7 +1041,7 @@ class Calibration(object):
             xmin, xmax = self.points_x.min(), self.points_x.max()
         else:
             ax_cal = ax
-            xmin, xmax = 0, 3000
+            xmin, xmax = self.domain
 
         # Plot calibration curve
         xx = np.linspace(xmin, xmax, 1000)
