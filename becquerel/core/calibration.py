@@ -142,7 +142,12 @@ def _param_indices(expression):
 
 
 def _validate_expression(
-    expression, params=None, ind_var="x", domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE, n_eval=100
+    expression,
+    params=None,
+    ind_var="x",
+    domain=DEFAULT_DOMAIN,
+    rng=DEFAULT_RANGE,
+    n_eval=100,
 ):
     """Perform checks on the expression.
 
@@ -228,13 +233,17 @@ def _validate_expression(
         x_arr = np.linspace(domain[0], domain[1], num=n_eval)
         for x_val in x_arr:
             try:
-                y = _eval_expression(expression, params, x_val, ind_var=ind_var, domain=domain, rng=rng)
+                y = _eval_expression(
+                    expression, params, x_val, ind_var=ind_var, domain=domain, rng=rng
+                )
             except CalibrationError:
                 raise CalibrationError(
                     f"Cannot evaluate expression for float {ind_var} = {x_val}:\n{expression}\n{safe_eval.symtable['x']}"
                 )
         try:
-            y = _eval_expression(expression, params, x_arr, ind_var=ind_var, domain=domain, rng=rng)
+            y = _eval_expression(
+                expression, params, x_arr, ind_var=ind_var, domain=domain, rng=rng
+            )
         except CalibrationError:
             raise CalibrationError(
                 f"Cannot evaluate expression for array {ind_var} = {x_arr}:\n{expression}\n{safe_eval.symtable['x']}"
@@ -296,7 +305,9 @@ def _fit_expression(
         raise CalibrationError(
             f"Starting parameters have length {len(params0)}, but expression requires {n_params} parameters"
         )
-    expression = _validate_expression(expression, params=params0, domain=domain, rng=rng)
+    expression = _validate_expression(
+        expression, params=params0, domain=domain, rng=rng
+    )
 
     # check that we have enough points
     if len(points_x) < n_params:
@@ -513,7 +524,9 @@ class Calibration(object):
 
     @expression.setter
     def expression(self, expression):
-        expression = _validate_expression(expression, domain=self.domain, rng=self.range)
+        expression = _validate_expression(
+            expression, domain=self.domain, rng=self.range
+        )
         self._expression = expression
 
     @property
@@ -525,7 +538,9 @@ class Calibration(object):
         params = np.array(p)
         if params.ndim != 1:
             raise CalibrationError(f"Parameters must be a 1-D array: {params}")
-        _validate_expression(self.expression, params=params, domain=self.domain, rng=self.range)
+        _validate_expression(
+            self.expression, params=params, domain=self.domain, rng=self.range
+        )
         self._params = params
 
     @property
@@ -537,7 +552,9 @@ class Calibration(object):
         if inv_expression is None:
             self._inv_expression = inv_expression
         else:
-            inv_expression = _validate_expression(inv_expression, ind_var="y", domain=self.range, rng=self.domain)
+            inv_expression = _validate_expression(
+                inv_expression, ind_var="y", domain=self.range, rng=self.domain
+            )
             self._inv_expression = inv_expression
 
     @property
@@ -708,7 +725,9 @@ class Calibration(object):
             )
         # perform a final check on the calculated inverse
         if not np.allclose(self(x), y):
-            raise CalibrationError(f"Inverse function did not result in matching y values:\n{self(x)}\n{y}")
+            raise CalibrationError(
+                f"Inverse function did not result in matching y values:\n{self(x)}\n{y}"
+            )
         return x
 
     @classmethod
