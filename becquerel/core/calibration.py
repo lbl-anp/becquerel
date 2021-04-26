@@ -449,11 +449,11 @@ class Calibration(object):
         attrs : dict
             Other information to be stored with the calibration.
         """
+        self.domain = domain
+        self.range = rng
         self.expression = expression
         self.params = params
         self.inv_expression = inv_expression
-        self.domain = domain
-        self.range = rng
         self.attrs = attrs
         self.set_points()
 
@@ -511,7 +511,7 @@ class Calibration(object):
 
     @expression.setter
     def expression(self, expression):
-        expression = _validate_expression(expression)
+        expression = _validate_expression(expression, domain=self.domain, rng=self.range)
         self._expression = expression
 
     @property
@@ -523,7 +523,7 @@ class Calibration(object):
         params = np.array(p)
         if params.ndim != 1:
             raise CalibrationError(f"Parameters must be a 1-D array: {params}")
-        _validate_expression(self.expression, params=params)
+        _validate_expression(self.expression, params=params, domain=self.domain, rng=self.range)
         self._params = params
 
     @property
@@ -535,7 +535,7 @@ class Calibration(object):
         if inv_expression is None:
             self._inv_expression = inv_expression
         else:
-            inv_expression = _validate_expression(inv_expression, ind_var="y")
+            inv_expression = _validate_expression(inv_expression, ind_var="y", domain=self.range, rng=self.domain)
             self._inv_expression = inv_expression
 
     @property
