@@ -203,7 +203,7 @@ def test_autocal_spec1():
         de_max=25.0,
         verbose=True,
     )
-    assert len(cal.fit_channels) == 8
+    assert len(cal.fit_channels) == 7
     assert np.isclose(cal.gain, 3.01, rtol=1e-2)
 
 
@@ -253,7 +253,7 @@ def test_autocal_exceptions():
     # more energies required than peaks found
     finder.reset()
     finder.find_peaks(min_snr=4, xmin=50)
-    assert len(cal.peakfinder.channels) == 3
+    assert len(cal.peakfinder.channels) == 4
     with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             [238.63, 351.93, 609.32, 1460.82, 2614.3],
@@ -320,7 +320,7 @@ def test_autocal_spec3():
     finder = bq.PeakFinder(spec3, kernel)
     cal = bq.AutoCalibrator(finder)
     cal.peakfinder.find_peaks(min_snr=3, xmin=100)
-    assert len(cal.peakfinder.channels) == 7
+    assert len(cal.peakfinder.channels) == 8
     # this fit succeeds but misidentifies the lines
     cal.fit(
         [609.32, 1460.82],
@@ -329,7 +329,7 @@ def test_autocal_spec3():
         de_max=50.0,
     )
     assert len(cal.fit_channels) == 2
-    assert np.isclose(cal.gain, 3.22, rtol=1e-2)
+    assert np.isclose(cal.gain, 2.59, rtol=1e-2)
     # this fit correctly identifies the lines
     cal.fit(
         [609.32, 1460.82],
@@ -352,7 +352,7 @@ def test_autocal_spec4():
         [356.0129, 661.657, 1460.82],
         optional=[911.20, 1120.294, 1620.50, 1764.49, 2118.514, 2614.3],
         gain_range=[0.3, 0.7],
-        de_max=50.0,
+        de_max=100.0,
     )
-    assert len(cal.fit_channels) == 3
+    assert len(cal.fit_channels) == 4
     assert np.isclose(cal.gain, 0.6133, rtol=1e-2)
