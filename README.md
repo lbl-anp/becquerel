@@ -1,5 +1,8 @@
 # becquerel
 
+[![tests](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml/badge.svg)](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml)
+[![Coverage Status](https://coveralls.io/repos/github/lbl-anp/becquerel/badge.svg?branch=main)](https://coveralls.io/github/lbl-anp/becquerel?branch=main)
+
 Becquerel is a Python package for analyzing nuclear spectroscopic
 measurements. The core functionalities are reading and writing different
 spectrum file types, fitting spectral features, performing detector
@@ -60,8 +63,8 @@ Dept. of Energy). All rights reserved. If you have questions about your rights
 to use or distribute this software, please contact Berkeley Lab's Innovation &
 Partnerships Office at  IPO@lbl.gov.
 
-NOTICE.  This Software was developed under funding from the U.S. Department of
-Energy and the U.S. Government consequently retains certain rights.  As such,
+NOTICE. This Software was developed under funding from the U.S. Department of
+Energy and the U.S. Government consequently retains certain rights. As such,
 the U.S. Government has been granted for itself and others acting on its
 behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software
 to reproduce, distribute copies to the public, prepare derivative works, and
