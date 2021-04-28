@@ -30,6 +30,9 @@ with open("CONTRIBUTING.md", "r") as fh:
 with open("requirements.txt", "r") as fh:
     REQUIREMENTS = [_line for _line in fh.readlines() if _line]
 
+with open("requirements-dev.txt", "r") as fh:
+    REQUIREMENTS_DEV = [l.strip() for l in fh.readlines() if not l.startswith("-r")]
+
 # make long description from README and CONTRIBUTING
 # but move copyright notice to the end
 LONG_DESCRIPTION = "{0}\n{2}\n## Copyright Notice\n{1}".format(
@@ -52,6 +55,6 @@ setup(
     python_requires=">=3.6",
     install_requires=REQUIREMENTS,
     setup_requires=["pytest-runner"],
-    tests_require=["pytest", "pytest-cov"],
     license=METADATA.__license__,
+    tests_require=REQUIREMENTS_DEV,
 )
