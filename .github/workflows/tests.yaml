@@ -11,6 +11,10 @@ on:
   push:
     branches: [ $default-branch ]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    # 0700 UTC every day
+    - cron: '00 7 * * *'
 
 jobs:
   pip_build_test:
