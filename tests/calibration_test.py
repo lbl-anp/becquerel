@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from becquerel.io import h5
 from becquerel.core.calibration import (
+    _validate_domain_range,
     _eval_expression,
     _param_indices,
     _validate_expression,
@@ -14,6 +15,33 @@ from becquerel.core.calibration import (
 )
 import pytest
 from h5_tools_test import TEST_OUTPUTS
+
+
+def test_validate_domain_range():
+    """Test calibration._validate_domain_range."""
+    # arguments must be length-two iterables
+    with pytest.raises(CalibrationError):
+        _validate_domain_range(None, [0, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1], None)
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1, 2], [0, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1], [0, 1, 2])
+    # ranges must be finite
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([-np.inf, 1], [0, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, np.inf], [0, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1], [-np.inf, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1], [0, np.inf])
+    # ranges must be in ascending order
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([1, 0], [0, 1])
+    with pytest.raises(CalibrationError):
+        _validate_domain_range([0, 1], [1, 0])
 
 
 def test_eval_expression():
@@ -27,12 +55,17 @@ def test_eval_expression():
     # unknown symbol
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * x + z", [1.0, 5.0], 2.0)
+    # z cannot be ind_var
+    with pytest.raises(CalibrationError):
+        _eval_expression("p[0] + p[1] * z", [1.0, 5.0], 2.0, ind_var="z")
     # unknown function
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0], 2.0)
-    # negative argument
+    # argument outside of domain
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * x", [1.0, 5.0], -2.0)
+    with pytest.raises(CalibrationError):
+        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2e6)
     # result is a complex number
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * x", [1j, 5.0], 2.0)
@@ -69,9 +102,17 @@ def test_validate_expression():
     # parentheses not matching
     with pytest.raises(CalibrationError):
         _validate_expression("p[0] + p[1] * x]")
-    # "x" must appear in the formula
+    # "x" must appear in the formula by default
     with pytest.raises(CalibrationError):
         _validate_expression("p[0] + p[1]")
+    # y okay as ind_var
+    _validate_expression("p[0] + p[1] * y", ind_var="y")
+    # y okay as ind_var but must appear in formula
+    with pytest.raises(CalibrationError):
+        _validate_expression("p[0] + p[1] * x", ind_var="y")
+    # z cannot be ind_var
+    with pytest.raises(CalibrationError):
+        _validate_expression("p[0] + p[1] * z", ind_var="z")
     # having no parameters is supported
     assert _validate_expression("1.0 + 5.0 * x")
     assert _validate_expression("1.0 + 5.0 * x", params=[])
@@ -261,12 +302,12 @@ def test_calibration_fit_from_points(name, args):
         assert cal2 == cal1
 
     plt.figure()
-    if "np.interp" in cal1.expression:
+    if "interp" in cal1.expression:
         plt.title("Interpolated")
     else:
         plt.title(cal1.expression)
-    x_fine1 = np.linspace(min(points_x), max(points_x), num=500)
-    x_fine3 = np.linspace(0, max(points_x), num=500)
+    x_fine1 = np.linspace(0, 3000, num=500)
+    x_fine3 = np.linspace(0, 3000, num=500)
     plt.plot(
         x_fine1,
         cal1(x_fine1),
@@ -304,7 +345,7 @@ def test_calibration_inverse():
 
     # cal1 has an explicit inverse expression, cal2 does not
     cal1 = Calibration(
-        "p[0] + p[1] * x", [5.0, 4.0], inv_expression="(x - p[0]) / p[1]"
+        "p[0] + p[1] * x", [5.0, 4.0], inv_expression="(y - p[0]) / p[1]"
     )
     cal2 = Calibration(cal1.expression, [5.0, 4.0])
     assert cal1 == cal2
@@ -336,6 +377,12 @@ def test_calibration_inverse():
     x2 = cal2.inverse(y, x0=x0)
     assert np.allclose(x1, (y - 5.0) / 4.0)
     assert np.allclose(x1, x2)
+
+    # evaluate the inverse for a value outside the range
+    with pytest.raises(CalibrationError):
+        cal1.inverse(-10.0)
+    with pytest.raises(CalibrationError):
+        cal1.inverse(2e6)
 
     # test __str__() and __repr__()
     str(cal1)
@@ -376,33 +423,35 @@ def test_calibration_misc():
     Calibration.from_sqrt_polynomial([2.0, 3.0, 4.0])
 
 
+def test_calibration_interpolation():
+    """Test Calibration.from_interpolation."""
+    Calibration.from_interpolation(points_x[:2], points_y[:2])
+    with pytest.raises(CalibrationError):
+        Calibration.from_interpolation(points_x[:1], points_y[:1])
+
+
 def test_calibration_read_failures():
     """Test miscellaneous HDF5 reading failures."""
     fname = os.path.join(TEST_OUTPUTS, "calibration__read_failures.h5")
     cal = Calibration.from_linear([2.0, 3.0])
     cal.add_points([0, 1000, 2000], [0, 1000, 2000])
 
-    # remove the params from the file
-    cal.write(fname)
-    with h5.open_h5(fname, "r+") as f:
-        del f["params"]
-    with pytest.raises(CalibrationError):
+    # remove datasets from the file and show that read raises an error
+    for dset_name in ["params", "expression", "domain", "range"]:
+        cal.write(fname)
+        with h5.open_h5(fname, "r+") as f:
+            del f[dset_name]
+        with pytest.raises(CalibrationError):
+            Calibration.read(fname)
+
+    # remove datasets from the file and show that read does *not* raise error
+    for dset_name in ["points_x", "points_y"]:
+        cal.write(fname)
+        with h5.open_h5(fname, "r+") as f:
+            del f[dset_name]
         Calibration.read(fname)
 
-    # remove the expression from the file
-    cal.write(fname)
-    with h5.open_h5(fname, "r+") as f:
-        del f["expression"]
-    with pytest.raises(CalibrationError):
-        Calibration.read(fname)
-
-    # remove points_x from the file
-    cal.write(fname)
-    with h5.open_h5(fname, "r+") as f:
-        del f["points_x"]
-    Calibration.read(fname)
-
-    # add unexpected dataset to the file
+    # add unexpected dataset to the file and show that read raises an error
     cal.write(fname)
     with h5.open_h5(fname, "r+") as f:
         f.create_dataset("unexpected", data=[0, 1, 2])

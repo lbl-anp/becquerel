@@ -1353,7 +1353,7 @@ class Spectrum(object):
         plotter = plotting.SpectrumPlotter(self, **kwargs)
         return plotter.fill_between()
 
-    def fit(self, model, xmode, ymode, roi=None, perform_fit=True):
+    def fit(self, model, xmode, ymode, roi=None, perform_fit=True, backend="lmfit"):
         """Create a Fitter object based on this Spectrum and perform the fit.
 
         Parameters
@@ -1369,6 +1369,8 @@ class Spectrum(object):
         perform_fit : bool
             If True, perform the fit now, otherwise, set up fitter without
             performing the fit.
+        backend : {'lmfit', 'lmfit-pml'}
+            Backend fitting module to use. Only used if perform_fit=True.
 
         Returns
         -------
@@ -1383,7 +1385,7 @@ class Spectrum(object):
         fitter._xmode = xmode
         fitter._ymode = ymode
         if perform_fit:
-            fitter.fit()
+            fitter.fit(backend=backend)
         return fitter
 
 
