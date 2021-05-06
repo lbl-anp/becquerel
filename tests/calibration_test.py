@@ -181,7 +181,7 @@ name_args = [
     ["cal1", ("p[0] * x", [5.0])],
     ["cal2", ("p[0] + p[1] * x", [1.0, 5.0])],
     ["cal3", ("np.sqrt(p[0] + p[1] * x + p[2] * x ** 2)", [2.0, 1.0, 1.0e-2])],
-    ["cal4", ("p[0] + p[1] * np.exp(x / p[2])", [1.0, 5.0, 1000.0])],
+    ["cal4", ("p[0] + p[1] * x + p[2] * np.exp(-x / p[3])", [1.0, 5.0, 1.0, 1000.0])],
     ["lin", ([2.0, 3.0],)],
     ["poly1", ([2.0, 1.0],)],
     ["poly2", ([2.0, 1.0, 1.0e-2],)],
@@ -190,21 +190,22 @@ name_args = [
 ]
 points_x = [100, 500, 1000, 1500, 2500]
 points_y = [18, 42, 63, 82, 117]
+domain = [0, 3500]
 
 
 def make_calibration(name, args):
     """Make an instance of the desired Calibration type."""
     attrs = {"comment": "Test of Calibration class", "name": name}
     if name.startswith("lin"):
-        cal = Calibration.from_linear(*args, **attrs)
+        cal = Calibration.from_linear(*args, **attrs, domain=domain)
     elif name.startswith("poly"):
-        cal = Calibration.from_polynomial(*args, **attrs)
+        cal = Calibration.from_polynomial(*args, **attrs, domain=domain)
     elif name.startswith("sqrt"):
-        cal = Calibration.from_sqrt_polynomial(*args, **attrs)
+        cal = Calibration.from_sqrt_polynomial(*args, **attrs, domain=domain)
     elif name.startswith("interp"):
-        cal = Calibration.from_interpolation(points_x, points_y, **attrs)
+        cal = Calibration.from_interpolation(points_x, points_y, **attrs, domain=domain)
     else:
-        cal = Calibration(*args, **attrs)
+        cal = Calibration(*args, **attrs, domain=domain)
     return cal
 
 
