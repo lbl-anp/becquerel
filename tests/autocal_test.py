@@ -334,15 +334,15 @@ def test_autocal_spec2():
     kernel = bq.GaussianPeakFilter(3700, 10, 5)
     finder = bq.PeakFinder(spec2, kernel)
     cal = bq.AutoCalibrator(finder)
-    cal.peakfinder.find_peaks(min_snr=15, xmin=1000)
-    assert len(cal.peakfinder.channels) == 12
+    cal.peakfinder.find_peaks(min_snr=20, xmin=1000)
+    assert len(cal.peakfinder.channels) == 9
     cal.fit(
         REQUIRED,
         optional=OPTIONAL,
         gain_range=[0.1, 0.6],
         de_max=5.0,
     )
-    assert len(cal.fit_channels) == 6
+    assert len(cal.fit_channels) == 3
     assert np.isclose(cal.gain, 0.3785, rtol=1e-2)
 
 
