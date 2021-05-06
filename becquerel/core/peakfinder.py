@@ -392,7 +392,7 @@ class PeakFinder(object):
             raise PeakFinderError("Must keep at least 1 peak, not {}".format(max_num))
 
         # find maxima
-        peak = (self.snr[2:] <= self.snr[1:-1]) & (self.snr[:-2] < self.snr[1:-1])
+        peak = (self.snr[:-2] < self.snr[1:-1]) & (self.snr[1:-1] >= self.snr[2:])
         peak = np.append(False, peak)
         peak = np.append(peak, False)
         # select peaks using SNR and centroid criteria
