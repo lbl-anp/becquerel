@@ -124,7 +124,7 @@ def test_peakfinder_double_peaks():
     assert peak_old.sum() == 2
 
     # NEW peakfind
-    finder.find_peaks(min_snr=1.)
+    finder.find_peaks(min_snr=1.0)
     assert len(finder.centroids) == 1
     assert finder.centroids[0] in finder.spectrum.bin_centers_raw[peak_old]
     peak_new = np.isclose(finder.spectrum.bin_centers_raw, finder.centroids[0])
