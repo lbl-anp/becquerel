@@ -90,13 +90,13 @@ def test_peakfinder():
     kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
     finder = bq.PeakFinder(spec1, kernel)
     finder.find_peak(500, min_snr=3.0)
-    assert np.isclose(finder.channels[0], 485.5)
+    assert np.isclose(finder.centroids[0], 485.5)
     finder.reset()
     finder.find_peaks()
-    assert len(finder.channels) == 9
+    assert len(finder.centroids) == 9
     finder.reset()
     finder.find_peaks(min_snr=0.5, xmin=50, xmax=1000, max_num=10)
-    assert len(finder.channels) == 10
+    assert len(finder.centroids) == 10
 
 
 def test_peakfinder_double_peaks():
@@ -227,7 +227,7 @@ def test_autocal_spec1():
     finder = bq.PeakFinder(spec1, kernel)
     cal = bq.AutoCalibrator(finder)
     finder.find_peaks(min_snr=1, xmin=50)
-    assert len(cal.peakfinder.channels) == 10
+    assert len(cal.peakfinder.centroids) == 10
     cal.fit(
         REQUIRED,
         optional=OPTIONAL,
@@ -245,7 +245,7 @@ def test_autocal_one_line():
     finder = bq.PeakFinder(spec1, kernel)
     cal = bq.AutoCalibrator(finder)
     finder.find_peaks(min_snr=8, xmin=50)
-    assert len(cal.peakfinder.channels) == 1
+    assert len(cal.peakfinder.centroids) == 1
     cal.fit(
         [1460.82],
         gain_range=[2.5, 4.0],
@@ -265,7 +265,7 @@ def test_autocal_exceptions():
     cal = bq.AutoCalibrator(finder)
     # only one peak found, but multiple energies required
     finder.find_peaks(min_snr=10, xmin=50)
-    assert len(cal.peakfinder.channels) == 1
+    assert len(cal.peakfinder.centroids) == 1
     with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             REQUIRED,
@@ -275,7 +275,7 @@ def test_autocal_exceptions():
     # multiple peaks found, but only one energy given
     finder.reset()
     finder.find_peaks(min_snr=1, xmin=50)
-    assert len(cal.peakfinder.channels) == 10
+    assert len(cal.peakfinder.centroids) == 10
     with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             [1460.82],
@@ -285,7 +285,7 @@ def test_autocal_exceptions():
     # more energies required than peaks found
     finder.reset()
     finder.find_peaks(min_snr=4, xmin=50)
-    assert len(cal.peakfinder.channels) == 4
+    assert len(cal.peakfinder.centroids) == 4
     with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             [238.63, 351.93, 609.32, 1460.82, 2614.3],
@@ -300,7 +300,7 @@ def test_autocal_no_fit():
     finder = bq.PeakFinder(spec1, kernel)
     cal = bq.AutoCalibrator(finder)
     finder.find_peaks(min_snr=2, xmin=50)
-    assert len(cal.peakfinder.channels) == 8
+    assert len(cal.peakfinder.centroids) == 8
     with pytest.raises(bq.AutoCalibratorError):
         cal.fit(
             REQUIRED,
@@ -317,7 +317,7 @@ def test_autocal_plot():
     finder = bq.PeakFinder(spec1, kernel)
     cal = bq.AutoCalibrator(finder)
     finder.find_peaks(min_snr=1, xmin=50)
-    assert len(cal.peakfinder.channels) == 10
+    assert len(cal.peakfinder.centroids) == 10
     cal.fit(
         REQUIRED,
         optional=OPTIONAL,
@@ -335,7 +335,7 @@ def test_autocal_spec2():
     finder = bq.PeakFinder(spec2, kernel)
     cal = bq.AutoCalibrator(finder)
     cal.peakfinder.find_peaks(min_snr=20, xmin=1000)
-    assert len(cal.peakfinder.channels) == 9
+    assert len(cal.peakfinder.centroids) == 9
     cal.fit(
         REQUIRED,
         optional=OPTIONAL,
@@ -352,7 +352,7 @@ def test_autocal_spec3():
     finder = bq.PeakFinder(spec3, kernel)
     cal = bq.AutoCalibrator(finder)
     cal.peakfinder.find_peaks(min_snr=3, xmin=100)
-    assert len(cal.peakfinder.channels) == 8
+    assert len(cal.peakfinder.centroids) == 8
     # this fit succeeds but misidentifies the lines
     cal.fit(
         [609.32, 1460.82],
@@ -379,7 +379,7 @@ def test_autocal_spec4():
     finder = bq.PeakFinder(spec4, kernel)
     cal = bq.AutoCalibrator(finder)
     cal.peakfinder.find_peaks(min_snr=3, xmin=100)
-    assert len(cal.peakfinder.channels) == 7
+    assert len(cal.peakfinder.centroids) == 7
     cal.fit(
         [356.0129, 661.657, 1460.82],
         optional=[911.20, 1120.294, 1620.50, 1764.49, 2118.514, 2614.3],
