@@ -1076,7 +1076,10 @@ class Spectrum(object):
           cal: an object derived from EnergyCalBase
         """
 
-        self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
+        try:
+            self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
+        except AttributeError:
+            self.bin_edges_kev = cal(self.bin_edges_raw)
         self.energy_cal = cal
 
     def calibrate_like(self, other):
