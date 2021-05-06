@@ -99,6 +99,38 @@ def test_peakfinder():
     assert len(finder.channels) == 10
 
 
+def test_peakfinder_double_peaks():
+    """Test that the new peakfinder logic correctly gives only one peak, even
+    when min_sep is not specified, while old logic gives two peaks.
+    """
+
+    # Toy data: gaussian lineshape
+    x = np.arange(31)
+    y = 1.5 * np.exp(-0.5 * (x[:-1] - 15) ** 2 / (2 * 3 ** 2))
+    spec = bq.Spectrum(bin_edges_raw=x, counts=y)
+    kernel = bq.GaussianPeakFilter(15, 7.5, fwhm_at_0=7.5)
+    finder = bq.PeakFinder(spec, kernel)
+
+    # OLD code from PeakFinder.find_peaks
+    d1 = (finder.snr[2:] - finder.snr[:-2]) / 2
+    d1 = np.append(0, d1)
+    d1 = np.append(d1, 0)
+    d2 = finder.snr[2:] - 2 * finder.snr[1:-1] + finder.snr[:-2]
+    d2 = np.append(0, d2)
+    d2 = np.append(d2, 0)
+    peak_old = (d1[2:] < 0) & (d1[:-2] > 0) & (d2[1:-1] < 0)
+    peak_old = np.append(False, peak_old)
+    peak_old = np.append(peak_old, False)
+    assert peak_old.sum() == 2
+
+    # NEW peakfind
+    finder.find_peaks(min_snr=1.)
+    assert len(finder.centroids) == 1
+    assert finder.centroids[0] in finder.spectrum.bin_centers_raw[peak_old]
+    peak_new = np.isclose(finder.spectrum.bin_centers_raw, finder.centroids[0])
+    assert peak_new.sum() == 1
+
+
 def test_peakfinder_exceptions():
     """Test PeakFinder exceptions."""
     kernel = bq.GaussianPeakFilter(500, 50, fwhm_at_0=10)
