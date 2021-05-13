@@ -666,7 +666,8 @@ class Fitter(object):
         elif self.backend in ["iminuit", "minuit"]:
             raise NotImplementedError(
                 f"Backend {self.backend} with least-squares loss not yet "
-                + f"supported. Try {self.backend}-pml."
+                + f"supported. Use {self.backend}-pml for Poisson loss or "
+                + "lmfit for least-squares."
             )
 
         elif self.backend in ["iminuit-pml", "minuit-pml"]:
