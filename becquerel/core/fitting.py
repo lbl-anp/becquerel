@@ -614,16 +614,16 @@ class Fitter(object):
 
         Parameters
         ----------
-        backend : {'lmfit', 'lmfit-pml', '[i]minuit'}
+        backend : {'lmfit', 'lmfit-pml', '[i]minuit-pml'}
             Backend fitting module to use.
         guess : dict of {str: numeric}, optional
             User-specified parameter guesses that override guesses provided by
             the Model.guess() or Fitter.guess_param_defaults() methods.
-            Currently only implemented for backend="lmfit".
+            Currently only implemented for backend="lmfit" and "iminuit".
         limits : dict of {str: tuple}, optional
             User-specified parameter limits that override limits provided by
             the Model.guess() or Fitter.guess_param_defaults() methods.
-            Currently only implemented for backend="lmfit".
+            Currently only implemented for backend="lmfit" and "iminuit".
 
         Raises
         ------
@@ -661,9 +661,15 @@ class Fitter(object):
                 method="Nelder-Mead",
                 calc_covar=False,
             )  # no, bounds, default would be L-BFGS-B'
-            # TODO: Calculate errors breaks minimization right now
+            # NOTE: Calculating errors in lmfit-pml breaks minimization
 
         elif self.backend in ["iminuit", "minuit"]:
+            raise NotImplementedError(
+                f"Backend {self.backend} with least-squares loss not yet "
+                + f"supported. Try {self.backend}-pml."
+            )
+
+        elif self.backend in ["iminuit-pml", "minuit-pml"]:
             # Translate a model from lmfit to minuit
 
             if not _is_count_like(self.y_roi):
@@ -685,8 +691,6 @@ class Fitter(object):
                     y_eval *= self.dx_roi
                 lp = poisson_loss(y_eval, self.y_roi)
                 return lp
-
-            # TODO: we could add the option for iminuit with least-squares
 
             # Filter out fixed params and have one consistent variable name
             # instead of all the params / param_names / parameters / etc.

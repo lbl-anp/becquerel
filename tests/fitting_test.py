@@ -54,7 +54,7 @@ def compare_params(true_params, fit_params, rtol, fitter):
 
     if not np.all(list(test.values())) and "minuit" in fitter.backend:
         fitter.fit(backend="lmfit-pml")
-        fitter.fit(backend="minuit", guess=fitter.best_values)
+        fitter.fit(backend="minuit-pml", guess=fitter.best_values)
 
         # Just copy the code, since if we recursively called compare_params(),
         # a failed test could raise a potentially-misleading recursion error.
@@ -79,7 +79,7 @@ def compare_counts(fitter):
     test = np.allclose(data_counts, model_counts, atol=1e-2)
     if not test and "minuit" in fitter.backend:
         fitter.fit(backend="lmfit-pml")
-        fitter.fit(backend="minuit", guess=fitter.best_values)
+        fitter.fit(backend="minuit-pml", guess=fitter.best_values)
 
         # Just copy the code, since if we recursively called compare_counts(),
         # a failed test could raise a potentially-misleading recursion error.
@@ -147,7 +147,7 @@ HIGH_STAT_SIM_PARAMS = {
         "params": [],
         "ids": [],
     },
-    "methods": ["lmfit", "lmfit-pml", "minuit"],
+    "methods": ["lmfit", "lmfit-pml", "minuit-pml"],
     "binnings": ["linear", "sqrt"],
 }
 
@@ -223,6 +223,28 @@ def sim_high_stat(request):
     return out
 
 
+def test_method_err(sim_high_stat):
+    """Test that unsupported fit methods raise appropriate errors."""
+    if sim_high_stat["method"] == "bad-method":
+        with pytest.raises(bq.FittingError):
+            bq.Fitter(
+                sim_high_stat["model"],
+                x=sim_high_stat["data"]["x"],
+                y=sim_high_stat["data"]["y"],
+                dx=sim_high_stat["data"]["dx"],
+                y_unc=sim_high_stat["data"]["y_unc"],
+            )
+    elif sim_high_stat["method"] == "minuit":
+        with pytest.raises(NotImplementedError):
+            bq.Fitter(
+                sim_high_stat["model"],
+                x=sim_high_stat["data"]["x"],
+                y=sim_high_stat["data"]["y"],
+                dx=sim_high_stat["data"]["dx"],
+                y_unc=sim_high_stat["data"]["y_unc"],
+            )
+
+
 # TODO: add fit plotting
 # TODO: improve parameter value testing?
 class TestFittingHighStatSimData(object):
@@ -245,7 +267,7 @@ class TestFittingHighStatSimData(object):
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
-        if sim_high_stat["method"] in ["lmfit-pml", "minuit"]:
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit-pml"]:
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()
@@ -274,7 +296,7 @@ class TestFittingHighStatSimData(object):
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
-        if sim_high_stat["method"] in ["lmfit-pml", "minuit"]:
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit-pml"]:
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()
@@ -291,7 +313,7 @@ class TestFittingHighStatSimData(object):
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
-        if sim_high_stat["method"] in ["lmfit-pml", "minuit"]:
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit-pml"]:
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()
