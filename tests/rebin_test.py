@@ -142,7 +142,7 @@ class TestRebin(object):
         assert np.allclose(old_counts, new_counts)
 
     def _gen_old_new_counts(self, lam, old_edges, new_edges, method, dtype):
-        """ generate old and new counts (1D)"""
+        """generate old and new counts (1D)"""
         old_counts = make_fake_spec_array(lam, len(old_edges) - 1, dtype=dtype)
         new_counts = bq.core.rebin.rebin(
             old_counts, old_edges, new_edges, method=method, zero_pad_warnings=False

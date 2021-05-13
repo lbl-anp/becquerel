@@ -1,17 +1,18 @@
 """Becquerel: Tools for radiation spectral analysis."""
 
-from . import core
-from . import parsers
-from . import tools
-from .__metadata__ import __description__, __url__
-from .__metadata__ import __version__, __license__, __copyright__
+from .__metadata__ import (
+    __description__,
+    __url__,
+    __version__,
+    __license__,
+    __copyright__,
+)
 
-from .core.rebin import rebin, RebinError, RebinWarning
-from .core.spectrum import Spectrum, SpectrumError, UncalibratedError
-from .core.spectrum import SpectrumWarning
+from . import core
+from .core import utils, fitting
+from .core.autocal import AutoCalibrator, AutoCalibratorError
 from .core.energycal import LinearEnergyCal, EnergyCalError, BadInput
-from .core.utils import UncertaintiesError
-from .core.plotting import SpectrumPlotter, PlottingError
+from .core.fitting import Fitter
 from .core.peakfinder import (
     PeakFilter,
     PeakFilterError,
@@ -19,50 +20,59 @@ from .core.peakfinder import (
     PeakFinder,
     PeakFinderError,
 )
-from .core.autocal import AutoCalibrator, AutoCalibratorError
+from .core.plotting import SpectrumPlotter, PlottingError
+from .core.rebin import rebin, RebinError, RebinWarning
+from .core.spectrum import Spectrum, SpectrumError, UncalibratedError, SpectrumWarning
+from .core.utils import UncertaintiesError
 
-from .core import utils
-from .core import fitting
-from .core.fitting import Fitter
+from . import parsers
 
-from .tools import nndc
+from . import tools
+from .tools import nndc, xcom, materials
 from .tools.element import Element
 from .tools.isotope import Isotope
 from .tools.isotope_qty import IsotopeQuantity
-from .tools import xcom
-from .tools import materials
 
 import warnings
 
 warnings.simplefilter("default", DeprecationWarning)
 
 __all__ = [
-    "core",
-    "parsers",
-    "tools",
-    "rebin",
-    "RebinError",
-    "RebinWarning",
-    "Spectrum",
-    "SpectrumError",
-    "SpectrumWarning",
-    "SpectrumPlotter",
-    "PlottingError",
-    "UncalibratedError",
-    "LinearEnergyCal",
-    "EnergyCalError",
-    "BadInput",
-    "UncertaintiesError",
-    "PeakFilter",
-    "PeakFilterError",
-    "GaussianPeakFilter",
-    "PeakFinder",
-    "PeakFinderError",
-    "AutoCalibrator",
-    "AutoCalibratorError",
     "__description__",
     "__url__",
     "__version__",
     "__license__",
     "__copyright__",
+    "core",
+    "utils",
+    "fitting",
+    "AutoCalibrator",
+    "AutoCalibratorError",
+    "LinearEnergyCal",
+    "EnergyCalError",
+    "BadInput",
+    "Fitter",
+    "PeakFilter",
+    "PeakFilterError",
+    "GaussianPeakFilter",
+    "PeakFinder",
+    "PeakFinderError",
+    "SpectrumPlotter",
+    "PlottingError",
+    "rebin",
+    "RebinError",
+    "RebinWarning",
+    "Spectrum",
+    "SpectrumError",
+    "UncalibratedError",
+    "SpectrumWarning",
+    "UncertaintiesError",
+    "parsers",
+    "tools",
+    "nndc",
+    "xcom",
+    "materials",
+    "Element",
+    "Isotope",
+    "IsotopeQuantity",
 ]
