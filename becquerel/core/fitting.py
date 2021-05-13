@@ -1039,8 +1039,7 @@ class Fitter(object):
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
         fit_ax.plot(x_plot, y, color="#e31a1c", label="best fit", zorder=10)
         # Plot 1 sigma uncertainty bands
-        # This is not built into iminuit AFAIK, and might change whether the
-        # cost function is Poisson or least-squares.
+        # TODO: for minuit, see how_to_draw_error_bands iminuit notebook
         if self.success and "lmfit" in self.backend:
             yunc = self.result.eval_uncertainty(x=x_plot, sigma=1)
             fit_ax.fill_between(
