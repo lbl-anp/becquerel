@@ -678,20 +678,16 @@ class Fitter(object):
                     "Passing non-count-like data to a Poisson loss fit", FittingWarning
                 )
 
-            # Poisson loss given the model specified by args
             def model_loss(*args):
+                """Poisson loss given the model specified by args."""
                 # Convert args to kwargs as lmfit.model.eval _requires_ kwargs,
-                # while (I think) the cost function passed to the Minuit object
-                # _requires_ args.
-                # TODO: check if the above is true for Minuit
-                # TODO: this feels dangerous!
-                # TODO: test out-of-order kwargs
+                # while the cost function passed to the Minuit object seems to
+                # _require_ args.
                 kwargs = {self.model.param_names[i]: arg for i, arg in enumerate(args)}
                 y_eval = self.model.eval(x=self.x_roi, **kwargs)
                 if self.dx_roi is not None:
                     y_eval *= self.dx_roi
-                lp = poisson_loss(y_eval, self.y_roi)
-                return lp
+                return poisson_loss(y_eval, self.y_roi)
 
             # Filter out fixed params and have one consistent variable name
             # instead of all the params / param_names / parameters / etc.
@@ -781,6 +777,11 @@ class Fitter(object):
                 p = self.result.parameters[i]
                 self._best_values[p] = self.result.values[i]
                 self._init_values[p] = self.result.init_params[p].value
+
+            # Arg order sanity checks
+            assert list(self._best_values.keys()) == free_vars
+            assert list(self._init_values.keys()) == free_vars
+            assert list(self.result.parameters) == free_vars
 
         else:
             raise FittingError("Unknown fitting backend: {}".format(backend))
