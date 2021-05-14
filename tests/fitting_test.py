@@ -43,20 +43,52 @@ def sim_data(x_min, x_max, y_func, num_x=200, binning="linear", **params):
 
 
 def compare_params(true_params, fit_params, rtol, fitter):
-    for p, v in fit_params.items():
-        # TODO: Remove
-        # if not np.isclose(v, true_params[p], rtol=rtol):
-        #     fitter.custom_plot()
-        #     plt.show()
-        assert np.isclose(v, true_params[p], rtol=rtol), p
+    """Test that the fit parameters are close to the true parameters.
+
+    Since minuit can be sensitive to initial values, first try the assert
+    normally. If it fails, seed it with lmfit-pml and allow it to try again.
+    """
+    test = {}
+    for p, v in true_params.items():
+        test[p] = np.isclose(v, fit_params[p], rtol=rtol)
+
+    if not np.all(list(test.values())) and "minuit" in fitter.backend:
+        fitter.fit(backend="lmfit-pml")
+        fitter.fit(backend="minuit-pml", guess=fitter.best_values)
+
+        # Just copy the code, since if we recursively called compare_params(),
+        # a failed test could raise a potentially-misleading recursion error.
+        test = {}
+        fit_params = fitter.best_values
+        for p, v in true_params.items():
+            test[p] = np.isclose(v, fit_params[p], rtol=rtol)
+    assert np.all(list(test.values()))
 
 
 def compare_counts(fitter):
+    """Test that the data and model counts match to high accuracy.
+
+    Since minuit can be sensitive to initial values, first try the assert
+    normally. If it fails, seed it with lmfit-pml and allow it to try again.
+    """
+
     data_counts = np.sum(fitter.y_roi)
     model_counts = np.sum(
-        fitter.eval(fitter.x_roi, **fitter.result.best_values) * fitter.dx_roi
+        fitter.eval(fitter.x_roi, **fitter.best_values) * fitter.dx_roi
     )
-    assert np.allclose(data_counts, model_counts, atol=1e-2)
+    test = np.allclose(data_counts, model_counts, atol=1e-2)
+    if not test and "minuit" in fitter.backend:
+        fitter.fit(backend="lmfit-pml")
+        fitter.fit(backend="minuit-pml", guess=fitter.best_values)
+
+        # Just copy the code, since if we recursively called compare_counts(),
+        # a failed test could raise a potentially-misleading recursion error.
+        data_counts = np.sum(fitter.y_roi)
+        model_counts = np.sum(
+            fitter.eval(fitter.x_roi, **fitter.best_values) * fitter.dx_roi
+        )
+        test = np.allclose(data_counts, model_counts, atol=1e-2)
+    assert test
 
 
 # -----------------------------------------------------------------------------
@@ -115,7 +147,7 @@ HIGH_STAT_SIM_PARAMS = {
         "params": [],
         "ids": [],
     },
-    "methods": ["lmfit", "lmfit-pml"],
+    "methods": ["lmfit", "lmfit-pml", "minuit-pml"],
     "binnings": ["linear", "sqrt"],
 }
 
@@ -191,6 +223,28 @@ def sim_high_stat(request):
     return out
 
 
+def test_method_err(sim_high_stat):
+    """Test that unsupported fit methods raise appropriate errors."""
+    if sim_high_stat["method"] == "bad-method":
+        with pytest.raises(bq.FittingError):
+            bq.Fitter(
+                sim_high_stat["model"],
+                x=sim_high_stat["data"]["x"],
+                y=sim_high_stat["data"]["y"],
+                dx=sim_high_stat["data"]["dx"],
+                y_unc=sim_high_stat["data"]["y_unc"],
+            )
+    elif sim_high_stat["method"] == "minuit":
+        with pytest.raises(NotImplementedError):
+            bq.Fitter(
+                sim_high_stat["model"],
+                x=sim_high_stat["data"]["x"],
+                y=sim_high_stat["data"]["y"],
+                dx=sim_high_stat["data"]["dx"],
+                y_unc=sim_high_stat["data"]["y_unc"],
+            )
+
+
 # TODO: add fit plotting
 # TODO: improve parameter value testing?
 class TestFittingHighStatSimData(object):
@@ -209,14 +263,27 @@ class TestFittingHighStatSimData(object):
         fitter.fit(sim_high_stat["method"])
         compare_params(
             true_params=sim_high_stat["params"],
-            fit_params=fitter.result.best_values,
+            fit_params=fitter.best_values,
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
-        if sim_high_stat["method"] == "lmfit-pml":
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit-pml"]:
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()
+
+        # Test some other properties while we're at it
+        assert isinstance(str(fitter), str)
+        assert fitter.name is None or isinstance(fitter.name, str)
+        assert fitter.xmode is None or isinstance(fitter.xmode, str)
+        assert fitter.ymode is None or isinstance(fitter.ymode, str)
+        assert isinstance(fitter.param_names, list)
+        assert len(fitter.param_names) > 0
+        assert len(fitter.init_values) > 0
+        assert len(fitter.best_values) > 0
+        assert fitter.success
+        assert bq.fitting._is_count_like(fitter.y_roi)
+        assert not bq.fitting._is_count_like(fitter.y_roi * 0.5)
 
     @pytest.mark.filterwarnings("ignore")
     def test_no_roi(self, sim_high_stat):
@@ -225,11 +292,11 @@ class TestFittingHighStatSimData(object):
         fitter.fit(sim_high_stat["method"])
         compare_params(
             true_params=sim_high_stat["params"],
-            fit_params=fitter.result.best_values,
+            fit_params=fitter.best_values,
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
-        if sim_high_stat["method"] == "lmfit-pml":
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit-pml"]:
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()
@@ -242,11 +309,11 @@ class TestFittingHighStatSimData(object):
         fitter.fit(sim_high_stat["method"])
         compare_params(
             true_params=sim_high_stat["params"],
-            fit_params=fitter.result.best_values,
+            fit_params=fitter.best_values,
             rtol=sim_high_stat["rtol"],
             fitter=fitter,
         )
-        if sim_high_stat["method"] == "lmfit-pml":
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit-pml"]:
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()
