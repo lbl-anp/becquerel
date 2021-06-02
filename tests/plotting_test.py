@@ -21,7 +21,7 @@ def spec_data():
     """Build a vector of random counts."""
 
     floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH)
-    return floatdata.astype(np.int)
+    return floatdata.astype(int)
 
 
 @pytest.fixture
@@ -55,7 +55,7 @@ def cal_spec_cps(spec_data):
 @pytest.fixture(params=[1, 10, 100])
 def y_counts_spec(request):
     floatdata = np.random.poisson(lam=request.param, size=TEST_DATA_LENGTH)
-    return bq.Spectrum(floatdata.astype(np.int))
+    return bq.Spectrum(floatdata.astype(int))
 
 
 # @pytest.fixture

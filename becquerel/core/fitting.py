@@ -429,7 +429,7 @@ class Fitter(object):
     @y_unc.setter
     def y_unc(self, y_unc):
         if y_unc is not None:
-            self._y_unc = np.asarray(y_unc, dtype=np.float)
+            self._y_unc = np.asarray(y_unc, dtype=float)
             assert len(self.x) == len(
                 self._y_unc
             ), "Fitting x (len {}) does not match y_unc (len {})".format(
@@ -806,7 +806,7 @@ class Fitter(object):
             diff[mask] = 1e32
             if diff.dtype == np.complex:
                 # data/model are complex
-                diff = diff.ravel().view(np.float)
+                diff = diff.ravel().view(float)
             return np.asarray(diff).ravel()  # for compatibility with pandas.Series
 
         # This overwrites the  model residual method, is an ugly hack to make
@@ -888,7 +888,7 @@ class Fitter(object):
         """
         if self.result is None:
             return None
-        df = pd.DataFrame(columns=["val", "unc"], dtype=np.float)
+        df = pd.DataFrame(columns=["val", "unc"], dtype=float)
         for k in self.param_names:
             df.loc[k, "val"] = self.param_val(k)
             df.loc[k, "unc"] = self.param_unc(k)

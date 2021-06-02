@@ -24,7 +24,7 @@ import becquerel as bq
     ],
 )
 def old_edges(request):
-    return request.param.astype(np.float)
+    return request.param.astype(float)
 
 
 @pytest.fixture(
@@ -42,7 +42,7 @@ def old_edges(request):
     ],
 )
 def new_edges(request):
-    return request.param.astype(np.float)
+    return request.param.astype(float)
 
 
 @pytest.fixture(params=[1, 5, 25], ids=["sparse counts", "~5 counts", "~25 counts"])
@@ -65,7 +65,7 @@ def old_spec_int(lam, old_edges):
     return old_edges, counts
 
 
-def make_fake_spec_array(lam, size, dtype=np.float):
+def make_fake_spec_array(lam, size, dtype=float):
     return np.random.poisson(lam=lam, size=size).astype(dtype)
 
 
