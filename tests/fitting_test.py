@@ -28,7 +28,7 @@ def get_model_name(x):
 
 def sim_data(x_min, x_max, y_func, num_x=200, binning="linear", **params):
     if binning == "linear":
-        edges = np.linspace(x_min, x_max, num_x, dtype=np.float)
+        edges = np.linspace(x_min, x_max, num_x, dtype=float)
     elif binning == "sqrt":
         edges = np.linspace(np.sqrt(x_min), np.sqrt(x_max), num_x)
         edges = edges ** 2
@@ -37,7 +37,7 @@ def sim_data(x_min, x_max, y_func, num_x=200, binning="linear", **params):
 
     y_smooth = y_func(x=x, **params) * dx
     np.random.seed(1)
-    y = np.random.poisson(y_smooth).astype(np.float)
+    y = np.random.poisson(y_smooth).astype(float)
     y_unc = np.sqrt(y)
     return {"x": x, "y": y, "y_unc": y_unc, "dx": dx}
 

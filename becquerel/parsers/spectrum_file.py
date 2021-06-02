@@ -54,11 +54,11 @@ class SpectrumFile(object):
         # miscellaneous metadata
         self.metadata = {}
         # arrays to be read from file
-        self.channels = np.array([], dtype=np.float)
-        self.data = np.array([], dtype=np.float)
+        self.channels = np.array([], dtype=float)
+        self.data = np.array([], dtype=float)
         self.cal_coeff = []
         # arrays to be calculated using calibration
-        self.energies = np.array([], dtype=np.float)
+        self.energies = np.array([], dtype=float)
         self.bin_edges_kev = None
 
     def __str__(self):

@@ -629,7 +629,7 @@ class Spectrum(object):
         if xmax is None:
             xmax = np.ceil(max(listmode_data))
         if bins is None:
-            bins = np.arange(xmin, xmax + 1, dtype=np.int)
+            bins = np.arange(xmin, xmax + 1, dtype=int)
 
         assert xmin < xmax
         if isinstance(bins, int):

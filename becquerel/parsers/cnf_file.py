@@ -115,8 +115,8 @@ class CnfFile(SpectrumFile):
         print("CnfFile: Reading file " + self.filename)
         self.realtime = 0.0
         self.livetime = 0.0
-        self.channels = np.array([], dtype=np.float)
-        self.data = np.array([], dtype=np.float)
+        self.channels = np.array([], dtype=float)
+        self.data = np.array([], dtype=float)
         self.cal_coeff = []
         data = []
         with open(self.filename, "rb") as f:
