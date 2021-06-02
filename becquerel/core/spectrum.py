@@ -1297,7 +1297,7 @@ class Spectrum(object):
                   plotting control use SpectrumPlotter and its errorband and
                   errorbars functions.
           kwargs: arguments that are directly passed to matplotlib's plot
-                  command. In addition it is possible to pass linthreshy if
+                  command. In addition it is possible to pass linthresh if
                   ylim='default' and ymode='symlog'
 
         Returns:
@@ -1341,7 +1341,7 @@ class Spectrum(object):
           ylabel: costum ylabel value
           kwargs: arguments that are directly passed to matplotlib's
                   fill_between command. In addition it is possible to pass
-                  linthreshy if ylim='default' and ymode='symlog'.
+                  linthresh if ylim='default' and ymode='symlog'.
 
         Returns:
           matplotlib axes object

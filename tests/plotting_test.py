@@ -465,11 +465,11 @@ def test_get_xlim(cal_spec_cps):
     assert tsp.xlim == (cal_spec_cps.bin_edges_kev[0], cal_spec_cps.bin_edges_kev[-1])
 
 
-def test_get_linthreshy(cal_spec_cps):
-    """Test get linthreshy function"""
+def test_get_linthresh(cal_spec_cps):
+    """Test get linthresh function"""
 
-    tsp = sp(cal_spec_cps, linthreshy=1)
-    assert tsp.linthreshy == 1
+    tsp = sp(cal_spec_cps, linthresh=1)
+    assert tsp.linthresh == 1
 
 
 # ----------------------------------------------
