@@ -332,9 +332,7 @@ class SpectrumPlotter(object):
 
         self._prepare_plot(**kwargs)
 
-        alpha = 0.5
-        if "alpha" in self.kwargs:
-            alpha = self.kwargs.pop("alpha")
+        alpha = self.kwargs.pop("alpha", 0.5)
 
         xcorners, ycorlow = self.bin_edges_and_heights_to_steps(
             self._xedges, unumpy.nominal_values(self._ydata - self.yerror)
