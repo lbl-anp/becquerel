@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import scipy.special
 from lmfit.model import Model
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
@@ -11,6 +12,10 @@ from iminuit import Minuit
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
+COLORS = [
+    matplotlib.colors.to_rgb(c)
+    for c in ["C0", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
+]
 
 
 class FittingError(Exception):
@@ -1051,14 +1056,14 @@ class Fitter(object):
                 alpha=0.2,
                 zorder=9,
             )
-        # Components (currently will work for <=3 component)
-        colors = ["#1f78b4", "#33a02c", "#6a3d9a"]
+        # Components
+        fit_ax.set_prop_cycle(color=COLORS)
         for i, m in enumerate(self.model.components):
             y = m.eval(x=x_plot, **self.best_values)
             if isinstance(y, float):
                 y = np.ones(x_plot.shape) * y
             ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
-            fit_ax.plot(x_plot, y, label=m.prefix, color=colors[i])
+            fit_ax.plot(x_plot, y, label=m.prefix)
         # Plot Peak center and FWHM
         peak_centers = [
             self.param_val(p)
@@ -1178,93 +1183,3 @@ class Fitter(object):
             plt.close(fig)
         else:
             return fig
-
-
-class FitterGaussGauss(Fitter):
-    def make_model(self):
-        self.model = GaussModel(prefix="gauss0_") + GaussModel(prefix="gauss1_")
-
-    def _guess_param_defaults(self):
-        params = []
-        for comp in self.model.components:
-            if comp.prefix == "gauss0_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=self.dx_roi,
-                    center_ratio=0.33,
-                    width_ratio=0.5,
-                )
-            elif comp.prefix == "gauss1_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=self.dx_roi,
-                    center_ratio=0.66,
-                    width_ratio=0.5,
-                )
-        return params
-
-
-class FitterGaussGaussLine(Fitter):
-    def make_model(self):
-        self.model = (
-            GaussModel(prefix="gauss0_")
-            + GaussModel(prefix="gauss1_")
-            + LineModel(prefix="line_")
-        )
-
-    def _guess_param_defaults(self):
-        params = []
-        for comp in self.model.components:
-            if comp.prefix == "gauss0_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=self.dx_roi,
-                    center_ratio=0.33,
-                    width_ratio=0.5,
-                )
-            elif comp.prefix == "gauss1_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=self.dx_roi,
-                    center_ratio=0.66,
-                    width_ratio=0.5,
-                )
-            else:
-                params += comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
-        return params
-
-
-class FitterGaussGaussExp(Fitter):
-    def make_model(self):
-        self.model = (
-            GaussModel(prefix="gauss0_")
-            + GaussModel(prefix="gauss1_")
-            + ExpModel(prefix="exp_")
-        )
-
-    def _guess_param_defaults(self):
-        params = []
-        for comp in self.model.components:
-            if comp.prefix == "gauss0_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=dx_roi,
-                    center_ratio=0.33,
-                    width_ratio=0.5,
-                )
-            elif comp.prefix == "gauss1_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=dx_roi,
-                    center_ratio=0.66,
-                    width_ratio=0.5,
-                )
-            else:
-                params += comp.guess(self.y_roi, x=self.x_roi, dx=dx_roi)
-        return params
