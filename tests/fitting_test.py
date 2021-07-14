@@ -141,7 +141,6 @@ HIGH_STAT_SIM_PARAMS = {
         ["gausserf", "line"],
         ["gausserf", "exp"],
         "expgauss",
-        ["gauss", "gausserf", "erf", "line"],
     ],
     "fixture": {
         "params": [],
@@ -317,3 +316,40 @@ class TestFittingHighStatSimData(object):
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()
+
+@pytest.mark.parametrize("method", ["lmfit", "lmfit-pml", "minuit-pml"])
+def test_gauss_gauss_gauss_line(method):
+    model = (
+        bq.fitting.GaussModel(prefix="gauss0_") +
+        bq.fitting.GaussModel(prefix="gauss1_") +
+        bq.fitting.GaussModel(prefix="gauss2_") +
+        bq.fitting.LineModel(prefix="line_")
+    )
+    params={
+        "gauss0_amp": 1e5,
+        "gauss0_mu": 80.0,
+        "gauss0_sigma": 5.0,
+        "gauss1_amp": 1e5,
+        "gauss1_mu": 100.0,
+        "gauss1_sigma": 5.0,
+        "gauss2_amp": 1e5,
+        "gauss2_mu": 120.0,
+        "gauss2_sigma": 5.0,
+        "line_m": -10.0,
+        "line_b": 1e4,
+    }
+    data = sim_data(y_func=model.eval, x_min=0, x_max=200, **params)
+
+    fitter = bq.Fitter(model, **data)
+    for i in range(3):
+        n = f"gauss{i}_mu"
+        fitter.params[n].set(value=params[n])
+    fitter.fit(method)
+    compare_params(
+        true_params=params,
+        fit_params=fitter.best_values,
+        rtol=0.05,
+        fitter=fitter,
+    )
+    # fitter.custom_plot()
+    # plt.show()
