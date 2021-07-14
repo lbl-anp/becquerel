@@ -139,9 +139,9 @@ HIGH_STAT_SIM_PARAMS = {
         "gausserf",
         ["gauss", "exp"],
         ["gausserf", "line"],
-        # ['gauss', 'line', 'exp'],
         ["gausserf", "exp"],
         "expgauss",
+        ["gauss", "gausserf", "erf", "line"],
     ],
     "fixture": {
         "params": [],
