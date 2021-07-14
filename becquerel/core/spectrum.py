@@ -1304,12 +1304,8 @@ class Spectrum(object):
           matplotlib axes object
         """
 
-        emode = "none"
-        alpha = 1
-        if "emode" in kwargs:
-            emode = kwargs.pop("emode")
-        if "alpha" in kwargs:
-            alpha = kwargs["alpha"]
+        emode = kwargs.pop("emode", "none")
+        alpha = kwargs.get("alpha", 1)
 
         plotter = plotting.SpectrumPlotter(self, *fmt, **kwargs)
         ax = plotter.plot()
