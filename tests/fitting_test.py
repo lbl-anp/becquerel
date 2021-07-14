@@ -317,15 +317,16 @@ class TestFittingHighStatSimData(object):
         # fitter.custom_plot()
         # plt.show()
 
+
 @pytest.mark.parametrize("method", ["lmfit", "lmfit-pml", "minuit-pml"])
 def test_gauss_gauss_gauss_line(method):
     model = (
-        bq.fitting.GaussModel(prefix="gauss0_") +
-        bq.fitting.GaussModel(prefix="gauss1_") +
-        bq.fitting.GaussModel(prefix="gauss2_") +
-        bq.fitting.LineModel(prefix="line_")
+        bq.fitting.GaussModel(prefix="gauss0_")
+        + bq.fitting.GaussModel(prefix="gauss1_")
+        + bq.fitting.GaussModel(prefix="gauss2_")
+        + bq.fitting.LineModel(prefix="line_")
     )
-    params={
+    params = {
         "gauss0_amp": 1e5,
         "gauss0_mu": 80.0,
         "gauss0_sigma": 5.0,
