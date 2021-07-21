@@ -126,16 +126,16 @@ def bin_centers_from_edges(edges_kev):
     return centers_kev
 
 
-def sqrt_bins(bin_min, bin_max, nbins):
+def sqrt_bins(bin_edge_min, bin_edge_max, nbins):
     """
     Square root binning
 
     Args:
-      bin_min (float): Minimum bin edge (must be greater than 0)
-      bin_max (float): Maximum bin edge (must be greater than bin_min)
+      bin_edge_min (float): Minimum bin edge (must be greater than 0)
+      bin_edge_max (float): Maximum bin edge (must be greater than bin_min)
       nbins (int): Number of bins
 
     Returns:
       np.array of bin edges (length = nbins + 1)
     """
-    return np.linspace(np.sqrt(bin_min), np.sqrt(bin_max), nbins + 1) ** 2
+    return np.linspace(np.sqrt(bin_edge_min), np.sqrt(bin_edge_max), nbins + 1) ** 2
