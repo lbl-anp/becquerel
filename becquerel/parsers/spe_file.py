@@ -65,8 +65,8 @@ class SpeFile(SpectrumFile):
         print("SpeFile: Reading file " + self.filename)
         self.realtime = 0.0
         self.livetime = 0.0
-        self.channels = np.array([], dtype=np.float)
-        self.data = np.array([], dtype=np.float)
+        self.channels = np.array([], dtype=float)
+        self.data = np.array([], dtype=float)
         self.cal_coeff = []
         with open(self.filename, "r") as f:
             # read & remove newlines from end of each line

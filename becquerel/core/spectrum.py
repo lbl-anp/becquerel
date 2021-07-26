@@ -629,7 +629,7 @@ class Spectrum(object):
         if xmax is None:
             xmax = np.ceil(max(listmode_data))
         if bins is None:
-            bins = np.arange(xmin, xmax + 1, dtype=np.int)
+            bins = np.arange(xmin, xmax + 1, dtype=int)
 
         assert xmin < xmax
         if isinstance(bins, int):
@@ -1300,19 +1300,15 @@ class Spectrum(object):
                   plotting control use SpectrumPlotter and its errorband and
                   errorbars functions.
           kwargs: arguments that are directly passed to matplotlib's plot
-                  command. In addition it is possible to pass linthreshy if
+                  command. In addition it is possible to pass linthresh if
                   ylim='default' and ymode='symlog'
 
         Returns:
           matplotlib axes object
         """
 
-        emode = "none"
-        alpha = 1
-        if "emode" in kwargs:
-            emode = kwargs.pop("emode")
-        if "alpha" in kwargs:
-            alpha = kwargs["alpha"]
+        emode = kwargs.pop("emode", "none")
+        alpha = kwargs.get("alpha", 1)
 
         plotter = plotting.SpectrumPlotter(self, *fmt, **kwargs)
         ax = plotter.plot()
@@ -1344,7 +1340,7 @@ class Spectrum(object):
           ylabel: costum ylabel value
           kwargs: arguments that are directly passed to matplotlib's
                   fill_between command. In addition it is possible to pass
-                  linthreshy if ylim='default' and ymode='symlog'.
+                  linthresh if ylim='default' and ymode='symlog'.
 
         Returns:
           matplotlib axes object

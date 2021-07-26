@@ -50,7 +50,7 @@ def spec_data():
     """Build a vector of random counts."""
 
     floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH)
-    return floatdata.astype(np.int)
+    return floatdata.astype(int)
 
 
 @pytest.fixture
