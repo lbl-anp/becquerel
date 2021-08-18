@@ -256,6 +256,7 @@ def _fit_expression(
     expression,
     points_x,
     points_y,
+    weights=None,
     params0=None,
     domain=DEFAULT_DOMAIN,
     rng=DEFAULT_RANGE,
@@ -273,6 +274,11 @@ def _fit_expression(
         The x-value or values of calibration points
     points_y : float or array_like
         The y-value or values of calibration points
+    weights : float or array_like
+        The weights to be used when fitting. Fitting will minimize the sum
+        of squared errors weighted by these weights, i.e.,
+        sum_i (w_i*(y_i - f(x_i))**2)). By default will use an array of
+        ones with the same length as the points.
     params0 : float or array_like
         Initial guesses for the parameters. By default an array of ones
         with its length inferred from the number of parameters
@@ -293,7 +299,9 @@ def _fit_expression(
         Parameters that result from the fit.
     """
     expression = _validate_expression(expression, domain=domain, rng=rng)
-    points_x, points_y = _check_points(points_x, points_y, domain=domain, rng=rng)
+    points_x, points_y, weights = _check_points(
+        points_x, points_y, weights=weights, domain=domain, rng=rng
+    )
 
     # check that we have the expected number of parameters
     n_params = len(_param_indices(expression))
@@ -320,15 +328,15 @@ def _fit_expression(
         return np.array([])
 
     # define the residuals for least squares
-    def residuals(p, xs, ys):
+    def residuals(p, xs, ys, ws):
         fs = _eval_expression(expression, p, xs, domain=domain, rng=rng)
-        return ys - fs
+        return np.sqrt(ws) * (ys - fs)
 
     # perform the fit
     results = scipy.optimize.least_squares(
         residuals,
         params0,
-        args=(points_x, points_y),
+        args=(points_x, points_y, weights),
         **kwargs,
     )
     if not results.success:
@@ -337,7 +345,9 @@ def _fit_expression(
     return params
 
 
-def _check_points(points_x, points_y, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE):
+def _check_points(
+    points_x, points_y, weights=None, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE
+):
     """Perform various checks on the sets of calibration points.
 
     Ensure the arrays of points are both 1-D and have the same length,
@@ -350,6 +360,11 @@ def _check_points(points_x, points_y, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE):
         The x-value or values of calibration points
     points_y : float or array_like
         The y-value or values of calibration points
+    weights : float or array_like
+        The weights to be used when fitting. Fitting will minimize the sum
+        of squared errors weighted by these weights, i.e.,
+        sum_i (w_i*(y_i - f(x_i))**2)). By default will use an array of
+        ones with the same length as the points.
     domain : array_like
         The domain of the function. Will raise an error if the independent
         variable is outside this interval. Must be finite. By default
@@ -364,6 +379,8 @@ def _check_points(points_x, points_y, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE):
         The x-value or values of calibration points
     points_y : array_like
         The y-value or values of calibration points
+    weights : array_like
+        The weights to be used when fitting to the points.
     """
     if points_x is None:
         points_x = []
@@ -379,10 +396,24 @@ def _check_points(points_x, points_y, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE):
         raise CalibrationError(
             f"Number of x and y calibration points must match: {len(points_x)}, {len(points_y)}"
         )
+    # handle the weights
+    if weights is None:
+        weights = np.ones_like(points_x)
+    else:
+        weights = np.atleast_1d(weights)
+    if weights.ndim != 1:
+        raise CalibrationError(f"Calibration weights must be 1-D: {weights}")
+    if len(weights) != len(points_x):
+        raise CalibrationError(
+            f"Number of weights must match points: {len(weights)}, {len(points_x)}"
+        )
+    if (weights < 0.0).any():
+        raise CalibrationError(f"Weights cannot be negative: {weights}")
     # sort points in increasing order of x
     i = np.argsort(points_x)
     points_x = points_x[i]
     points_y = points_y[i]
+    weights = weights[i]
     # check domain and range
     if np.any((points_x < domain[0]) | (domain[1] < points_x)):
         raise CalibrationError(
@@ -390,7 +421,7 @@ def _check_points(points_x, points_y, domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE):
         )
     if np.any((points_y < rng[0]) | (rng[1] < points_y)):
         raise CalibrationError(f"Some y points are outside of range {rng}: {points_y}")
-    return points_x, points_y
+    return points_x, points_y, weights
 
 
 def _polynomial_expression(params):
@@ -592,11 +623,15 @@ class Calibration(object):
         return self._points_y
 
     @property
+    def weights(self):
+        return self._weights
+
+    @property
     def fit_y(self):
         """Calibration evaluated at the input x values."""
         return self(self.points_x)
 
-    def add_points(self, points_x=None, points_y=None):
+    def add_points(self, points_x=None, points_y=None, weights=None):
         """Add the calibration point values to the internal list.
 
         Parameters
@@ -605,17 +640,27 @@ class Calibration(object):
             The x-value or values of calibration points
         points_y : float or array_like
             The y-value or values of calibration points
+        weights : float or array_like
+            The weights to be used when fitting. Fitting will minimize the sum
+            of squared errors weighted by these weights, i.e.,
+            sum_i (w_i*(y_i - f(x_i))**2)). By default will use an array of
+            ones with the same length as the points.
         """
-        points_x, points_y = _check_points(
-            points_x, points_y, domain=self.domain, rng=self.range
+        points_x, points_y, weights = _check_points(
+            points_x, points_y, weights=weights, domain=self.domain, rng=self.range
         )
         self._points_x = np.append(self._points_x, points_x)
         self._points_y = np.append(self._points_y, points_y)
-        self._points_x, self._points_y = _check_points(
-            self._points_x, self._points_y, domain=self.domain, rng=self.range
+        self._weights = np.append(self._weights, weights)
+        self._points_x, self._points_y, self._weights = _check_points(
+            self._points_x,
+            self._points_y,
+            weights=self._weights,
+            domain=self.domain,
+            rng=self.range,
         )
 
-    def set_points(self, points_x=None, points_y=None):
+    def set_points(self, points_x=None, points_y=None, weights=None):
         """Remove existing points and set the calibration point values.
 
         Parameters
@@ -624,10 +669,16 @@ class Calibration(object):
             The x-value or values of calibration points
         points_y : float or array_like
             The y-value or values of calibration points
+        weights : float or array_like
+            The weights to be used when fitting. Fitting will minimize the sum
+            of squared errors weighted by these weights, i.e.,
+            sum_i (w_i*(y_i - f(x_i))**2)). By default will use an array of
+            ones with the same length as the points.
         """
         self._points_x = []
         self._points_y = []
-        self.add_points(points_x=points_x, points_y=points_y)
+        self._weights = []
+        self.add_points(points_x=points_x, points_y=points_y, weights=weights)
 
     def __eq__(self, other):
         """Determine if the two calibrations are identical."""
@@ -761,6 +812,7 @@ class Calibration(object):
                 "range",
                 "points_x",
                 "points_y",
+                "weights",
             ]
         )
         if len(unexpected) > 0:
@@ -778,7 +830,9 @@ class Calibration(object):
             rng=dsets["range"],
             **attrs,
         )
-        if "points_x" in dsets and "points_y" in dsets:
+        if "points_x" in dsets and "points_y" in dsets and "weights" in dsets:
+            cal.set_points(dsets["points_x"], dsets["points_y"], dsets["weights"])
+        elif "points_x" in dsets and "points_y" in dsets:
             cal.set_points(dsets["points_x"], dsets["points_y"])
         for key in attrs:
             if isinstance(attrs[key], (str, bytes)):
@@ -800,6 +854,7 @@ class Calibration(object):
             "range": self.range,
             "points_x": self.points_x,
             "points_y": self.points_y,
+            "weights": self.weights,
         }
         if self.inv_expression is not None:
             dsets["inv_expression"] = self.inv_expression
@@ -818,6 +873,7 @@ class Calibration(object):
             self.expression,
             self.points_x,
             self.points_y,
+            weights=self.weights,
             params0=self.params,
             domain=self.domain,
             rng=self.range,
@@ -825,7 +881,7 @@ class Calibration(object):
         )
         self.params = params
 
-    def fit_points(self, points_x, points_y, params0=None, **kwargs):
+    def fit_points(self, points_x, points_y, weights=None, params0=None, **kwargs):
         """Set the calibration point values and fit them.
 
         Convenience function for calling set_points() and fit().
@@ -836,6 +892,11 @@ class Calibration(object):
             The x-value or values of calibration points
         points_y : float or array_like
             The y-value or values of calibration points
+        weights : float or array_like
+            The weights to be used when fitting. Fitting will minimize the sum
+            of squared errors weighted by these weights, i.e.,
+            sum_i (w_i*(y_i - f(x_i))**2)). By default will use an array of
+            ones with the same length as the points.
         params0 : float or array_like
             Initial guesses for the parameters. By default an array of ones
             with its length inferred from the number of parameters
@@ -843,7 +904,7 @@ class Calibration(object):
         kwargs : dict
             Kwargs to pass to the minimization routine.
         """
-        self.set_points(points_x=points_x, points_y=points_y)
+        self.set_points(points_x=points_x, points_y=points_y, weights=weights)
         if params0 is not None:
             self.params = params0
         self.fit(**kwargs)
@@ -854,6 +915,7 @@ class Calibration(object):
         expression,
         points_x,
         points_y,
+        weights=None,
         params0=None,
         domain=DEFAULT_DOMAIN,
         rng=DEFAULT_RANGE,
@@ -870,6 +932,11 @@ class Calibration(object):
             The x-value or values of calibration points
         points_y : float or array_like
             The y-value or values of calibration points
+        weights : float or array_like
+            The weights to be used when fitting. Fitting will minimize the sum
+            of squared errors weighted by these weights, i.e.,
+            sum_i (w_i*(y_i - f(x_i))**2)). By default will use an array of
+            ones with the same length as the points.
         params0 : float or array_like
             Initial guesses for the parameters. By default an array of ones
             with its length inferred from the number of parameters
@@ -892,18 +959,21 @@ class Calibration(object):
             The Calibration instance with the given expression fitted to
             the points.
         """
-        points_x, points_y = _check_points(points_x, points_y, domain=domain, rng=rng)
+        points_x, points_y, weights = _check_points(
+            points_x, points_y, weights=weights, domain=domain, rng=rng
+        )
         params = _fit_expression(
             expression,
             points_x,
             points_y,
+            weights=weights,
             params0=params0,
             domain=domain,
             rng=rng,
             **fit_kwargs,
         )
         cal = cls(expression, params, domain=domain, rng=rng, **attrs)
-        cal.set_points(points_x, points_y)
+        cal.set_points(points_x, points_y, weights)
         return cal
 
     @classmethod
@@ -974,7 +1044,9 @@ class Calibration(object):
         attrs : dict
             Other information to be stored with the calibration.
         """
-        points_x, points_y = _check_points(points_x, points_y, domain=domain, rng=rng)
+        points_x, points_y, _ = _check_points(
+            points_x, points_y, domain=domain, rng=rng
+        )
         if len(points_x) < 2:
             raise CalibrationError("Interpolated calibration expects at least 2 points")
         xp = np.array2string(points_x, precision=9, separator=", ")
@@ -993,10 +1065,10 @@ class Calibration(object):
         """
 
         # residual sum of squares
-        ss_res = np.sum((self.points_y - self.fit_y) ** 2)
+        ss_res = np.sum(self.weights * (self.points_y - self.fit_y) ** 2)
 
         # total sum of squares
-        ss_tot = np.sum((self.points_y - np.mean(self.points_y)) ** 2)
+        ss_tot = np.sum(self.weights * (self.points_y - np.mean(self.points_y)) ** 2)
 
         # r-squared
         return 1 - (ss_res / ss_tot)
@@ -1012,7 +1084,8 @@ class Calibration(object):
         # Mask out zeros
         fit_y = self.fit_y[self.points_y > 0]
         points_y = self.points_y[self.points_y > 0]
-        return np.sum((points_y - fit_y) ** 2 / points_y)
+        weights = self.weights[self.points_y > 0]
+        return np.sum(weights * (points_y - fit_y) ** 2)
 
     @property
     def fit_degrees_of_freedom(self):

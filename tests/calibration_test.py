@@ -175,6 +175,19 @@ def test_fit_expression():
             gtol=1e-15,
             xtol=1e-15,
         )
+    # fit without weights (default to 1.0)
+    _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000])
+    # fit with weights
+    _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000], weights=[1.0, 0.1])
+    # bad length of weights
+    with pytest.raises(CalibrationError):
+        _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000], weights=[1.0])
+    # weights are not an iterable
+    with pytest.raises(CalibrationError):
+        _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000], weights=1.0)
+    # weights cannot be negative
+    with pytest.raises(CalibrationError):
+        _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000], weights=[1.0, -1.0])
 
 
 name_args = [
@@ -190,6 +203,7 @@ name_args = [
 ]
 points_x = [100, 500, 1000, 1500, 2500]
 points_y = [18, 42, 63, 82, 117]
+weights = [1.0, 0.3, 0.2, 0.2, 1.0]
 domain = [0, 3500]
 
 
@@ -293,10 +307,29 @@ def test_calibration_fit_from_points(name, args):
 
     # skip any instances that require a factory method
     if len(args) != 2:
-        cal2, cal3 = None, None
+        cal2 = None
     else:
         # test from_points()
-        cal2 = Calibration.from_points(args[0], points_x, points_y, args[1])
+        cal2 = Calibration.from_points(args[0], points_x, points_y)
+        cal2 = Calibration.from_points(args[0], points_x, points_y, params0=args[1])
+        assert cal2 == cal1
+
+    # test fit() with weights
+    cal1 = make_calibration(name, args)
+    cal1.add_points(points_x, points_y, weights)
+    cal1.fit()
+    # alternate: call fit_points() with weights
+    cal1.fit_points(points_x, points_y, weights)
+
+    # skip any instances that require a factory method
+    if len(args) != 2:
+        cal2 = None
+    else:
+        # test from_points() with weights
+        cal2 = Calibration.from_points(args[0], points_x, points_y, weights)
+        cal2 = Calibration.from_points(
+            args[0], points_x, points_y, weights, params0=args[1]
+        )
         assert cal2 == cal1
 
     plt.figure()
@@ -325,7 +358,7 @@ def test_calibration_fit_from_points(name, args):
     # Test statistics
     assert len(cal1.fit_y) > 0
     assert cal1.fit_R_squared > 0.8  # note: this is flexible
-    assert 0 <= cal1.fit_reduced_chi_squared <= 10  # note: this is flexible
+    assert 0 <= cal1.fit_reduced_chi_squared <= 200  # note: this is flexible
     cal1.plot()
 
 
