@@ -825,9 +825,7 @@ class Calibration(object):
         )
         self.params = params
 
-    def fit_points(
-        self, points_x, points_y, params0=None, include_origin=False, **kwargs
-    ):
+    def fit_points(self, points_x, points_y, params0=None, **kwargs):
         """Set the calibration point values and fit them.
 
         Convenience function for calling set_points() and fit().
@@ -842,15 +840,10 @@ class Calibration(object):
             Initial guesses for the parameters. By default an array of ones
             with its length inferred from the number of parameters
             referenced in the expression.
-        include_origin : bool
-            Whether to add and fit with the point (0, 0) in addition to the
-            others.
         kwargs : dict
             Kwargs to pass to the minimization routine.
         """
         self.set_points(points_x=points_x, points_y=points_y)
-        if include_origin:
-            self.add_points(0, 0)
         if params0 is not None:
             self.params = params0
         self.fit(**kwargs)
@@ -862,7 +855,6 @@ class Calibration(object):
         points_x,
         points_y,
         params0=None,
-        include_origin=False,
         domain=DEFAULT_DOMAIN,
         rng=DEFAULT_RANGE,
         fit_kwargs={},
@@ -882,9 +874,6 @@ class Calibration(object):
             Initial guesses for the parameters. By default an array of ones
             with its length inferred from the number of parameters
             referenced in the expression.
-        include_origin : bool
-            Whether to add and fit with the point (0, 0) in addition to the
-            others.
         domain : array_like
             The domain of the function. Will raise an error if the independent
             variable is outside this interval. Must be finite. By default
@@ -903,10 +892,6 @@ class Calibration(object):
             The Calibration instance with the given expression fitted to
             the points.
         """
-        points_x, points_y = _check_points(points_x, points_y, domain=domain, rng=rng)
-        if include_origin:
-            points_x = np.append(0, points_x)
-            points_y = np.append(0, points_y)
         points_x, points_y = _check_points(points_x, points_y, domain=domain, rng=rng)
         params = _fit_expression(
             expression,

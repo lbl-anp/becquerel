@@ -297,9 +297,6 @@ def test_calibration_fit_from_points(name, args):
     else:
         # test from_points()
         cal2 = Calibration.from_points(args[0], points_x, points_y, args[1])
-        cal3 = Calibration.from_points(
-            args[0], points_x, points_y, args[1], include_origin=True
-        )
         assert cal2 == cal1
 
     plt.figure()
@@ -315,16 +312,8 @@ def test_calibration_fit_from_points(name, args):
         "b-",
         lw=2,
         alpha=0.5,
-        label="fitted function (include_origin=False)",
+        label="fitted function",
     )
-    if cal3 is not None:
-        plt.plot(
-            x_fine3,
-            cal3(x_fine3),
-            "g-",
-            alpha=0.5,
-            label="fitted function (include_origin=True)",
-        )
     plt.plot(points_x, points_y, "ro", label="calibration points")
     plt.xlabel("x")
     plt.xlabel("y")
