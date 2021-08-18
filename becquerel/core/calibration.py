@@ -68,7 +68,13 @@ def _validate_domain_range(domain, rng):
 
 
 def _eval_expression(
-    expression, params, x, ind_var="x", domain=DEFAULT_DOMAIN, rng=DEFAULT_RANGE
+    expression,
+    params,
+    x,
+    ind_var="x",
+    aux_params=None,
+    domain=DEFAULT_DOMAIN,
+    rng=DEFAULT_RANGE,
 ):
     """Evaluate the expression at x.
 
@@ -77,11 +83,15 @@ def _eval_expression(
     expression : string
         The expression that defines the calibration function.
     params : array_like
-        List of floating point parameters for the calibration function
+        List of floating point parameters for the calibration function,
+        referred to by the symbol "p".
     x : float or array_like
         The argument at which to evaluate the expression.
     ind_var : str
         The symbol of the independent variable. Default "x", "y" also allowed.
+    aux_params : array_like
+        Auxiliary floating point parameters for the calibration function,
+        referred to by the symbol "a". By default an empty array.
     domain : array_like
         The domain of the function. Will raise an error if the independent
         variable is outside this interval. Must be finite. By default
@@ -103,7 +113,12 @@ def _eval_expression(
         raise CalibrationError(f"{ind_var} must be <= {domain[1]}: {x}")
     if ind_var not in ["x", "y"]:
         raise CalibrationError(f"Independent variable {ind_var} must be 'x' or 'y'")
+    if aux_params is None:
+        aux_params = np.array([])
+    else:
+        aux_params = np.asarray(aux_params)
     safe_eval.symtable["p"] = params
+    safe_eval.symtable["a"] = aux_params
     safe_eval.symtable[ind_var] = x
     y = safe_eval(expression)
     if len(safe_eval.error) > 0:
@@ -143,8 +158,9 @@ def _param_indices(expression):
 
 def _validate_expression(
     expression,
-    params=None,
     ind_var="x",
+    params=None,
+    aux_params=None,
     domain=DEFAULT_DOMAIN,
     rng=DEFAULT_RANGE,
     n_eval=100,
@@ -163,12 +179,15 @@ def _validate_expression(
         The expression that defines the calibration function. It will
         be checked for syntax, whether it uses all the parameters,
         and whether it can be evaluated.
-    params : array_like
-        List of floating point parameters for the calibration function.
-        The expression will be checked whether it includes all of
-        the parameters.
     ind_var : str
         The symbol of the independent variable. Default "x", "y" also allowed.
+    params : array_like
+        List of floating point parameters for the calibration function,
+        referred to by the symbol "p". The expression will be checked whether
+        it includes all of the parameters.
+    aux_params : array_like
+        Auxiliary floating point parameters for the calibration function,
+        referred to by the symbol "a". By default an empty array.
     domain : array_like
         The domain of the function. Will draw test values from inside this
         interval. Must be finite. By default DEFAULT_DOMAIN.
@@ -234,7 +253,13 @@ def _validate_expression(
         for x_val in x_arr:
             try:
                 y = _eval_expression(
-                    expression, params, x_val, ind_var=ind_var, domain=domain, rng=rng
+                    expression,
+                    params,
+                    x_val,
+                    ind_var=ind_var,
+                    aux_params=aux_params,
+                    domain=domain,
+                    rng=rng,
                 )
             except CalibrationError:
                 raise CalibrationError(
@@ -242,7 +267,13 @@ def _validate_expression(
                 )
         try:
             y = _eval_expression(
-                expression, params, x_arr, ind_var=ind_var, domain=domain, rng=rng
+                expression,
+                params,
+                x_arr,
+                ind_var=ind_var,
+                aux_params=aux_params,
+                domain=domain,
+                rng=rng,
             )
         except CalibrationError:
             raise CalibrationError(
@@ -258,6 +289,7 @@ def _fit_expression(
     points_y,
     weights=None,
     params0=None,
+    aux_params=None,
     domain=DEFAULT_DOMAIN,
     rng=DEFAULT_RANGE,
     **kwargs,
@@ -283,6 +315,9 @@ def _fit_expression(
         Initial guesses for the parameters. By default an array of ones
         with its length inferred from the number of parameters
         referenced in the expression.
+    aux_params : array_like
+        Auxiliary floating point parameters for the calibration function,
+        referred to by the symbol "a". By default an empty array.
     domain : array_like
         The domain of the function. Will raise an error if the independent
         variable is outside this interval. Must be finite. By default
@@ -298,7 +333,9 @@ def _fit_expression(
     params : array_like
         Parameters that result from the fit.
     """
-    expression = _validate_expression(expression, domain=domain, rng=rng)
+    expression = _validate_expression(
+        expression, aux_params=aux_params, domain=domain, rng=rng
+    )
     points_x, points_y, weights = _check_points(
         points_x, points_y, weights=weights, domain=domain, rng=rng
     )
@@ -314,7 +351,7 @@ def _fit_expression(
             f"Starting parameters have length {len(params0)}, but expression requires {n_params} parameters"
         )
     expression = _validate_expression(
-        expression, params=params0, domain=domain, rng=rng
+        expression, params=params0, aux_params=aux_params, domain=domain, rng=rng
     )
 
     # check that we have enough points
@@ -329,7 +366,9 @@ def _fit_expression(
 
     # define the residuals for least squares
     def residuals(p, xs, ys, ws):
-        fs = _eval_expression(expression, p, xs, domain=domain, rng=rng)
+        fs = _eval_expression(
+            expression, p, xs, aux_params=aux_params, domain=domain, rng=rng
+        )
         return np.sqrt(ws) * (ys - fs)
 
     # perform the fit
@@ -463,6 +502,7 @@ class Calibration(object):
         self,
         expression: str,
         params,
+        aux_params=None,
         inv_expression=None,
         domain=DEFAULT_DOMAIN,
         rng=DEFAULT_RANGE,
@@ -480,6 +520,9 @@ class Calibration(object):
             like "p[0] + p[1] * x" or a code block.
         params : array_like
             List of floating point parameters for the calibration function
+        aux_params : array_like
+            Auxiliary floating point parameters for the calibration function,
+            referred to by the symbol "a". By default an empty array.
         inv_expression : str
             String giving the inverse of the function. If such an expression
             is available in closed form, it will speed up calls to inverse().
@@ -493,12 +536,13 @@ class Calibration(object):
         attrs : dict
             Other information to be stored with the calibration.
         """
+        self.params = params
+        self.aux_params = aux_params
         self.domain = domain
         self.range = rng
-        self.expression = expression
-        self.params = params
-        self.inv_expression = inv_expression
         self.attrs = attrs
+        self.expression = expression
+        self.inv_expression = inv_expression
         self.set_points()
 
     def __str__(self):
@@ -561,20 +605,6 @@ class Calibration(object):
         self._expression = expression
 
     @property
-    def params(self):
-        return self._params
-
-    @params.setter
-    def params(self, p):
-        params = np.array(p)
-        if params.ndim != 1:
-            raise CalibrationError(f"Parameters must be a 1-D array: {params}")
-        _validate_expression(
-            self.expression, params=params, domain=self.domain, rng=self.range
-        )
-        self._params = params
-
-    @property
     def inv_expression(self):
         return self._inv_expression
 
@@ -587,6 +617,28 @@ class Calibration(object):
                 inv_expression, ind_var="y", domain=self.range, rng=self.domain
             )
             self._inv_expression = inv_expression
+
+    @property
+    def params(self):
+        return self._params
+
+    @params.setter
+    def params(self, p):
+        params = np.array(p)
+        if params.ndim != 1:
+            raise CalibrationError(f"Parameters must be a 1-D array: {params}")
+        self._params = params
+
+    @property
+    def aux_params(self):
+        return self._aux_params
+
+    @aux_params.setter
+    def aux_params(self, a):
+        if a is None:
+            self._aux_params = np.array([])
+        else:
+            self._aux_params = np.array(a)
 
     @property
     def domain(self):
@@ -688,8 +740,10 @@ class Calibration(object):
             )
         if len(self.params) != len(other.params):
             return False
-        return (self.expression == other.expression) and np.allclose(
-            self.params, other.params
+        return (
+            (self.expression == other.expression)
+            and np.allclose(self.params, other.params)
+            and np.allclose(self.aux_params, other.aux_params)
         )
 
     def copy(self):
@@ -697,6 +751,7 @@ class Calibration(object):
         cal = Calibration(
             self.expression,
             self.params,
+            aux_params=self.aux_params,
             inv_expression=self.inv_expression,
             domain=self.domain,
             rng=self.range,
@@ -719,7 +774,12 @@ class Calibration(object):
             The value(s) of the calibration function at x.
         """
         return _eval_expression(
-            self.expression, self.params, x, domain=self.domain, rng=self.range
+            self.expression,
+            self.params,
+            x,
+            aux_params=self.aux_params,
+            domain=self.domain,
+            rng=self.range,
         )
 
     def inverse(self, y, x0=None, **kwargs):
@@ -771,6 +831,7 @@ class Calibration(object):
                 self.params,
                 y,
                 ind_var="y",
+                aux_params=self.aux_params,
                 domain=self.range,  # domain and range are swapped for inverse
                 rng=self.domain,
             )
@@ -807,6 +868,7 @@ class Calibration(object):
             [
                 "expression",
                 "params",
+                "aux_params",
                 "inv_expression",
                 "domain",
                 "range",
@@ -817,6 +879,10 @@ class Calibration(object):
         )
         if len(unexpected) > 0:
             raise CalibrationError(f"Unexpected dataset names in file: {unexpected}")
+        if "aux_params" in dsets:
+            aux_params = dsets["aux_params"][()]
+        else:
+            aux_params = None
         expr = io.h5.ensure_string(dsets["expression"])
         if "inv_expression" in dsets:
             inv_expr = io.h5.ensure_string(dsets["inv_expression"])
@@ -825,6 +891,7 @@ class Calibration(object):
         cal = cls(
             expr,
             dsets["params"],
+            aux_params=aux_params,
             inv_expression=inv_expr,
             domain=dsets["domain"],
             rng=dsets["range"],
@@ -856,6 +923,8 @@ class Calibration(object):
             "points_y": self.points_y,
             "weights": self.weights,
         }
+        if len(self.aux_params) > 0:
+            dsets["aux_params"] = self.aux_params
         if self.inv_expression is not None:
             dsets["inv_expression"] = self.inv_expression
         attrs = copy.deepcopy(self.attrs)
@@ -875,6 +944,7 @@ class Calibration(object):
             self.points_y,
             weights=self.weights,
             params0=self.params,
+            aux_params=self.aux_params,
             domain=self.domain,
             rng=self.range,
             **kwargs,
@@ -917,6 +987,7 @@ class Calibration(object):
         points_y,
         weights=None,
         params0=None,
+        aux_params=None,
         domain=DEFAULT_DOMAIN,
         rng=DEFAULT_RANGE,
         fit_kwargs={},
@@ -941,6 +1012,9 @@ class Calibration(object):
             Initial guesses for the parameters. By default an array of ones
             with its length inferred from the number of parameters
             referenced in the expression.
+        aux_params : array_like
+            Auxiliary floating point parameters for the calibration function,
+            referred to by the symbol "a". By default an empty array.
         domain : array_like
             The domain of the function. Will raise an error if the independent
             variable is outside this interval. Must be finite. By default
@@ -968,11 +1042,14 @@ class Calibration(object):
             points_y,
             weights=weights,
             params0=params0,
+            aux_params=aux_params,
             domain=domain,
             rng=rng,
             **fit_kwargs,
         )
-        cal = cls(expression, params, domain=domain, rng=rng, **attrs)
+        cal = cls(
+            expression, params, aux_params=aux_params, domain=domain, rng=rng, **attrs
+        )
         cal.set_points(points_x, points_y, weights)
         return cal
 
@@ -1049,11 +1126,13 @@ class Calibration(object):
         )
         if len(points_x) < 2:
             raise CalibrationError("Interpolated calibration expects at least 2 points")
-        xp = np.array2string(points_x, precision=9, separator=", ")
-        yp = np.array2string(points_y, precision=9, separator=", ")
+        # place the points into array of auxiliary params "a"
+        aux_params = np.array([points_x, points_y])
         expr = ""
-        expr += f"scipy.interpolate.interp1d({xp}, {yp}, fill_value='extrapolate')(x)"
-        return cls(expr, [], domain=domain, rng=rng, **attrs)
+        expr += (
+            f"scipy.interpolate.interp1d(a[0, :], a[1, :], fill_value='extrapolate')(x)"
+        )
+        return cls(expr, [], aux_params=aux_params, domain=domain, rng=rng, **attrs)
 
     @property
     def fit_R_squared(self):

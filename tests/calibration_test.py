@@ -49,6 +49,11 @@ def test_eval_expression():
     _eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2.0)
     # no parameters
     _eval_expression("1.0 + 5.0 * x", [], 2.0)
+    # auxiliary parameters
+    _eval_expression("p[0] + p[1] * x + a[0]", [1.0, 5.0], 2.0, aux_params=[1.0])
+    # auxiliary parameters -- failure if aux not given
+    with pytest.raises(CalibrationError):
+        _eval_expression("p[0] + p[1] * x + a[0]", [1.0, 5.0], 2.0)
     # bad syntax
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] x", [1.0, 5.0], 2.0)
@@ -80,6 +85,8 @@ def test_expression_param_indices():
     assert np.allclose(_param_indices("p[0] + p[-1] * x"), [-1, 0])
     # having no parameters is supported
     assert len(_param_indices("1.0 + 5.0 * x")) == 0
+    # auxiliary parameters do not cause problems
+    assert np.allclose(_param_indices("p[0] + p[1] * x + a[2]"), [0, 1])
     # error if indices are not integers
     with pytest.raises(ValueError):
         _param_indices("p[0.2] + p[1] * x")
@@ -147,6 +154,21 @@ def test_validate_expression():
     # expression looks okay until it is evaluated on an array
     with pytest.raises(CalibrationError):
         _validate_expression("sqrt(p[0] + p[1] * x)", [1.0, 5.0])
+    # auxiliary parameters are allowed
+    _validate_expression("p[0] + p[1] * x + a[0] + a[1]")
+    _validate_expression(
+        "p[0] + p[1] * x + a[0] + a[1]", params=[0, 1], aux_params=[2, 3]
+    )
+    # if providing params, must also provide aux_params if present
+    with pytest.raises(CalibrationError):
+        _validate_expression("p[0] + p[1] * x + a[0] + a[1]", params=[0, 1])
+    # if providing only aux_params, will not numerically evaluate
+    _validate_expression("p[0] + p[1] * x + a[0] + a[1]", aux_params=[2, 3])
+    # this test fill find that we do not have enough auxiliary params given
+    with pytest.raises(CalibrationError):
+        _validate_expression(
+            "p[0] + p[1] * x + a[0] + a[1]", params=[0, 1], aux_params=[2]
+        )
 
 
 def test_fit_expression():
@@ -154,15 +176,28 @@ def test_fit_expression():
     # this case should work
     _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000])
     # provide initial guesses
-    _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000], params0=[0.0, 1.0])
+    _fit_expression(
+        "p[0] + p[1] * x",
+        [0, 1000],
+        [0, 1000],
+        params0=[0.0, 1.0],
+    )
     # bad number of guesses
     with pytest.raises(CalibrationError):
         _fit_expression(
-            "p[0] + p[1] * x", [0, 1000], [0, 1000], params0=[0.0, 1.0, 2.0]
+            "p[0] + p[1] * x",
+            [0, 1000],
+            [0, 1000],
+            params0=[0.0, 1.0, 2.0],
         )
     # not enough points
     with pytest.raises(CalibrationError):
-        _fit_expression("p[0] + p[1] * x", [1000], [1000], params0=[0.0, 1.0])
+        _fit_expression(
+            "p[0] + p[1] * x",
+            [1000],
+            [1000],
+            params0=[0.0, 1.0],
+        )
     # fit returns success=False (not allowed sufficient # of evaluations)
     with pytest.raises(CalibrationError):
         _fit_expression(
@@ -176,18 +211,50 @@ def test_fit_expression():
             xtol=1e-15,
         )
     # fit without weights (default to 1.0)
-    _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000])
+    _fit_expression(
+        "p[0] + p[1] * x",
+        [0, 1000],
+        [0, 1000],
+    )
     # fit with weights
-    _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000], weights=[1.0, 0.1])
+    _fit_expression(
+        "p[0] + p[1] * x",
+        [0, 1000],
+        [0, 1000],
+        weights=[1.0, 0.1],
+    )
     # bad length of weights
     with pytest.raises(CalibrationError):
-        _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000], weights=[1.0])
+        _fit_expression(
+            "p[0] + p[1] * x",
+            [0, 1000],
+            [0, 1000],
+            weights=[1.0],
+        )
     # weights are not an iterable
     with pytest.raises(CalibrationError):
-        _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000], weights=1.0)
+        _fit_expression(
+            "p[0] + p[1] * x",
+            [0, 1000],
+            [0, 1000],
+            weights=1.0,
+        )
     # weights cannot be negative
     with pytest.raises(CalibrationError):
-        _fit_expression("p[0] + p[1] * x", [0, 1000], [0, 1000], weights=[1.0, -1.0])
+        _fit_expression(
+            "p[0] + p[1] * x",
+            [0, 1000],
+            [0, 1000],
+            weights=[1.0, -1.0],
+        )
+
+    # test fit when aux_params are present
+    _fit_expression(
+        "p[0] + p[1] * x + a[0] + a[1]",
+        [0, 1000],
+        [0, 1000],
+        aux_params=[2.0, 3.0],
+    )
 
 
 name_args = [
@@ -333,12 +400,8 @@ def test_calibration_fit_from_points(name, args):
         assert cal2 == cal1
 
     plt.figure()
-    if "interp" in cal1.expression:
-        plt.title("Interpolated")
-    else:
-        plt.title(cal1.expression)
+    plt.title(cal1.expression)
     x_fine1 = np.linspace(0, 3000, num=500)
-    x_fine3 = np.linspace(0, 3000, num=500)
     plt.plot(
         x_fine1,
         cal1(x_fine1),
