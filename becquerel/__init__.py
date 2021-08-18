@@ -9,7 +9,7 @@ from .__metadata__ import __version__, __license__, __copyright__
 from .core.rebin import rebin, RebinError, RebinWarning
 from .core.spectrum import Spectrum, SpectrumError, UncalibratedError
 from .core.spectrum import SpectrumWarning
-from .core.energycal import LinearEnergyCal, EnergyCalError, BadInput
+from .core.calibration import Calibration, CalibrationError
 from .core.utils import UncertaintiesError
 from .core.plotting import SpectrumPlotter, PlottingError
 from .core.peakfinder import (
@@ -49,9 +49,8 @@ __all__ = [
     "SpectrumPlotter",
     "PlottingError",
     "UncalibratedError",
-    "LinearEnergyCal",
-    "EnergyCalError",
-    "BadInput",
+    "Calibration",
+    "CalibrationError",
     "UncertaintiesError",
     "PeakFilter",
     "PeakFilterError",
