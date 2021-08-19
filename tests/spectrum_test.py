@@ -17,7 +17,7 @@ def make_data(lam=TEST_COUNTS, size=TEST_DATA_LENGTH):
     """Build a vector of random counts."""
 
     floatdata = np.random.poisson(lam=lam, size=size)
-    return floatdata.astype(np.int)
+    return floatdata.astype(int)
 
 
 def make_spec(t, lt=None, lam=TEST_COUNTS):
@@ -1083,7 +1083,7 @@ def test_copy_cal(cal_spec):
     ids=["same edges", "subset of edges", "same bounds more bins"],
 )
 def rebin_new_edges(request):
-    return request.param.astype(np.float)
+    return request.param.astype(float)
 
 
 @pytest.fixture(

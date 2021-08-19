@@ -217,21 +217,49 @@ ISOTOPE_PROPERTIES = [
             0.0,
             14.94980957,
             [["B-"], [100.0]],
+            3.6e14,
         ),
     ),
-    ("He-4", (np.inf, True, 99.999866, "0+", 0.0, 2.4249, [[], []])),
+    ("He-4", (np.inf, True, 99.999866, "0+", 0.0, 2.4249, [[], []], 0.0)),
     (
         "K-40",
-        (3.938e16, False, 0.0117, "4-", 0.0, -33.53540, [["B-", "EC"], [89.28, 10.72]]),
+        (
+            3.938e16,
+            False,
+            0.0117,
+            "4-",
+            0.0,
+            -33.53540,
+            [["B-", "EC"], [89.28, 10.72]],
+            2.4e5,
+        ),
     ),
-    ("Co-60", (1.663e8, False, None, "5+", 0.0, -61.6503, [["B-"], [100.0]])),
+    ("Co-60", (1.663e8, False, None, "5+", 0.0, -61.6503, [["B-"], [100.0]], 4.2e13)),
     (
         "U-238",
-        (1.41e17, False, 99.2742, "0+", 0.0, 47.3077, [["A", "SF"], [100.00, 5.4e-5]]),
+        (
+            1.41e17,
+            False,
+            99.2742,
+            "0+",
+            0.0,
+            47.3077,
+            [["A", "SF"], [100.00, 5.4e-5]],
+            1.2e4,
+        ),
     ),
     (
         "Pu-244",
-        (2.525e15, False, None, "0+", 0.0, 59.8060, [["A", "SF"], [99.88, 0.12]]),
+        (
+            2.525e15,
+            False,
+            None,
+            "0+",
+            0.0,
+            59.8060,
+            [["A", "SF"], [99.88, 0.12]],
+            6.7e5,
+        ),
     ),
     (
         "Tc-99m",
@@ -243,16 +271,32 @@ ISOTOPE_PROPERTIES = [
             0.1427,
             -87.1851,
             [["IT", "B-"], [100.0, 3.7e-3]],
+            1.9e17,
         ),
     ),
     (
         "Pa-234m",
-        (69.54, False, None, "(0-)", 0.0739, 40.413, [["IT", "B-"], [0.16, 99.84]]),
+        (
+            69.54,
+            False,
+            None,
+            "(0-)",
+            0.0739,
+            40.413,
+            [["IT", "B-"], [0.16, 99.84]],
+            2.6e19,
+        ),
     ),
-    ("Hf-178", (np.inf, True, 27.28, "0+", 0.0, -52.4352, [[], []])),
-    ("Hf-178m1", (4.0, False, None, "8-", 1.1474, -51.2878, [["IT"], [100.0]])),
-    ("Hf-178m2", (9.783e8, False, None, "16+", 2.4461, -49.9891, [["IT"], [100.0]])),
+    ("Hf-178", (np.inf, True, 27.28, "0+", 0.0, -52.4352, [[], []], 0.0)),
+    ("Hf-178m1", (4.0, False, None, "8-", 1.1474, -51.2878, [["IT"], [100.0]], 5.9e20)),
+    (
+        "Hf-178m2",
+        (9.783e8, False, None, "16+", 2.4461, -49.9891, [["IT"], [100.0]], 2.4e12),
+    ),
 ]
+# Specific activity data from NRC Regulations Part 71 Appendix A, Table A-1:
+# https://www.nrc.gov/reading-rm/doc-collections/cfr/part071/part071-appa.html
+# except for the Pa and Hf isomers, which are from becquerel instead
 
 
 @pytest.mark.webtest
@@ -260,7 +304,16 @@ ISOTOPE_PROPERTIES = [
 def test_isotope_properties(iso_str, props):
     """Test that isotope properties are correct."""
     i = isotope.Isotope(iso_str)
-    half_life, is_stable, abundance, j_pi, energy_level, mass_excess, modes = props
+    (
+        half_life,
+        is_stable,
+        abundance,
+        j_pi,
+        energy_level,
+        mass_excess,
+        modes,
+        specific_activity,
+    ) = props
     if not np.isinf(half_life):
         assert np.isclose(i.half_life, half_life)
     else:
@@ -284,3 +337,4 @@ def test_isotope_properties(iso_str, props):
         assert np.isclose(i.mass_excess.nominal_value, mass_excess)
     assert set(i.decay_modes[0]) == set(modes[0])
     assert set(i.decay_modes[1]) == set(modes[1])
+    assert np.isclose(specific_activity, i.specific_activity, rtol=0.10)

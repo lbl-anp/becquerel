@@ -4,12 +4,18 @@ import numpy as np
 import pandas as pd
 import scipy.special
 from lmfit.model import Model
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
+from iminuit import Minuit
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
+COLORS = [
+    matplotlib.colors.to_rgb(c)
+    for c in ["C0", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
+]
 
 
 class FittingError(Exception):
@@ -65,6 +71,15 @@ def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
 
 
 # -----------------------------------------------------------------------------
+# Custom loss functions
+# -----------------------------------------------------------------------------
+
+
+def poisson_loss(y_eval, y_data):
+    return np.sum(y_eval - scipy.special.xlogy(y_data, y_eval))
+
+
+# -----------------------------------------------------------------------------
 # Fitting models
 # -----------------------------------------------------------------------------
 
@@ -112,6 +127,21 @@ def _xy_left(y, x=None, num=4):
     if x is not None:
         return np.mean(x[:num]), np.mean(y[:num])
     return len(y) * 0.5, np.mean(y[:num])
+
+
+def _is_count_like(y):
+    """Determine whether data 'looks like' it could be counts.
+
+    Parameters
+    ----------
+    y : array-like
+        Y-data
+    """
+    if np.any(y < 0):
+        return False
+    if not np.allclose(np.rint(y).astype(int), y):
+        return False
+    return True
 
 
 class ConstantModel(Model):
@@ -404,7 +434,7 @@ class Fitter(object):
     @y_unc.setter
     def y_unc(self, y_unc):
         if y_unc is not None:
-            self._y_unc = np.asarray(y_unc, dtype=np.float)
+            self._y_unc = np.asarray(y_unc, dtype=float)
             assert len(self.x) == len(
                 self._y_unc
             ), "Fitting x (len {}) does not match y_unc (len {})".format(
@@ -584,13 +614,21 @@ class Fitter(object):
                     self.set_param(*dp)
         return defaults
 
-    def fit(self, backend="lmfit"):
+    def fit(self, backend="lmfit", guess=None, limits=None):
         """Perform the weighted fit to data.
 
         Parameters
         ----------
-        backend : {'lmfit', 'lmfit-pml'}
+        backend : {'lmfit', 'lmfit-pml', '[i]minuit-pml'}
             Backend fitting module to use.
+        guess : dict of {str: numeric}, optional
+            User-specified parameter guesses that override guesses provided by
+            the Model.guess() or Fitter.guess_param_defaults() methods.
+            Currently only implemented for backend="lmfit" and "iminuit".
+        limits : dict of {str: tuple}, optional
+            User-specified parameter limits that override limits provided by
+            the Model.guess() or Fitter.guess_param_defaults() methods.
+            Currently only implemented for backend="lmfit" and "iminuit".
 
         Raises
         ------
@@ -605,13 +643,17 @@ class Fitter(object):
         y_roi_norm = self.y_roi
         if self.dx is not None:
             y_roi_norm = self.y_roi / self.dx_roi
-        if backend.lower().strip() == "lmfit":
+
+        self.backend = backend.lower().strip()
+
+        if self.backend == "lmfit":
             # Perform the fit, weighted by 1/uncertainties.
             weights = self.y_unc_roi ** -1.0
             self.result = self.model.fit(
                 y_roi_norm, self.params, x=self.x_roi, weights=weights
             )
-        elif backend.lower().strip() == "lmfit-pml":
+
+        elif self.backend == "lmfit-pml":
             self._set_likelihood_residual()
             # Perform the fit. PML automatically applies 1/sqrt(y) weights, so
             # additional weights here just convert back to counts.
@@ -624,7 +666,128 @@ class Fitter(object):
                 method="Nelder-Mead",
                 calc_covar=False,
             )  # no, bounds, default would be L-BFGS-B'
-            # TODO: Calculate errors breaks minimization right now
+            # NOTE: Calculating errors in lmfit-pml breaks minimization
+
+        elif self.backend in ["iminuit", "minuit"]:
+            raise NotImplementedError(
+                f"Backend {self.backend} with least-squares loss not yet "
+                + f"supported. Use {self.backend}-pml for Poisson loss or "
+                + "lmfit for least-squares."
+            )
+
+        elif self.backend in ["iminuit-pml", "minuit-pml"]:
+            # Translate a model from lmfit to minuit
+
+            if not _is_count_like(self.y_roi):
+                warnings.warn(
+                    "Passing non-count-like data to a Poisson loss fit", FittingWarning
+                )
+
+            def model_loss(*args):
+                """Poisson loss given the model specified by args."""
+                # Convert args to kwargs as lmfit.model.eval _requires_ kwargs,
+                # while the cost function passed to the Minuit object seems to
+                # _require_ args.
+                kwargs = {self.model.param_names[i]: arg for i, arg in enumerate(args)}
+                y_eval = self.model.eval(x=self.x_roi, **kwargs)
+                if self.dx_roi is not None:
+                    y_eval *= self.dx_roi
+                return poisson_loss(y_eval, self.y_roi)
+
+            # Filter out fixed params and have one consistent variable name
+            # instead of all the params / param_names / parameters / etc.
+            free_vars = [p for p in self.params if self.params[p].vary]
+
+            # Parameter guesses
+            try:
+                # First try parsing the lmfit guess into iminuit
+                guess_l = self.guess_param_defaults()
+                guess_i = {
+                    g[0]: g[2]
+                    for g in guess_l
+                    if (g[1] == "value" and g[0] in free_vars)
+                }
+            except NotImplementedError:
+                # If the model/component does not have a guess() method
+                guess_i = {}
+            # Then override with user input
+            if guess is not None:
+                guess_i.update(guess)
+                del guess  # eliminate subscript confusion
+
+            # Handle user parameter limits
+            # Supplying guesses and/or bounds seems more important for minuit
+            try:
+                # First try parsing the lmfit limits into iminuit
+                limits_l = self.guess_param_defaults()
+                min_vals, max_vals = {}, {}
+                for lim in limits_l:
+                    if lim[1] == "min":
+                        min_vals[lim[0]] = lim[2]
+                    elif lim[1] == "max":
+                        max_vals[lim[0]] = lim[2]
+                limits_i = {
+                    p: (min_vals.get(p, None), max_vals.get(p, None)) for p in free_vars
+                }
+            except NotImplementedError:
+                # If the model/component does not have a guess() method
+                limits_i = {}
+            # Then override with user input
+            if limits is not None:
+                limits_i.update(limits)
+                del limits  # eliminate subscript confusion
+
+            # Since Minuit requires guesses for every parameter, if we don't
+            # have a guess, use limits_i midpoint, or zero barring that.
+            for p in free_vars:
+                if p not in guess_i:
+                    warn_str = f"No guess provided for parameter {p}. "
+                    if (
+                        p in limits
+                        and limits_i[p][0] is not None
+                        and limits_i[p][1] is not None
+                    ):
+                        warnings.warn(warn_str + "Setting to limits midpoint.")
+                        guess_i[p] = 0.5 * (limits_i[p][0] + limits_i[p][1])
+                    else:
+                        warnings.warn(warn_str + "Setting to 0.")
+                        guess_i[p] = 0.0
+
+            # Set up the Minuit minimizer with initial guess
+            self.result = Minuit(model_loss, name=free_vars, **guess_i)
+
+            # Set user parameter limits
+            for k, v in limits_i.items():
+                self.result.limits[k] = v
+
+            # Specify proper error definition for likelihood model
+            self.result.errordef = Minuit.LIKELIHOOD
+
+            # Specify extra checks
+            self.result.strategy = 2
+
+            # Run the minimizer
+            self.result.migrad()
+
+            # Compute errors
+            self.result.hesse()
+            try:
+                self.result.minos()
+            except RuntimeError as exc:
+                warnings.warn(f"Could not compute Minos errors: {exc}")
+
+            # Update the interfaces to best_values and init_values
+            self._best_values, self._init_values = {}, {}
+            for i in range(self.result.npar):
+                p = self.result.parameters[i]
+                self._best_values[p] = self.result.values[i]
+                self._init_values[p] = self.result.init_params[p].value
+
+            # Arg order sanity checks
+            assert list(self._best_values.keys()) == free_vars
+            assert list(self._init_values.keys()) == free_vars
+            assert list(self.result.parameters) == free_vars
+
         else:
             raise FittingError("Unknown fitting backend: {}".format(backend))
 
@@ -648,7 +811,7 @@ class Fitter(object):
             diff[mask] = 1e32
             if diff.dtype == np.complex:
                 # data/model are complex
-                diff = diff.ravel().view(np.float)
+                diff = diff.ravel().view(float)
             return np.asarray(diff).ravel()  # for compatibility with pandas.Series
 
         # This overwrites the  model residual method, is an ugly hack to make
@@ -664,12 +827,17 @@ class Fitter(object):
         """
         if self.result is None:
             return None
-        if param in self.result.params:
+        if "lmfit" in self.backend:
+            if param in self.result.params:
+                return self.result.params[param].value
+            elif param in self.fit.best_values:
+                return self.result.best_values[param]
+            else:
+                raise FittingError("Unknown param: {}", param)
+        elif "minuit" in self.backend:
             return self.result.params[param].value
-        elif param in self.fit.best_values:
-            return self.result.best_values[param]
         else:
-            raise FittingError("Unknown param: {}", param)
+            raise FittingError("Unknown backend: {}", self.backend)
 
     def param_unc(self, param):
         """
@@ -677,13 +845,47 @@ class Fitter(object):
         """
         if self.result is None:
             return None
-        if param in self.result.params:
-            return self.result.params[param].stderr
-        elif param in self.result.best_values:
-            # This is the case for the `erf_form` key
-            return np.nan
+        if "lmfit" in self.backend:
+            if param in self.result.params:
+                return self.result.params[param].stderr
+            elif param in self.result.best_values:
+                # This is the case for the `erf_form` key
+                return np.nan
+            else:
+                raise FittingError("Unknown param: {}", param)
+        elif "minuit" in self.backend:
+            return self.result.params[param].error  # TODO minos vs hesse?
         else:
-            raise FittingError("Unknown param: {}", param)
+            raise FittingError("Unknown backend: {}", self.backend)
+
+    @property
+    def best_values(self):
+        """Wrapper for dictionary of best_values."""
+        if "lmfit" in self.backend:
+            return self.result.best_values
+        elif "minuit" in self.backend:
+            return self._best_values
+        else:
+            raise FittingError("Unknown backend: {}", self.backend)
+
+    @property
+    def init_values(self):
+        """Wrapper for dictionary of init_values."""
+        if "lmfit" in self.backend:
+            return self.result.init_values
+        elif "minuit" in self.backend:
+            return self._init_values
+        else:
+            raise FittingError("Unknown backend: {}", self.backend)
+
+    @property
+    def success(self):
+        if "lmfit" in self.backend:
+            return self.result.success
+        elif "minuit" in self.backend:
+            return self.result.valid
+        else:
+            raise FittingError("Unknown backend: {}", self.backend)
 
     def param_dataframe(self, sort_by_model=False):
         """
@@ -691,7 +893,7 @@ class Fitter(object):
         """
         if self.result is None:
             return None
-        df = pd.DataFrame(columns=["val", "unc"], dtype=np.float)
+        df = pd.DataFrame(columns=["val", "unc"], dtype=float)
         for k in self.param_names:
             df.loc[k, "val"] = self.param_val(k)
             df.loc[k, "unc"] = self.param_unc(k)
@@ -721,7 +923,7 @@ class Fitter(object):
             Array of residuals
         """
         dx_roi = np.ones_like(self.x_roi) if self.dx_roi is None else self.dx_roi
-        y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
+        y_eval = self.eval(self.x_roi, **self.best_values) * dx_roi
         y_res = self.y_roi - y_eval
 
         if residual_type == "rel":
@@ -753,7 +955,7 @@ class Fitter(object):
         """
 
         x_plot = np.linspace(self.x_roi[0], self.x_roi[-1], npts)
-        y = self.eval(x_plot, **self.result.best_values)
+        y = self.eval(x_plot, **self.best_values)
         plt.plot(x_plot, y, **kwargs)
 
     def custom_plot(
@@ -809,6 +1011,8 @@ class Fitter(object):
         fit_ax = fig.add_subplot(gs[0, 0])
         res_ax = fig.add_subplot(gs[1, 0], sharex=fit_ax)
         txt_ax = fig.add_subplot(gs[:, 1])
+        txt_ax.get_xaxis().set_visible(False)
+        txt_ax.get_yaxis().set_visible(False)
         # Set fig title
         if title is not None:
             fig.suptitle(
@@ -832,14 +1036,16 @@ class Fitter(object):
             label="data",
         )
         # Init fit
-        y = self.eval(x_plot, **self.result.init_values)
+        y = self.eval(x_plot, **self.init_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
         fit_ax.plot(x_plot, y, "k--", label="init")
         # Best fit
-        y = self.eval(x_plot, **self.result.best_values)
+        y = self.eval(x_plot, **self.best_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
         fit_ax.plot(x_plot, y, color="#e31a1c", label="best fit", zorder=10)
-        if self.result.success:
+        # Plot 1 sigma uncertainty bands
+        # TODO: for minuit, see how_to_draw_error_bands iminuit notebook
+        if self.success and "lmfit" in self.backend:
             yunc = self.result.eval_uncertainty(x=x_plot, sigma=1)
             fit_ax.fill_between(
                 x_plot,
@@ -850,14 +1056,14 @@ class Fitter(object):
                 alpha=0.2,
                 zorder=9,
             )
-        # Components (currently will work for <=3 component)
-        colors = ["#1f78b4", "#33a02c", "#6a3d9a"]
-        for i, m in enumerate(self.result.model.components):
-            y = m.eval(x=x_plot, **self.result.best_values)
+        # Components
+        fit_ax.set_prop_cycle(color=COLORS)
+        for i, m in enumerate(self.model.components):
+            y = m.eval(x=x_plot, **self.best_values)
             if isinstance(y, float):
                 y = np.ones(x_plot.shape) * y
             ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
-            fit_ax.plot(x_plot, y, label=m.prefix, color=colors[i])
+            fit_ax.plot(x_plot, y, label=m.prefix)
         # Plot Peak center and FWHM
         peak_centers = [
             self.param_val(p)
@@ -890,7 +1096,7 @@ class Fitter(object):
         # ---------
         # Residuals
         # ---------
-        y_eval = self.eval(self.x_roi, **self.result.best_values) * dx_roi
+        y_eval = self.eval(self.x_roi, **self.best_values) * dx_roi
         res_kwargs = dict(fmt="o", color="k", markersize=5, label="residuals")
 
         # Y-values of the residual plot, depending on residual_type
@@ -916,41 +1122,48 @@ class Fitter(object):
         # -------------------
         # Fit report (txt_ax)
         # -------------------
-        txt_ax.get_xaxis().set_visible(False)
-        txt_ax.get_yaxis().set_visible(False)
-        best_fit_values = ""
-        op = self.result.params
-        for p in self.result.params:
-            if op[p].stderr is None:
-                pass
-                # TODO: Calculate errors breaks minimization right now
-                # warnings.warn(
-                #     "Package numdifftools is required to have "
-                #     "stderr calculated.", FittingWarning)
-            else:
-                best_fit_values += "{:15} {: .6e} +/- {:.5e} ({:6.1%})\n".format(
-                    p, op[p].value, op[p].stderr, abs(op[p].stderr / op[p].value)
-                )
-        best_fit_values += "{:15} {: .6e}\n".format("Chi Squared:", self.result.chisqr)
-        best_fit_values += "{:15} {: .6e}".format("Reduced Chi Sq:", self.result.redchi)
         props = dict(boxstyle="round", facecolor="white", edgecolor="black", alpha=1)
         props = dict(facecolor="white", edgecolor="none", alpha=0)
         fp = FontProperties(family="monospace", size=8)
-        # Remove first 2 lines of fit report (long model description)
-        s = "\n".join(self.result.fit_report().split("\n")[2:])
-        # Add some more parameter details
-        s += "\n"
-        param_df = self.param_dataframe(sort_by_model=True)
-        for model_name, sdf in param_df.groupby(level="model"):
-            s += model_name + "\n"
-            for (_, param_name), param_data in sdf.iterrows():
-                v = param_data["val"]
-                e = param_data["unc"]
-                s += "    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n".format(
-                    param_name, v, e, np.abs(e / v)
-                )
+        if "lmfit" in self.backend:
+            best_fit_values = ""
+            op = self.result.params
+            for p in self.result.params:
+                if op[p].stderr is None:
+                    pass
+                    # TODO: Calculate errors breaks minimization right now
+                    # warnings.warn(
+                    #     "Package numdifftools is required to have "
+                    #     "stderr calculated.", FittingWarning)
+                else:
+                    best_fit_values += "{:15} {: .6e} +/- {:.5e} ({:6.1%})\n".format(
+                        p, op[p].value, op[p].stderr, abs(op[p].stderr / op[p].value)
+                    )
+            best_fit_values += "{:15} {: .6e}\n".format(
+                "Chi Squared:", self.result.chisqr
+            )
+            best_fit_values += "{:15} {: .6e}".format(
+                "Reduced Chi Sq:", self.result.redchi
+            )
+            # Remove first 2 lines of fit report (long model description)
+            s = "\n".join(self.result.fit_report().split("\n")[2:])
+            # Add some more parameter details
+            s += "\n"
+            param_df = self.param_dataframe(sort_by_model=True)
+            for model_name, sdf in param_df.groupby(level="model"):
+                s += model_name + "\n"
+                for (_, param_name), param_data in sdf.iterrows():
+                    v = param_data["val"]
+                    e = param_data["unc"]
+                    s += "    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n".format(
+                        param_name, v, e, np.abs(e / v)
+                    )
+        elif "minuit" in self.backend:
+            s = str(self.result) + "\n"
+
         # Add info about the ROI and units
-        s += "ROI: [{0:.3f}, {1:.3f}]\n".format(*self.roi)
+        if self.roi:
+            s += "ROI: [{0:.3f}, {1:.3f}]\n".format(*self.roi)
         s += "X units: {:s}\n".format(self.xmode if self.xmode else "None")
         s += "Y units: {:s}\n".format(self.ymode if self.ymode else "None")
         # Add to empty axis
@@ -964,98 +1177,9 @@ class Fitter(object):
             transform=txt_ax.transAxes,
             bbox=props,
         )
+
         if savefname is not None:
             fig.savefig(savefname)
             plt.close(fig)
         else:
             return fig
-
-
-class FitterGaussGauss(Fitter):
-    def make_model(self):
-        self.model = GaussModel(prefix="gauss0_") + GaussModel(prefix="gauss1_")
-
-    def _guess_param_defaults(self):
-        params = []
-        for comp in self.model.components:
-            if comp.prefix == "gauss0_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=self.dx_roi,
-                    center_ratio=0.33,
-                    width_ratio=0.5,
-                )
-            elif comp.prefix == "gauss1_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=self.dx_roi,
-                    center_ratio=0.66,
-                    width_ratio=0.5,
-                )
-        return params
-
-
-class FitterGaussGaussLine(Fitter):
-    def make_model(self):
-        self.model = (
-            GaussModel(prefix="gauss0_")
-            + GaussModel(prefix="gauss1_")
-            + LineModel(prefix="line_")
-        )
-
-    def _guess_param_defaults(self):
-        params = []
-        for comp in self.model.components:
-            if comp.prefix == "gauss0_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=self.dx_roi,
-                    center_ratio=0.33,
-                    width_ratio=0.5,
-                )
-            elif comp.prefix == "gauss1_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=self.dx_roi,
-                    center_ratio=0.66,
-                    width_ratio=0.5,
-                )
-            else:
-                params += comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
-        return params
-
-
-class FitterGaussGaussExp(Fitter):
-    def make_model(self):
-        self.model = (
-            GaussModel(prefix="gauss0_")
-            + GaussModel(prefix="gauss1_")
-            + ExpModel(prefix="exp_")
-        )
-
-    def _guess_param_defaults(self):
-        params = []
-        for comp in self.model.components:
-            if comp.prefix == "gauss0_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=dx_roi,
-                    center_ratio=0.33,
-                    width_ratio=0.5,
-                )
-            elif comp.prefix == "gauss1_":
-                params += comp.guess(
-                    self.y_roi,
-                    x=self.x_roi,
-                    dx=dx_roi,
-                    center_ratio=0.66,
-                    width_ratio=0.5,
-                )
-            else:
-                params += comp.guess(self.y_roi, x=self.x_roi, dx=dx_roi)
-        return params
