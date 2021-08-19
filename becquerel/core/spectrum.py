@@ -1078,6 +1078,12 @@ class Spectrum(object):
 
         try:
             self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
+            warnings.warn(
+                "The use of bq.EnergyCalBase classes is deprecated "
+                "and will be removed in a future release; "
+                "use bq.Calibration instead",
+                DeprecationWarning,
+            )
         except AttributeError:
             self.bin_edges_kev = cal(self.bin_edges_raw)
         self.energy_cal = cal
