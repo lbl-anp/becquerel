@@ -552,8 +552,11 @@ class Calibration(object):
         lines = str(self.expression).split("\n")
         for line in lines:
             result += " " * 4 + line + "\n"
-        result += "params:\n"
+        result += "params (p):\n"
         result += " " * 4 + str(self.params) + "\n"
+        if len(self.aux_params) > 0:
+            result += "auxiliary params (a):\n"
+            result += " " * 4 + str(self.aux_params) + "\n"
         if self.inv_expression is not None:
             result += "inv_expression:\n"
             lines = str(self.inv_expression).split("\n")
@@ -568,6 +571,8 @@ class Calibration(object):
             result += " " * 4 + str(self.points_x) + "\n"
             result += "calibration points (y):\n"
             result += " " * 4 + str(self.points_y) + "\n"
+            result += "calibration weights:\n"
+            result += " " * 4 + str(self.weights) + "\n"
         if len(self.attrs.keys()) > 0:
             result += "other attributes:\n"
             result += " " * 4 + str(self.attrs)
@@ -579,12 +584,15 @@ class Calibration(object):
         result += repr(self.expression)
         result += ", "
         result += repr(self.params)
+        if len(self.aux_params) > 0:
+            result += ", aux_params="
+            result += repr(self.aux_params)
         if self.inv_expression is not None:
-            result += ", "
+            result += ", inv_expression="
             result += repr(self.inv_expression)
-        result += ", "
+        result += ", domain="
         result += repr(self.domain)
-        result += ", "
+        result += ", rng="
         result += repr(self.range)
         if len(self.attrs) > 0:
             for key in self.attrs:
