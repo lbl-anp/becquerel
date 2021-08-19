@@ -4,7 +4,7 @@ from itertools import combinations
 import matplotlib.pyplot as plt
 import numpy as np
 from .peakfinder import PeakFinder
-from .energycal import LinearEnergyCal
+from .calibration import Calibration
 
 
 MAJOR_BACKGROUND_LINES = [
@@ -280,7 +280,7 @@ class AutoCalibrator(object):
             self.fit_energies = list(required_energies)
             gain = required_energies[0] / self.peakfinder.centroids[0]
             self.gain = gain
-            self.cal = LinearEnergyCal.from_coeffs({"offset": 0, "slope": self.gain})
+            self.cal = Calibration.from_linear([0, self.gain])
             return
         # handle the usual case: multiple lines to match
         if len(self.peakfinder.centroids) < 2:
@@ -317,4 +317,4 @@ class AutoCalibrator(object):
             self.fit_snrs = fit["snrs"]
             self.fit_energies = fit["energies"]
             self.gain = fit["gain"]
-            self.cal = LinearEnergyCal.from_coeffs({"offset": 0, "slope": self.gain})
+            self.cal = Calibration.from_linear([0, self.gain])

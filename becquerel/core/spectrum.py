@@ -82,7 +82,7 @@ class Spectrum(object):
       bin_widths_kev: np.array of energy bin widths, if calibrated
 
     Methods:
-      apply_calibration: use an EnergyCal object to calibrate this spectrum
+      apply_calibration: use a Calibration object to calibrate this spectrum
       calibrate_like: copy the calibrated bin edges from another spectrum
       rm_calibration: remove the calibrated bin edges
       combine_bins: make a new Spectrum with counts combined into bigger bins
@@ -1070,13 +1070,22 @@ class Spectrum(object):
             return self.bin_edges_raw, self.bin_widths_raw, self.bin_centers_raw
 
     def apply_calibration(self, cal):
-        """Use an EnergyCal to generate bin edge energies for this spectrum.
+        """Use a Calibration to generate bin edge energies for this spectrum.
 
         Args:
-          cal: an object derived from EnergyCalBase
+          cal: a Calibration object
         """
 
-        self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
+        try:
+            self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
+            warnings.warn(
+                "The use of bq.EnergyCalBase classes is deprecated "
+                "and will be removed in a future release; "
+                "use bq.Calibration instead",
+                DeprecationWarning,
+            )
+        except AttributeError:
+            self.bin_edges_kev = cal(self.bin_edges_raw)
         self.energy_cal = cal
 
     def calibrate_like(self, other):
