@@ -57,7 +57,7 @@ class PeakFilter(object):
         f0 = self.fwhm_at_0
         f1 = self.ref_fwhm
         x1 = self.ref_x
-        fwhm_sqr = f0 ** 2 + (f1 ** 2 - f0 ** 2) * (x / x1) ** 2
+        fwhm_sqr = f0 ** 2 + (f1 ** 2 - f0 ** 2) * (x / x1)
         return np.sqrt(fwhm_sqr)
 
     def kernel(self, x, edges):
@@ -149,6 +149,12 @@ class GaussianPeakFilter(PeakFilter):
 
 class PeakFinderError(Exception):
     """Base class for errors in PeakFinder."""
+
+    pass
+
+
+class PeakFinderWarning(UserWarning):
+    """Warnings displayed during peak fitting."""
 
     pass
 
@@ -265,6 +271,15 @@ class PeakFinder(object):
             fwhm0 = self.kernel.fwhm(xpeak)
             bw = self.spectrum.bin_widths_raw[0]
             h = int(max(1, 0.2 * fwhm0 / bw))
+
+            # skip peaks that are too close to the edge
+            if (xbin - h < 0) or (xbin + h > len(self.snr) - 1):
+                warnings.warn(
+                    f"Skipping peak @{xpeak}; too close to the edge of the spectrum",
+                    PeakFinderWarning,
+                )
+                return
+
             d2 = (
                 (1 * self.snr[xbin - h] - 2 * self.snr[xbin] + 1 * self.snr[xbin + h])
                 / h ** 2
@@ -274,7 +289,6 @@ class PeakFinder(object):
                 raise PeakFinderError("Second derivative must be negative at peak")
             d2 *= -1
             fwhm = 2 * np.sqrt(self.snr[xbin] / d2)
-            self.fwhms.append(fwhm)
             # add the peak if it has a similar FWHM to the kernel's FWHM
             if self.fwhm_tol[0] * fwhm0 <= fwhm <= self.fwhm_tol[1] * fwhm0:
                 self.centroids.append(xpeak)
@@ -288,11 +302,12 @@ class PeakFinder(object):
     def plot(self, facecolor="red", linecolor="red", alpha=0.5, peaks=True):
         """Plot the peak signal-to-noise ratios calculated using the kernel."""
         bin_edges = self.spectrum.bin_edges_raw
+        bin_centers = self.spectrum.bin_centers_raw
 
         if facecolor is not None:
-            plt.fill_between(bin_edges[:-1], self.snr, 0, color=facecolor, alpha=alpha)
+            plt.fill_between(bin_centers, self.snr, 0, color=facecolor, alpha=alpha)
         if linecolor is not None:
-            plt.plot(bin_edges[:-1], self.snr, "-", color=linecolor)
+            plt.plot(bin_centers, self.snr, "-", color=linecolor)
         if peaks:
             for cent, snr, fwhm in zip(self.centroids, self.snrs, self.fwhms):
                 plt.plot([cent] * 2, [0, snr], "b-", lw=1.5)
@@ -300,7 +315,7 @@ class PeakFinder(object):
                 plt.plot(
                     [cent - fwhm / 2, cent + fwhm / 2], [snr / 2] * 2, "b-", lw=1.5
                 )
-        plt.xlim(0, bin_edges.max())
+        plt.xlim(0, bin_centers.max())
         plt.ylim(0)
         plt.xlabel("x")
         plt.ylabel("SNR")
@@ -375,15 +390,9 @@ class PeakFinder(object):
         max_num = int(max_num)
         if max_num < 1:
             raise PeakFinderError("Must keep at least 1 peak, not {}".format(max_num))
-        # calculate the first derivative and second derivatives of the SNR
-        d1 = (self.snr[2:] - self.snr[:-2]) / 2
-        d1 = np.append(0, d1)
-        d1 = np.append(d1, 0)
-        d2 = self.snr[2:] - 2 * self.snr[1:-1] + self.snr[:-2]
-        d2 = np.append(0, d2)
-        d2 = np.append(d2, 0)
+
         # find maxima
-        peak = (d1[2:] < 0) & (d1[:-2] > 0) & (d2[1:-1] < 0)
+        peak = (self.snr[:-2] < self.snr[1:-1]) & (self.snr[1:-1] >= self.snr[2:])
         peak = np.append(False, peak)
         peak = np.append(peak, False)
         # select peaks using SNR and centroid criteria
@@ -401,3 +410,4 @@ class PeakFinder(object):
         self.backgrounds = self.backgrounds[-max_num:]
         # sort by centroid
         self.sort_by(self.centroids)
+        self.peak = peak

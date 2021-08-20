@@ -1,5 +1,6 @@
 asteval
 beautifulsoup4
+black>=20.8b1
 future
 h5py
 html5lib
@@ -15,3 +16,4 @@ requests
 scipy
 setuptools
 uncertainties>=3.0.3
+iminuit

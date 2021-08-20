@@ -83,7 +83,7 @@ class Spectrum(object):
       bin_widths_kev: np.array of energy bin widths, if calibrated
 
     Methods:
-      apply_calibration: use an EnergyCal object to calibrate this spectrum
+      apply_calibration: use a Calibration object to calibrate this spectrum
       calibrate_like: copy the calibrated bin edges from another spectrum
       rm_calibration: remove the calibrated bin edges
       combine_bins: make a new Spectrum with counts combined into bigger bins
@@ -694,7 +694,7 @@ class Spectrum(object):
         if xmax is None:
             xmax = np.ceil(max(listmode_data))
         if bins is None:
-            bins = np.arange(xmin, xmax + 1, dtype=np.int)
+            bins = np.arange(xmin, xmax + 1, dtype=int)
 
         assert xmin < xmax
         if isinstance(bins, int):
@@ -1135,13 +1135,22 @@ class Spectrum(object):
             return self.bin_edges_raw, self.bin_widths_raw, self.bin_centers_raw
 
     def apply_calibration(self, cal):
-        """Use an EnergyCal to generate bin edge energies for this spectrum.
+        """Use a Calibration to generate bin edge energies for this spectrum.
 
         Args:
-          cal: an object derived from EnergyCalBase
+          cal: a Calibration object
         """
 
-        self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
+        try:
+            self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
+            warnings.warn(
+                "The use of bq.EnergyCalBase classes is deprecated "
+                "and will be removed in a future release; "
+                "use bq.Calibration instead",
+                DeprecationWarning,
+            )
+        except AttributeError:
+            self.bin_edges_kev = cal(self.bin_edges_raw)
         self.energy_cal = cal
 
     def calibrate_like(self, other):
@@ -1362,19 +1371,15 @@ class Spectrum(object):
                   plotting control use SpectrumPlotter and its errorband and
                   errorbars functions.
           kwargs: arguments that are directly passed to matplotlib's plot
-                  command. In addition it is possible to pass linthreshy if
+                  command. In addition it is possible to pass linthresh if
                   ylim='default' and ymode='symlog'
 
         Returns:
           matplotlib axes object
         """
 
-        emode = "none"
-        alpha = 1
-        if "emode" in kwargs:
-            emode = kwargs.pop("emode")
-        if "alpha" in kwargs:
-            alpha = kwargs["alpha"]
+        emode = kwargs.pop("emode", "none")
+        alpha = kwargs.get("alpha", 1)
 
         plotter = plotting.SpectrumPlotter(self, *fmt, **kwargs)
         ax = plotter.plot()
@@ -1406,7 +1411,7 @@ class Spectrum(object):
           ylabel: costum ylabel value
           kwargs: arguments that are directly passed to matplotlib's
                   fill_between command. In addition it is possible to pass
-                  linthreshy if ylim='default' and ymode='symlog'.
+                  linthresh if ylim='default' and ymode='symlog'.
 
         Returns:
           matplotlib axes object
@@ -1415,7 +1420,7 @@ class Spectrum(object):
         plotter = plotting.SpectrumPlotter(self, **kwargs)
         return plotter.fill_between()
 
-    def fit(self, model, xmode, ymode, roi=None, perform_fit=True):
+    def fit(self, model, xmode, ymode, roi=None, perform_fit=True, backend="lmfit"):
         """Create a Fitter object based on this Spectrum and perform the fit.
 
         Parameters
@@ -1431,6 +1436,8 @@ class Spectrum(object):
         perform_fit : bool
             If True, perform the fit now, otherwise, set up fitter without
             performing the fit.
+        backend : {'lmfit', 'lmfit-pml'}
+            Backend fitting module to use. Only used if perform_fit=True.
 
         Returns
         -------
@@ -1445,7 +1452,7 @@ class Spectrum(object):
         fitter._xmode = xmode
         fitter._ymode = ymode
         if perform_fit:
-            fitter.fit()
+            fitter.fit(backend=backend)
         return fitter
 
 

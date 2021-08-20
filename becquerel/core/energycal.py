@@ -4,6 +4,8 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from future.builtins import dict, super, zip
 from future.utils import viewitems
 import numpy as np
+import matplotlib.pyplot as plt
+import warnings
 
 
 class EnergyCalError(Exception):
@@ -48,6 +50,12 @@ class EnergyCalBase(object):
         self._calpoints = dict()
         self._coeffs = dict()
         # initialize fit constraints?
+        warnings.warn(
+            "The use of bq.EnergyCalBase classes is deprecated "
+            "and will be removed in a future release; "
+            "use bq.Calibration instead",
+            DeprecationWarning,
+        )
 
     @classmethod
     def from_points(cls, chlist, kevlist, include_origin=False):
@@ -294,6 +302,47 @@ class EnergyCalBase(object):
         """Do the actual curve fitting."""
 
         pass
+
+    def plot(self, ax=None):
+        """Plot the calibration.
+
+        Parameters
+        ----------
+        ax : np.ndarray of shape (2,), or matplotlib axes object, optional
+            Plot axes to use. If None, create new axes.
+        """
+
+        # Handle whether we have fit points or just a fit function
+        has_points = self.channels.size > 0
+
+        if ax is None:
+            fig, ax = plt.subplots(1 + has_points, 1, sharex=True)
+
+        if has_points:
+            assert ax.shape == (2,)
+            ax_cal, ax_res = ax
+            xmin, xmax = self.channels.min(), self.channels.max()
+        else:
+            ax_cal = ax
+            xmin, xmax = 0, 3000
+
+        # Plot calibration curve
+        xx = np.linspace(xmin, xmax, 1000)
+        yy = self.ch2kev(xx)
+        ax_cal.plot(xx, yy, alpha=1.0 - 0.7 * has_points)
+        ax_cal.set_ylabel("energy [keV]")
+
+        if has_points:
+            # Plot calibration points
+            ax_cal.scatter(self.channels, self.energies)
+
+            # Plot residuals
+            ax_res.scatter(self.channels, self.ch2kev(self.channels) - self.energies)
+            ax_res.set_xlabel("channel")
+            ax_res.set_ylabel("fit-data [keV]")
+            ax_res.axhline(0, linestyle="dashed", linewidth=1, c="k")
+        else:
+            ax_cal.set_xlabel("channel")
 
 
 # TODO: dummy class for testing?
