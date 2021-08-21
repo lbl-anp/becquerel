@@ -49,6 +49,14 @@ def make_spec(t, lt=None, lam=TEST_COUNTS):
             livetime=lt,
             bin_edges_kev=np.arange(TEST_DATA_LENGTH + 1) * 0.67,
         )
+    elif t == "applied_energy_cal":
+        spec = bq.Spectrum(
+            make_data(lam=lam),
+            livetime=lt,
+        )
+        cal = bq.Calibration("p[0] * x", [0.67])
+        spec.apply_calibration(cal)
+        return spec
     elif t == "cal_cps":
         return bq.Spectrum(
             cps=make_data(lam=lam), bin_edges_kev=TEST_EDGES_KEV, livetime=lt

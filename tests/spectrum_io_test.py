@@ -25,7 +25,16 @@ def test_spectrum_from_file_raises():
 
 
 @pytest.mark.parametrize(
-    "kind", ["uncal", "cal", "cal_new", "cal_cps", "uncal_long", "uncal_cps"]
+    "kind",
+    [
+        "uncal",
+        "cal",
+        "cal_new",
+        "applied_energy_cal",
+        "cal_cps",
+        "uncal_long",
+        "uncal_cps",
+    ],
 )
 def test_write_h5(kind):
     """Test writing different Spectrums to HDF5 files."""
@@ -35,17 +44,37 @@ def test_write_h5(kind):
 
 
 @pytest.mark.parametrize(
-    "kind", ["uncal", "cal", "cal_new", "cal_cps", "uncal_long", "uncal_cps"]
+    "kind",
+    [
+        "uncal",
+        "cal",
+        "cal_new",
+        "applied_energy_cal",
+        "cal_cps",
+        "uncal_long",
+        "uncal_cps",
+    ],
 )
 def test_read_h5(kind):
     """Test reading different Spectrums from HDF5 files."""
     fname = os.path.join(TEST_OUTPUTS, "spectrum_io__test_write_h5__" + kind + ".h5")
     spec = bq.Spectrum.read_h5(fname)
+    if kind == "applied_energy_cal":
+        assert spec.is_calibrated and spec.energy_cal is not None
     assert spec.livetime is not None
 
 
 @pytest.mark.parametrize(
-    "kind", ["uncal", "cal", "cal_new", "cal_cps", "uncal_long", "uncal_cps"]
+    "kind",
+    [
+        "uncal",
+        "cal",
+        "cal_new",
+        "applied_energy_cal",
+        "cal_cps",
+        "uncal_long",
+        "uncal_cps",
+    ],
 )
 def test_from_file_h5(kind):
     """Test Spectrum.from_file works for HDF5 files."""

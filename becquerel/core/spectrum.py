@@ -11,6 +11,7 @@ from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
 from .rebin import rebin
 from . import plotting
 from . import fitting
+from . import calibration
 import warnings
 
 
@@ -618,6 +619,14 @@ class Spectrum(object):
         """
         dsets, attrs, skipped = io.h5.read_h5(name)
         spec = Spectrum(**dsets, **attrs)
+
+        # read energy calibration from file
+        if "energy_cal" in skipped:
+            with io.h5.open_h5(name, "r") as h5:
+                group = h5["energy_cal"]
+                cal = calibration.Calibration.read(group)
+            spec.apply_calibration(cal)
+
         return spec
 
     def write_h5(self, name):
@@ -662,8 +671,24 @@ class Spectrum(object):
         if "start_time" in attrs and "stop_time" in attrs and "realtime" in attrs:
             attrs.pop("realtime")
 
-        # write everything to file
+        # write all spectrum data to file
         io.h5.write_h5(name, dsets, attrs)
+
+        # write calibration to file
+        if self.energy_cal is not None:
+            try:
+                with io.h5.open_h5(name, "r+") as h5:
+                    group = h5.create_group("energy_cal")
+                    self.energy_cal.write(group)
+            except AttributeError:
+                warnings.warn(
+                    "Unable to write energy calibration data to file. "
+                    "This may be caused by the use of "
+                    "bq.EnergyCalBase classes, which are deprecated"
+                    "and will be removed in a future release; "
+                    "use bq.Calibration instead",
+                    DeprecationWarning,
+                )
 
     @classmethod
     def from_listmode(cls, listmode_data, bins=None, xmin=None, xmax=None, **kwargs):
