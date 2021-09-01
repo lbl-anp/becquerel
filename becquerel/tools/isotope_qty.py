@@ -234,7 +234,7 @@ class IsotopeQuantity(object):
                     start_time, stop_time
                 )
             )
-        atoms = float(n_decays) / (1 - np.exp(-obj.decay_const * duration))
+        atoms = float(n_decays) / (-np.expm1(-obj.decay_const * duration))
 
         obj._ref_quantities = obj._quantities_from_kwargs(atoms=atoms)
         return obj
@@ -719,7 +719,7 @@ class NeutronIrradiation(object):
                     self.n_cm2_s
                     * cross_section
                     * initial.atoms_at(self.stop_time)
-                    * (1 - np.exp(-activated.decay_const * self.duration))
+                    * (-np.expm1(-activated.decay_const * self.duration))
                 )
             return IsotopeQuantity(activated, date=self.stop_time, bq=activated_bq)
         else:
@@ -731,7 +731,7 @@ class NeutronIrradiation(object):
                 initial_atoms = activated.bq_at(self.stop_time) / (
                     self.n_cm2_s
                     * cross_section
-                    * (1 - np.exp(-activated.decay_const * self.duration))
+                    * (-np.expm1(-activated.decay_const * self.duration))
                 )
             return IsotopeQuantity(initial, date=self.start_time, atoms=initial_atoms)
 
