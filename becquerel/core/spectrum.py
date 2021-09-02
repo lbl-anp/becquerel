@@ -104,6 +104,7 @@ class Spectrum(object):
         realtime=None,
         start_time=None,
         stop_time=None,
+        **kwargs,
     ):
         """Initialize the spectrum.
 
@@ -134,6 +135,8 @@ class Spectrum(object):
             acquisition start
           stop_time (optional): datetime or string representing the acquisition
             end.
+          kwargs (optional): any other named attributes to be stored in the
+            attrs member.
 
         Raises:
           ValueError: for bin edges not monotonically increasing;
@@ -154,6 +157,7 @@ class Spectrum(object):
         self.energy_cal = None
         self.livetime = None
         self.realtime = None
+        self.attrs = {}
 
         if counts is not None:
             if len(counts) == 0:
@@ -228,6 +232,9 @@ class Spectrum(object):
                 self.stop_time = input_file_object.collection_stop
         else:
             self.infilename = None
+
+        for key in kwargs:
+            self.attrs[key] = kwargs[key]
         # These two lines make sure operators between a Spectrum
         # and a numpy arrays are forbidden and cause a TypeError
         self.__array_ufunc__ = None
@@ -656,7 +663,7 @@ class Spectrum(object):
                 dsets.update({key: val})
 
         # build attributes dict
-        attrs = {}
+        attrs = deepcopy(self.attrs)
         # convert time attributes to strings
         for key in ["start_time", "stop_time"]:
             val = getattr(self, key)
