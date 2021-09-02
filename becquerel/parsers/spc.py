@@ -212,7 +212,6 @@ def read(filename, verbose=False):
 
     # initialize a dictionary of spectrum data to populate as we parse
     data = {}
-    data["infilename"] = filename
 
     with open(filename, "rb") as f:
         # read the file in chunks of 128 bytes

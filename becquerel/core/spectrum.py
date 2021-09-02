@@ -55,7 +55,6 @@ class Spectrum(object):
       bin_edges_kev: np.array of energy bin edges, if calibrated
       livetime: int or float of livetime, in seconds. See note above
       realtime: int or float of realtime, in seconds. May be None
-      infilename: the filename the spectrum was loaded from, if applicable
       start_time: a datetime.datetime object representing the acquisition start
       stop_time: a datetime.datetime object representing the acquisition end
 
@@ -98,7 +97,6 @@ class Spectrum(object):
         uncs=None,
         bin_edges_kev=None,
         bin_edges_raw=None,
-        infilename=None,
         livetime=None,
         realtime=None,
         start_time=None,
@@ -125,7 +123,6 @@ class Spectrum(object):
             If cps is given, uncs defaults to an array of np.nan
           bin_edges_kev (optional): an iterable of bin edge energies
             If not none, should have length of (len(counts) + 1)
-          infilename (optional): the string of the filename read in.
           livetime (optional): the livetime of the spectrum [s]
             Note that livetime is not preserved through CPS-based operations,
             such as any subtraction, or addition with a CPS-based spectrum.
@@ -218,8 +215,6 @@ class Spectrum(object):
         elif self.realtime is not None and self.stop_time is not None:
             self.start_time = self.stop_time - datetime.timedelta(seconds=self.realtime)
 
-        self.infilename = infilename
-
         for key in kwargs:
             self.attrs[key] = kwargs[key]
 
@@ -242,8 +237,8 @@ class Spectrum(object):
             ltups.append(("gross_cps", self.cps.sum()))
         except SpectrumError:
             ltups.append(("gross_cps", None))
-        if hasattr(self, "infilename"):
-            ltups.append(("filename", self.infilename))
+        if "infilename" in self.attrs:
+            ltups.append(("filename", self.attrs["infilename"]))
         else:
             ltups.append(("filename", None))
         for lt in ltups:
@@ -600,6 +595,7 @@ class Spectrum(object):
 
         # create the object and apply the calibration
         spec = cls(**data)
+        spec.attrs["infilename"] = infilename
         if cal is not None:
             spec.apply_calibration(cal)
         return spec

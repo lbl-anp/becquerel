@@ -205,7 +205,7 @@ def test_plot_default_file_title(uncal_spec):
     """Default title of a file spec"""
 
     fname = "/path/to/custom/file"
-    uncal_spec.infilename = fname
+    uncal_spec.attrs["infilename"] = fname
     uncal_spec.plot()
     assert plt.gca().get_title() == fname
     plt.close("all")

@@ -253,8 +253,8 @@ class SpectrumPlotter(object):
             self.ax.set_yscale(self.yscale)
         if self.title is not None:
             self.ax.set_title(self.title)
-        elif self.spec.infilename is not None:
-            self.ax.set_title(self.spec.infilename)
+        elif "infilename" in self.spec.attrs:
+            self.ax.set_title(self.spec.attrs["infilename"])
         if self._xlim is not None:
             self.ax.set_xlim(self.xlim)
         if self._ylim is not None:

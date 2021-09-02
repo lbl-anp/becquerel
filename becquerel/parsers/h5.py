@@ -29,7 +29,6 @@ def read(filename, verbose=False):
     # group datasets and attributes into one dictionary
     dsets, attrs, skipped = io.h5.read_h5(filename)
     data = {**dsets, **attrs}
-    data["infilename"] = filename
 
     # read energy calibration from file
     if "energy_cal" in skipped:

@@ -110,7 +110,6 @@ def read(filename, verbose=False):
 
     # initialize a dictionary of spectrum data to populate as we parse
     data = {}
-    data["infilename"] = filename
 
     # step through the stored data and parse it
     # skip first 112 bytes of file

@@ -36,7 +36,6 @@ def read(filename, verbose=False):
 
     # initialize a dictionary of spectrum data to populate as we parse
     data = {}
-    data["infilename"] = filename
 
     # parse the file line-by-line
     collection_start = None
