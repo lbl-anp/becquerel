@@ -362,12 +362,16 @@ def test_isotopequantity_from_decays(iq):
     )
 
     # quantitative
-    # if iq.half_life < 1000 * 3.156e7:  # floating point precision #65
+    # if iq.half_life < 1000 * 3.156e7:  # floating point precision #65 # here
     n = iq.decays_from(start, stop)
     iq2 = IsotopeQuantity.from_decays(
         iq.isotope, n_decays=n, start_time=start, stop_time=stop
     )
-    assert np.isclose(iq.atoms_at(start), iq2.atoms_at(start), rtol=1e-3)
+    iq_at_start = float(iq.atoms_at(start))
+    iq2_at_start = float(iq2.atoms_at(start))
+    assert np.isclose(
+        iq_at_start, iq2_at_start, rtol=1e-8
+    ), f"{100 * (1.0 - iq.atoms_at(start) / iq2.atoms_at(start)):.4f} %"
 
 
 def test_isotopequantity_from_comparison(iq):
