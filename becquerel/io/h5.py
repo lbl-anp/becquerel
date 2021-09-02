@@ -97,7 +97,15 @@ def write_h5(name: Union[str, h5py.File, h5py.Group], dsets: dict, attrs: dict) 
     with open_h5(name, "w") as file:
         # write the datasets
         for key in dsets.keys():
-            file.create_dataset(key, data=dsets[key])
+            try:
+                file.create_dataset(
+                    key,
+                    data=dsets[key],
+                    compression="gzip",
+                    compression_opts=9,
+                )
+            except TypeError:
+                file.create_dataset(key, data=dsets[key])
         # write the attributes
         file.attrs.update(attrs)
 
