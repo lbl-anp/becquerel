@@ -11,7 +11,6 @@ from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
 from .rebin import rebin
 from . import plotting
 from . import fitting
-from . import calibration
 import warnings
 
 
@@ -99,7 +98,7 @@ class Spectrum(object):
         uncs=None,
         bin_edges_kev=None,
         bin_edges_raw=None,
-        input_file_object=None,
+        infilename=None,
         livetime=None,
         realtime=None,
         start_time=None,
@@ -126,7 +125,7 @@ class Spectrum(object):
             If cps is given, uncs defaults to an array of np.nan
           bin_edges_kev (optional): an iterable of bin edge energies
             If not none, should have length of (len(counts) + 1)
-          input_file_object (optional): a parser file object
+          infilename (optional): the string of the filename read in.
           livetime (optional): the livetime of the spectrum [s]
             Note that livetime is not preserved through CPS-based operations,
             such as any subtraction, or addition with a CPS-based spectrum.
@@ -219,22 +218,11 @@ class Spectrum(object):
         elif self.realtime is not None and self.stop_time is not None:
             self.start_time = self.stop_time - datetime.timedelta(seconds=self.realtime)
 
-        self._infileobject = input_file_object
-        if input_file_object is not None:
-            self.infilename = input_file_object.filename
-            if self.livetime is None:
-                self.livetime = input_file_object.livetime
-            if self.realtime is None:
-                self.realtime = input_file_object.realtime
-            if self.start_time is None:
-                self.start_time = input_file_object.collection_start
-            if self.stop_time is None:
-                self.stop_time = input_file_object.collection_stop
-        else:
-            self.infilename = None
+        self.infilename = infilename
 
         for key in kwargs:
             self.attrs[key] = kwargs[key]
+
         # These two lines make sure operators between a Spectrum
         # and a numpy arrays are forbidden and cause a TypeError
         self.__array_ufunc__ = None
@@ -584,11 +572,12 @@ class Spectrum(object):
             self._bin_edges_raw = np.array(bin_edges_raw, dtype=float)
 
     @classmethod
-    def from_file(cls, infilename):
+    def from_file(cls, infilename, verbose=False):
         """Construct a Spectrum object from a filename.
 
         Args:
           infilename: a string representing the path to a parsable file
+          verbose: (optional) whether to print debugging information.
 
         Returns:
           A Spectrum object
@@ -596,47 +585,26 @@ class Spectrum(object):
         Raises:
           AssertionError: for a bad filename  # TODO make this an IOError
         """
+        # read the data using one of the low-level parsers
+        _, ext = os.path.splitext(infilename)
         if io.h5.is_h5_filename(infilename):
-            return cls.read_h5(infilename)
+            data, cal = parsers.h5.read(infilename, verbose=verbose)
+        elif ext.lower() == ".cnf":
+            data, cal = parsers.cnf.read(infilename, verbose=verbose)
+        elif ext.lower() == ".spc":
+            data, cal = parsers.spc.read(infilename, verbose=verbose)
+        elif ext.lower() == ".spe":
+            data, cal = parsers.spe.read(infilename, verbose=verbose)
         else:
-            spect_file_obj = _get_file_object(infilename)
+            raise NotImplementedError("File type {} can not be read".format(ext))
 
-            kwargs = {
-                "counts": spect_file_obj.data,
-                "input_file_object": spect_file_obj,
-                "bin_edges_kev": spect_file_obj.bin_edges_kev,
-            }
-
-            # TODO Get more attributes from self.infileobj
-
-            return cls(**kwargs)
-
-    @classmethod
-    def read_h5(cls, name):
-        """Read a Spectrum from an HDF5 file.
-
-        Parameters
-        ----------
-        name : str, h5py.File, h5py.Group
-            The filename or an open h5py File or Group.
-
-        Returns
-        -------
-        spectrum : becquerel.Spectrum
-        """
-        dsets, attrs, skipped = io.h5.read_h5(name)
-        spec = Spectrum(**dsets, **attrs)
-
-        # read energy calibration from file
-        if "energy_cal" in skipped:
-            with io.h5.open_h5(name, "r") as h5:
-                group = h5["energy_cal"]
-                cal = calibration.Calibration.read(group)
+        # create the object and apply the calibration
+        spec = cls(**data)
+        if cal is not None:
             spec.apply_calibration(cal)
-
         return spec
 
-    def write_h5(self, name):
+    def write(self, name):
         """Write the Spectrum to an hdf5 file.
 
         Parameters
@@ -1252,7 +1220,6 @@ class Spectrum(object):
         kwargs = {
             key: combined_counts,
             "bin_edges_kev": combined_bin_edges,
-            "input_file_object": self._infileobject,
             "livetime": self.livetime,
         }
         obj = Spectrum(**kwargs)
@@ -1309,7 +1276,6 @@ class Spectrum(object):
             counts=out_spec,
             uncs=np.sqrt(out_spec),
             bin_edges_kev=out_edges,
-            input_file_object=self._infileobject,
             livetime=self.livetime,
         )
 
@@ -1486,30 +1452,3 @@ class Spectrum(object):
         if perform_fit:
             fitter.fit(backend=backend)
         return fitter
-
-
-def _get_file_object(infilename):
-    """
-    Parse a file and return an object according to its extension.
-
-    Args:
-      infilename: a string representing a path to a parsable file
-
-    Raises:
-      AssertionError: for a bad filename  # TODO let this be an IOError
-      NotImplementedError: for an unparsable file extension
-      ...?
-
-    Returns:
-      a file object of type SpeFile, SpcFile, or CnfFile
-    """
-
-    _, extension = os.path.splitext(infilename)
-    if extension.lower() == ".spe":
-        return parsers.SpeFile(infilename)
-    elif extension.lower() == ".spc":
-        return parsers.SpcFile(infilename)
-    elif extension.lower() == ".cnf":
-        return parsers.CnfFile(infilename)
-    else:
-        raise NotImplementedError("File type {} can not be read".format(extension))
