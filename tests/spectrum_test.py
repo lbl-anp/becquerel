@@ -267,6 +267,8 @@ def test_listmode_uniform(is_cal, apply_cal):
     It's easy to introduce off-by-one errors in histogramming listmode data,
     so run quite a few sanity checks here and in the following tests.
     """
+    if is_cal and apply_cal:
+        return
 
     spec = make_spec_listmode('uniform', is_cal, apply_cal)
 
@@ -290,6 +292,8 @@ def test_listmode_uniform(is_cal, apply_cal):
 @pytest.mark.parametrize('apply_cal', [None, False, True])
 def test_listmode_non_uniform(is_cal, apply_cal):
     """Test listmode spectra with non-uniform bins."""
+    if is_cal and apply_cal:
+        return
     spec = make_spec_listmode('log', is_cal, apply_cal)
     assert len(spec) == NBINS
     assert spec.has_uniform_bins() is False
