@@ -1,6 +1,7 @@
 -r requirements.txt
+coverage
 flake8
-pydocstyle
-pylint
+black==21.4b2
 pytest>=3.0.0
 pytest-cov
+pytest-black

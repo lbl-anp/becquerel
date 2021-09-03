@@ -1,11 +1,14 @@
+asteval
 beautifulsoup4
+black>=20.8b1
 future
+h5py
 html5lib
 lmfit
 lxml
 matplotlib
 numba>=0.47.0
-llvmlite==0.31.0; python_version < "3"
+llvmlite
 numpy
 pandas
 python-dateutil
@@ -13,3 +16,4 @@ requests
 scipy
 setuptools
 uncertainties>=3.0.3
+iminuit

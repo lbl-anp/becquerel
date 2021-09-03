@@ -7,18 +7,17 @@ References:
 
 """
 
-from __future__ import print_function
 import requests
 import pandas as pd
+from collections.abc import Iterable
 from .element import element_symbol
-from ..core.utils import isstring, Iterable
 
 MAX_Z = 92
 N_COMPOUNDS = 48
 
 
-_URL_TABLE1 = 'http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html'
-_URL_TABLE2 = 'http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html'
+_URL_TABLE1 = "http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html"
+_URL_TABLE2 = "http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html"
 
 
 class NISTMaterialsError(Exception):
@@ -48,10 +47,12 @@ def _get_request(url):
     """
 
     req = requests.get(url)
-    if not req.ok or req.reason != 'OK' or req.status_code != 200:
+    if not req.ok or req.reason != "OK" or req.status_code != 200:
         raise NISTMaterialsRequestError(
-            'NIST materials request failed: reason={}, status_code={}'.format(
-                req.reason, req.status_code))
+            "NIST materials request failed: reason={}, status_code={}".format(
+                req.reason, req.status_code
+            )
+        )
     return req
 
 
@@ -74,32 +75,35 @@ def fetch_element_data():
     # rename first two header columns
     text = text.replace(
         '<TH scope="col" COLSPAN="2"><I>Z</I></TH>',
-        '<TH scope="col">Z</TH><TH scope="col">Symbol</TH>')
+        '<TH scope="col">Z</TH><TH scope="col">Symbol</TH>',
+    )
     # remove row that makes the table too wide
-    text = text.replace('<TD COLSPAN="10"><HR SIZE="1" NOSHADE></TD>', '')
+    text = text.replace('<TD COLSPAN="10"><HR SIZE="1" NOSHADE></TD>', "")
     # remove extra header columns
-    text = text.replace('<TD COLSPAN="2">', '<TD>')
-    text = text.replace('<TD COLSPAN="4">', '<TD>')
-    text = text.replace('TD>&nbsp;</TD>', '')
+    text = text.replace('<TD COLSPAN="2">', "<TD>")
+    text = text.replace('<TD COLSPAN="4">', "<TD>")
+    text = text.replace("TD>&nbsp;</TD>", "")
     # remove extra columns in Hydrogen row
-    text = text.replace('<TD ROWSPAN="92">&nbsp;</TD>', '')
+    text = text.replace('<TD ROWSPAN="92">&nbsp;</TD>', "")
     # remove open <TR> at the end of the table
-    text = text.replace('</TD></TR><TR>', '</TD></TR>')
+    text = text.replace("</TD></TR><TR>", "</TD></TR>")
     # read HTML table into pandas DataFrame
     tables = pd.read_html(text, header=0, skiprows=[1, 2])
     if len(tables) != 1:
         raise NISTMaterialsRequestError(
-            '1 HTML table expected, but found {}'.format(len(tables)))
+            "1 HTML table expected, but found {}".format(len(tables))
+        )
     df = tables[0]
     if len(df) != MAX_Z:
         raise NISTMaterialsRequestError(
-            '{} elements expected, but found {}'.format(MAX_Z, len(df)))
+            "{} elements expected, but found {}".format(MAX_Z, len(df))
+        )
     if len(df.columns) != 6:
         raise NISTMaterialsRequestError(
-            '10 columns expected, but found {} ({})'.format(
-                len(df.columns), df.columns))
+            "10 columns expected, but found {} ({})".format(len(df.columns), df.columns)
+        )
     # rename columns
-    df.columns = ['Z', 'Symbol', 'Element', 'Z_over_A', 'I_eV', 'Density']
+    df.columns = ["Z", "Symbol", "Element", "Z_over_A", "I_eV", "Density"]
     return df
 
 
@@ -121,25 +125,30 @@ def convert_composition(comp):
     comp_sym = []
     if not isinstance(comp, Iterable):
         raise NISTMaterialsRequestError(
-            'Compound must be an iterable of strings: {}'.format(comp))
+            "Compound must be an iterable of strings: {}".format(comp)
+        )
     for line in comp:
-        if not isstring(line):
+        if not isinstance(line, str):
             raise NISTMaterialsRequestError(
-                'Line must be a string type: {} {}'.format(line, type(line)))
+                "Line must be a string type: {} {}".format(line, type(line))
+            )
         try:
-            z, weight = line.split(':')
+            z, weight = line.split(":")
         except ValueError:
             raise NISTMaterialsRequestError(
-                'Unable to split compound line: {}'.format(line))
+                "Unable to split compound line: {}".format(line)
+            )
         try:
             z = int(z)
         except ValueError:
             raise NISTMaterialsRequestError(
-                'Unable to convert Z {} to integer: {}'.format(z, line))
+                "Unable to convert Z {} to integer: {}".format(z, line)
+            )
         if z < 1 or z > MAX_Z:
             raise NISTMaterialsRequestError(
-                'Z {} out of range [1, {}]: {}'.format(z, line, MAX_Z))
-        comp_sym.append(element_symbol(z) + ' ' + weight.strip())
+                "Z {} out of range [1, {}]: {}".format(z, line, MAX_Z)
+            )
+        comp_sym.append(element_symbol(z) + " " + weight.strip())
     return comp_sym
 
 
@@ -160,35 +169,38 @@ def fetch_compound_data():
     req = _get_request(_URL_TABLE2)
     text = req.text
     # remove extra header columns
-    text = text.replace('<TD ROWSPAN="2">&nbsp;</TD>', '')
+    text = text.replace('<TD ROWSPAN="2">&nbsp;</TD>', "")
     # remove extra rows in header row
-    text = text.replace(' ROWSPAN="2"', '')
+    text = text.replace(' ROWSPAN="2"', "")
     # remove extra columns in third header row
-    text = text.replace('<TD COLSPAN="9"><HR SIZE="1" NOSHADE></TD>', '')
+    text = text.replace('<TD COLSPAN="9"><HR SIZE="1" NOSHADE></TD>', "")
     # remove extra columns in the first material row
-    text = text.replace('<TD ROWSPAN="50"> &nbsp; </TD>', '')
+    text = text.replace('<TD ROWSPAN="50"> &nbsp; </TD>', "")
     # replace <BR> symbols in composition lists with semicolons
-    text = text.replace('<BR>', ';')
+    text = text.replace("<BR>", ";")
     # read HTML table into pandas DataFrame
     tables = pd.read_html(text, header=0, skiprows=[1, 2])
     if len(tables) != 1:
         raise NISTMaterialsRequestError(
-            '1 HTML table expected, but found {}'.format(len(tables)))
+            "1 HTML table expected, but found {}".format(len(tables))
+        )
     df = tables[0]
     if len(df) != N_COMPOUNDS:
         raise NISTMaterialsRequestError(
-            '{} compounds expected, but found {}'.format(N_COMPOUNDS, len(df)))
+            "{} compounds expected, but found {}".format(N_COMPOUNDS, len(df))
+        )
     if len(df.columns) != 5:
         raise NISTMaterialsRequestError(
-            '5 columns expected, but found {} ({})'.format(
-                len(df.columns), df.columns))
+            "5 columns expected, but found {} ({})".format(len(df.columns), df.columns)
+        )
     # rename columns
-    df.columns = ['Material', 'Z_over_A', 'I_eV', 'Density', 'Composition_Z']
+    df.columns = ["Material", "Z_over_A", "I_eV", "Density", "Composition_Z"]
     # clean up Z composition
-    df['Composition_Z'] = [
-        [line.strip() for line in comp.split(';')]
-        for comp in df['Composition_Z']]
+    df["Composition_Z"] = [
+        [line.strip() for line in comp.split(";")] for comp in df["Composition_Z"]
+    ]
     # create a column of compositions by symbol (for use with fetch_xcom_data)
-    df['Composition_symbol'] = [
-        convert_composition(comp) for comp in df['Composition_Z']]
+    df["Composition_symbol"] = [
+        convert_composition(comp) for comp in df["Composition_Z"]
+    ]
     return df

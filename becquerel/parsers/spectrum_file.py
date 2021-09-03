@@ -1,11 +1,11 @@
 """Base class for spectrum file parsers."""
 
-from __future__ import print_function
 import os
 import warnings
 import numpy as np
 from scipy.interpolate import interp1d
-warnings.simplefilter('always', DeprecationWarning)
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 class SpectrumFileParsingWarning(UserWarning):
@@ -41,11 +41,11 @@ class SpectrumFile(object):
         self.filename = filename
         assert os.path.exists(self.filename)
         # fields to read from file
-        self.spectrum_id = ''
-        self.sample_description = ''
-        self.detector_description = ''
-        self.location_description = ''
-        self.hardware_status = ''
+        self.spectrum_id = ""
+        self.sample_description = ""
+        self.detector_description = ""
+        self.location_description = ""
+        self.hardware_status = ""
         self.collection_start = None
         self.collection_stop = None
         self.realtime = 0.0
@@ -54,11 +54,11 @@ class SpectrumFile(object):
         # miscellaneous metadata
         self.metadata = {}
         # arrays to be read from file
-        self.channels = np.array([], dtype=np.float)
-        self.data = np.array([], dtype=np.float)
+        self.channels = np.array([], dtype=float)
+        self.data = np.array([], dtype=float)
         self.cal_coeff = []
         # arrays to be calculated using calibration
-        self.energies = np.array([], dtype=np.float)
+        self.energies = np.array([], dtype=float)
         self.bin_edges_kev = None
 
     def __str__(self):
@@ -66,46 +66,50 @@ class SpectrumFile(object):
 
         print_channels = False
 
-        s = ''
-        s += 'Filename:              {:s}\n'.format(self.filename)
-        s += 'Spectrum ID:           {:s}\n'.format(self.spectrum_id)
-        s += 'Sample description:    {:s}\n'.format(self.sample_description)
-        s += 'Detector description:  {:s}\n'.format(self.detector_description)
-        s += 'Location Description:  {:s}\n'.format(self.location_description)
-        s += 'Hardware Status:       {:s}\n'.format(self.hardware_status)
+        s = ""
+        s += "Filename:              {:s}\n".format(self.filename)
+        s += "Spectrum ID:           {:s}\n".format(self.spectrum_id)
+        s += "Sample description:    {:s}\n".format(self.sample_description)
+        s += "Detector description:  {:s}\n".format(self.detector_description)
+        s += "Location Description:  {:s}\n".format(self.location_description)
+        s += "Hardware Status:       {:s}\n".format(self.hardware_status)
         if self.collection_start is not None:
-            s += 'Collection Start:      {:%Y-%m-%d %H:%M:%S}\n'.format(
-                self.collection_start)
+            s += "Collection Start:      {:%Y-%m-%d %H:%M:%S}\n".format(
+                self.collection_start
+            )
         else:
-            s += 'Collection Start:      None\n'
+            s += "Collection Start:      None\n"
         if self.collection_stop is not None:
-            s += 'Collection Stop:       {:%Y-%m-%d %H:%M:%S}\n'.format(
-                self.collection_stop)
+            s += "Collection Stop:       {:%Y-%m-%d %H:%M:%S}\n".format(
+                self.collection_stop
+            )
         else:
-            s += 'Collection Stop:       None\n'
-        s += 'Livetime:              {:.2f} sec\n'.format(self.livetime)
-        s += 'Realtime:              {:.2f} sec\n'.format(self.realtime)
+            s += "Collection Stop:       None\n"
+        s += "Livetime:              {:.2f} sec\n".format(self.livetime)
+        s += "Realtime:              {:.2f} sec\n".format(self.realtime)
         if len(self.metadata.keys()) > 0:
-            s += 'Metadata:\n'
+            s += "Metadata:\n"
             for key, value in self.metadata.items():
-                s += '    {} : {}\n'.format(key, value)
-        s += 'Number of channels:    {:d}\n'.format(self.num_channels)
+                s += "    {} : {}\n".format(key, value)
+        s += "Number of channels:    {:d}\n".format(self.num_channels)
         if len(self.cal_coeff) > 0:
-            s += 'Calibration coeffs:    '
-            s += ' '.join(['{:E}'.format(x) for x in self.cal_coeff])
-            s += '\n'
-        s += 'Data:                  \n'
+            s += "Calibration coeffs:    "
+            s += " ".join(["{:E}".format(x) for x in self.cal_coeff])
+            s += "\n"
+        s += "Data:                  \n"
         if print_channels:
             for ch, dt in zip(self.channels, self.data):
-                s += '    {:5.0f}    {:5.0f}\n'.format(ch, dt)
+                s += "    {:5.0f}    {:5.0f}\n".format(ch, dt)
         else:
-            s += '    [length {}]\n'.format(len(self.data))
+            s += "    [length {}]\n".format(len(self.data))
         return s
 
     @property
     def energy_bin_edges(self):
-        warnings.warn('The use of energy_bin_edges is deprecated, ' +
-                      'use bin_edges_kev instead', DeprecationWarning)
+        warnings.warn(
+            "The use of energy_bin_edges is deprecated, use bin_edges_kev instead",
+            DeprecationWarning,
+        )
         return self.bin_edges_kev
 
     @property
@@ -115,11 +119,11 @@ class SpectrumFile(object):
 
     def read(self, verbose=False):
         """Read in the file."""
-        raise NotImplementedError('read method not implemented')
+        raise NotImplementedError("read method not implemented")
 
     def write(self, filename):
         """Write back to a file."""
-        raise NotImplementedError('write method not implemented')
+        raise NotImplementedError("write method not implemented")
 
     def apply_calibration(self):
         """Calculate energies corresponding to channels."""
@@ -131,9 +135,10 @@ class SpectrumFile(object):
         # check that calibration makes sense, remove calibration if not
         if np.any(np.diff(self.energies) <= 0):
             warnings.warn(
-                'Spectrum will be initated without an energy calibration;' +
-                'invalid calibration, energies not monotonically increasing.',
-                SpectrumFileParsingWarning)
+                "Spectrum will be initated without an energy calibration;"
+                + "invalid calibration, energies not monotonically increasing.",
+                SpectrumFileParsingWarning,
+            )
             self.bin_edges_kev = None
 
     def channel_to_energy(self, channel):
