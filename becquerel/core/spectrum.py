@@ -624,10 +624,7 @@ class Spectrum(object):
                                              range=(xmin, xmax))
 
         kwargs['counts'] = bin_counts
-        if is_cal:
-            kwargs['bin_edges_kev'] = bin_edges
-        else:
-            kwargs['bin_edges_raw'] = bin_edges
+        kwargs['bin_edges_kev' if is_cal else 'bin_edges_raw'] = bin_edges
 
         return cls(**kwargs)
 
