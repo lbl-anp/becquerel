@@ -594,6 +594,8 @@ class Spectrum(object):
             numpy.histogram style (array of all low edges and last up edge)
           xmin: minimum x of histogram; equals bin_edges[0] if int # of bins
           xmax: maximum x of histogram; equals bin_edges[-1] if int # of bins
+          is_cal: set bin_edges_kev if True, or bin_edges_raw otherwise; False
+            by default
 
         Returns:
           A Spectrum object
