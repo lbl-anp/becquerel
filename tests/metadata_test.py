@@ -9,7 +9,8 @@ README = (REPO_PATH / "README.md").read_text()
 
 class TestCopyright:
     def test_license(self):
-        assert COPYRIGHT == LICENSE.split("\n\n")[1]
+        # The license only contains the first paragraph from the copyright
+        assert COPYRIGHT.split("\n\n")[0] == LICENSE.split("\n\n")[1]
 
     def test_readme(self):
         assert README.endswith(COPYRIGHT)
