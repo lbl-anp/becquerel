@@ -1,15 +1,7 @@
 import datetime
 from dateutil.parser import parse as dateutil_parse
 import copy
-
-try:
-    from mpmath import mp as xp
-except ImportError:
-    import numpy as xp
-else:
-    xp.dps = 100
-    xp.log2 = lambda x: xp.log(x, b=2)
-    xp.isclose = lambda s, t, rtol=1e-5, atol=1e-8: xp.almosteq(s, t, rtol, atol)
+import numpy as np
 from uncertainties import ufloat
 from becquerel.tools.isotope import Isotope
 from becquerel.tools.isotope_qty import IsotopeQuantity, NeutronIrradiation
@@ -213,9 +205,9 @@ def test_isotopequantity_at_methods(iq):
     half_life = iq.half_life
 
     assert iq.atoms_at(iq.ref_date) == iq.ref_atoms
-    assert xp.isclose(iq.g_at(iq.ref_date), iq.ref_atoms * iq.isotope.A / N_AV)
-    assert xp.isclose(iq.bq_at(iq.ref_date), iq.ref_atoms * iq.decay_const)
-    assert xp.isclose(iq.uci_at(iq.ref_date), iq.ref_atoms * iq.decay_const / UCI_TO_BQ)
+    assert np.isclose(iq.g_at(iq.ref_date), iq.ref_atoms * iq.isotope.A / N_AV)
+    assert np.isclose(iq.bq_at(iq.ref_date), iq.ref_atoms * iq.decay_const)
+    assert np.isclose(iq.uci_at(iq.ref_date), iq.ref_atoms * iq.decay_const / UCI_TO_BQ)
 
     if iq.half_life < 3.156e7 * 1000:  # OverflowError or year out of range
         dt1 = iq.ref_date + datetime.timedelta(seconds=half_life)
@@ -223,10 +215,10 @@ def test_isotopequantity_at_methods(iq):
         dt3 = iq.ref_date + datetime.timedelta(seconds=half_life * 50)
         dt4 = iq.ref_date + datetime.timedelta(seconds=half_life / 100)
 
-        assert xp.isclose(iq.atoms_at(dt1), iq.ref_atoms / 2)
-        assert xp.isclose(iq.atoms_at(dt2), iq.ref_atoms * 2)
-        assert xp.isclose(iq.bq_at(dt3) / iq.bq_at(iq.ref_date), 0, atol=1e-12)
-        assert xp.isclose(iq.bq_at(dt4), iq.bq_at(iq.ref_date), rtol=1e-2)
+        assert np.isclose(iq.atoms_at(dt1), iq.ref_atoms / 2)
+        assert np.isclose(iq.atoms_at(dt2), iq.ref_atoms * 2)
+        assert np.isclose(iq.bq_at(dt3) / iq.bq_at(iq.ref_date), 0, atol=1e-12)
+        assert np.isclose(iq.bq_at(dt4), iq.bq_at(iq.ref_date), rtol=1e-2)
 
 
 @pytest.mark.parametrize("kw", ("atoms", "g", "bq", "uci"))
@@ -278,7 +270,7 @@ def test_isotopequantity_activity_now(iq):
         iq.g_now()
 
     # Rather than test e.g.,
-    #   assert xp.isclose(iq.bq_at(), iq.bq_at(datetime.datetime.now()))
+    #   assert np.isclose(iq.bq_at(), iq.bq_at(datetime.datetime.now()))
     # which may fail if the two times are computed after a long delay on a slow
     # machine, just test that an explicit datetime.now() is sandwiched between
     # two implicit calls.
@@ -303,13 +295,13 @@ def test_isotopequantity_decays_from(iq):
         t1 = t0 + dt
         t2 = t1 + dt
 
-        assert xp.isclose(iq.decays_from(t0, t1), iq.atoms_at(t1))
-        assert xp.isclose(iq.decays_from(t1, t2), iq.atoms_at(t2))
-        assert xp.isclose(iq.decays_from(t0, t2), 3 * iq.atoms_at(t2))
+        assert np.isclose(iq.decays_from(t0, t1), iq.atoms_at(t1))
+        assert np.isclose(iq.decays_from(t1, t2), iq.atoms_at(t2))
+        assert np.isclose(iq.decays_from(t0, t2), 3 * iq.atoms_at(t2))
 
-        assert xp.isclose(iq.bq_from(t0, t1), iq.atoms_at(t1) / iq.half_life)
+        assert np.isclose(iq.bq_from(t0, t1), iq.atoms_at(t1) / iq.half_life)
 
-        assert xp.isclose(
+        assert np.isclose(
             iq.uci_from(t0, t1), iq.atoms_at(t1) / iq.half_life / UCI_TO_BQ
         )
 
@@ -324,11 +316,11 @@ def test_isotopequantity_decays_during(iq):
         dt_s = iq.half_life
         t0 = iq.ref_date
         t1 = t0 + datetime.timedelta(seconds=dt_s)
-        spec = Spectrum(xp.zeros(256), start_time=t0, stop_time=t1)
+        spec = Spectrum(np.zeros(256), start_time=t0, stop_time=t1)
 
-        assert xp.isclose(iq.decays_during(spec), iq.atoms_at(t0) / 2)
-        assert xp.isclose(iq.bq_during(spec), iq.decays_during(spec) / dt_s)
-        assert xp.isclose(iq.uci_during(spec), iq.bq_during(spec) / UCI_TO_BQ)
+        assert np.isclose(iq.decays_during(spec), iq.atoms_at(t0) / 2)
+        assert np.isclose(iq.bq_during(spec), iq.decays_during(spec) / dt_s)
+        assert np.isclose(iq.uci_during(spec), iq.bq_during(spec) / UCI_TO_BQ)
 
 
 def test_isotopequantity_eq(iq):
@@ -470,12 +462,12 @@ def test_irradiation_activate_pulse(activation_pair):
     # forward calculation
     iq1 = ni.activate(barns, initial=iq0, activated=iso1)
     assert iq1.ref_date == stop
-    assert xp.isclose(iq1.ref_atoms, expected_atoms)
+    assert np.isclose(iq1.ref_atoms, expected_atoms)
 
     # backward calculation
     iq0a = ni.activate(barns, activated=iq1, initial=iso0)
     assert iq0a.ref_date == start
-    assert xp.isclose(iq0a.ref_atoms, iq0.ref_atoms)
+    assert np.isclose(iq0a.ref_atoms, iq0.ref_atoms)
 
 
 def test_irradiation_activate_extended(activation_pair):
@@ -495,7 +487,7 @@ def test_irradiation_activate_extended(activation_pair):
         * barns
         * 1e-24
         * iq0.ref_atoms
-        * (1 - xp.exp(-iso1.decay_const * t_irr))
+        * (1 - np.exp(-iso1.decay_const * t_irr))
     )
 
     ni = NeutronIrradiation(start, stop, n_cm2_s=n_cm2_s)
@@ -503,12 +495,12 @@ def test_irradiation_activate_extended(activation_pair):
     # forward calculation
     iq1 = ni.activate(barns, initial=iq0, activated=iso1)
     assert iq1.ref_date == stop
-    assert xp.isclose(iq1.bq_at(iq1.ref_date), expected_atoms)
+    assert np.isclose(iq1.bq_at(iq1.ref_date), expected_atoms)
 
     # backward calculation
     iq0a = ni.activate(barns, initial=iso0, activated=iq1)
     assert iq0a.ref_date == start
-    assert xp.isclose(iq0a.ref_atoms, iq0.ref_atoms)
+    assert np.isclose(iq0a.ref_atoms, iq0.ref_atoms)
 
 
 def test_irradiation_activate_errors():
@@ -563,7 +555,7 @@ def test_decay_normalize(radioisotope):
 
     now = datetime.datetime.now()
     interval1 = (now, now + datetime.timedelta(hours=1))
-    assert xp.isclose(decay_normalize(radioisotope, interval1, interval1), 1)
+    assert np.isclose(decay_normalize(radioisotope, interval1, interval1), 1)
 
     # avoid numerical issues with large half-lives (#65)
     # and underflow with small half-lives
@@ -601,8 +593,8 @@ def test_decay_normalize_spectra(radioisotope):
 
     t0 = datetime.datetime.now()
     t1 = t0 + datetime.timedelta(hours=1)
-    spec1 = Spectrum(xp.zeros(256), start_time=t0, stop_time=t1)
-    assert xp.isclose(decay_normalize_spectra(radioisotope, spec1, spec1), 1)
+    spec1 = Spectrum(np.zeros(256), start_time=t0, stop_time=t1)
+    assert np.isclose(decay_normalize_spectra(radioisotope, spec1, spec1), 1)
 
     # avoid numerical issues with large half-lives (#65)
     # and underflow with small half-lives
@@ -612,6 +604,6 @@ def test_decay_normalize_spectra(radioisotope):
     else:
         t2 = t0 + datetime.timedelta(days=1)
         t3 = t1 + datetime.timedelta(days=1)
-        spec2 = Spectrum(xp.zeros(256), start_time=t2, stop_time=t3)
+        spec2 = Spectrum(np.zeros(256), start_time=t2, stop_time=t3)
         assert decay_normalize_spectra(radioisotope, spec1, spec2) > 1
         assert decay_normalize_spectra(radioisotope, spec2, spec1) < 1

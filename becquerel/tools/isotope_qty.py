@@ -3,13 +3,7 @@
 import datetime
 import copy
 
-try:
-    from mpmath import mp as xp
-except ImportError:
-    import numpy as xp
-else:
-    xp.dps = 100
-    xp.log2 = lambda x: xp.log(x, b=2)
+import numpy as np
 import warnings
 from .isotope import Isotope
 from ..core import utils
@@ -241,7 +235,7 @@ class IsotopeQuantity(object):
                     start_time, stop_time
                 )
             )
-        atoms = n_decays / (-xp.expm1(-obj.decay_const * duration))
+        atoms = n_decays / (-np.expm1(-obj.decay_const * duration))
 
         obj._ref_quantities = obj._quantities_from_kwargs(atoms=atoms)
         return obj
@@ -292,7 +286,7 @@ class IsotopeQuantity(object):
         date = date if date is not None else datetime.datetime.now()
         t1 = utils.handle_datetime(date)
         dt = (t1 - self.ref_date).total_seconds()
-        return self._ref_quantities[quantity] * xp.exp(-dt * self.decay_const)
+        return self._ref_quantities[quantity] * np.exp(-dt * self.decay_const)
 
     def atoms_at(self, date=None):
         """Calculate the number of atoms at a given time.
@@ -491,8 +485,8 @@ class IsotopeQuantity(object):
         assert len(kwargs) == 1
         key = next(iter(kwargs))
         target = kwargs[key]
-        dt = -self.half_life * xp.log2(target / self._ref_quantities[key])
-        return self.ref_date + datetime.timedelta(seconds=float(dt))
+        dt = -self.half_life * np.log2(target / self._ref_quantities[key])
+        return self.ref_date + datetime.timedelta(seconds=dt)
 
     def __str__(self):
         """Return a string representation.
@@ -725,7 +719,7 @@ class NeutronIrradiation(object):
                     self.n_cm2_s
                     * cross_section
                     * initial.atoms_at(self.stop_time)
-                    * (-xp.expm1(-activated.decay_const * self.duration))
+                    * (-np.expm1(-activated.decay_const * self.duration))
                 )
             return IsotopeQuantity(activated, date=self.stop_time, bq=activated_bq)
         else:
@@ -737,7 +731,7 @@ class NeutronIrradiation(object):
                 initial_atoms = activated.bq_at(self.stop_time) / (
                     self.n_cm2_s
                     * cross_section
-                    * (-xp.expm1(-activated.decay_const * self.duration))
+                    * (-np.expm1(-activated.decay_const * self.duration))
                 )
             return IsotopeQuantity(initial, date=self.start_time, atoms=initial_atoms)
 
