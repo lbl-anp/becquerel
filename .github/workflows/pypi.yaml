@@ -5,9 +5,11 @@
 
 name: pypi
 
+# Run on push/PR/manually BUT only uploads with a tag (see below)
 on:
   push:
-    tags: [ 'v*' ]
+    branches: [ $default-branch ]
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -29,4 +31,9 @@ jobs:
         uses: casperdcl/deploy-pypi@v2
         with:
           password: ${{ secrets.PYPI_TOKEN }}
-          pip: wheel -w dist/ --no-deps .
+          # Create source tgz
+          build: true
+          # Create wheel
+          pip: true
+          # Only upload if a tag is pushed (otherwise just build & check)
+          upload: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
