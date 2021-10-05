@@ -234,7 +234,7 @@ class IsotopeQuantity(object):
                     start_time, stop_time
                 )
             )
-        atoms = float(n_decays) / (1 - np.exp(-obj.decay_const * duration))
+        atoms = n_decays / (-np.expm1(-obj.decay_const * duration))
 
         obj._ref_quantities = obj._quantities_from_kwargs(atoms=atoms)
         return obj
@@ -282,11 +282,10 @@ class IsotopeQuantity(object):
         Raises:
           TypeError: if date is not recognized
         """
-
         date = date if date is not None else datetime.datetime.now()
         t1 = utils.handle_datetime(date)
         dt = (t1 - self.ref_date).total_seconds()
-        return self._ref_quantities[quantity] * 2 ** (-dt / self.half_life)
+        return self._ref_quantities[quantity] * np.exp(-dt * self.decay_const)
 
     def atoms_at(self, date=None):
         """Calculate the number of atoms at a given time.
@@ -719,7 +718,7 @@ class NeutronIrradiation(object):
                     self.n_cm2_s
                     * cross_section
                     * initial.atoms_at(self.stop_time)
-                    * (1 - np.exp(-activated.decay_const * self.duration))
+                    * (-np.expm1(-activated.decay_const * self.duration))
                 )
             return IsotopeQuantity(activated, date=self.stop_time, bq=activated_bq)
         else:
@@ -731,7 +730,7 @@ class NeutronIrradiation(object):
                 initial_atoms = activated.bq_at(self.stop_time) / (
                     self.n_cm2_s
                     * cross_section
-                    * (1 - np.exp(-activated.decay_const * self.duration))
+                    * (-np.expm1(-activated.decay_const * self.duration))
                 )
             return IsotopeQuantity(initial, date=self.start_time, atoms=initial_atoms)
 
