@@ -367,7 +367,7 @@ def test_isotopequantity_from_decays(iq):
         iq2 = IsotopeQuantity.from_decays(
             iq.isotope, n_decays=n, start_time=start, stop_time=stop
         )
-        assert np.isclose(iq.atoms_at(start), iq2.atoms_at(start), rtol=1e-3)
+        assert np.isclose(iq.atoms_at(start), iq2.atoms_at(start))
 
 
 def test_isotopequantity_from_comparison(iq):
