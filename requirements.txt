@@ -1,6 +1,5 @@
 asteval
 beautifulsoup4
-black>=20.8b1
 future
 h5py
 html5lib
