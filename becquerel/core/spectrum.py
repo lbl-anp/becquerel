@@ -662,11 +662,13 @@ class Spectrum(object):
                 )
 
     @classmethod
-    def from_listmode(cls, listmode_data, bins=None, xmin=None, xmax=None, **kwargs):
-        """Construct a Spectrum object (specifically the `bin_edges_raw` and
-        `counts` of a histogram) from an array of listmode data. It is left to
-        the user to set kwargs realtime, livetime, etc, rather than trying to
-        cover all use cases here.
+    def from_listmode(
+        cls, listmode_data, bins=None, xmin=None, xmax=None, is_cal=False, **kwargs
+    ):
+        """Construct a Spectrum object (specifically the `bin_edges_raw` or
+        `bin_edges_kev` and `counts` of a histogram) from an array of listmode
+        data. It is left to the user to set kwargs realtime, livetime, etc,
+        rather than trying to cover all use cases here.
 
         Args:
           listmode_data: the array containing the listmode data, e.g., the ADC
@@ -675,6 +677,8 @@ class Spectrum(object):
             numpy.histogram style (array of all low edges and last up edge)
           xmin: minimum x of histogram; equals bin_edges[0] if int # of bins
           xmax: maximum x of histogram; equals bin_edges[-1] if int # of bins
+          is_cal: set bin_edges_kev if True, or bin_edges_raw otherwise; False
+            by default
 
         Returns:
           A Spectrum object
@@ -703,7 +707,7 @@ class Spectrum(object):
         )
 
         kwargs["counts"] = bin_counts
-        kwargs["bin_edges_raw"] = bin_edges
+        kwargs["bin_edges_kev" if is_cal else "bin_edges_raw"] = bin_edges
 
         return cls(**kwargs)
 

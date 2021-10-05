@@ -1,0 +1,32 @@
+# This workflow will build, check and deploy to pypi when new tags are pushed
+# matching "v*".
+# It runs on multiple python3 versions on macOS, Ubuntu and Windows.
+# Based on: https://github.com/marketplace/actions/pypi-deployment
+
+name: pypi
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  pypi_deploy:
+
+    strategy:
+      matrix:
+        os: [ 'ubuntu-20.04' ]
+        python-version: [ '3.9' ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build, check and deploy to pypi
+        uses: casperdcl/deploy-pypi@v2
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
+          pip: wheel -w dist/ --no-deps .
