@@ -8,6 +8,7 @@ name: pypi
 # Run on push/PR/manually BUT only uploads with a tag (see below)
 on:
   push:
+    branches: [ $default-branch ]
   pull_request:
   workflow_dispatch:
 
