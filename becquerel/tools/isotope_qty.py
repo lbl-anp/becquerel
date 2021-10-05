@@ -2,7 +2,6 @@
 
 import datetime
 import copy
-
 import numpy as np
 import warnings
 from .isotope import Isotope
