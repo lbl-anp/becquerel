@@ -6,6 +6,7 @@ import datetime
 import numpy as np
 from uncertainties import UFloat, unumpy
 from .. import parsers
+from .. import io
 from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
 from .rebin import rebin
 from . import plotting
@@ -54,7 +55,6 @@ class Spectrum(object):
       bin_edges_kev: np.array of energy bin edges, if calibrated
       livetime: int or float of livetime, in seconds. See note above
       realtime: int or float of realtime, in seconds. May be None
-      infilename: the filename the spectrum was loaded from, if applicable
       start_time: a datetime.datetime object representing the acquisition start
       stop_time: a datetime.datetime object representing the acquisition end
 
@@ -97,11 +97,11 @@ class Spectrum(object):
         uncs=None,
         bin_edges_kev=None,
         bin_edges_raw=None,
-        input_file_object=None,
         livetime=None,
         realtime=None,
         start_time=None,
         stop_time=None,
+        **kwargs,
     ):
         """Initialize the spectrum.
 
@@ -123,7 +123,6 @@ class Spectrum(object):
             If cps is given, uncs defaults to an array of np.nan
           bin_edges_kev (optional): an iterable of bin edge energies
             If not none, should have length of (len(counts) + 1)
-          input_file_object (optional): a parser file object
           livetime (optional): the livetime of the spectrum [s]
             Note that livetime is not preserved through CPS-based operations,
             such as any subtraction, or addition with a CPS-based spectrum.
@@ -132,6 +131,8 @@ class Spectrum(object):
             acquisition start
           stop_time (optional): datetime or string representing the acquisition
             end.
+          kwargs (optional): any other named attributes to be stored in the
+            attrs member.
 
         Raises:
           ValueError: for bin edges not monotonically increasing;
@@ -152,6 +153,7 @@ class Spectrum(object):
         self.energy_cal = None
         self.livetime = None
         self.realtime = None
+        self.attrs = {}
 
         if counts is not None:
             if len(counts) == 0:
@@ -213,19 +215,9 @@ class Spectrum(object):
         elif self.realtime is not None and self.stop_time is not None:
             self.start_time = self.stop_time - datetime.timedelta(seconds=self.realtime)
 
-        self._infileobject = input_file_object
-        if input_file_object is not None:
-            self.infilename = input_file_object.filename
-            if self.livetime is None:
-                self.livetime = input_file_object.livetime
-            if self.realtime is None:
-                self.realtime = input_file_object.realtime
-            if self.start_time is None:
-                self.start_time = input_file_object.collection_start
-            if self.stop_time is None:
-                self.stop_time = input_file_object.collection_stop
-        else:
-            self.infilename = None
+        for key in kwargs:
+            self.attrs[key] = kwargs[key]
+
         # These two lines make sure operators between a Spectrum
         # and a numpy arrays are forbidden and cause a TypeError
         self.__array_ufunc__ = None
@@ -245,8 +237,8 @@ class Spectrum(object):
             ltups.append(("gross_cps", self.cps.sum()))
         except SpectrumError:
             ltups.append(("gross_cps", None))
-        if hasattr(self, "infilename"):
-            ltups.append(("filename", self.infilename))
+        if "infilename" in self.attrs:
+            ltups.append(("filename", self.attrs["infilename"]))
         else:
             ltups.append(("filename", None))
         for lt in ltups:
@@ -575,11 +567,12 @@ class Spectrum(object):
             self._bin_edges_raw = np.array(bin_edges_raw, dtype=float)
 
     @classmethod
-    def from_file(cls, infilename):
+    def from_file(cls, infilename, verbose=False):
         """Construct a Spectrum object from a filename.
 
         Args:
           infilename: a string representing the path to a parsable file
+          verbose: (optional) whether to print debugging information.
 
         Returns:
           A Spectrum object
@@ -587,18 +580,86 @@ class Spectrum(object):
         Raises:
           AssertionError: for a bad filename  # TODO make this an IOError
         """
+        # read the data using one of the low-level parsers
+        _, ext = os.path.splitext(infilename)
+        if io.h5.is_h5_filename(infilename):
+            data, cal = parsers.h5.read(infilename, verbose=verbose)
+        elif ext.lower() == ".cnf":
+            data, cal = parsers.cnf.read(infilename, verbose=verbose)
+        elif ext.lower() == ".spc":
+            data, cal = parsers.spc.read(infilename, verbose=verbose)
+        elif ext.lower() == ".spe":
+            data, cal = parsers.spe.read(infilename, verbose=verbose)
+        else:
+            raise NotImplementedError("File type {} can not be read".format(ext))
 
-        spect_file_obj = _get_file_object(infilename)
+        # create the object and apply the calibration
+        spec = cls(**data)
+        spec.attrs["infilename"] = infilename
+        if cal is not None:
+            spec.apply_calibration(cal)
+        return spec
 
-        kwargs = {
-            "counts": spect_file_obj.data,
-            "input_file_object": spect_file_obj,
-            "bin_edges_kev": spect_file_obj.bin_edges_kev,
-        }
+    def write(self, name):
+        """Write the Spectrum to an hdf5 file.
 
-        # TODO Get more attributes from self.infileobj
+        Parameters
+        ----------
+        name : str, h5py.File, h5py.Group
+            The filename or an open h5py File or Group.
+        """
+        # build datasets dict
+        dsets = {}
+        # handle counts versus CPS data
+        if self._cps is None:
+            assert self._counts is not None
+            # NOTE: integer character of counts has been destroyed
+            dsets["counts"] = self.counts_vals
+            dsets["uncs"] = self.counts_uncs
+        if self._counts is None:
+            assert self._cps is not None
+            dsets["cps"] = self.cps_vals
+            dsets["uncs"] = self.cps_uncs
+        # handle other array data
+        for key in ["bin_edges_raw", "bin_edges_kev"]:
+            val = getattr(self, key)
+            if val is not None:
+                dsets.update({key: val})
 
-        return cls(**kwargs)
+        # build attributes dict
+        attrs = deepcopy(self.attrs)
+        # convert time attributes to strings
+        for key in ["start_time", "stop_time"]:
+            val = getattr(self, key)
+            if val is not None:
+                iso8601 = f"{val:%Y-%m-%dT%H:%M:%S.%f%z}"
+                attrs.update({key: iso8601})
+        for key in ["livetime", "realtime"]:
+            val = getattr(self, key)
+            if val is not None:
+                attrs.update({key: val})
+        # cannot specify all three of start, stop, and real time
+        if "start_time" in attrs and "stop_time" in attrs and "realtime" in attrs:
+            attrs.pop("realtime")
+
+        # write all spectrum data to file
+        io.h5.write_h5(name, dsets, attrs)
+
+        # write calibration to file
+        if self.energy_cal is not None:
+            try:
+                with io.h5.open_h5(name, "r+") as h5:
+                    group = h5.create_group("energy_cal")
+                    self.energy_cal.write(group)
+            except AttributeError:
+                warnings.warn(
+                    "Unable to write energy calibration data to file. "
+                    "This may be caused by the use of "
+                    "bq.EnergyCalBase classes, which are deprecated"
+                    "and will be removed in a future release; "
+                    "use bq.Calibration instead",
+                    DeprecationWarning,
+                )
 
     @classmethod
     def from_listmode(
@@ -1159,7 +1220,6 @@ class Spectrum(object):
         kwargs = {
             key: combined_counts,
             "bin_edges_kev": combined_bin_edges,
-            "input_file_object": self._infileobject,
             "livetime": self.livetime,
         }
         obj = Spectrum(**kwargs)
@@ -1216,7 +1276,6 @@ class Spectrum(object):
             counts=out_spec,
             uncs=np.sqrt(out_spec),
             bin_edges_kev=out_edges,
-            input_file_object=self._infileobject,
             livetime=self.livetime,
         )
 
@@ -1393,30 +1452,3 @@ class Spectrum(object):
         if perform_fit:
             fitter.fit(backend=backend)
         return fitter
-
-
-def _get_file_object(infilename):
-    """
-    Parse a file and return an object according to its extension.
-
-    Args:
-      infilename: a string representing a path to a parsable file
-
-    Raises:
-      AssertionError: for a bad filename  # TODO let this be an IOError
-      NotImplementedError: for an unparsable file extension
-      ...?
-
-    Returns:
-      a file object of type SpeFile, SpcFile, or CnfFile
-    """
-
-    _, extension = os.path.splitext(infilename)
-    if extension.lower() == ".spe":
-        return parsers.SpeFile(infilename)
-    elif extension.lower() == ".spc":
-        return parsers.SpcFile(infilename)
-    elif extension.lower() == ".cnf":
-        return parsers.CnfFile(infilename)
-    else:
-        raise NotImplementedError("File type {} can not be read".format(extension))
