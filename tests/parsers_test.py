@@ -14,7 +14,7 @@ for extension in [".spe", ".spc", ".cnf", ".h5"]:
     filenames_filtered = []
     for filename in filenames:
         fname, ext = os.path.splitext(filename)
-        if ext.lower() == extension and "cllbc_listmode.h5" not in filename:
+        if ext.lower() == extension:
             filenames_filtered.append(filename)
     SAMPLES[extension] = filenames_filtered
 

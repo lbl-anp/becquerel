@@ -9,10 +9,10 @@ import becquerel as bq
 
 # read in spectra
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
-filename1 = os.path.join(SAMPLES_PATH, "sim_spec.csv")
+filename1 = os.path.join(SAMPLES_PATH, "misc", "sim_spec.csv")
 filename2 = os.path.join(SAMPLES_PATH, "Mendocino_07-10-13_Acq-10-10-13.Spe")
-filename3 = os.path.join(SAMPLES_PATH, "nai_detector.csv")
-filename4 = os.path.join(SAMPLES_PATH, "SGM102432.csv")
+filename3 = os.path.join(SAMPLES_PATH, "misc", "nai_detector.csv")
+filename4 = os.path.join(SAMPLES_PATH, "misc", "SGM102432.csv")
 
 counts = []
 with open(filename1, "r") as f:
