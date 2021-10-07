@@ -9,36 +9,15 @@ import becquerel as bq
 
 # read in spectra
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
-filename1 = os.path.join(SAMPLES_PATH, "misc", "sim_spec.csv")
+filename1 = os.path.join(SAMPLES_PATH, "sim_spec.spe")
 filename2 = os.path.join(SAMPLES_PATH, "Mendocino_07-10-13_Acq-10-10-13.Spe")
-filename3 = os.path.join(SAMPLES_PATH, "misc", "nai_detector.csv")
-filename4 = os.path.join(SAMPLES_PATH, "misc", "SGM102432.csv")
+filename3 = os.path.join(SAMPLES_PATH, "nai_detector.spe")
+filename4 = os.path.join(SAMPLES_PATH, "SGM102432.spe")
 
-counts = []
-with open(filename1, "r") as f:
-    for line in f:
-        tokens = line.strip().split(",")
-        if len(tokens) == 2:
-            counts.append(float(tokens[1]))
-spec1 = bq.Spectrum(counts=counts)
-
+spec1 = bq.Spectrum.from_file(filename1)
 spec2 = bq.Spectrum.from_file(filename2)
-
-counts = []
-with open(filename3, "r") as f:
-    for line in f:
-        tokens = line.strip().split(",")
-        if len(tokens) == 2:
-            counts.append(float(tokens[1]))
-spec3 = bq.Spectrum(counts=counts)
-
-counts = []
-with open(filename4, "r") as f:
-    for line in f:
-        tokens = line.strip().split(",")
-        if len(tokens) == 2:
-            counts.append(float(tokens[1]))
-spec4 = bq.Spectrum(counts=counts)
+spec3 = bq.Spectrum.from_file(filename3)
+spec4 = bq.Spectrum.from_file(filename4)
 
 
 REQUIRED = [609.32, 1460.82, 2614.3]
