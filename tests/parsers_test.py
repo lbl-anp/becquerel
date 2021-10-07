@@ -62,7 +62,7 @@ class TestParsersSpectrumPlot(object):
         except Exception:
             # TclError on CI bc no display. skip the test
             return
-        plt.title("Testing " + extension)
+        plt.title(f"Testing {extension}")
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
         for filename in filenames:
