@@ -9,12 +9,12 @@ import becquerel as bq
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
 SAMPLES = {}
-for extension in [".spe", ".spc", ".cnf", ".hdf5"]:
+for extension in [".spe", ".spc", ".cnf", ".h5"]:
     filenames = glob.glob(os.path.join(SAMPLES_PATH + "*", "*.*"))
     filenames_filtered = []
     for filename in filenames:
         fname, ext = os.path.splitext(filename)
-        if ext.lower() == extension:
+        if ext.lower() == extension and "cllbc_listmode.h5" not in filename:
             filenames_filtered.append(filename)
     SAMPLES[extension] = filenames_filtered
 
@@ -48,7 +48,7 @@ class TestParsers(object):
 
     def test_h5(self):
         """Test parsers.h5.read."""
-        self.run_parser(bq.parsers.h5.read, ".hdf5")
+        self.run_parser(bq.parsers.h5.read, ".h5")
 
 
 @pytest.mark.plottest
@@ -104,4 +104,4 @@ class TestParsersSpectrumPlot(object):
 
     def test_h5(self):
         """Test parsers.h5.read."""
-        self.run_parser(bq.parsers.h5.read, ".hdf5")
+        self.run_parser(bq.parsers.h5.read, ".h5")
