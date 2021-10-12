@@ -37,9 +37,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install --only-binary=numpy,scipy numpy scipy
-          pip install -r requirements-dev.txt
+          pip install --upgrade pip setuptools wheel
+          pip install --only-binary=numpy,scipy -r requirements-dev.txt
       - name: Install package
         run: |
           pip install .
