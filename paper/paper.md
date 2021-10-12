@@ -43,4 +43,6 @@ Nuclear spectroscopic analysis follows a typical workflow: collect binmode or li
 
 # Acknowledgements
 
+We acknowledge funding support from the U.S. Department of Energy and Department of Defense, and licensing support from Berkeley Lab's Intellectual Property Office.
+
 # References
