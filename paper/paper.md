@@ -1,4 +1,6 @@
 ---
+bibliography: paper.bib
+---
 title: 'Becquerel: a Python package for analyzing nuclear spectroscopic measurements'
 tags:
   - Python
