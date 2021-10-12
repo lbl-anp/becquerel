@@ -1,5 +1,7 @@
+asteval
 beautifulsoup4
 future
+h5py
 html5lib
 lmfit
 lxml

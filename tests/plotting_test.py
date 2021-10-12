@@ -21,7 +21,7 @@ def spec_data():
     """Build a vector of random counts."""
 
     floatdata = np.random.poisson(lam=TEST_COUNTS, size=TEST_DATA_LENGTH)
-    return floatdata.astype(np.int)
+    return floatdata.astype(int)
 
 
 @pytest.fixture
@@ -55,7 +55,7 @@ def cal_spec_cps(spec_data):
 @pytest.fixture(params=[1, 10, 100])
 def y_counts_spec(request):
     floatdata = np.random.poisson(lam=request.param, size=TEST_DATA_LENGTH)
-    return bq.Spectrum(floatdata.astype(np.int))
+    return bq.Spectrum(floatdata.astype(int))
 
 
 # @pytest.fixture
@@ -205,7 +205,7 @@ def test_plot_default_file_title(uncal_spec):
     """Default title of a file spec"""
 
     fname = "/path/to/custom/file"
-    uncal_spec.infilename = fname
+    uncal_spec.attrs["infilename"] = fname
     uncal_spec.plot()
     assert plt.gca().get_title() == fname
     plt.close("all")
@@ -465,11 +465,11 @@ def test_get_xlim(cal_spec_cps):
     assert tsp.xlim == (cal_spec_cps.bin_edges_kev[0], cal_spec_cps.bin_edges_kev[-1])
 
 
-def test_get_linthreshy(cal_spec_cps):
-    """Test get linthreshy function"""
+def test_get_linthresh(cal_spec_cps):
+    """Test get linthresh function"""
 
-    tsp = sp(cal_spec_cps, linthreshy=1)
-    assert tsp.linthreshy == 1
+    tsp = sp(cal_spec_cps, linthresh=1)
+    assert tsp.linthresh == 1
 
 
 # ----------------------------------------------

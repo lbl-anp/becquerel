@@ -5,6 +5,7 @@ from future.builtins import dict, super, zip
 from future.utils import viewitems
 import numpy as np
 import matplotlib.pyplot as plt
+import warnings
 
 
 class EnergyCalError(Exception):
@@ -49,6 +50,12 @@ class EnergyCalBase(object):
         self._calpoints = dict()
         self._coeffs = dict()
         # initialize fit constraints?
+        warnings.warn(
+            "The use of bq.EnergyCalBase classes is deprecated "
+            "and will be removed in a future release; "
+            "use bq.Calibration instead",
+            DeprecationWarning,
+        )
 
     @classmethod
     def from_points(cls, chlist, kevlist, include_origin=False):

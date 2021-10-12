@@ -5,3 +5,4 @@ black==21.4b2
 pytest>=3.0.0
 pytest-cov
 pytest-black
+bump2version

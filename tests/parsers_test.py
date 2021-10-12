@@ -9,7 +9,7 @@ import becquerel as bq
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
 SAMPLES = {}
-for extension in [".spe", ".spc", ".cnf"]:
+for extension in [".spe", ".spc", ".cnf", ".h5"]:
     filenames = glob.glob(os.path.join(SAMPLES_PATH + "*", "*.*"))
     filenames_filtered = []
     for filename in filenames:
@@ -19,10 +19,10 @@ for extension in [".spe", ".spc", ".cnf"]:
     SAMPLES[extension] = filenames_filtered
 
 
-class TestSpectrumFile(object):
+class TestParsers(object):
     """Test spectrum file parsers."""
 
-    def run_parser(self, cls, extension, write=False):
+    def run_parser(self, read_fn, extension):
         """Run the test for the given class and file extension."""
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
@@ -31,39 +31,38 @@ class TestSpectrumFile(object):
             path, fname = os.path.split(fname)
             print("")
             print(filename)
-            spec = cls(filename)
-            print(spec)
-            if write:
-                writename = os.path.join(".", fname + "_copy" + ext)
-                spec.write(writename)
-                os.remove(writename)
+            data, cal = read_fn(filename)
+            print(data, cal)
 
     def test_spe(self):
-        """Test parsers.SpeFile............................................"""
-        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
-            self.run_parser(bq.parsers.SpeFile, ".spe", write=True)
+        """Test parsers.spe.read."""
+        self.run_parser(bq.parsers.spe.read, ".spe")
 
     def test_spc(self):
-        """Test parsers.SpcFile............................................"""
-        self.run_parser(bq.parsers.SpcFile, ".spc", write=False)
+        """Test parsers.spc.read."""
+        self.run_parser(bq.parsers.spc.read, ".spc")
 
     def test_cnf(self):
-        """Test parsers.CnfFile............................................"""
-        self.run_parser(bq.parsers.CnfFile, ".cnf", write=False)
+        """Test parsers.cnf.read."""
+        self.run_parser(bq.parsers.cnf.read, ".cnf")
+
+    def test_h5(self):
+        """Test parsers.h5.read."""
+        self.run_parser(bq.parsers.h5.read, ".h5")
 
 
 @pytest.mark.plottest
-class TestSpectrumFilePlot(object):
+class TestParsersSpectrumPlot(object):
     """Test spectrum file parsers and plot the spectra."""
 
-    def run_parser(self, cls, extension, write=False):
+    def run_parser(self, read_fn, extension, write=False):
         """Run the test for the given class and file extension."""
         try:
             plt.figure()
         except Exception:
             # TclError on CI bc no display. skip the test
             return
-        plt.title("Testing " + cls.__name__)
+        plt.title(f"Testing {extension}")
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
         for filename in filenames:
@@ -71,7 +70,10 @@ class TestSpectrumFilePlot(object):
             path, fname = os.path.split(fname)
             print("")
             print(filename)
-            spec = cls(filename)
+            data, cal = read_fn(filename)
+            spec = bq.Spectrum(**data)
+            if cal is not None:
+                spec.apply_calibration(cal)
             print(spec)
             plt.semilogy(
                 spec.energies,
@@ -89,14 +91,17 @@ class TestSpectrumFilePlot(object):
         plt.show()
 
     def test_spe(self):
-        """Test parsers.SpeFile............................................"""
-        with pytest.warns(bq.parsers.SpectrumFileParsingWarning):
-            self.run_parser(bq.parsers.SpeFile, ".spe", write=True)
+        """Test parsers.spe.read."""
+        self.run_parser(bq.parsers.spe.read, ".spe")
 
     def test_spc(self):
-        """Test parsers.SpcFile............................................"""
-        self.run_parser(bq.parsers.SpcFile, ".spc", write=False)
+        """Test parsers.spc.read."""
+        self.run_parser(bq.parsers.spc.read, ".spc")
 
     def test_cnf(self):
-        """Test parsers.CnfFile............................................"""
-        self.run_parser(bq.parsers.CnfFile, ".cnf", write=False)
+        """Test parsers.cnf.read."""
+        self.run_parser(bq.parsers.cnf.read, ".cnf")
+
+    def test_h5(self):
+        """Test parsers.h5.read."""
+        self.run_parser(bq.parsers.h5.read, ".h5")

@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from uncertainties import unumpy
+import warnings
 
 
 class PlottingError(Exception):
@@ -29,7 +30,7 @@ class SpectrumPlotter(object):
           xlabel: costum xlabel value
           ylabel: costum ylabel value
           kwargs: arguments that are directly passed to matplotlib's plot command.
-                  In addition it is possible to pass linthreshy if ylim='default'
+                  In addition it is possible to pass linthresh if ylim='default'
                   and ymode='symlog'
         """
 
@@ -42,36 +43,7 @@ class SpectrumPlotter(object):
         self._ax = None
         self._xlim = None
         self._ylim = None
-        self._linthreshy = None
-
-        xmode = None
-        ymode = None
-        xlim = None
-        ylim = None
-        ax = None
-        yscale = None
-        title = None
-        xlabel = None
-        ylabel = None
-
-        if "xmode" in kwargs:
-            xmode = kwargs.pop("xmode")
-        if "ymode" in kwargs:
-            ymode = kwargs.pop("ymode")
-        if "xlim" in kwargs:
-            xlim = kwargs.pop("xlim")
-        if "ylim" in kwargs:
-            ylim = kwargs.pop("ylim")
-        if "ax" in kwargs:
-            ax = kwargs.pop("ax")
-        if "yscale" in kwargs:
-            yscale = kwargs.pop("yscale")
-        if "title" in kwargs:
-            title = kwargs.pop("title")
-        if "xlabel" in kwargs:
-            xlabel = kwargs.pop("xlabel")
-        if "ylabel" in kwargs:
-            ylabel = kwargs.pop("ylabel")
+        self._linthresh = None
 
         self.spec = spec
 
@@ -80,22 +52,24 @@ class SpectrumPlotter(object):
         else:
             raise PlottingError("Wrong number of positional arguments")
 
+        self.xmode = kwargs.pop("xmode", None)
+        self.ymode = kwargs.pop("ymode", None)
+        self.xlim = kwargs.pop("xlim", None)
+        self.ylim = kwargs.pop("ylim", None)
+        self.ax = kwargs.pop("ax", None)
+        self._linthresh = kwargs.pop("linthresh", None)
         if "linthreshy" in kwargs:
-            self._linthreshy = kwargs.pop("linthreshy")
+            warnings.warn(
+                "linthreshy is deprecated, use linthresh instead",
+                DeprecationWarning,
+            )
+            self._linthresh = kwargs.pop("linthreshy")
+        self.yscale = kwargs.pop("yscale", None)
+        self.title = kwargs.pop("title", None)
+        self.xlabel = kwargs.pop("xlabel", None)
+        self.ylabel = kwargs.pop("ylabel", None)
 
-        self.xlim = xlim
-        self.ylim = ylim
-
-        self.yscale = yscale
-        self.ax = ax
-        self.title = title
         self.kwargs = kwargs
-
-        self.xmode = xmode
-        self.ymode = ymode
-
-        self.xlabel = xlabel
-        self.ylabel = ylabel
 
     @property
     def xmode(self):
@@ -279,14 +253,14 @@ class SpectrumPlotter(object):
             self.ax.set_yscale(self.yscale)
         if self.title is not None:
             self.ax.set_title(self.title)
-        elif self.spec.infilename is not None:
-            self.ax.set_title(self.spec.infilename)
+        elif "infilename" in self.spec.attrs:
+            self.ax.set_title(self.spec.attrs["infilename"])
         if self._xlim is not None:
             self.ax.set_xlim(self.xlim)
         if self._ylim is not None:
             self.ax.set_ylim(self.ylim)
             if self.yscale == "symlog" and self._ylim == "default":
-                self.ax.set_yscale(self.yscale, linthreshy=self.linthreshy)
+                self.ax.set_yscale(self.yscale, linthresh=self.linthresh)
         return self.get_corners()
 
     def plot(self, *fmt, **kwargs):
@@ -358,9 +332,7 @@ class SpectrumPlotter(object):
 
         self._prepare_plot(**kwargs)
 
-        alpha = 0.5
-        if "alpha" in self.kwargs:
-            alpha = self.kwargs.pop("alpha")
+        alpha = self.kwargs.pop("alpha", 0.5)
 
         xcorners, ycorlow = self.bin_edges_and_heights_to_steps(
             self._xedges, unumpy.nominal_values(self._ydata - self.yerror)
@@ -503,11 +475,19 @@ class SpectrumPlotter(object):
         self._ylim = limits
 
     @property
-    def linthreshy(self):
-        """Returns linthreshy, requires ydata."""
+    def linthresh(self):
+        """Returns linthresh, requires ydata."""
 
-        if self._linthreshy is not None:
-            return self._linthreshy
+        if self._linthresh is not None:
+            return self._linthresh
         min_ind = np.argmin(np.abs(self._ydata[self._ydata != 0]))
         delta_y = np.abs(self._ydata - self._ydata[min_ind])
         return np.min(delta_y[delta_y > 0])
+
+    @property
+    def linthreshy(self):
+        warnings.warn(
+            "linthreshy is deprecated, use linthresh instead",
+            DeprecationWarning,
+        )
+        return self.linthresh
