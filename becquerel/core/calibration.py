@@ -488,7 +488,7 @@ def _polynomial_expression(params):
     return expr
 
 
-class Calibration(object):
+class Calibration:
     """Base class for calibrations.
 
     A calibration is a scalar function of a scalar argument, parametrized by
@@ -872,19 +872,17 @@ class Calibration(object):
             raise CalibrationError('Expected dataset "domain"')
         if "range" not in dsets:
             raise CalibrationError('Expected dataset "range"')
-        unexpected = set(dsets.keys()) - set(
-            [
-                "expression",
-                "params",
-                "aux_params",
-                "inv_expression",
-                "domain",
-                "range",
-                "points_x",
-                "points_y",
-                "weights",
-            ]
-        )
+        unexpected = set(dsets.keys()) - {
+            "expression",
+            "params",
+            "aux_params",
+            "inv_expression",
+            "domain",
+            "range",
+            "points_x",
+            "points_y",
+            "weights",
+        }
         if len(unexpected) > 0:
             raise CalibrationError(f"Unexpected dataset names in file: {unexpected}")
         if "aux_params" in dsets:

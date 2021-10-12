@@ -19,7 +19,7 @@ for extension in [".spe", ".spc", ".cnf", ".h5"]:
     SAMPLES[extension] = filenames_filtered
 
 
-class TestParsers(object):
+class TestParsers:
     """Test spectrum file parsers."""
 
     def run_parser(self, read_fn, extension):
@@ -52,7 +52,7 @@ class TestParsers(object):
 
 
 @pytest.mark.plottest
-class TestParsersSpectrumPlot(object):
+class TestParsersSpectrumPlot:
     """Test spectrum file parsers and plot the spectra."""
 
     def run_parser(self, read_fn, extension, write=False):

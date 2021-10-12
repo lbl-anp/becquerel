@@ -21,16 +21,16 @@ _spec.loader.exec_module(METADATA)
 site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 # remove package title from description
-with open("README.md", "r") as fh:
+with open("README.md") as fh:
     README = "\n".join(fh.readlines()[2:])
 
-with open("CONTRIBUTING.md", "r") as fh:
+with open("CONTRIBUTING.md") as fh:
     CONTRIBUTING = fh.read()
 
-with open("requirements.txt", "r") as fh:
+with open("requirements.txt") as fh:
     REQUIREMENTS = [_line for _line in fh.readlines() if _line]
 
-with open("requirements-dev.txt", "r") as fh:
+with open("requirements-dev.txt") as fh:
     REQUIREMENTS_DEV = [l.strip() for l in fh.readlines() if not l.startswith("-r")]
 
 # make long description from README and CONTRIBUTING

@@ -126,13 +126,13 @@ _Z_SYMBOL_NAME_MASS = (
 )
 
 
-ZS = set([d[0] for d in _Z_SYMBOL_NAME_MASS])
-SYMBOLS = set([d[1] for d in _Z_SYMBOL_NAME_MASS])
-SYMBOLS_LOWER = set([d[1].lower() for d in _Z_SYMBOL_NAME_MASS])
-SYMBOLS_UPPER = set([d[1].upper() for d in _Z_SYMBOL_NAME_MASS])
-NAMES = set([d[2] for d in _Z_SYMBOL_NAME_MASS])
-NAMES_LOWER = set([d[2].lower() for d in _Z_SYMBOL_NAME_MASS])
-NAMES_UPPER = set([d[2].upper() for d in _Z_SYMBOL_NAME_MASS])
+ZS = {d[0] for d in _Z_SYMBOL_NAME_MASS}
+SYMBOLS = {d[1] for d in _Z_SYMBOL_NAME_MASS}
+SYMBOLS_LOWER = {d[1].lower() for d in _Z_SYMBOL_NAME_MASS}
+SYMBOLS_UPPER = {d[1].upper() for d in _Z_SYMBOL_NAME_MASS}
+NAMES = {d[2] for d in _Z_SYMBOL_NAME_MASS}
+NAMES_LOWER = {d[2].lower() for d in _Z_SYMBOL_NAME_MASS}
+NAMES_UPPER = {d[2].upper() for d in _Z_SYMBOL_NAME_MASS}
 
 _SYMBOL_FROM_SYMBOL_LOWER = {d[1].lower(): d[1] for d in _Z_SYMBOL_NAME_MASS}
 _SYMBOL_FROM_SYMBOL_UPPER = {d[1].upper(): d[1] for d in _Z_SYMBOL_NAME_MASS}
@@ -193,9 +193,9 @@ def validated_z(z):
     try:
         int(z)
     except ValueError:
-        raise ElementZError('Element Z="{}" invalid'.format(z))
+        raise ElementZError(f'Element Z="{z}" invalid')
     if int(z) not in ZS:
-        raise ElementZError('Element Z="{}" not found'.format(z))
+        raise ElementZError(f'Element Z="{z}" not found')
     return int(z)
 
 
@@ -215,9 +215,9 @@ def validated_symbol(sym):
     try:
         sym.lower()
     except AttributeError:
-        raise ElementSymbolError('Element symbol "{}" invalid'.format(sym))
+        raise ElementSymbolError(f'Element symbol "{sym}" invalid')
     if sym.lower() not in SYMBOLS_LOWER:
-        raise ElementSymbolError('Element symbol "{}" not found'.format(sym))
+        raise ElementSymbolError(f'Element symbol "{sym}" not found')
     return _SYMBOL_FROM_SYMBOL_LOWER[sym.lower()]
 
 
@@ -237,7 +237,7 @@ def validated_name(nm):
     try:
         nm.lower()
     except AttributeError:
-        raise ElementNameError('Element name "{}" invalid'.format(nm))
+        raise ElementNameError(f'Element name "{nm}" invalid')
     # special case: Alumin[i]um
     if nm.lower() == "aluminium":
         nm = "Aluminum"
@@ -245,7 +245,7 @@ def validated_name(nm):
     if nm.lower() == "caesium":
         nm = "Cesium"
     if nm.lower() not in NAMES_LOWER:
-        raise ElementNameError('Element name "{}" not found'.format(nm))
+        raise ElementNameError(f'Element name "{nm}" not found')
     return _NAME_FROM_NAME_LOWER[nm.lower()]
 
 
@@ -318,7 +318,7 @@ def element_name(sym_or_z):
         raise ElementNameError("Must supply either the element symbol or Z")
 
 
-class Element(object):
+class Element:
     """Basic properties (symbol, name, Z, and mass) of an element.
 
     Also provides string formatting:
@@ -356,7 +356,7 @@ class Element(object):
                 try:
                     self._init_z(arg)
                 except ElementZError:
-                    raise ElementError("Could not instantiate Element: {}".format(arg))
+                    raise ElementError(f"Could not instantiate Element: {arg}")
         self.atomic_mass = _MASS_FROM_SYMBOL[self.symbol]
 
     def _init_sym(self, arg):
@@ -379,7 +379,7 @@ class Element(object):
 
     def __str__(self):
         """Define behavior of str() on this class."""
-        return "{}".format(self)
+        return f"{self}"
 
     def __format__(self, formatstr):
         """Define behavior of string's format method.
@@ -395,7 +395,7 @@ class Element(object):
             str0 = "%n(%s) Z=%z"
         str0 = str0.replace("%s", self.symbol)
         str0 = str0.replace("%n", self.name)
-        str0 = str0.replace("%z", "{}".format(self.Z))
+        str0 = str0.replace("%z", f"{self.Z}")
         return str0
 
     def __eq__(self, other):
