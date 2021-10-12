@@ -20,7 +20,7 @@ class BadInput(EnergyCalError):
     pass
 
 
-class EnergyCalBase(object):
+class EnergyCalBase:
     """Abstract base class for energy calibration.
 
     A note on nomenclature: for historic reasons, 'channels' is used in
@@ -277,7 +277,7 @@ class EnergyCalBase(object):
         if name in self.valid_coeffs:
             self._coeffs[name] = val
         else:
-            raise EnergyCalError("Invalid coefficient name: {}".format(name))
+            raise EnergyCalError(f"Invalid coefficient name: {name}")
 
     def update_fit(self):
         """Compute the calibration curve from the current points.

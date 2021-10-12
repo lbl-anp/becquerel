@@ -19,7 +19,7 @@ from .parsers import BecquerelParserError
 
 def _from_little_endian(data, index, n_bytes):
     """Convert bytes starting from index from little endian to an integer."""
-    return sum([data[index + j] << 8 * j for j in range(n_bytes)])
+    return sum(data[index + j] << 8 * j for j in range(n_bytes))
 
 
 def _convert_date(data, index):
@@ -238,17 +238,15 @@ def read(filename, verbose=False):
     livetime = _convert_time(file_bytes, offset_date + 16)
     if verbose:
         print("livetime: ", livetime)
-        print("{:%Y-%m-%d %H:%M:%S}".format(collection_start))
+        print(f"{collection_start:%Y-%m-%d %H:%M:%S}")
 
     # check data and time information
     if realtime <= 0.0:
-        raise BecquerelParserError("Realtime not parsed correctly: {}".format(realtime))
+        raise BecquerelParserError(f"Realtime not parsed correctly: {realtime}")
     if livetime <= 0.0:
-        raise BecquerelParserError("Livetime not parsed correctly: {}".format(livetime))
+        raise BecquerelParserError(f"Livetime not parsed correctly: {livetime}")
     if livetime > realtime:
-        raise BecquerelParserError(
-            "Livetime > realtime: {} > {}".format(livetime, realtime)
-        )
+        raise BecquerelParserError(f"Livetime > realtime: {livetime} > {realtime}")
 
     # extract energy calibration information
     offset_cal = offset_enc + 48 + 32 + offset1

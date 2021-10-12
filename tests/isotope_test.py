@@ -41,7 +41,7 @@ def test_isotope_init_args(iso_str, sym, A, m):
         if m == 0:
             m = ""
         else:
-            m = "m{}".format(m)
+            m = f"m{m}"
     if m == "":
         isomer_levels = [None, "", 0]
     elif m.lower() == "m":
@@ -146,7 +146,7 @@ def test_isotope_init_str(iso_str, sym, A, m):
     mass_number = str(A)
     if m is not None:
         if isinstance(m, int):
-            mass_number += "m{}".format(m)
+            mass_number += f"m{m}"
         else:
             mass_number += m
     expected = isotope.Isotope(sym, A, m)
@@ -160,7 +160,7 @@ def test_isotope_init_str(iso_str, sym, A, m):
         for iso in iso_tests:
             for iso2 in [iso, iso.upper(), iso.lower()]:
                 print("")
-                print("{}-{}: {}".format(sym, mass_number, iso2))
+                print(f"{sym}-{mass_number}: {iso2}")
                 i = isotope.Isotope(iso2)
                 print(i)
                 assert i == expected

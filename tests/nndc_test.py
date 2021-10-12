@@ -22,7 +22,7 @@ def ufloats_overlap_range(ufloats, vmin, vmax):
     return ((vals - sigmas <= vmax) | (vals + sigmas >= vmin)).all()
 
 
-class TestParseFloatUncertainty(object):
+class TestParseFloatUncertainty:
     """Test _parse_float_uncertainty()."""
 
     def test_01(self):
@@ -137,7 +137,7 @@ class TestParseFloatUncertainty(object):
             nndc._parse_float_uncertainty("7", "@")
 
 
-class NNDCQueryTests(object):
+class NNDCQueryTests:
     """Tests common to NNDCQuery-derived classes."""
 
     def setup_method(self):
