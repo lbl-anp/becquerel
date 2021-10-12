@@ -32,7 +32,7 @@ class UncalibratedError(SpectrumError):
     pass
 
 
-class Spectrum(object):
+class Spectrum:
     """
     Represents an energy spectrum.
 
@@ -242,7 +242,7 @@ class Spectrum(object):
         else:
             ltups.append(("filename", None))
         for lt in ltups:
-            lines.append("    {:15} {}".format("{}:".format(lt[0]), lt[1]))
+            lines.append("    {:15} {}".format(f"{lt[0]}:", lt[1]))
         return "\n".join(lines)
 
     __repr__ = __str__
@@ -591,7 +591,7 @@ class Spectrum(object):
         elif ext.lower() == ".spe":
             data, cal = parsers.spe.read(infilename, verbose=verbose)
         else:
-            raise NotImplementedError("File type {} can not be read".format(ext))
+            raise NotImplementedError(f"File type {ext} can not be read")
 
         # create the object and apply the calibration
         spec = cls(**data)
@@ -1000,9 +1000,7 @@ class Spectrum(object):
         elif handle_livetime.lower() == "reduce":
             new_livetime = self.livetime / f
         else:
-            raise ValueError(
-                "Illegal value for handle_livetime: {}".format(handle_livetime)
-            )
+            raise ValueError(f"Illegal value for handle_livetime: {handle_livetime}")
 
         # TODO handle uncertainty?
         old_counts = self.counts_vals.astype(int)
@@ -1310,7 +1308,7 @@ class Spectrum(object):
             xedges = self.bin_edges_raw
             xlabel = "Channel"
         else:
-            raise ValueError("Unsupported xmode: {0:s}".format(xmode))
+            raise ValueError(f"Unsupported xmode: {xmode:s}")
         return xedges, xlabel
 
     def parse_ymode(self, ymode):
@@ -1344,7 +1342,7 @@ class Spectrum(object):
             yuncs = self.cpskev_uncs
             ylabel = "Countrate [1/s/keV]"
         else:
-            raise ValueError("Unsupported ymode: {0:s}".format(ymode))
+            raise ValueError(f"Unsupported ymode: {ymode:s}")
         return ydata, yuncs, ylabel
 
     def plot(self, *fmt, **kwargs):

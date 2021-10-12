@@ -222,7 +222,7 @@ def find_best_gain(
         }
 
 
-class AutoCalibrator(object):
+class AutoCalibrator:
     """Automatically calibrate a spectrum by convolving it with a filter.
 
     A note on nomenclature: for historic reasons, 'channels' is used in

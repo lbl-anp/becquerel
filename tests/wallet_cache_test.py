@@ -48,7 +48,7 @@ def test_format_ufloat(arg, result):
 
 
 @pytest.mark.webtest
-class TestWalletCardCache(object):
+class TestWalletCardCache:
     """Test functionality of wallet_cache."""
 
     def test_fetch(self):

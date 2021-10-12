@@ -10,7 +10,7 @@ class CacheError(Exception):
     pass
 
 
-class DataFrameCache(object):
+class DataFrameCache:
     """Abstract base class for downloading, saving, and retrieving a DataFrame.
 
     Abstract methods:

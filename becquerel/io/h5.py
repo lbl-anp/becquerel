@@ -39,7 +39,7 @@ def is_h5_filename(name: str):
         return False
 
 
-class open_h5(object):
+class open_h5:
     """Context manager to allow I/O given HDF5 filename, File, or Group."""
 
     def __init__(self, name: Union[str, h5py.File, h5py.Group], mode=None, **kwargs):

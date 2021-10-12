@@ -222,7 +222,7 @@ def read(filename, verbose=False):
                 data_records.append(binary_data)
             try:
                 binary_data = f.read(128)
-            except IOError:
+            except OSError:
                 raise BecquerelParserError("Unable to read 128 bytes from file")
             if len(binary_data) < 128:
                 break
@@ -230,7 +230,7 @@ def read(filename, verbose=False):
             print("Done reading in SPC file.  Number of records: ", len(data_records))
         if len(data_records) not in (279, 280):
             raise BecquerelParserError(
-                "Number of data records incorrect: {}".format(len(data_records))
+                f"Number of data records incorrect: {len(data_records)}"
             )
 
         # read record data

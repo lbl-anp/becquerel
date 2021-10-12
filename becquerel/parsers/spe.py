@@ -44,7 +44,7 @@ def read(filename, verbose=False):
     counts = []
     channels = []
     cal_coeff = []
-    with open(filename, "r") as f:
+    with open(filename) as f:
         # read & remove newlines from end of each line
         lines = [line.strip() for line in f.readlines()]
         i = 0
@@ -67,7 +67,7 @@ def read(filename, verbose=False):
                 # I don't know why it would be nonzero
                 if first_channel != 0:
                     raise BecquerelParserError(
-                        "First channel is not 0: {}".format(first_channel)
+                        f"First channel is not 0: {first_channel}"
                     )
                 num_channels = int(lines[i].split(" ")[1])
                 if verbose:
@@ -101,7 +101,7 @@ def read(filename, verbose=False):
                 data[key] = values
             else:
                 warnings.warn(
-                    "Line {} unknown: ".format(i + 1) + lines[i],
+                    f"Line {i + 1} unknown: " + lines[i],
                     BecquerelParserWarning,
                 )
             i += 1
@@ -115,17 +115,11 @@ def read(filename, verbose=False):
         raise BecquerelParserError("Real time not found")
 
     if realtime <= 0.0:
-        raise BecquerelParserError(
-            "Real time not parsed correctly: {}".format(realtime)
-        )
+        raise BecquerelParserError(f"Real time not parsed correctly: {realtime}")
     if livetime <= 0.0:
-        raise BecquerelParserError(
-            "Live time not parsed correctly: {}".format(livetime)
-        )
+        raise BecquerelParserError(f"Live time not parsed correctly: {livetime}")
     if livetime > realtime:
-        raise BecquerelParserError(
-            "Livetime > realtime: {} > {}".format(livetime, realtime)
-        )
+        raise BecquerelParserError(f"Livetime > realtime: {livetime} > {realtime}")
 
     # finish populating data dict
     data["realtime"] = realtime
