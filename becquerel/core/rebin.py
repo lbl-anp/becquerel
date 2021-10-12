@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numba as nb
 import numpy as np
 import warnings
@@ -30,7 +29,7 @@ def _check_monotonic_increasing(arr, arr_name="array"):
     # neighboring elements are equal
     tmp = np.diff(arr)
     if not ((tmp > 0) | np.isclose(tmp, 0)).all():
-        raise RebinError("{} is not monotonically increasing: {}".format(arr_name, arr))
+        raise RebinError(f"{arr_name} is not monotonically increasing: {arr}")
 
 
 def _check_partial_overlap(in_edges, out_edges):
@@ -371,4 +370,4 @@ def rebin(
         return _rebin_interpolation(in_spectra, in_edges, out_edges, slopes)
     elif method == "listmode":
         return _rebin_listmode(in_spectra, in_edges, out_edges)
-    raise ValueError("{} is not a valid rebinning method".format(method))
+    raise ValueError(f"{method} is not a valid rebinning method")

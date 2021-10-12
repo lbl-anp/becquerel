@@ -16,7 +16,7 @@ class ExampleCache(DataFrameCache):
         self.loaded = True
 
 
-class TestCacheFunctionality(object):
+class TestCacheFunctionality:
     def test_fetch(self):
         """Test ExampleCache.fetch()."""
         d = ExampleCache()
@@ -56,7 +56,7 @@ class TestCacheFunctionality(object):
         d.delete_file()
 
 
-class TestCacheExceptions(object):
+class TestCacheExceptions:
     def test_bad_path(self):
         """Test ExampleCache.check_path() exception for a bad path."""
         d = ExampleCache()

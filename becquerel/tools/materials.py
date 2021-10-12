@@ -91,16 +91,16 @@ def fetch_element_data():
     tables = pd.read_html(text, header=0, skiprows=[1, 2])
     if len(tables) != 1:
         raise NISTMaterialsRequestError(
-            "1 HTML table expected, but found {}".format(len(tables))
+            f"1 HTML table expected, but found {len(tables)}"
         )
     df = tables[0]
     if len(df) != MAX_Z:
         raise NISTMaterialsRequestError(
-            "{} elements expected, but found {}".format(MAX_Z, len(df))
+            f"{MAX_Z} elements expected, but found {len(df)}"
         )
     if len(df.columns) != 6:
         raise NISTMaterialsRequestError(
-            "10 columns expected, but found {} ({})".format(len(df.columns), df.columns)
+            f"10 columns expected, but found {len(df.columns)} ({df.columns})"
         )
     # rename columns
     df.columns = ["Z", "Symbol", "Element", "Z_over_A", "I_eV", "Density"]
@@ -125,29 +125,25 @@ def convert_composition(comp):
     comp_sym = []
     if not isinstance(comp, Iterable):
         raise NISTMaterialsRequestError(
-            "Compound must be an iterable of strings: {}".format(comp)
+            f"Compound must be an iterable of strings: {comp}"
         )
     for line in comp:
         if not isinstance(line, str):
             raise NISTMaterialsRequestError(
-                "Line must be a string type: {} {}".format(line, type(line))
+                f"Line must be a string type: {line} {type(line)}"
             )
         try:
             z, weight = line.split(":")
         except ValueError:
-            raise NISTMaterialsRequestError(
-                "Unable to split compound line: {}".format(line)
-            )
+            raise NISTMaterialsRequestError(f"Unable to split compound line: {line}")
         try:
             z = int(z)
         except ValueError:
             raise NISTMaterialsRequestError(
-                "Unable to convert Z {} to integer: {}".format(z, line)
+                f"Unable to convert Z {z} to integer: {line}"
             )
         if z < 1 or z > MAX_Z:
-            raise NISTMaterialsRequestError(
-                "Z {} out of range [1, {}]: {}".format(z, line, MAX_Z)
-            )
+            raise NISTMaterialsRequestError(f"Z {z} out of range [1, {line}]: {MAX_Z}")
         comp_sym.append(element_symbol(z) + " " + weight.strip())
     return comp_sym
 
@@ -182,16 +178,16 @@ def fetch_compound_data():
     tables = pd.read_html(text, header=0, skiprows=[1, 2])
     if len(tables) != 1:
         raise NISTMaterialsRequestError(
-            "1 HTML table expected, but found {}".format(len(tables))
+            f"1 HTML table expected, but found {len(tables)}"
         )
     df = tables[0]
     if len(df) != N_COMPOUNDS:
         raise NISTMaterialsRequestError(
-            "{} compounds expected, but found {}".format(N_COMPOUNDS, len(df))
+            f"{N_COMPOUNDS} compounds expected, but found {len(df)}"
         )
     if len(df.columns) != 5:
         raise NISTMaterialsRequestError(
-            "5 columns expected, but found {} ({})".format(len(df.columns), df.columns)
+            f"5 columns expected, but found {len(df.columns)} ({df.columns})"
         )
     # rename columns
     df.columns = ["Material", "Z_over_A", "I_eV", "Density", "Composition_Z"]

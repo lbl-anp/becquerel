@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.mark.webtest
-class TestConvertComposition(object):
+class TestConvertComposition:
     """Test convert_composition."""
 
     def test_success(self):
