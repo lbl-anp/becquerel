@@ -8,7 +8,7 @@ tags:
   - peak fitting
   - nuclear data
 authors:
-  - name: Jayson R. Vavrek
+  - name: Jayson R. Vavrek^[corresponding author]
     affiliation: 1
   - name: Mark S. Bandstra
     affiliation: 1
