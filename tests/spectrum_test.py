@@ -195,6 +195,18 @@ def test_negative_input(spec_data):
     assert np.any(np.isnan(spec.counts_uncs))
 
 
+@pytest.mark.parametrize("spec_type", ["uncal", "cal", "uncal_long", "cal"])
+def test_init_with_lists(spec_type):
+    spec = make_spec(spec_type)
+    assert np.all(
+        bq.Spectrum(
+            counts=list(spec.counts_vals),
+            bin_edges_raw=spec.bin_edges_raw,
+        ).counts_vals
+        == spec.counts_vals
+    )
+
+
 # ----------------------------------------------
 #      Test Spectrum.from_listmode behavior
 # ----------------------------------------------
