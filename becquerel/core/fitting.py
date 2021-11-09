@@ -370,7 +370,7 @@ class Fitter:
     Robinson, "Data reduction and error analysis for the physical sciences".
     """
 
-    def __init__(self, model, x=None, y=None, y_unc=None, dx=None, roi=None):
+    def __init__(self, model, x=None, y=None, y_unc=None, dx=None, roi=None, mask=None):
         # Initialize
         self._model = None
         self._name = None
@@ -379,6 +379,7 @@ class Fitter:
         self._y_unc = None
         self._roi = None
         self._roi_msk = None
+        self._mask = None
         self._xmode = None
         self._ymode = None
         self.result = None
@@ -387,7 +388,9 @@ class Fitter:
         self._make_model(model)
         self.params = self.model.make_params()
         # Set data
-        self.set_data(x=x, y=y, y_unc=y_unc, dx=dx, roi=roi, update_defaults=True)
+        self.set_data(
+            x=x, y=y, y_unc=y_unc, dx=dx, roi=roi, mask=mask, update_defaults=True
+        )
 
     def __str__(self):
         return (
@@ -453,23 +456,23 @@ class Fitter:
 
     @property
     def x_roi(self):
-        return self.x[self.roi_msk]
+        return self.x[self.roi_msk & self.mask]
 
     @property
     def y_roi(self):
-        return self.y[self.roi_msk]
+        return self.y[self.roi_msk & self.mask]
 
     @property
     def y_unc_roi(self):
         if self.y_unc is None:
             return None
-        return self.y_unc[self.roi_msk]
+        return self.y_unc[self.roi_msk & self.mask]
 
     @property
     def dx_roi(self):
         if self.dx is None:
             return None
-        return self.dx[self.roi_msk]
+        return self.dx[self.roi_msk & self.mask]
 
     @property
     def roi(self):
@@ -483,6 +486,13 @@ class Fitter:
             return self._roi_msk
 
     @property
+    def mask(self):
+        if self._mask is None:
+            return np.ones_like(self.x, dtype=bool)
+        else:
+            return self._mask
+
+    @property
     def xmode(self):
         return self._xmode
 
@@ -494,7 +504,9 @@ class Fitter:
     def param_names(self):
         return list(self.params.keys())
 
-    def set_data(self, y, x=None, y_unc=None, dx=None, roi=None, update_defaults=True):
+    def set_data(
+        self, y, x=None, y_unc=None, dx=None, roi=None, update_defaults=True, mask=None
+    ):
         # Set y data (skip if y is None)
         if y is None:
             return
@@ -513,6 +525,8 @@ class Fitter:
         self.y_unc = y_unc
         # set deltax (bin width)
         self.dx = dx
+        # fit mask
+        self._mask = mask
 
         if roi is not None:
             self.set_roi(*roi)
@@ -648,7 +662,10 @@ class Fitter:
             # Perform the fit, weighted by 1/uncertainties.
             weights = self.y_unc_roi ** -1.0
             self.result = self.model.fit(
-                y_roi_norm, self.params, x=self.x_roi, weights=weights
+                y_roi_norm,
+                self.params,
+                x=self.x_roi,
+                weights=weights,
             )
 
         elif self.backend == "lmfit-pml":
