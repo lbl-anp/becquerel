@@ -2,8 +2,8 @@
 
 References:
   http://www.nndc.bnl.gov
-  http://www.nndc.bnl.gov/nudat2/indx_sigma.jsp
-  http://www.nndc.bnl.gov/nudat2/indx_dec.jsp
+  http://www.nndc.bnl.gov/nudat3/indx_sigma.jsp
+  http://www.nndc.bnl.gov/nudat3/indx_dec.jsp
 
 """
 
@@ -649,9 +649,9 @@ class _NuclearWalletCardQuery(_NNDCQuery):
     """NNDC Nuclear Wallet Card data query.
 
     Nuclear Wallet Card Search can be performed at this URL:
-        http://www.nndc.bnl.gov/nudat2/indx_sigma.jsp
+        http://www.nndc.bnl.gov/nudat3/indx_sigma.jsp
 
-    Help page: http://www.nndc.bnl.gov/nudat2/help/wchelp.jsp
+    Help page: http://www.nndc.bnl.gov/nudat3/help/wchelp.jsp
 
       * Energy: Level energy in MeV.
       * JPi: Level spin and parity.
@@ -684,7 +684,7 @@ class _NuclearWalletCardQuery(_NNDCQuery):
 
     """
 
-    _URL = "https://www.nndc.bnl.gov/nudat2/sigma_searchi.jsp"
+    _URL = "https://www.nndc.bnl.gov/nudat3/sigma_searchi.jsp"
     _DATA = dict(_NNDCQuery._DATA)
     _DATA.update(
         {
@@ -756,9 +756,9 @@ def fetch_wallet_card(**kwargs):
     """Perform NNDC Nuclear Wallet Card data query and return a DataFrame.
 
     Nuclear Wallet Card Search can be performed at this URL:
-        http://www.nndc.bnl.gov/nudat2/indx_sigma.jsp
+        http://www.nndc.bnl.gov/nudat3/indx_sigma.jsp
 
-    Help page: http://www.nndc.bnl.gov/nudat2/help/wchelp.jsp
+    Help page: http://www.nndc.bnl.gov/nudat3/help/wchelp.jsp
 
       * Energy: Level energy in MeV.
       * JPi: Level spin and parity.
@@ -801,9 +801,9 @@ class _DecayRadiationQuery(_NNDCQuery):
     """NNDC Decay Radiation data query.
 
     Decay Radiation Search can be performed at this URL:
-        http://www.nndc.bnl.gov/nudat2/indx_dec.jsp
+        http://www.nndc.bnl.gov/nudat3/indx_dec.jsp
 
-    Help page: http://www.nndc.bnl.gov/nudat2/help/dehelp.jsp
+    Help page: http://www.nndc.bnl.gov/nudat3/help/dehelp.jsp
 
       * Radiation: Radiation type, i.e. G for gamma, E for electron.
       * Rad subtype: Further classification of the radiation type.
@@ -833,7 +833,7 @@ class _DecayRadiationQuery(_NNDCQuery):
 
     """
 
-    _URL = "https://www.nndc.bnl.gov/nudat2/dec_searchi.jsp"
+    _URL = "https://www.nndc.bnl.gov/nudat3/dec_searchi.jsp"
     _DATA = dict(_NNDCQuery._DATA)
     _DATA.update(
         {
@@ -911,9 +911,9 @@ def fetch_decay_radiation(**kwargs):
     """Perform NNDC Decay Radiation data query and return a DataFrame.
 
     Decay Radiation Search can be performed at this URL:
-        http://www.nndc.bnl.gov/nudat2/indx_dec.jsp
+        http://www.nndc.bnl.gov/nudat3/indx_dec.jsp
 
-    Help page: http://www.nndc.bnl.gov/nudat2/help/dehelp.jsp
+    Help page: http://www.nndc.bnl.gov/nudat3/help/dehelp.jsp
 
       * Radiation: Radiation type, i.e. G for gamma, E for electron.
       * Rad subtype: Further classification of the radiation type.
