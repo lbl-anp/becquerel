@@ -1,4 +1,6 @@
 # Becquerel-specific files
+becquerel/tools/PNNL-*.*
+becquerel/tools/materials.csv
 tests/test_outputs
 
 # Byte-compiled / optimized / DLL files

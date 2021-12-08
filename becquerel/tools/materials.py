@@ -2,7 +2,6 @@
 
 import csv
 import os
-
 import numpy as np
 from .materials_error import MaterialsError, MaterialsWarning
 from .materials_compendium import fetch_compendium_data
@@ -52,7 +51,7 @@ def _load_and_compile_materials():
         "Z_over_A",
         "Composition_symbol",
     ]:
-        print(col, data_mat[col].values[:5])
+        print(col, data_comp[col].values[:5])
 
     # perform various checks on the Compendium data
     print("")
@@ -91,7 +90,6 @@ def _load_and_compile_materials():
             print("")
             print(f"{name:<60s}  {z_over_a1:.6f}")
             print(f"{name:<60s}  {z_over_a1:.6f}    {z_over_a2:.6f}")
-            print(f"{str(atom_fracs)}")
             assert np.isclose(z_over_a1, z_over_a2, atol=2.2e-3)
 
     print("")
@@ -108,7 +106,7 @@ def _load_and_compile_materials():
             print("-" * 90)
             print("")
             print(name)
-            print(data_comp[2][j])
+            print(data_comp["Formula"].values[j])
             print(weight_fracs1)
             print(weight_fracs2)
             assert len(weight_fracs1) == len(weight_fracs2)
