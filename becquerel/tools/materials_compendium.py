@@ -16,7 +16,6 @@ import os
 import urllib.request
 import numpy as np
 import pandas as pd
-import tqdm
 from .element import Element
 from .isotope import Isotope
 
@@ -75,7 +74,8 @@ def fetch_compendium_data():
         reader = PyPDF2.PdfFileReader(FNAME_LOCAL + ".pdf")
         print(reader.documentInfo)
         text = ""
-        for p in tqdm.trange(32, 370, desc="Extracting text from PDF"):
+        print("Extracting text from PDF")
+        for p in range(32, 370):
             text += reader.getPage(p).extractText()
         with open(FNAME_LOCAL + ".txt", "w") as f:
             print(text, file=f)
