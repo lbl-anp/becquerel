@@ -14,7 +14,11 @@ and it is available at:
 
 import os
 import urllib.request
+import numpy as np
+import pandas as pd
 import tqdm
+from .element import Element
+from .isotope import Isotope
 
 try:
     import PyPDF2
@@ -25,6 +29,36 @@ FNAME = "PNNL-15870Rev1.pdf"
 URL = "https://www.pnnl.gov/main/publications/external/technical_reports/" + FNAME
 FNAME_LOCAL = os.path.join(os.path.join(os.path.split(__file__)[0], FNAME))
 FNAME_LOCAL = os.path.splitext(FNAME_LOCAL)[0]
+
+
+def calc_z_over_a(atom_fractions):
+    """Calculate Z/A given the fraction of each element.
+
+    Parameters
+    ----------
+    atom_fractions : array_like
+        A list of pairs, where each pair is an element and the fraction
+        of that element's atoms in the material.
+
+    Returns
+    -------
+    z_over_a : float
+        The mean atomic number over atomic mass.
+    """
+    z_sum = 0
+    a_sum = 0
+    assert isinstance(atom_fractions, list)
+    for sym, frac in atom_fractions:
+        frac = float(frac)
+        # handle special cases in the Compendium where "element" is an isotope
+        if "-" in sym:
+            elem = Isotope(sym)
+            elem.atomic_mass = float(sym.split("-")[1])
+        else:
+            elem = Element(sym)
+        z_sum += frac * elem.Z
+        a_sum += frac * elem.atomic_mass
+    return z_sum / a_sum
 
 
 def fetch_compendium_data():
@@ -201,21 +235,18 @@ def fetch_compendium_data():
         # move to next one
         j += 1
 
-    return names, densities, formulae, weight_fracs, atom_fracs
+    # assemble data into a dataframe like the NIST data
+    df = pd.DataFrame()
+    df["Material"] = names
+    df["Formula"] = formulae
+    df["Density"] = np.array(densities, dtype=float)
+    df["Z_over_A"] = [calc_z_over_a(afs) for afs in atom_fracs]
+    df["Composition_symbol"] = [
+        [" ".join(tokens) for tokens in wfs] for wfs in weight_fracs
+    ]
+    return df
 
 
 if __name__ == "__main__":
     data = fetch_compendium_data()
-    print(len(data[0]), len(data[1]), len(data[2]), len(data[3]), len(data[4]))
-    for nm, fm, dn, wf, af in zip(data[0], data[1], data[2], data[3], data[4]):
-        print("\n" + "-" * 80 + "\n")
-        print(nm)
-        print(fm)
-        print(dn)
-        print("")
-        print("weight fractions:")
-        for row in wf:
-            print(" ", row)
-        print("atom fractions:")
-        for row in af:
-            print(" ", row)
+    print(data)

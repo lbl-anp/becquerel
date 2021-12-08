@@ -4,43 +4,12 @@ import csv
 import os
 
 import numpy as np
-from .element import Element
-from .isotope import Isotope
-from materials_compendium import fetch_compendium_data
-from materials_nist import fetch_element_data, fetch_compound_data, convert_composition
+from .materials_error import MaterialsError, MaterialsWarning
+from .materials_compendium import fetch_compendium_data
+from .materials_nist import fetch_element_data, fetch_compound_data
 
 
 FILENAME = os.path.join(os.path.split(__file__)[0], "materials.csv")
-
-
-def calc_z_over_a(atom_fractions):
-    """Calculate Z/A given the fraction of each element.
-
-    Parameters
-    ----------
-    atom_fractions : array_like
-        A list of pairs, where each pair is an element and the fraction
-        of that element's atoms in the material.
-
-    Returns
-    -------
-    z_over_a : float
-        The mean atomic number over atomic mass.
-    """
-    z_sum = 0
-    a_sum = 0
-    assert isinstance(atom_fractions, list)
-    for sym, frac in atom_fractions:
-        frac = float(frac)
-        # handle special cases in the Compendium where "element" is an isotope
-        if "-" in sym:
-            elem = Isotope(sym)
-            elem.atomic_mass = float(sym.split("-")[1])
-        else:
-            elem = Element(sym)
-        z_sum += frac * elem.Z
-        a_sum += frac * elem.atomic_mass
-    return z_sum / a_sum
 
 
 def _load_and_compile_materials():
@@ -57,9 +26,9 @@ def _load_and_compile_materials():
         "Element",
         "Symbol",
         "Density",
+        "Z_over_A",
         "Composition_Z",
         "Composition_symbol",
-        "Z_over_A",
     ]:
         print(col, data_elem[col].values[:5])
 
@@ -67,22 +36,30 @@ def _load_and_compile_materials():
     print("")
     for col in [
         "Material",
-        "Composition_symbol",
         "Density",
+        "Z_over_A",
         "Composition_Z",
         "Composition_symbol",
-        "Z_over_A",
     ]:
         print(col, data_mat[col].values[:5])
 
     data_comp = fetch_compendium_data()
+    print("")
+    for col in [
+        "Material",
+        "Formula",
+        "Density",
+        "Z_over_A",
+        "Composition_symbol",
+    ]:
+        print(col, data_mat[col].values[:5])
 
     # perform various checks on the Compendium data
     print("")
     print("Check Density")
-    for j in range(len(data_comp[0])):
-        name = data_comp[0][j]
-        rho1 = float(data_comp[1][j])
+    for j in range(len(data_comp)):
+        name = data_comp["Material"].values[j]
+        rho1 = data_comp["Density"].values[j]
         rho2 = None
         if name in data_elem["Element"].values:
             rho2 = data_elem["Density"][data_elem["Element"] == name].values[0]
@@ -99,10 +76,9 @@ def _load_and_compile_materials():
 
     print("")
     print("Check Z/A")
-    for j in range(len(data_comp[0])):
-        name = data_comp[0][j]
-        atom_fracs = data_comp[4][j]
-        z_over_a1 = calc_z_over_a(atom_fracs)
+    for j in range(len(data_comp)):
+        name = data_comp["Material"].values[j]
+        z_over_a1 = data_comp["Z_over_A"].values[j]
         z_over_a2 = None
         if name in data_elem["Element"].values:
             z_over_a2 = data_elem["Z_over_A"][data_elem["Element"] == name].values[0]
@@ -120,11 +96,10 @@ def _load_and_compile_materials():
 
     print("")
     print("Check weight compositions")
-    for j in range(len(data_comp[0])):
-        name = data_comp[0][j]
+    for j in range(len(data_comp)):
+        name = data_comp["Material"].values[j]
         if name in data_mat["Material"].values:
-            weight_fracs1 = data_comp[3][j]
-            weight_fracs1 = [" ".join(tokens) for tokens in weight_fracs1]
+            weight_fracs1 = data_comp["Composition_symbol"].values[j]
             weight_fracs2 = data_mat["Composition_symbol"][
                 data_mat["Material"] == name
             ].values[0]
@@ -173,14 +148,11 @@ def _load_and_compile_materials():
             "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html)"',
         }
 
-    for j in range(len(data_comp[0])):
-        name = data_comp[0][j]
-        formula = data_comp[2][j]
-        density = float(data_comp[1][j])
-        weight_fracs = data_comp[3][j]
-        weight_fracs = [" ".join(tokens) for tokens in weight_fracs]
-        atom_fracs = data_comp[4][j]
-        z_over_a = calc_z_over_a(atom_fracs)
+    for j in range(len(data_comp)):
+        name = data_comp["Material"].values[j]
+        formula = data_comp["Formula"].values[j]
+        density = data_comp["Density"].values[j]
+        weight_fracs = data_comp["Composition_symbol"].values[j]
         if name in materials:
             # replace material formula if McConn has one
             # otherwise do not overwrite the NIST data
