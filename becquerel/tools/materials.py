@@ -43,8 +43,8 @@ def calc_z_over_a(atom_fractions):
     return z_sum / a_sum
 
 
-def compile_materials():
-    """Merge all of the material sources into one dictionary.
+def _load_and_compile_materials():
+    """Retrieve and merge all of the material sources into one dictionary.
 
     Returns
     -------
@@ -195,7 +195,17 @@ def compile_materials():
             }
 
     print(materials)
+    return materials
 
+
+def _write_materials_csv(materials):
+    """Write material data to materials.csv.
+
+    Parameters
+    ----------
+    materials : dict
+        Dictionary of materials.
+    """
     # write all materials to CSV file
     mat_list = sorted(materials.keys())
     print(mat_list)
@@ -212,7 +222,7 @@ def compile_materials():
             print(line, file=f)
 
 
-def load_materials_csv():
+def _read_materials_csv():
     """Load material data from materials.csv.
 
     Returns
@@ -266,7 +276,8 @@ def fetch_materials():
         Dictionary keyed by material names containing the material data.
     """
     if not os.path.exists(FILENAME):
-        pass
+        materials = _load_and_compile_materials()
+        _write_materials_csv(materials)
 
-    materials = load_materials_csv()
+    materials = _read_materials_csv()
     return materials
