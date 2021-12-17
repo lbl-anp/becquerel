@@ -852,6 +852,12 @@ class Fitter:
         -------
         uncertainties.ufloat
             Area under the fit and its 1-sigma uncertainty.
+
+        References
+        ----------
+        .. Tellinghuisen, J. (2001). Statistical error propagation. The Journal of
+           Physical Chemistry A, 105(15), 3917-3921.
+
         """
         import numdifftools as nd
 
@@ -875,7 +881,7 @@ class Fitter:
         grad = nd.Gradient(_calc_area)
         g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
 
-        # Compute the variance in the area estimate
+        # Compute the variance in the area estimate: Tellinghuisen Eq. 1
         area_variance = g.T @ self.result.covariance @ g
         area_variance = area_variance[0, 0]
 
