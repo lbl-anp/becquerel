@@ -882,7 +882,11 @@ class Fitter:
         g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
 
         # Compute the variance in the area estimate: Tellinghuisen Eq. 1
-        area_variance = g.T @ self.result.covariance @ g
+        if "minuit" in self.backend:
+            covariance = self.result.covariance
+        else:
+            covariance = self.result.covar
+        area_variance = g.T @ covariance @ g
         area_variance = area_variance[0, 0]
 
         return ufloat(area, np.sqrt(area_variance))
