@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
 from iminuit import Minuit
+from uncertainties import ufloat
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
@@ -836,6 +837,50 @@ class Fitter:
     def eval(self, x, params=None, **kwargs):
         return self.model.eval(x=x, params=params, **kwargs)
 
+    def calc_area_and_unc(self, x=None, component=None):
+        """Calculate the area (and uncertainty) under the fit (or component thereof).
+
+        Parameters
+        ----------
+        x : array-like, optional
+            x values to use for function evaluation, by default `self.x`
+        component : Model, optional
+            Model component for which to calculate the area, by default None, in which
+            case the entire model is used.
+
+        Returns
+        -------
+        uncertainties.ufloat
+            Area under the fit and its 1-sigma uncertainty.
+        """
+        import numdifftools as nd
+
+        def _calc_area(param_vec, **kwargs):
+            """Internal function to compute the area given the fit values."""
+            param_dict = {name: val for (name, val) in zip(kwargs["names"], param_vec)}
+            return kwargs["model"].eval(x=kwargs["xvals"], **param_dict).sum()
+
+        # Handle input defaults
+        xvals = self.x if x is None else x
+        model = self.model if component is None else component
+
+        # Reformat best_values info so the gradient calculation can handle _calc_area
+        names = list(self.best_values.keys())
+        values = list(self.best_values.values())
+
+        # Compute the area under the curve
+        area = _calc_area(values, xvals=xvals, model=model, names=names)
+
+        # Compute the gradient with respect to the best fit parameters
+        grad = nd.Gradient(_calc_area)
+        g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
+
+        # Compute the variance in the area estimate
+        area_variance = g.T @ self.result.covariance @ g
+        area_variance = area_variance[0, 0]
+
+        return ufloat(area, np.sqrt(area_variance))
+
     def param_val(self, param):
         """
         Value of fit parameter `param`
@@ -1010,7 +1055,6 @@ class Fitter:
         matplotlib figure
             Returned only if savefname is None
         """
-
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
         dx, dx_roi = self.dx, self.dx_roi
