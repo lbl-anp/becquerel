@@ -225,7 +225,7 @@ class ErfModel(Model):
         return [
             (f"{self.prefix}amp", "value", y[0] - y[-1]),
             (f"{self.prefix}mu", "value", mu),
-            (f"{self.prefix}sigma", "expr", sigma),
+            (f"{self.prefix}sigma", "value", sigma),
         ]
 
 
