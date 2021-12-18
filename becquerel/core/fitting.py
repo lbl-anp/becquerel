@@ -183,7 +183,7 @@ class GaussModel(Model):
             expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
-    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5):
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.1):
         assert center_ratio < 1, "Center mask ratio cannot exceed 1: {}".format(
             center_ratio
         )
@@ -201,7 +201,7 @@ class GaussModel(Model):
         msk = (x >= (mu - xspan * width_ratio)) & (x <= mu + xspan * width_ratio)
 
         # TODO: update this, minimizer creates NaN's if default sigma used (0)
-        sigma = xspan * width_ratio / 10.0
+        sigma = xspan * width_ratio
         amp = np.max(y[msk]) * np.sqrt(2 * np.pi) * sigma  # new amplitude guess
         return [
             (f"{self.prefix}amp", "value", amp),
@@ -218,13 +218,14 @@ class ErfModel(Model):
     def __init__(self, *args, **kwargs):
         super().__init__(erf, *args, **kwargs)
 
-    def guess(self, y, x=None, dx=None, center_ratio=0):
+    def guess(self, y, x=None, dx=None, center_ratio=0, width_ratio=0.1):
         xspan = x[-1] - x[0]
         mu = x[0] + xspan * center_ratio
+        sigma = xspan * width_ratio
         return [
             (f"{self.prefix}amp", "value", y[0] - y[-1]),
             (f"{self.prefix}mu", "value", mu),
-            (f"{self.prefix}sigma", "expr", "gauss_sigma"),
+            (f"{self.prefix}sigma", "expr", sigma),
         ]
 
 
@@ -237,7 +238,7 @@ class GaussErfModel(Model):
         )
 
     def guess(
-        self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5, amp_ratio=0.9
+        self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.1, amp_ratio=0.9
     ):
         assert center_ratio < 1, "Center mask ratio cannot exceed 1: {}".format(
             center_ratio
@@ -253,7 +254,7 @@ class GaussErfModel(Model):
         mu = x[0] + xspan * center_ratio
         msk = (x >= (mu - xspan * width_ratio)) & (x <= mu + xspan * width_ratio)
 
-        sigma = xspan * width_ratio / 10.0
+        sigma = xspan * width_ratio
         amp = np.max(y[msk]) * np.sqrt(2 * np.pi) * sigma
         amp_gauss = amp * amp_ratio
         amp_erf = amp * (1.0 - amp_ratio) / dx[0] / (np.sqrt(2 * np.pi) * sigma)
@@ -305,7 +306,7 @@ class ExpGaussModel(Model):
             expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
-    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5):
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.1):
         assert center_ratio < 1, "Center mask ratio cannot exceed 1: {}".format(
             center_ratio
         )
@@ -321,7 +322,7 @@ class ExpGaussModel(Model):
         msk = (x >= (mu - xspan * width_ratio)) & (x <= mu + xspan * width_ratio)
 
         # TODO: update this, minimizer creates NaN's if default sigma used (0)
-        sigma = xspan * width_ratio / 10.0
+        sigma = xspan * width_ratio
         amp = np.max(y[msk]) * np.sqrt(2 * np.pi) * sigma
         # TODO: We miss gamma here
         return [
