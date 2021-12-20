@@ -181,7 +181,7 @@ class GaussModel(Model):
             expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
-    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.1):
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05):
         assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
         assert (
             width_ratio < 1.0 and width_ratio > 0.0
@@ -213,7 +213,7 @@ class ErfModel(Model):
     def __init__(self, *args, **kwargs):
         super().__init__(erf, *args, **kwargs)
 
-    def guess(self, y, x=None, dx=None, center_ratio=0, width_ratio=0.1):
+    def guess(self, y, x=None, dx=None, center_ratio=0, width_ratio=0.05):
         xspan = x[-1] - x[0]
         mu = x[0] + xspan * center_ratio
         sigma = xspan * width_ratio
@@ -233,7 +233,7 @@ class GaussErfModel(Model):
         )
 
     def guess(
-        self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.1, amp_ratio=0.9
+        self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05, amp_ratio=0.9
     ):
         assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
         assert (
@@ -298,7 +298,7 @@ class ExpGaussModel(Model):
             expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
-    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.1):
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05):
         assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
         assert (
             width_ratio < 1.0 and width_ratio > 0.0
