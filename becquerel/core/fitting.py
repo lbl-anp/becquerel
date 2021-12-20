@@ -292,7 +292,7 @@ class ExpGaussModel(Model):
         super().__init__(expgauss, **kwargs)
         self.set_param_hint(f"{self.prefix}sigma", min=0)
         self.set_param_hint(f"{self.prefix}gamma", min=0, max=1)
-        # TODO: This is obviously wrong
+        # TODO: This is obviously wrong but best I can think of
         self.set_param_hint(
             f"{self.prefix}fwhm",
             expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
