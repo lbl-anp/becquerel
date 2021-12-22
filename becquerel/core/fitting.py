@@ -31,7 +31,6 @@ class FittingWarning(UserWarning):
 
 # -----------------------------------------------------------------------------
 # Base functions
-# TODO: Should these be replaced with lmfit.models???
 # -----------------------------------------------------------------------------
 
 
@@ -148,7 +147,6 @@ def _is_count_like(y):
 class ConstantModel(Model):
     def __init__(self, *args, **kwargs):
         super().__init__(constant, *args, **kwargs)
-        # TODO: remove this min setting?
         self.set_param_hint(f"{self.prefix}c", min=0.0)
 
     def guess(self, y, x=None, dx=None, num=2):
@@ -184,13 +182,11 @@ class GaussModel(Model):
             expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
-    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5):
-        assert center_ratio < 1, "Center mask ratio cannot exceed 1: {}".format(
-            center_ratio
-        )
-        assert width_ratio < 1, "Width mask ratio cannot exceed 1: {}".format(
-            width_ratio
-        )
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05):
+        assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
+        assert (
+            width_ratio < 1.0 and width_ratio > 0.0
+        ), f"Width ratio must be between 0.0 and 1.0: {width_ratio}"
 
         if x is None:
             x = np.arange(0, len(y))
@@ -201,8 +197,7 @@ class GaussModel(Model):
         mu = x[0] + xspan * center_ratio
         msk = (x >= (mu - xspan * width_ratio)) & (x <= mu + xspan * width_ratio)
 
-        # TODO: update this, minimizer creates NaN's if default sigma used (0)
-        sigma = xspan * width_ratio / 10.0
+        sigma = xspan * width_ratio
         amp = np.max(y[msk]) * np.sqrt(2 * np.pi) * sigma  # new amplitude guess
         return [
             (f"{self.prefix}amp", "value", amp),
@@ -219,13 +214,14 @@ class ErfModel(Model):
     def __init__(self, *args, **kwargs):
         super().__init__(erf, *args, **kwargs)
 
-    def guess(self, y, x=None, dx=None, center_ratio=0):
+    def guess(self, y, x=None, dx=None, center_ratio=0, width_ratio=0.05):
         xspan = x[-1] - x[0]
         mu = x[0] + xspan * center_ratio
+        sigma = xspan * width_ratio
         return [
             (f"{self.prefix}amp", "value", y[0] - y[-1]),
             (f"{self.prefix}mu", "value", mu),
-            (f"{self.prefix}sigma", "expr", "gauss_sigma"),
+            (f"{self.prefix}sigma", "value", sigma),
         ]
 
 
@@ -238,14 +234,12 @@ class GaussErfModel(Model):
         )
 
     def guess(
-        self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5, amp_ratio=0.9
+        self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05, amp_ratio=0.9
     ):
-        assert center_ratio < 1, "Center mask ratio cannot exceed 1: {}".format(
-            center_ratio
-        )
-        assert width_ratio < 1, "Width mask ratio cannot exceed 1: {}".format(
-            width_ratio
-        )
+        assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
+        assert (
+            width_ratio < 1.0 and width_ratio > 0.0
+        ), f"Width ratio must be between 0.0 and 1.0: {width_ratio}"
         if x is None:
             x = np.arange(0, len(y))
         if dx is None:
@@ -254,7 +248,7 @@ class GaussErfModel(Model):
         mu = x[0] + xspan * center_ratio
         msk = (x >= (mu - xspan * width_ratio)) & (x <= mu + xspan * width_ratio)
 
-        sigma = xspan * width_ratio / 10.0
+        sigma = xspan * width_ratio
         amp = np.max(y[msk]) * np.sqrt(2 * np.pi) * sigma
         amp_gauss = amp * amp_ratio
         amp_erf = amp * (1.0 - amp_ratio) / dx[0] / (np.sqrt(2 * np.pi) * sigma)
@@ -280,7 +274,6 @@ class ExpModel(Model):
     def guess(self, y, x=None, dx=None, num=1):
         xl, yl = _xy_left(y, x=x, num=num)
         xr, yr = _xy_right(y, x=x, num=num)
-        # TODO: update this hardcoded zero offset
         lam = (xl - xr) / np.log(yl / (yr + 0.0001))
         amp = yl / np.exp(xl / lam)
         return [
@@ -300,19 +293,17 @@ class ExpGaussModel(Model):
         super().__init__(expgauss, **kwargs)
         self.set_param_hint(f"{self.prefix}sigma", min=0)
         self.set_param_hint(f"{self.prefix}gamma", min=0, max=1)
-        # TODO: This is obviously wrong
+        # TODO: This is obviously wrong but best I can think of
         self.set_param_hint(
             f"{self.prefix}fwhm",
             expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
-    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.5):
-        assert center_ratio < 1, "Center mask ratio cannot exceed 1: {}".format(
-            center_ratio
-        )
-        assert width_ratio < 1, "Width mask ratio cannot exceed 1: {}".format(
-            width_ratio
-        )
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05):
+        assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
+        assert (
+            width_ratio < 1.0 and width_ratio > 0.0
+        ), f"Width ratio must be between 0.0 and 1.0:: {width_ratio}"
         if x is None:
             x = np.arange(0, len(y))
         if dx is None:
@@ -321,10 +312,8 @@ class ExpGaussModel(Model):
         mu = x[0] + xspan * center_ratio
         msk = (x >= (mu - xspan * width_ratio)) & (x <= mu + xspan * width_ratio)
 
-        # TODO: update this, minimizer creates NaN's if default sigma used (0)
-        sigma = xspan * width_ratio / 10.0
+        sigma = xspan * width_ratio
         amp = np.max(y[msk]) * np.sqrt(2 * np.pi) * sigma
-        # TODO: We miss gamma here
         return [
             (f"{self.prefix}amp", "value", amp),
             (f"{self.prefix}amp", "min", 0.0),
@@ -351,12 +340,6 @@ MODEL_STR_TO_CLS = {
 
 # -----------------------------------------------------------------------------
 # Fitters
-# TODO: add docs
-# TODO: add ability to override defaults
-# TODO: add ability to initialize and fit with Fitter.__init__
-# TODO: include x_edges?
-# TODO: handle y normalization (i.e. cps vs cps/keV), needs x_edges
-# TODO: use set_param_hint to set global model defaults
 # -----------------------------------------------------------------------------
 
 
@@ -441,9 +424,7 @@ class Fitter:
             self._y_unc = np.asarray(y_unc, dtype=float)
             assert len(self.x) == len(
                 self._y_unc
-            ), "Fitting x (len {}) does not match y_unc (len {})".format(
-                len(self.x), len(self._y_unc)
-            )
+            ), f"Fitting x (len {len(self.x)}) does not match y_unc (len {len(self._y_unc)})"
             if np.any(self._y_unc <= 0.0):
                 min_v = np.min(self._y_unc[self._y_unc > 0.0])
                 warnings.warn(
@@ -519,9 +500,7 @@ class Fitter:
             self._x = np.asarray(x)
             assert len(self.x) == len(
                 self.y
-            ), "Fitting x (len {}) does not match y (len {})".format(
-                len(self.x), len(self.y)
-            )
+            ), f"Fitting x (len {len(self.x)}) does not match y (len {len(self.y)})"
         # Handle y uncertainties
         self.y_unc = y_unc
         # set deltax (bin width)
@@ -621,7 +600,6 @@ class Fitter:
     def guess_param_defaults(self, update=False, **kwargs):
         defaults = self._guess_param_defaults(**kwargs)
         if update:
-            # TODO: check this logic
             if defaults is not None:
                 for dp in defaults:
                     self.set_param(*dp)
