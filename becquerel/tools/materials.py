@@ -25,7 +25,6 @@ def _load_and_compile_materials():
         "Element",
         "Symbol",
         "Density",
-        "Z_over_A",
         "Composition_Z",
         "Composition_symbol",
     ]:
@@ -36,7 +35,6 @@ def _load_and_compile_materials():
     for col in [
         "Material",
         "Density",
-        "Z_over_A",
         "Composition_Z",
         "Composition_symbol",
     ]:
@@ -48,7 +46,6 @@ def _load_and_compile_materials():
         "Material",
         "Formula",
         "Density",
-        "Z_over_A",
         "Composition_symbol",
     ]:
         print(col, data_comp[col].values[:5])
@@ -72,25 +69,6 @@ def _load_and_compile_materials():
             print(f"{name:<60s}  {rho1:.6f}")
             print(f"{name:<60s}  {rho1:.6f}    {rho2:.6f}")
             assert np.isclose(rho1, rho2, atol=4e-3)
-
-    print("")
-    print("Check Z/A")
-    for j in range(len(data_comp)):
-        name = data_comp["Material"].values[j]
-        z_over_a1 = data_comp["Z_over_A"].values[j]
-        z_over_a2 = None
-        if name in data_elem["Element"].values:
-            z_over_a2 = data_elem["Z_over_A"][data_elem["Element"] == name].values[0]
-        elif name in data_mat["Material"].values:
-            z_over_a2 = data_mat["Z_over_A"][data_mat["Material"] == name].values[0]
-        if z_over_a2:
-            print("")
-            print("")
-            print("-" * 90)
-            print("")
-            print(f"{name:<60s}  {z_over_a1:.6f}")
-            print(f"{name:<60s}  {z_over_a1:.6f}    {z_over_a2:.6f}")
-            assert np.isclose(z_over_a1, z_over_a2, atol=2.2e-3)
 
     print("")
     print("Check weight compositions")
@@ -122,12 +100,10 @@ def _load_and_compile_materials():
         name = data_elem["Element"].values[j]
         formula = data_elem["Symbol"].values[j]
         density = data_elem["Density"].values[j]
-        z_over_a = data_elem["Z_over_A"].values[j]
         weight_fracs = data_elem["Composition_symbol"].values[j]
         materials[name] = {
             "formula": formula,
             "density": density,
-            "Z/A": z_over_a,
             "weight_fractions": weight_fracs,
             "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html)"',
         }
@@ -136,12 +112,10 @@ def _load_and_compile_materials():
         name = data_mat["Material"].values[j]
         formula = "-"
         density = data_mat["Density"].values[j]
-        z_over_a = data_mat["Z_over_A"].values[j]
         weight_fracs = data_mat["Composition_symbol"].values[j]
         materials[name] = {
             "formula": formula,
             "density": density,
-            "Z/A": z_over_a,
             "weight_fractions": weight_fracs,
             "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html)"',
         }
@@ -159,7 +133,6 @@ def _load_and_compile_materials():
             materials[name] = {
                 "formula": formula,
                 "density": density,
-                "Z/A": z_over_a,
                 "weight_fractions": weight_fracs,
                 "source": '"McConn, Gesh, Pagh, Rucker, & Williams, Compendium of Material Composition Data for Radiation Transport Modeling, PIET-43741-TM-963, PNNL-15870 Rev. 1 (https://www.pnnl.gov/main/publications/external/technical_reports/PNNL-15870Rev1.pdf)"',
             }
@@ -182,11 +155,11 @@ def _write_materials_csv(materials):
     print(len(mat_list))
 
     with open(FILENAME, "w") as f:
-        print("%name,formula,density,Z/A,weight fractions,source", file=f)
+        print("%name,formula,density,weight fractions,source", file=f)
         for name in mat_list:
             line = ""
             data = materials[name]
-            line = f"\"{name}\",\"{data['formula']}\",{data['density']:.6f},{data['Z/A']:.6f},"
+            line = f"\"{name}\",\"{data['formula']}\",{data['density']:.6f},"
             line += ";".join(data["weight_fractions"])
             line += f",{data['source']}"
             print(line, file=f)
@@ -216,7 +189,6 @@ def _read_materials_csv():
             name = tokens[0]
             formula = tokens[1]
             density = float(tokens[2])
-            z_over_a = float(tokens[3])
             weight_fracs = tokens[4].split(";")
             source = ",".join(tokens[5:])
             print(name)
@@ -224,7 +196,6 @@ def _read_materials_csv():
             materials[name] = {
                 "formula": formula,
                 "density": density,
-                "Z/A": z_over_a,
                 "weight_fractions": weight_fracs,
                 "source": source,
             }
