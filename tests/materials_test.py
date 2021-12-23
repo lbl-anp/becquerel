@@ -51,8 +51,7 @@ class TestConvertComposition:
 @pytest.mark.webtest
 def test_materials():
     """Test fetch_materials."""
-    data = fetch_materials()
-    print(data)
+    fetch_materials()
     assert os.path.exists(materials.FILENAME)
 
 
@@ -61,9 +60,11 @@ def test_materials_force():
     """Test fetch_materials with force=True."""
     assert os.path.exists(materials.FILENAME)
     with pytest.warns(MaterialsWarning) as record:
-        data = fetch_materials(force=True)
-    assert len(record) == 1, "Expected MaterialsWarning to be raised"
-    print(data)
+        fetch_materials(force=True)
+    if not os.path.exists(materials_compendium.FNAME):
+        assert len(record) == 2, "Expected two MaterialsWarnings to be raised"
+    else:
+        assert len(record) == 1, "Expected one MaterialsWarning to be raised"
     assert os.path.exists(materials.FILENAME)
 
 
@@ -77,8 +78,7 @@ def test_materials_dummy_csv():
     with open(materials.FILENAME, "w") as f:
         print("%name,formula,density,weight fractions,source", file=f)
         print('Dummy,-,1.0,"H 0.5;O 0.5","dummy entry"', file=f)
-    data = fetch_materials()
-    print(data)
+    fetch_materials()
     # remove the dummy file and point back to original
     os.remove(materials.FILENAME)
     materials.FILENAME = fname_orig
@@ -118,8 +118,9 @@ def test_materials_dummy_compendium():
     ]
     with open(materials_compendium.FNAME, "w") as f:
         json.dump(data, f, indent=4)
-    data = materials._load_and_compile_materials()
-    print(data)
+    with pytest.warns(None) as record:
+        materials._load_and_compile_materials()
+    assert len(record) == 0, "Expected no MaterialsWarnings to be raised"
     # remove the dummy file and point back to original
     os.remove(materials_compendium.FNAME)
     materials_compendium.FNAME = fname_orig
