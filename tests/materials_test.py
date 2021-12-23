@@ -1,7 +1,16 @@
 """Test NIST material data queries."""
 
-from becquerel.tools import fetch_materials, MaterialsError
+import json
+import os
+from becquerel.tools import (
+    fetch_materials,
+    remove_materials_csv,
+    MaterialsError,
+    MaterialsWarning,
+)
 from becquerel.tools.materials_nist import convert_composition
+import becquerel.tools.materials as materials
+import becquerel.tools.materials_compendium as materials_compendium
 import pytest
 
 
@@ -42,4 +51,105 @@ class TestConvertComposition:
 @pytest.mark.webtest
 def test_materials():
     """Test fetch_materials."""
-    fetch_materials()
+    data = fetch_materials()
+    print(data)
+    assert os.path.exists(materials.FILENAME)
+
+
+@pytest.mark.webtest
+def test_materials_force():
+    """Test fetch_materials with force=True."""
+    data = fetch_materials(force=True)
+    print(data)
+    assert os.path.exists(materials.FILENAME)
+
+
+def test_materials_dummy_csv():
+    """Test fetch_materials with a dummy materials.csv file."""
+    # point to and generate a dummy CSV file
+    fname_orig = materials.FILENAME
+    materials.FILENAME = fname_orig[:-4] + "_dummy.csv"
+    if os.path.exists(materials.FILENAME):
+        os.remove(materials.FILENAME)
+    with open(materials.FILENAME, "w") as f:
+        print("%name,formula,density,weight fractions,source", file=f)
+        print('Dummy,-,1.0,"H 0.5;O 0.5","dummy entry"', file=f)
+    data = fetch_materials()
+    print(data)
+    # remove the dummy file and point back to original
+    os.remove(materials.FILENAME)
+    materials.FILENAME = fname_orig
+
+
+@pytest.mark.webtest
+def test_materials_dummy_compendium():
+    """Test fetch_materials with a dummy Compendium JSON file."""
+    # point to an generate a dummy JSON file
+    fname_orig = materials_compendium.FNAME
+    materials_compendium.FNAME = fname_orig[:-5] + "_dummy.json"
+    data = [
+        {
+            "Density": 8.4e-5,
+            "Elements": [
+                {
+                    "AtomFraction_whole": 1.0,
+                    "Element": "H",
+                    "WeightFraction_whole": 1.0,
+                }
+            ],
+            "Formula": "H2",
+            "Name": "Hydrogen",
+        },
+        {
+            "Density": 1.16e-3,
+            "Elements": [
+                {
+                    "AtomFraction_whole": 1.0,
+                    "Element": "N",
+                    "WeightFraction_whole": 1.0,
+                }
+            ],
+            "Formula": "N2",
+            "Name": "Nitrogen",
+        },
+    ]
+    with open(materials_compendium.FNAME, "w") as f:
+        json.dump(data, f, indent=4)
+    data = materials._load_and_compile_materials()
+    print(data)
+    # remove the dummy file and point back to original
+    os.remove(materials_compendium.FNAME)
+    materials_compendium.FNAME = fname_orig
+
+
+@pytest.mark.webtest
+def test_materials_no_compendium():
+    """Test fetch_materials with no Compendium JSON file."""
+    # point to a dummy JSON file that does not exist
+    fname_orig = materials_compendium.FNAME
+    materials_compendium.FNAME = fname_orig[:-5] + "_dummy.json"
+    if os.path.exists(materials_compendium.FNAME):
+        os.remove(materials_compendium.FNAME)
+    with pytest.warns(MaterialsWarning) as record:
+        materials_compendium.fetch_compendium_data()
+    assert len(record) == 1
+    # point back to original file
+    materials_compendium.FNAME = fname_orig
+
+
+def test_remove_materials_csv():
+    """Test remove_materials_csv."""
+    # point to and generate a dummy CSV file
+    fname_orig = materials.FILENAME
+    materials.FILENAME = fname_orig[:-4] + "_dummy.csv"
+    if os.path.exists(materials.FILENAME):
+        os.remove(materials.FILENAME)
+    with open(materials.FILENAME, "w") as f:
+        print("", file=f)
+    remove_materials_csv()
+    assert not os.path.exists(materials.FILENAME)
+    # make sure remove works if the file does not exist
+    remove_materials_csv()
+    assert not os.path.exists(materials.FILENAME)
+    # point back to original file
+    materials.FILENAME = fname_orig
