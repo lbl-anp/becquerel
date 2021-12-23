@@ -19,40 +19,12 @@ def _load_and_compile_materials():
     materials
         Dictionary keyed by material names containing the material data.
     """
+    # fetch the data sources
     data_elem = fetch_element_data()
-    print("")
-    for col in [
-        "Element",
-        "Symbol",
-        "Density",
-        "Composition_Z",
-        "Composition_symbol",
-    ]:
-        print(col, data_elem[col].values[:5])
-
     data_mat = fetch_compound_data()
-    print("")
-    for col in [
-        "Material",
-        "Density",
-        "Composition_Z",
-        "Composition_symbol",
-    ]:
-        print(col, data_mat[col].values[:5])
-
     data_comp = fetch_compendium_data()
-    print("")
-    for col in [
-        "Material",
-        "Formula",
-        "Density",
-        "Composition_symbol",
-    ]:
-        print(col, data_comp[col].values[:5])
 
     # perform various checks on the Compendium data
-    print("")
-    print("Check Density")
     for j in range(len(data_comp)):
         name = data_comp["Material"].values[j]
         rho1 = data_comp["Density"].values[j]
@@ -62,16 +34,8 @@ def _load_and_compile_materials():
         elif name in data_mat["Material"].values:
             rho2 = data_mat["Density"][data_mat["Material"] == name].values[0]
         if rho2:
-            print("")
-            print("")
-            print("-" * 90)
-            print("")
-            print(f"{name:<60s}  {rho1:.6f}")
-            print(f"{name:<60s}  {rho1:.6f}    {rho2:.6f}")
             assert np.isclose(rho1, rho2, atol=2e-2)
 
-    print("")
-    print("Check weight compositions")
     for j in range(len(data_comp)):
         name = data_comp["Material"].values[j]
         if name in data_mat["Material"].values:
@@ -79,14 +43,6 @@ def _load_and_compile_materials():
             weight_fracs2 = data_mat["Composition_symbol"][
                 data_mat["Material"] == name
             ].values[0]
-            print("")
-            print("")
-            print("-" * 90)
-            print("")
-            print(name)
-            print(data_comp["Formula"].values[j])
-            print(weight_fracs1)
-            print(weight_fracs2)
             assert len(weight_fracs1) == len(weight_fracs2)
             for k in range(len(weight_fracs1)):
                 elem1, frac1 = weight_fracs1[k].split(" ")
@@ -137,7 +93,6 @@ def _load_and_compile_materials():
                 "source": '"Detwiler, Rebecca S., McConn, Ronald J., Grimes, Thomas F., Upton, Scott A., & Engel, Eric J. Compendium of Material Composition Data for Radiation Transport Modeling. United States. PNNL-15870 Revision 2., https://doi.org/10.2172/1782721 (https://compendium.cwmd.pnnl.gov)"',
             }
 
-    print(materials)
     return materials
 
 
@@ -149,11 +104,7 @@ def _write_materials_csv(materials):
     materials : dict
         Dictionary of materials.
     """
-    # write all materials to CSV file
     mat_list = sorted(materials.keys())
-    print(mat_list)
-    print(len(mat_list))
-
     with open(FILENAME, "w") as f:
         print("%name,formula,density,weight fractions,source", file=f)
         for name in mat_list:
@@ -183,7 +134,6 @@ def _read_materials_csv():
             quoting=csv.QUOTE_ALL,
             skipinitialspace=True,
         ):
-            print(tokens)
             if tokens[0].startswith("%"):
                 continue
             name = tokens[0]
@@ -191,8 +141,6 @@ def _read_materials_csv():
             density = float(tokens[2])
             weight_fracs = tokens[3].split(";")
             source = tokens[4]
-            print(name)
-
             materials[name] = {
                 "formula": formula,
                 "density": density,
@@ -236,7 +184,6 @@ def fetch_materials(force=False):
     """
     if force or not os.path.exists(FILENAME):
         materials = force_load_and_write_materials_csv()
-
     materials = _read_materials_csv()
     return materials
 
