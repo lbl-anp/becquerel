@@ -78,6 +78,8 @@ def _load_and_compile_materials():
             "weight_fractions": weight_fracs,
             "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html)"',
         }
+        #  add duplicate entry under element symbol for backwards compatibility
+        materials[formula] = materials[name]
 
     for j in range(len(data_mat)):
         name = data_mat["Material"].values[j]
