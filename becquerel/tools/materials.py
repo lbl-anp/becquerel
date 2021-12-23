@@ -68,7 +68,7 @@ def _load_and_compile_materials():
             print("")
             print(f"{name:<60s}  {rho1:.6f}")
             print(f"{name:<60s}  {rho1:.6f}    {rho2:.6f}")
-            assert np.isclose(rho1, rho2, atol=4e-3)
+            assert np.isclose(rho1, rho2, atol=2e-2)
 
     print("")
     print("Check weight compositions")
@@ -92,7 +92,7 @@ def _load_and_compile_materials():
                 elem1, frac1 = weight_fracs1[k].split(" ")
                 elem2, frac2 = weight_fracs2[k].split(" ")
                 assert elem1 == elem2
-                assert np.isclose(float(frac1), float(frac2), atol=4e-5)
+                assert np.isclose(float(frac1), float(frac2), atol=3e-4)
 
     # make a dictionary of all the materials
     materials = {}
@@ -134,7 +134,7 @@ def _load_and_compile_materials():
                 "formula": formula,
                 "density": density,
                 "weight_fractions": weight_fracs,
-                "source": '"McConn, Gesh, Pagh, Rucker, & Williams, Compendium of Material Composition Data for Radiation Transport Modeling, PIET-43741-TM-963, PNNL-15870 Rev. 1 (https://www.pnnl.gov/main/publications/external/technical_reports/PNNL-15870Rev1.pdf)"',
+                "source": '"Detwiler, Rebecca S., McConn, Ronald J., Grimes, Thomas F., Upton, Scott A., & Engel, Eric J. Compendium of Material Composition Data for Radiation Transport Modeling. United States. PNNL-15870 Revision 2., https://doi.org/10.2172/1782721 (https://compendium.cwmd.pnnl.gov)"',
             }
 
     print(materials)
@@ -189,8 +189,8 @@ def _read_materials_csv():
             name = tokens[0]
             formula = tokens[1]
             density = float(tokens[2])
-            weight_fracs = tokens[4].split(";")
-            source = ",".join(tokens[5:])
+            weight_fracs = tokens[3].split(";")
+            source = tokens[4]
             print(name)
 
             materials[name] = {

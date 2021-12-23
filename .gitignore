@@ -1,5 +1,5 @@
 # Becquerel-specific files
-becquerel/tools/PNNL-*.*
+becquerel/tools/Material*.json
 becquerel/tools/materials.csv
 tests/test_outputs
 
