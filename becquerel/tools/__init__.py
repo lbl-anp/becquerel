@@ -18,7 +18,9 @@ from .isotope_qty import (
     N_AV,
 )
 from .materials import (
+    force_load_and_write_materials_csv,
     fetch_materials,
+    remove_materials_csv,
     MaterialsError,
     MaterialsWarning,
 )
@@ -64,7 +66,9 @@ __all__ = [
     "NeutronIrradiationError",
     "UCI_TO_BQ",
     "N_AV",
+    "force_load_and_write_materials_csv",
     "fetch_materials",
+    "remove_materials_csv",
     "MaterialsError",
     "MaterialsWarning",
     "NISTMaterialsError",

@@ -202,7 +202,20 @@ def _read_materials_csv():
     return materials
 
 
-def fetch_materials():
+def force_load_and_write_materials_csv():
+    """Load all material data and write to CSV file.
+
+    Returns
+    -------
+    materials
+        Dictionary keyed by material names containing the material data.
+    """
+    materials = _load_and_compile_materials()
+    _write_materials_csv(materials)
+    return materials
+
+
+def fetch_materials(force=False):
     """Fetch all available materials.
 
     On first ever function call, will check NIST website for data using
@@ -211,14 +224,24 @@ def fetch_materials():
     The Compendium materials will only be available if the optional dependency
     PyPDF2 package is installed.
 
+    Parameters
+    ----------
+    force : bool
+        Whether to force the reloading and rewriting of the materials CSV.
+
     Returns
     -------
     materials
         Dictionary keyed by material names containing the material data.
     """
-    if not os.path.exists(FILENAME):
-        materials = _load_and_compile_materials()
-        _write_materials_csv(materials)
+    if force or not os.path.exists(FILENAME):
+        materials = force_load_and_write_materials_csv()
 
     materials = _read_materials_csv()
     return materials
+
+
+def remove_materials_csv():
+    """Remove materials.csv if it exists."""
+    if os.path.exists(FILENAME):
+        os.remove(FILENAME)
