@@ -99,7 +99,7 @@ def _load_and_compile_materials():
         density = data_comp["Density"].values[j]
         weight_fracs = data_comp["Composition_symbol"].values[j]
         if name in materials:
-            # replace material formula if McConn has one
+            # replace material formula if compendium has one
             # otherwise do not overwrite the NIST data
             materials[name][formula] = formula
         else:
@@ -192,7 +192,7 @@ def fetch_materials(force=False):
 
     On first ever function call, will check NIST website for data using
     the tools in materials_nist.py and will download and attempt to parse
-    the McConn, et al. Compendium using the tools in materials_compendium.py.
+    the PNNL Compendium using the tools in materials_compendium.py.
     The Compendium materials will only be available if the optional dependency
     PyPDF2 package is installed.
 
