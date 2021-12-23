@@ -24,10 +24,6 @@ from .materials import (
     MaterialsError,
     MaterialsWarning,
 )
-from .materials_nist import (
-    NISTMaterialsError,
-    NISTMaterialsRequestError,
-)
 from .nndc import (
     fetch_wallet_card,
     fetch_decay_radiation,

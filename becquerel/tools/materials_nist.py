@@ -21,18 +21,6 @@ _URL_TABLE1 = "http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html"
 _URL_TABLE2 = "http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html"
 
 
-class NISTMaterialsError(MaterialsError):
-    """General error for NIST materials data."""
-
-    pass
-
-
-class NISTMaterialsRequestError(NISTMaterialsError):
-    """Error related to communicating with NIST or parsing the result."""
-
-    pass
-
-
 def _get_request(url):
     """Perform GET request.
 
@@ -43,13 +31,13 @@ def _get_request(url):
       requests object.
 
     Raises:
-      NISTMaterialsRequestError: if there was a problem making the request.
+      MaterialsError: if there was a problem making the request.
 
     """
 
     req = requests.get(url)
     if not req.ok or req.reason != "OK" or req.status_code != 200:
-        raise NISTMaterialsRequestError(
+        raise MaterialsError(
             "NIST materials request failed: reason={}, status_code={}".format(
                 req.reason, req.status_code
             )
@@ -68,7 +56,7 @@ def fetch_element_data():
       'Element', 'Z_over_A', 'I_eV', and 'Density'.
 
     Raises:
-      NISTMaterialsRequestError: if there was a problem obtaining the data.
+      MaterialsError: if there was a problem obtaining the data.
 
     """
     req = _get_request(_URL_TABLE1)
@@ -91,16 +79,16 @@ def fetch_element_data():
     # read HTML table into pandas DataFrame
     tables = pd.read_html(text, header=0, skiprows=[1, 2])
     if len(tables) != 1:
-        raise NISTMaterialsRequestError(
+        raise MaterialsError(
             f"1 HTML table expected, but found {len(tables)}"
         )
     df = tables[0]
     if len(df) != MAX_Z:
-        raise NISTMaterialsRequestError(
+        raise MaterialsError(
             f"{MAX_Z} elements expected, but found {len(df)}"
         )
     if len(df.columns) != 6:
-        raise NISTMaterialsRequestError(
+        raise MaterialsError(
             f"10 columns expected, but found {len(df.columns)} ({df.columns})"
         )
     # rename columns
@@ -128,31 +116,31 @@ def convert_composition(comp):
         ["H 0.111898", "O 0.888102"]
 
     Raises:
-      NISTMaterialsRequestError: if there was a problem making the conversion.
+      MaterialsError: if there was a problem making the conversion.
 
     """
     comp_sym = []
     if not isinstance(comp, Iterable):
-        raise NISTMaterialsRequestError(
+        raise MaterialsError(
             f"Compound must be an iterable of strings: {comp}"
         )
     for line in comp:
         if not isinstance(line, str):
-            raise NISTMaterialsRequestError(
+            raise MaterialsError(
                 f"Line must be a string type: {line} {type(line)}"
             )
         try:
             z, weight = line.split(":")
         except ValueError:
-            raise NISTMaterialsRequestError(f"Unable to split compound line: {line}")
+            raise MaterialsError(f"Unable to split compound line: {line}")
         try:
             z = int(z)
         except ValueError:
-            raise NISTMaterialsRequestError(
+            raise MaterialsError(
                 f"Unable to convert Z {z} to integer: {line}"
             )
         if z < 1 or z > MAX_Z:
-            raise NISTMaterialsRequestError(f"Z {z} out of range [1, {line}]: {MAX_Z}")
+            raise MaterialsError(f"Z {z} out of range [1, {line}]: {MAX_Z}")
         comp_sym.append(element_symbol(z) + " " + weight.strip())
     return comp_sym
 
@@ -168,7 +156,7 @@ def fetch_compound_data():
       'Z_over_A', 'I_eV', 'Density', 'Composition_Z', and 'Composition_symbol'.
 
     Raises:
-      NISTMaterialsRequestError: if there was a problem obtaining the data.
+      MaterialsError: if there was a problem obtaining the data.
 
     """
     req = _get_request(_URL_TABLE2)
@@ -186,16 +174,16 @@ def fetch_compound_data():
     # read HTML table into pandas DataFrame
     tables = pd.read_html(text, header=0, skiprows=[1, 2])
     if len(tables) != 1:
-        raise NISTMaterialsRequestError(
+        raise MaterialsError(
             f"1 HTML table expected, but found {len(tables)}"
         )
     df = tables[0]
     if len(df) != N_COMPOUNDS:
-        raise NISTMaterialsRequestError(
+        raise MaterialsError(
             f"{N_COMPOUNDS} compounds expected, but found {len(df)}"
         )
     if len(df.columns) != 5:
-        raise NISTMaterialsRequestError(
+        raise MaterialsError(
             f"5 columns expected, but found {len(df.columns)} ({df.columns})"
         )
     # rename columns
