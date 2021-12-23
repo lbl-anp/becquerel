@@ -79,14 +79,10 @@ def fetch_element_data():
     # read HTML table into pandas DataFrame
     tables = pd.read_html(text, header=0, skiprows=[1, 2])
     if len(tables) != 1:
-        raise MaterialsError(
-            f"1 HTML table expected, but found {len(tables)}"
-        )
+        raise MaterialsError(f"1 HTML table expected, but found {len(tables)}")
     df = tables[0]
     if len(df) != MAX_Z:
-        raise MaterialsError(
-            f"{MAX_Z} elements expected, but found {len(df)}"
-        )
+        raise MaterialsError(f"{MAX_Z} elements expected, but found {len(df)}")
     if len(df.columns) != 6:
         raise MaterialsError(
             f"10 columns expected, but found {len(df.columns)} ({df.columns})"
@@ -121,14 +117,10 @@ def convert_composition(comp):
     """
     comp_sym = []
     if not isinstance(comp, Iterable):
-        raise MaterialsError(
-            f"Compound must be an iterable of strings: {comp}"
-        )
+        raise MaterialsError(f"Compound must be an iterable of strings: {comp}")
     for line in comp:
         if not isinstance(line, str):
-            raise MaterialsError(
-                f"Line must be a string type: {line} {type(line)}"
-            )
+            raise MaterialsError(f"Line must be a string type: {line} {type(line)}")
         try:
             z, weight = line.split(":")
         except ValueError:
@@ -136,9 +128,7 @@ def convert_composition(comp):
         try:
             z = int(z)
         except ValueError:
-            raise MaterialsError(
-                f"Unable to convert Z {z} to integer: {line}"
-            )
+            raise MaterialsError(f"Unable to convert Z {z} to integer: {line}")
         if z < 1 or z > MAX_Z:
             raise MaterialsError(f"Z {z} out of range [1, {line}]: {MAX_Z}")
         comp_sym.append(element_symbol(z) + " " + weight.strip())
@@ -174,14 +164,10 @@ def fetch_compound_data():
     # read HTML table into pandas DataFrame
     tables = pd.read_html(text, header=0, skiprows=[1, 2])
     if len(tables) != 1:
-        raise MaterialsError(
-            f"1 HTML table expected, but found {len(tables)}"
-        )
+        raise MaterialsError(f"1 HTML table expected, but found {len(tables)}")
     df = tables[0]
     if len(df) != N_COMPOUNDS:
-        raise MaterialsError(
-            f"{N_COMPOUNDS} compounds expected, but found {len(df)}"
-        )
+        raise MaterialsError(f"{N_COMPOUNDS} compounds expected, but found {len(df)}")
     if len(df.columns) != 5:
         raise MaterialsError(
             f"5 columns expected, but found {len(df.columns)} ({df.columns})"
