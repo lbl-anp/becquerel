@@ -59,7 +59,10 @@ def test_materials():
 @pytest.mark.webtest
 def test_materials_force():
     """Test fetch_materials with force=True."""
-    data = fetch_materials(force=True)
+    assert os.path.exists(materials.FILENAME)
+    with pytest.warns(MaterialsWarning) as record:
+        data = fetch_materials(force=True)
+    assert len(record) == 1, "Expected MaterialsWarning to be raised"
     print(data)
     assert os.path.exists(materials.FILENAME)
 
@@ -132,7 +135,7 @@ def test_materials_no_compendium():
         os.remove(materials_compendium.FNAME)
     with pytest.warns(MaterialsWarning) as record:
         materials_compendium.fetch_compendium_data()
-    assert len(record) == 1
+    assert len(record) == 1, "Expected MaterialsWarning to be raised"
     # point back to original file
     materials_compendium.FNAME = fname_orig
 

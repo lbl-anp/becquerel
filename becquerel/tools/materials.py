@@ -2,6 +2,7 @@
 
 import csv
 import os
+import warnings
 import numpy as np
 from .materials_error import MaterialsError, MaterialsWarning
 from .materials_compendium import fetch_compendium_data
@@ -34,7 +35,10 @@ def _load_and_compile_materials():
         elif name in data_mat["Material"].values:
             rho2 = data_mat["Density"][data_mat["Material"] == name].values[0]
         if rho2:
-            assert np.isclose(rho1, rho2, atol=2e-2)
+            if not np.isclose(rho1, rho2, atol=2e-2):
+                raise MaterialsError(
+                    f"Material {name} densities do not match between different data sources:  {rho1:.6f}  {rho2:.6f}"
+                )
 
     for j in range(len(data_comp)):
         name = data_comp["Material"].values[j]
@@ -43,12 +47,23 @@ def _load_and_compile_materials():
             weight_fracs2 = data_mat["Composition_symbol"][
                 data_mat["Material"] == name
             ].values[0]
-            assert len(weight_fracs1) == len(weight_fracs2)
+            if len(weight_fracs1) != len(weight_fracs2):
+                raise MaterialsError(
+                    f"Material {name} has different number of weight fractions in the different sources: {weight_fracs1}  {weight_fracs2}"
+                )
             for k in range(len(weight_fracs1)):
                 elem1, frac1 = weight_fracs1[k].split(" ")
                 elem2, frac2 = weight_fracs2[k].split(" ")
-                assert elem1 == elem2
-                assert np.isclose(float(frac1), float(frac2), atol=3e-4)
+                if elem1 != elem2:
+                    raise MaterialsError(
+                        f"Material {name} weight fraction elements do not match between different data sources:  {elem1}  {elem2}"
+                    )
+                frac1 = float(frac1)
+                frac2 = float(frac2)
+            if not np.isclose(frac1, frac2, atol=3e-4):
+                raise MaterialsError(
+                    f"Material {name} weight fractions do not match between different data sources:  {elem1}  {frac1:.6f}  {frac2:.6f}"
+                )
 
     # make a dictionary of all the materials
     materials = {}
@@ -104,6 +119,11 @@ def _write_materials_csv(materials):
     materials : dict
         Dictionary of materials.
     """
+    if os.path.exists(FILENAME):
+        warnings.warn(
+            f"Materials data CSV already exists at {FILENAME} and will be overwritten",
+            MaterialsWarning,
+        )
     mat_list = sorted(materials.keys())
     with open(FILENAME, "w") as f:
         print("%name,formula,density,weight fractions,source", file=f)
@@ -124,6 +144,8 @@ def _read_materials_csv():
     materials
         Dictionary keyed by material names containing the material data.
     """
+    if not os.path.exists(FILENAME):
+        raise MaterialsError(f"Materials data CSV does not exist at {FILENAME}")
     materials = {}
     with open(FILENAME, "r") as f:
         lines = f.readlines()
