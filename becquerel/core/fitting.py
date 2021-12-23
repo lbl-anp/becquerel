@@ -10,6 +10,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
 from iminuit import Minuit
 from uncertainties import ufloat
+import numdifftools as nd
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
@@ -422,9 +423,10 @@ class Fitter:
     def y_unc(self, y_unc):
         if y_unc is not None:
             self._y_unc = np.asarray(y_unc, dtype=float)
-            assert len(self.x) == len(
-                self._y_unc
-            ), f"Fitting x (len {len(self.x)}) does not match y_unc (len {len(self._y_unc)})"
+            assert len(self.x) == len(self._y_unc), (
+                f"Fitting x (len {len(self.x)}) does not match y_unc "
+                "(len {len(self._y_unc)})"
+            )
             if np.any(self._y_unc <= 0.0):
                 min_v = np.min(self._y_unc[self._y_unc > 0.0])
                 warnings.warn(
@@ -837,7 +839,6 @@ class Fitter:
            Physical Chemistry A, 105(15), 3917-3921.
 
         """
-        import numdifftools as nd
 
         def _calc_area(param_vec, **kwargs):
             """Internal function to compute the area given the fit values."""
@@ -846,11 +847,14 @@ class Fitter:
 
         # Handle input defaults
         xvals = self.x if x is None else x
+        # FIXME: how robust is this to changes in x?
         model = self.model if component is None else component
 
         # Reformat best_values info so the gradient calculation can handle _calc_area
         names = list(self.best_values.keys())
         values = list(self.best_values.values())
+        print(names)
+        print(values)
 
         # Compute the area under the curve
         area = _calc_area(values, xvals=xvals, model=model, names=names)
@@ -858,16 +862,22 @@ class Fitter:
         # Compute the gradient with respect to the best fit parameters
         grad = nd.Gradient(_calc_area)
         g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
+        print("g:", g)
 
         # Compute the variance in the area estimate: Tellinghuisen Eq. 1
         if "minuit" in self.backend:
-            covariance = self.result.covariance
+            covariance = np.array(self.result.covariance)
         else:
-            # FIXME this may not have the right scale
-            covariance = self.result.covar
+            # FIXME with lmfit, this has a different parameter order than g
+            covariance = np.array(self.result.covar)
+        if not covariance.sum():
+            raise FittingError("No covariance!")
         area_variance = g.T @ covariance @ g
+        print("area_variance:")
+        print(area_variance)
         area_variance = area_variance[0, 0]
-        # FIXME check bin width normalization
+        # We don't divide by the binwidth here because we are summing bins: if we double
+        # the binwidth, we double the counts per bin but halve the number of bins.
         return ufloat(area, np.sqrt(area_variance))
 
     def param_val(self, param):
