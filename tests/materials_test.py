@@ -20,7 +20,9 @@ class TestConvertComposition:
 
     def test_success(self):
         """Test convert_composition works for a simple example."""
-        convert_composition(["1: 0.111898", "8: 0.888102"])
+        results = convert_composition(["1: 0.111898", "8: 0.888102"])
+        assert results[0] == "H 0.111898"
+        assert results[1] == "O 0.888102"
 
     def test_not_iterable(self):
         """Test convert_composition exception for non-iterable argument."""
