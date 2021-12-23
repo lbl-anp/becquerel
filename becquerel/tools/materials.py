@@ -191,10 +191,10 @@ def fetch_materials(force=False):
     """Fetch all available materials.
 
     On first ever function call, will check NIST website for data using
-    the tools in materials_nist.py and will download and attempt to parse
-    the PNNL Compendium using the tools in materials_compendium.py.
-    The Compendium materials will only be available if the optional dependency
-    PyPDF2 package is installed.
+    the tools in materials_nist.py and will attempt to load the PNNL Compendium 
+    data using the tools in materials_compendium.py. The Compendium materials
+    will only be available if the JSON data MaterialsCompendium.json are
+    downloaded and placed in the same location as materials_compendium.py.
 
     Parameters
     ----------

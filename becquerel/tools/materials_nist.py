@@ -52,7 +52,7 @@ def fetch_element_data():
       http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html
 
     Returns:
-      A pandas DataFrame of the material data. Colums are 'Z', 'Symbol',
+      A pandas DataFrame of the material data. Columns are 'Z', 'Symbol',
       'Element', 'Z_over_A', 'I_eV', and 'Density'.
 
     Raises:
