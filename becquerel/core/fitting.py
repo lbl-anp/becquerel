@@ -421,9 +421,10 @@ class Fitter:
     def y_unc(self, y_unc):
         if y_unc is not None:
             self._y_unc = np.asarray(y_unc, dtype=float)
-            assert len(self.x) == len(
-                self._y_unc
-            ), f"Fitting x (len {len(self.x)}) does not match y_unc (len {len(self._y_unc)})"
+            assert len(self.x) == len(self._y_unc), (
+                f"Fitting x (len {len(self.x)}) does not match "
+                f"y_unc (len {len(self._y_unc)})"
+            )
             if np.any(self._y_unc <= 0.0):
                 min_v = np.min(self._y_unc[self._y_unc > 0.0])
                 warnings.warn(
