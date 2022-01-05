@@ -857,12 +857,13 @@ class Fitter:
                 component.prefix.strip("_") for component in self.model.components
             ].index(component)
             model = self.model.components[idx]
+        else:
+            # Use the Model object itself
+            model = component
 
         # Reformat best_values info so the gradient calculation can handle _calc_area
         names = [name for name in self.param_names if self.params[name].vary]
         values = [self.param_val(name) for name in names]
-        print(names)
-        print(values)
 
         # Compute the area under the curve
         area = _calc_area(values, xvals=xvals, model=model, names=names)
@@ -870,7 +871,6 @@ class Fitter:
         # Compute the gradient with respect to the best fit parameters
         grad = nd.Gradient(_calc_area)
         g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
-        print("g:", g)
 
         # Compute the variance in the area estimate: Tellinghuisen Eq. 1
         if "minuit" in self.backend:
@@ -880,12 +880,9 @@ class Fitter:
             covariance = np.array(self.result.covar)
         if not covariance.sum():
             raise FittingError("No covariance!")
-        print("covariance:")
-        print(covariance)
         area_variance = g.T @ covariance @ g
-        print("area_variance:")
-        print(area_variance)
         area_variance = area_variance[0, 0]
+
         # We don't divide by the binwidth here because we are summing bins: if we double
         # the binwidth, we double the counts per bin but halve the number of bins.
         return ufloat(area, np.sqrt(area_variance))
