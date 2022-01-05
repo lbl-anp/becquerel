@@ -18,10 +18,11 @@ from .isotope_qty import (
     N_AV,
 )
 from .materials import (
-    fetch_element_data,
-    fetch_compound_data,
-    NISTMaterialsError,
-    NISTMaterialsRequestError,
+    force_load_and_write_materials_csv,
+    fetch_materials,
+    remove_materials_csv,
+    MaterialsError,
+    MaterialsWarning,
 )
 from .nndc import (
     fetch_wallet_card,
@@ -61,8 +62,11 @@ __all__ = [
     "NeutronIrradiationError",
     "UCI_TO_BQ",
     "N_AV",
-    "fetch_element_data",
-    "fetch_compound_data",
+    "force_load_and_write_materials_csv",
+    "fetch_materials",
+    "remove_materials_csv",
+    "MaterialsError",
+    "MaterialsWarning",
     "NISTMaterialsError",
     "NISTMaterialsRequestError",
     "fetch_wallet_card",
