@@ -1,202 +1,218 @@
-"""Query material data NIST X-Ray Mass Attenuation Coefficients website.
+"""Load material data for use in attenuation calculations with XCOM."""
 
-References:
-  https://www.nist.gov/pml/x-ray-mass-attenuation-coefficients
-  http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html
-  http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html
-
-"""
-
-import requests
-import pandas as pd
-from collections.abc import Iterable
-from .element import element_symbol
-
-MAX_Z = 92
-N_COMPOUNDS = 48
+import csv
+import os
+import warnings
+import numpy as np
+from .materials_error import MaterialsError, MaterialsWarning
+from .materials_compendium import fetch_compendium_data
+from .materials_nist import fetch_element_data, fetch_compound_data
 
 
-_URL_TABLE1 = "http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html"
-_URL_TABLE2 = "http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html"
+FILENAME = os.path.join(os.path.split(__file__)[0], "materials.csv")
 
 
-class NISTMaterialsError(Exception):
-    """General error for NIST materials data."""
+def _load_and_compile_materials():
+    """Retrieve and merge all of the material sources into one dictionary.
 
-    pass
-
-
-class NISTMaterialsRequestError(NISTMaterialsError):
-    """Error related to communicating with NIST or parsing the result."""
-
-    pass
-
-
-def _get_request(url):
-    """Perform GET request.
-
-    Args:
-      url: URL (string) to get.
-
-    Returns:
-      requests object.
-
-    Raises:
-      NISTMaterialsRequestError: if there was a problem making the request.
-
+    Returns
+    -------
+    materials
+        Dictionary keyed by material names containing the material data.
     """
+    # fetch the data sources
+    data_elem = fetch_element_data()
+    data_mat = fetch_compound_data()
+    data_comp = fetch_compendium_data()
 
-    req = requests.get(url)
-    if not req.ok or req.reason != "OK" or req.status_code != 200:
-        raise NISTMaterialsRequestError(
-            "NIST materials request failed: reason={}, status_code={}".format(
-                req.reason, req.status_code
-            )
-        )
-    return req
+    # perform various checks on the Compendium data
+    for j in range(len(data_comp)):
+        name = data_comp["Material"].values[j]
+        rho1 = data_comp["Density"].values[j]
+        rho2 = None
+        if name in data_elem["Element"].values:
+            rho2 = data_elem["Density"][data_elem["Element"] == name].values[0]
+        elif name in data_mat["Material"].values:
+            rho2 = data_mat["Density"][data_mat["Material"] == name].values[0]
+        if rho2:
+            if not np.isclose(rho1, rho2, atol=2e-2):
+                raise MaterialsError(
+                    f"Material {name} densities do not match between different data sources:  {rho1:.6f}  {rho2:.6f}"
+                )
+
+    for j in range(len(data_comp)):
+        name = data_comp["Material"].values[j]
+        if name in data_mat["Material"].values:
+            weight_fracs1 = data_comp["Composition_symbol"].values[j]
+            weight_fracs2 = data_mat["Composition_symbol"][
+                data_mat["Material"] == name
+            ].values[0]
+            if len(weight_fracs1) != len(weight_fracs2):
+                raise MaterialsError(
+                    f"Material {name} has different number of weight fractions in the different sources: {weight_fracs1}  {weight_fracs2}"
+                )
+            for k in range(len(weight_fracs1)):
+                elem1, frac1 = weight_fracs1[k].split(" ")
+                elem2, frac2 = weight_fracs2[k].split(" ")
+                if elem1 != elem2:
+                    raise MaterialsError(
+                        f"Material {name} weight fraction elements do not match between different data sources:  {elem1}  {elem2}"
+                    )
+                frac1 = float(frac1)
+                frac2 = float(frac2)
+            if not np.isclose(frac1, frac2, atol=3e-4):
+                raise MaterialsError(
+                    f"Material {name} weight fractions do not match between different data sources:  {elem1}  {frac1:.6f}  {frac2:.6f}"
+                )
+
+    # make a dictionary of all the materials
+    materials = {}
+    for j in range(len(data_elem)):
+        name = data_elem["Element"].values[j]
+        formula = data_elem["Symbol"].values[j]
+        density = data_elem["Density"].values[j]
+        weight_fracs = data_elem["Composition_symbol"].values[j]
+        materials[name] = {
+            "formula": formula,
+            "density": density,
+            "weight_fractions": weight_fracs,
+            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html)"',
+        }
+        #  add duplicate entry under element symbol for backwards compatibility
+        materials[formula] = materials[name]
+
+    for j in range(len(data_mat)):
+        name = data_mat["Material"].values[j]
+        formula = "-"
+        density = data_mat["Density"].values[j]
+        weight_fracs = data_mat["Composition_symbol"].values[j]
+        materials[name] = {
+            "formula": formula,
+            "density": density,
+            "weight_fractions": weight_fracs,
+            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html)"',
+        }
+
+    for j in range(len(data_comp)):
+        name = data_comp["Material"].values[j]
+        formula = data_comp["Formula"].values[j]
+        density = data_comp["Density"].values[j]
+        weight_fracs = data_comp["Composition_symbol"].values[j]
+        if name in materials:
+            # replace material formula if compendium has one
+            # otherwise do not overwrite the NIST data
+            materials[name][formula] = formula
+        else:
+            materials[name] = {
+                "formula": formula,
+                "density": density,
+                "weight_fractions": weight_fracs,
+                "source": '"Detwiler, Rebecca S., McConn, Ronald J., Grimes, Thomas F., Upton, Scott A., & Engel, Eric J. Compendium of Material Composition Data for Radiation Transport Modeling. United States. PNNL-15870 Revision 2., https://doi.org/10.2172/1782721 (https://compendium.cwmd.pnnl.gov)"',
+            }
+
+    return materials
 
 
-def fetch_element_data():
-    """Retrieve data for the elements.
+def _write_materials_csv(materials):
+    """Write material data to materials.csv.
 
-    Data are found in Table 1:
-      http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html
-
-    Returns:
-      A pandas DataFrame of the material data. Colums are 'Z', 'Symbol',
-      'Element', 'Z_over_A', 'I_eV', and 'Density'.
-
-    Raises:
-      NISTMaterialsRequestError: if there was a problem obtaining the data.
-
+    Parameters
+    ----------
+    materials : dict
+        Dictionary of materials.
     """
-    req = _get_request(_URL_TABLE1)
-    text = req.text
-    # rename first two header columns
-    text = text.replace(
-        '<TH scope="col" COLSPAN="2"><I>Z</I></TH>',
-        '<TH scope="col">Z</TH><TH scope="col">Symbol</TH>',
-    )
-    # remove row that makes the table too wide
-    text = text.replace('<TD COLSPAN="10"><HR SIZE="1" NOSHADE></TD>', "")
-    # remove extra header columns
-    text = text.replace('<TD COLSPAN="2">', "<TD>")
-    text = text.replace('<TD COLSPAN="4">', "<TD>")
-    text = text.replace("TD>&nbsp;</TD>", "")
-    # remove extra columns in Hydrogen row
-    text = text.replace('<TD ROWSPAN="92">&nbsp;</TD>', "")
-    # remove open <TR> at the end of the table
-    text = text.replace("</TD></TR><TR>", "</TD></TR>")
-    # read HTML table into pandas DataFrame
-    tables = pd.read_html(text, header=0, skiprows=[1, 2])
-    if len(tables) != 1:
-        raise NISTMaterialsRequestError(
-            f"1 HTML table expected, but found {len(tables)}"
+    if os.path.exists(FILENAME):
+        warnings.warn(
+            f"Materials data CSV already exists at {FILENAME} and will be overwritten",
+            MaterialsWarning,
         )
-    df = tables[0]
-    if len(df) != MAX_Z:
-        raise NISTMaterialsRequestError(
-            f"{MAX_Z} elements expected, but found {len(df)}"
-        )
-    if len(df.columns) != 6:
-        raise NISTMaterialsRequestError(
-            f"10 columns expected, but found {len(df.columns)} ({df.columns})"
-        )
-    # rename columns
-    df.columns = ["Z", "Symbol", "Element", "Z_over_A", "I_eV", "Density"]
-    return df
+    mat_list = sorted(materials.keys())
+    with open(FILENAME, "w") as f:
+        print("%name,formula,density,weight fractions,source", file=f)
+        for name in mat_list:
+            line = ""
+            data = materials[name]
+            line = f"\"{name}\",\"{data['formula']}\",{data['density']:.6f},"
+            line += ";".join(data["weight_fractions"])
+            line += f",{data['source']}"
+            print(line, file=f)
 
 
-def convert_composition(comp):
-    """Convert composition by Z into composition by symbol.
+def _read_materials_csv():
+    """Load material data from materials.csv.
 
-    Args:
-      comp: a list of strings from the last column of Table 2, e.g.,
-        ["1: 0.111898", "8: 0.888102"]
-
-    Returns:
-      A list of strings of composition by symbol, e.g.,
-        ["H 0.111898", "O 0.888102"]
-
-    Raises:
-      NISTMaterialsRequestError: if there was a problem making the conversion.
-
+    Returns
+    -------
+    materials
+        Dictionary keyed by material names containing the material data.
     """
-    comp_sym = []
-    if not isinstance(comp, Iterable):
-        raise NISTMaterialsRequestError(
-            f"Compound must be an iterable of strings: {comp}"
-        )
-    for line in comp:
-        if not isinstance(line, str):
-            raise NISTMaterialsRequestError(
-                f"Line must be a string type: {line} {type(line)}"
-            )
-        try:
-            z, weight = line.split(":")
-        except ValueError:
-            raise NISTMaterialsRequestError(f"Unable to split compound line: {line}")
-        try:
-            z = int(z)
-        except ValueError:
-            raise NISTMaterialsRequestError(
-                f"Unable to convert Z {z} to integer: {line}"
-            )
-        if z < 1 or z > MAX_Z:
-            raise NISTMaterialsRequestError(f"Z {z} out of range [1, {line}]: {MAX_Z}")
-        comp_sym.append(element_symbol(z) + " " + weight.strip())
-    return comp_sym
+    if not os.path.exists(FILENAME):
+        raise MaterialsError(f"Materials data CSV does not exist at {FILENAME}")
+    materials = {}
+    with open(FILENAME, "r") as f:
+        lines = f.readlines()
+        for tokens in csv.reader(
+            lines,
+            quotechar='"',
+            delimiter=",",
+            quoting=csv.QUOTE_ALL,
+            skipinitialspace=True,
+        ):
+            if tokens[0].startswith("%"):
+                continue
+            name = tokens[0]
+            formula = tokens[1]
+            density = float(tokens[2])
+            weight_fracs = tokens[3].split(";")
+            source = tokens[4]
+            materials[name] = {
+                "formula": formula,
+                "density": density,
+                "weight_fractions": weight_fracs,
+                "source": source,
+            }
+    return materials
 
 
-def fetch_compound_data():
-    """Retrieve data for the compounds.
+def force_load_and_write_materials_csv():
+    """Load all material data and write to CSV file.
 
-    Data are found in Table 2:
-      http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html
-
-    Returns:
-      A pandas DataFrame of the material data. Columns are 'Material',
-      'Z_over_A', 'I_eV', 'Density', 'Composition_Z', and 'Composition_symbol'.
-
-    Raises:
-      NISTMaterialsRequestError: if there was a problem obtaining the data.
-
+    Returns
+    -------
+    materials
+        Dictionary keyed by material names containing the material data.
     """
-    req = _get_request(_URL_TABLE2)
-    text = req.text
-    # remove extra header columns
-    text = text.replace('<TD ROWSPAN="2">&nbsp;</TD>', "")
-    # remove extra rows in header row
-    text = text.replace(' ROWSPAN="2"', "")
-    # remove extra columns in third header row
-    text = text.replace('<TD COLSPAN="9"><HR SIZE="1" NOSHADE></TD>', "")
-    # remove extra columns in the first material row
-    text = text.replace('<TD ROWSPAN="50"> &nbsp; </TD>', "")
-    # replace <BR> symbols in composition lists with semicolons
-    text = text.replace("<BR>", ";")
-    # read HTML table into pandas DataFrame
-    tables = pd.read_html(text, header=0, skiprows=[1, 2])
-    if len(tables) != 1:
-        raise NISTMaterialsRequestError(
-            f"1 HTML table expected, but found {len(tables)}"
-        )
-    df = tables[0]
-    if len(df) != N_COMPOUNDS:
-        raise NISTMaterialsRequestError(
-            f"{N_COMPOUNDS} compounds expected, but found {len(df)}"
-        )
-    if len(df.columns) != 5:
-        raise NISTMaterialsRequestError(
-            f"5 columns expected, but found {len(df.columns)} ({df.columns})"
-        )
-    # rename columns
-    df.columns = ["Material", "Z_over_A", "I_eV", "Density", "Composition_Z"]
-    # clean up Z composition
-    df["Composition_Z"] = [
-        [line.strip() for line in comp.split(";")] for comp in df["Composition_Z"]
-    ]
-    # create a column of compositions by symbol (for use with fetch_xcom_data)
-    df["Composition_symbol"] = [
-        convert_composition(comp) for comp in df["Composition_Z"]
-    ]
-    return df
+    materials = _load_and_compile_materials()
+    _write_materials_csv(materials)
+    return materials
+
+
+def fetch_materials(force=False):
+    """Fetch all available materials.
+
+    On first ever function call, will check NIST website for data using
+    the tools in materials_nist.py and will attempt to load the PNNL Compendium
+    data using the tools in materials_compendium.py. The Compendium materials
+    will only be available if the JSON data MaterialsCompendium.json are
+    downloaded and placed in the same location as materials_compendium.py.
+
+    Parameters
+    ----------
+    force : bool
+        Whether to force the reloading and rewriting of the materials CSV.
+
+    Returns
+    -------
+    materials
+        Dictionary keyed by material names containing the material data.
+    """
+    if force or not os.path.exists(FILENAME):
+        materials = force_load_and_write_materials_csv()
+    materials = _read_materials_csv()
+    return materials
+
+
+def remove_materials_csv():
+    """Remove materials.csv if it exists."""
+    if os.path.exists(FILENAME):
+        os.remove(FILENAME)
