@@ -817,16 +817,19 @@ class Fitter:
     def eval(self, x, params=None, **kwargs):
         return self.model.eval(x=x, params=params, **kwargs)
 
-    def calc_area_and_unc(self, x=None, component=None):
+    def calc_area_and_unc(self, component=None, x=None):
         """Calculate the area (and uncertainty) under the fit (or component thereof).
 
         Parameters
         ----------
-        x : array-like, optional
-            x values to use for function evaluation, by default `self.x`
         component : Model or str, optional
             Model component (or name thereof) for which to calculate the area, by
             default None, in which case the entire model is used.
+        x : array-like, optional
+            x values to use for function evaluation, by default `self.x`. Note that
+            changing x can easily lead to incorrect results if done carelessly, as the
+            spacing of x values needs to be the same as used to compute the fit. Thus
+            one should only pass in `self.x`, `self.x_roi`, or slices thereof.
 
         Returns
         -------
@@ -847,7 +850,10 @@ class Fitter:
 
         # Handle input defaults
         xvals = self.x if x is None else x
-        # FIXME: how robust is this to changes in x?
+        dxvals = np.diff(xvals)
+        assert np.allclose(dxvals[0], dxvals)
+        assert np.allclose(dxvals[0], np.diff(self.x))
+
         if component is None:
             # Use the entire model (i.e., all components)
             model = self.model
@@ -861,7 +867,7 @@ class Fitter:
             # Use the Model object itself
             model = component
 
-        # Reformat best_values info so the gradient calculation can handle _calc_area
+        # Format param names/values so the gradient calculation can handle _calc_area
         names = [name for name in self.param_names if self.params[name].vary]
         values = [self.param_val(name) for name in names]
 
@@ -876,7 +882,6 @@ class Fitter:
         if "minuit" in self.backend:
             covariance = np.array(self.result.covariance)
         else:
-            # FIXME with lmfit, this has a different parameter order than g
             covariance = np.array(self.result.covar)
         if not covariance.sum():
             raise FittingError("No covariance!")
