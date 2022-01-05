@@ -824,9 +824,9 @@ class Fitter:
         ----------
         x : array-like, optional
             x values to use for function evaluation, by default `self.x`
-        component : Model, optional
-            Model component for which to calculate the area, by default None, in which
-            case the entire model is used.
+        component : Model or str, optional
+            Model component (or name thereof) for which to calculate the area, by
+            default None, in which case the entire model is used.
 
         Returns
         -------
@@ -848,11 +848,19 @@ class Fitter:
         # Handle input defaults
         xvals = self.x if x is None else x
         # FIXME: how robust is this to changes in x?
-        model = self.model if component is None else component
+        if component is None:
+            # Use the entire model (i.e., all components)
+            model = self.model
+        elif isinstance(component, str):
+            # Look up the component based on its name
+            idx = [
+                component.prefix.strip("_") for component in self.model.components
+            ].index(component)
+            model = self.model.components[idx]
 
         # Reformat best_values info so the gradient calculation can handle _calc_area
-        names = list(self.best_values.keys())
-        values = list(self.best_values.values())
+        names = [name for name in self.param_names if self.params[name].vary]
+        values = [self.param_val(name) for name in names]
         print(names)
         print(values)
 
@@ -872,6 +880,8 @@ class Fitter:
             covariance = np.array(self.result.covar)
         if not covariance.sum():
             raise FittingError("No covariance!")
+        print("covariance:")
+        print(covariance)
         area_variance = g.T @ covariance @ g
         print("area_variance:")
         print(area_variance)
