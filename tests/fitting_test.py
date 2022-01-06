@@ -364,11 +364,16 @@ class TestFittingHighStatSimData:
             assert np.isclose(a4.nominal_value, a5.nominal_value)
             assert np.isclose(a4.std_dev, a5.std_dev)
 
-            # If the component is a Gaussian, the calculated area should be very close
-            # to its given amplitude parameter.
             if name == "gauss":
+                # If the component is a Gaussian, the calculated area should be very
+                # close to its given amplitude parameter.
                 a_theor = HIGH_STAT_SIM_PARAMS["base_model_params"][name]["amp"]
                 assert np.isclose(a2.nominal_value, a_theor, rtol=0.01)
+
+                # Additionally, if there's no background, the uncertainty should be very
+                # close to the sqrt of the amplitude (at least with minuit!)
+                if len(fitter.model.components) == 1 and "minuit" in fitter.backend:
+                    assert np.isclose(a2.std_dev, np.sqrt(a_theor), rtol=0.01)
 
 
 @pytest.mark.parametrize("method", ["lmfit", "lmfit-pml", "minuit-pml"])
