@@ -325,7 +325,7 @@ class TestFittingHighStatSimData:
 
         # Area calculations do not support non-linear bins!
         if sim_high_stat["binning"] != "linear":
-            with pytest.raises(AssertionError):
+            with pytest.raises(NotImplementedError):
                 fitter.calc_area_and_unc()
             return
 
