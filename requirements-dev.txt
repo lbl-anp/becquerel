@@ -2,8 +2,8 @@
 coverage
 flake8
 black==21.4b2
-pytest>=3.0.0
+pytest<7.0.0
 pytest-cov
-pytest-black>=0.3.10
+pytest-black
 pytest-rerunfailures
 bump2version
