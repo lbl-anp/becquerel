@@ -16,3 +16,4 @@ scipy
 setuptools
 uncertainties>=3.0.3
 iminuit
+numdifftools

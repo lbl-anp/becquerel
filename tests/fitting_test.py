@@ -317,6 +317,64 @@ class TestFittingHighStatSimData:
         # fitter.custom_plot()
         # plt.show()
 
+    def test_component_areas(self, sim_high_stat):
+        fitter = bq.Fitter(sim_high_stat["model"])
+        fitter.set_data(**sim_high_stat["data"])
+        fitter.set_roi(*sim_high_stat["roi"])
+        fitter.fit(sim_high_stat["method"])
+
+        # Area calculations do not support non-linear bins!
+        if sim_high_stat["binning"] != "linear":
+            with pytest.raises(NotImplementedError):
+                fitter.calc_area_and_unc()
+            return
+
+        # Sometimes the fit result does not have a reliable covariance matrix, but alas
+        if "minuit" in fitter.backend:
+            covariance = np.array(fitter.result.covariance)
+        else:
+            covariance = np.array(fitter.result.covar)
+        # We can at least check that it properly errors, then skip the rest of the tests
+        if not covariance.sum():
+            with pytest.raises(bq.fitting.FittingError):
+                fitter.calc_area_and_unc()
+            return
+
+        # Area under the entire curve
+        a0 = fitter.calc_area_and_unc()
+        assert a0.nominal_value > 0
+        assert a0.std_dev > 0
+        assert a0.std_dev < a0.nominal_value
+
+        # Area under the ROI
+        a1 = fitter.calc_area_and_unc(x=fitter.x_roi)
+        # Should be strictly smaller than the area under the entire curve, but we need
+        # to allow for a bit of floating point weirdness.
+        assert a1.nominal_value / a0.nominal_value < 1 + 1e-9
+
+        # Component-wise areas
+        for component in fitter.model.components:
+            name = component.prefix.strip("_")
+            a2 = fitter.calc_area_and_unc(component=component)
+            a3 = fitter.calc_area_and_unc(component=name)
+            assert np.isclose(a2.nominal_value, a3.nominal_value)
+            assert np.isclose(a2.std_dev, a3.std_dev)
+            a4 = fitter.calc_area_and_unc(component=component, x=fitter.x_roi)
+            a5 = fitter.calc_area_and_unc(component=name, x=fitter.x_roi)
+            assert np.isclose(a4.nominal_value, a5.nominal_value)
+            assert np.isclose(a4.std_dev, a5.std_dev)
+
+            if name == "gauss":
+                # If the component is a Gaussian, the calculated area should be very
+                # close to its given amplitude parameter.
+                a_theor = HIGH_STAT_SIM_PARAMS["base_model_params"][name]["amp"]
+                assert np.isclose(a2.nominal_value, a_theor, rtol=0.01)
+
+                # Additionally, if there's no background, the uncertainty should be very
+                # close to the sqrt of the amplitude (at least with minuit!)
+                if len(fitter.model.components) == 1 and "minuit" in fitter.backend:
+                    assert np.isclose(a2.std_dev, np.sqrt(a_theor), rtol=0.01)
+
 
 @pytest.mark.parametrize("method", ["lmfit", "lmfit-pml", "minuit-pml"])
 def test_gauss_gauss_gauss_line(method):

@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
 from iminuit import Minuit
+from uncertainties import ufloat
+import numdifftools as nd
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
@@ -421,9 +423,10 @@ class Fitter:
     def y_unc(self, y_unc):
         if y_unc is not None:
             self._y_unc = np.asarray(y_unc, dtype=float)
-            assert len(self.x) == len(
-                self._y_unc
-            ), f"Fitting x (len {len(self.x)}) does not match y_unc (len {len(self._y_unc)})"
+            assert len(self.x) == len(self._y_unc), (
+                f"Fitting x (len {len(self.x)}) does not match y_unc "
+                "(len {len(self._y_unc)})"
+            )
             if np.any(self._y_unc <= 0.0):
                 min_v = np.min(self._y_unc[self._y_unc > 0.0])
                 warnings.warn(
@@ -814,6 +817,88 @@ class Fitter:
     def eval(self, x, params=None, **kwargs):
         return self.model.eval(x=x, params=params, **kwargs)
 
+    def calc_area_and_unc(self, component=None, x=None):
+        """Calculate the area (and uncertainty) under the fit (or component thereof).
+
+        Parameters
+        ----------
+        component : Model or str, optional
+            Model component (or name thereof) for which to calculate the area, by
+            default None, in which case the entire model is used.
+        x : array-like, optional
+            x values to use for function evaluation, by default `self.x`. Note that
+            changing x can easily lead to incorrect results if done carelessly, as the
+            spacing of x values needs to be the same as used to compute the fit. Thus
+            one should only pass in `self.x`, `self.x_roi`, or slices thereof.
+
+        Returns
+        -------
+        uncertainties.ufloat
+            Area under the fit and its 1-sigma uncertainty.
+
+        References
+        ----------
+        .. Tellinghuisen, J. (2001). Statistical error propagation. The Journal of
+           Physical Chemistry A, 105(15), 3917-3921.
+
+        """
+
+        if "lmfit" in self.backend:
+            warnings.warn(
+                "`lmfit` error estimates are unreliable. "
+                "`minuit` is recommended where possible"
+            )
+
+        def _calc_area(param_vec, **kwargs):
+            """Internal function to compute the area given the fit values."""
+            param_dict = {name: val for (name, val) in zip(kwargs["names"], param_vec)}
+            return kwargs["model"].eval(x=kwargs["xvals"], **param_dict).sum()
+
+        # Handle input defaults
+        xvals = self.x if x is None else x
+        dxvals = np.diff(xvals)
+        if not np.allclose(dxvals[0], dxvals):
+            raise NotImplementedError("Non-linear x spacing is not supported.")
+        if not np.allclose(dxvals[0], np.diff(self.x)):
+            raise FittingError("dx values must match those used in the fit")
+
+        if component is None:
+            # Use the entire model (i.e., all components)
+            model = self.model
+        elif isinstance(component, str):
+            # Look up the component based on its name
+            idx = [
+                component.prefix.strip("_") for component in self.model.components
+            ].index(component)
+            model = self.model.components[idx]
+        else:
+            # Use the Model object itself
+            model = component
+
+        # Format param names/values so the gradient calculation can handle _calc_area
+        names = [name for name in self.param_names if self.params[name].vary]
+        values = [self.param_val(name) for name in names]
+
+        # Compute the area under the curve
+        area = _calc_area(values, xvals=xvals, model=model, names=names)
+
+        # Compute the gradient with respect to the best fit parameters
+        grad = nd.Gradient(_calc_area)
+        g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
+
+        # Compute the variance in the area estimate: Tellinghuisen Eq. 1
+        if "minuit" in self.backend:
+            covariance = np.array(self.result.covariance)
+        else:
+            covariance = np.array(self.result.covar)
+        if not covariance.sum():
+            raise FittingError("No covariance!")
+        area_variance = g.T @ covariance @ g
+        area_variance = area_variance[0, 0]
+        # We don't divide by the binwidth here because we are summing bins: if we double
+        # the binwidth, we double the counts per bin but halve the number of bins.
+        return ufloat(area, np.sqrt(area_variance))
+
     def param_val(self, param):
         """
         Value of fit parameter `param`
@@ -988,7 +1073,6 @@ class Fitter:
         matplotlib figure
             Returned only if savefname is None
         """
-
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
         dx, dx_roi = self.dx, self.dx_roi
