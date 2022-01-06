@@ -344,6 +344,7 @@ class TestFittingHighStatSimData:
         a0 = fitter.calc_area_and_unc()
         assert a0.nominal_value > 0
         assert a0.std_dev > 0
+        assert a0.std_dev < a0.nominal_value
 
         # Area under the ROI
         a1 = fitter.calc_area_and_unc(x=fitter.x_roi)
@@ -356,18 +357,18 @@ class TestFittingHighStatSimData:
             name = component.prefix.strip("_")
             a2 = fitter.calc_area_and_unc(component=component)
             a3 = fitter.calc_area_and_unc(component=name)
-            assert np.isclose(a2.n, a3.n)
-            assert np.isclose(a2.s, a3.s)
+            assert np.isclose(a2.nominal_value, a3.nominal_value)
+            assert np.isclose(a2.std_dev, a3.std_dev)
             a4 = fitter.calc_area_and_unc(component=component, x=fitter.x_roi)
             a5 = fitter.calc_area_and_unc(component=name, x=fitter.x_roi)
-            assert np.isclose(a4.n, a5.n)
-            assert np.isclose(a4.s, a5.s)
+            assert np.isclose(a4.nominal_value, a5.nominal_value)
+            assert np.isclose(a4.std_dev, a5.std_dev)
 
             # If the component is a Gaussian, the calculated area should be very close
             # to its given amplitude parameter.
             if name == "gauss":
                 a_theor = HIGH_STAT_SIM_PARAMS["base_model_params"][name]["amp"]
-                assert np.isclose(a2.n, a_theor, rtol=0.01)
+                assert np.isclose(a2.nominal_value, a_theor, rtol=0.01)
 
 
 @pytest.mark.parametrize("method", ["lmfit", "lmfit-pml", "minuit-pml"])
