@@ -843,6 +843,12 @@ class Fitter:
 
         """
 
+        if "lmfit" in self.backend:
+            warnings.warn(
+                "`lmfit` error estimates are unreliable. "
+                "`minuit` is recommended where possible"
+            )
+
         def _calc_area(param_vec, **kwargs):
             """Internal function to compute the area given the fit values."""
             param_dict = {name: val for (name, val) in zip(kwargs["names"], param_vec)}
@@ -889,7 +895,6 @@ class Fitter:
             raise FittingError("No covariance!")
         area_variance = g.T @ covariance @ g
         area_variance = area_variance[0, 0]
-
         # We don't divide by the binwidth here because we are summing bins: if we double
         # the binwidth, we double the counts per bin but halve the number of bins.
         return ufloat(area, np.sqrt(area_variance))
