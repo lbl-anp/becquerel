@@ -851,8 +851,10 @@ class Fitter:
         # Handle input defaults
         xvals = self.x if x is None else x
         dxvals = np.diff(xvals)
-        assert np.allclose(dxvals[0], dxvals)
-        assert np.allclose(dxvals[0], np.diff(self.x))
+        if not np.allclose(dxvals[0], dxvals):
+            raise NotImplementedError("Non-linear x spacing is not supported.")
+        if not np.allclose(dxvals[0], np.diff(self.x)):
+            raise FittingError("dx values must match those used in the fit")
 
         if component is None:
             # Use the entire model (i.e., all components)
