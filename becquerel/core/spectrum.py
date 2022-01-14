@@ -1436,6 +1436,8 @@ class Spectrum:
             performing the fit.
         backend : {'lmfit', 'lmfit-pml'}
             Backend fitting module to use. Only used if perform_fit=True.
+        kwargs
+            Additional parameters passed to Fitter.fit.
 
         Returns
         -------
