@@ -607,7 +607,7 @@ class Fitter:
         params = []
         for comp in self.model.components:
             p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
-            if isinstance(p, lmfit.parameter.Parameters):
+            if isinstance(p, Parameters):
                 p = _parameters_to_tuple(p)
             params += p
         return params
