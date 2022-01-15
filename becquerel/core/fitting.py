@@ -604,8 +604,6 @@ class Fitter:
             self._model += m
 
     def _guess_param_defaults(self, **kwargs):
-        import lmfit
-
         params = []
         for comp in self.model.components:
             p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
