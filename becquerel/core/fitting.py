@@ -340,7 +340,19 @@ MODEL_STR_TO_CLS = {
 }
 
 
-def _parameters_to_tuple(params: Parameters):
+def _parameters_to_bq_guess(params: Parameters):
+    """Convert a Parameters object to the tuple format becquerel expects for guess().
+
+    Parameters
+    ----------
+    params : lmfit.parameter.Parameters
+        Parameters object to convert
+
+    Returns
+    -------
+    list of tuples
+        Guess, min, and max values for each parameter.
+    """
     s = []
     for k, v in params.items():
         s.append((k, "value", v.value))
@@ -608,7 +620,7 @@ class Fitter:
         for comp in self.model.components:
             p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
             if isinstance(p, Parameters):
-                p = _parameters_to_tuple(p)
+                p = _parameters_to_bq_guess(p)
             params += p
         return params
 
