@@ -846,7 +846,8 @@ class Fitter:
         if "lmfit" in self.backend:
             warnings.warn(
                 "`lmfit` error estimates are unreliable. "
-                "`minuit` is recommended where possible"
+                "`minuit` is recommended where possible",
+                FittingWarning,
             )
 
         def _calc_area(param_vec, **kwargs):
