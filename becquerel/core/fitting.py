@@ -892,7 +892,11 @@ class Fitter:
         else:
             covariance = np.array(self.result.covar)
         if not covariance.sum():
-            raise FittingError("No covariance!")
+            warnings.warn(
+                "The covariance could not be estimated. Returning 0 for error estimate",
+                FittingWarning,
+            )
+            covariance = np.zeros((len(g), len(g)))
         area_variance = g.T @ covariance @ g
         area_variance = area_variance[0, 0]
         # We don't divide by the binwidth here because we are summing bins: if we double
