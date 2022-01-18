@@ -334,10 +334,11 @@ class TestFittingHighStatSimData:
             covariance = np.array(fitter.result.covariance)
         else:
             covariance = np.array(fitter.result.covar)
-        # We can at least check that it properly errors, then skip the rest of the tests
+        # We can at least check that it properly warns, then skip the rest of the tests
         if not covariance.sum():
-            with pytest.raises(bq.fitting.FittingError):
-                fitter.calc_area_and_unc()
+            with pytest.warns(bq.fitting.FittingWarning):
+                a = fitter.calc_area_and_unc()
+                assert a.std_dev == 0
             return
 
         # Area under the entire curve
