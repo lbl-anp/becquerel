@@ -87,8 +87,9 @@ def gauss_dbl_exp(
     is an extension of the Gaussian with a low-side exponential tail described
     by Namboodiri et al here: https://www.osti.gov/biblio/392720
 
-    The tails are characterized by 3 parameters: a tail-to-peak amplitude ratio,
-    a slope, and a cutoff parameter.
+    The function is suitable for spectra with asymmetric peaks, such as those
+    from CZT crystals. The exponential tails are characterized by 3 parameters: a
+    tail-to-peak amplitude ratio, a slope, and a cutoff parameter.
     """
     alpha = -1.0 / (2.0 * sigma ** 2)
     ltail_func = np.zeros(shape=(len(x),))
