@@ -122,7 +122,12 @@ HIGH_STAT_SIM_PARAMS = {
             "m": -10.0,
             "b": 1e4,
         },
-        "expgauss": {"amp": 1e5, "mu": 100, "sigma": 5.0, "gamma": 0.25},
+        "expgauss": {
+            "amp": 1e5,
+            "mu": 100,
+            "sigma": 5.0,
+            "gamma": 0.25,
+        },
     },
     "setup": {
         "roi": (25, 175),
