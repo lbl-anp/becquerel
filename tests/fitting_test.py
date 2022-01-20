@@ -123,6 +123,17 @@ HIGH_STAT_SIM_PARAMS = {
             "b": 1e4,
         },
         "expgauss": {"amp": 1e5, "mu": 100, "sigma": 5.0, "gamma": 0.25},
+        "gaussdblexp": {
+            "amp": 1e5,
+            "mu": 100.0,
+            "sigma": 5.0,
+            "ltail_ratio": 0.1,
+            "ltail_slope": 0.05,
+            "ltail_cutoff": 1.0,
+            "rtail_ratio": 0.1,
+            "rtail_slope": -0.05,
+            "rtail_cutoff": 1.0,
+        },
     },
     "setup": {
         "roi": (25, 175),
@@ -141,6 +152,7 @@ HIGH_STAT_SIM_PARAMS = {
         ["gausserf", "line"],
         ["gausserf", "exp"],
         "expgauss",
+        "gaussdblexp",
     ],
     "fixture": {
         "params": [],

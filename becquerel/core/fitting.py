@@ -367,7 +367,11 @@ class GaussDblExpModel(Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(gauss_dbl_exp, **kwargs)
-        # TODO: set param hints
+        self.set_param_hint(f"{self.prefix}amp", min=0)
+        self.set_param_hint(f"{self.prefix}mu", min=0)
+        self.set_param_hint(f"{self.prefix}sigma", min=0)
+        self.set_param_hint(f"{self.prefix}ltail_ratio", min=0)
+        self.set_param_hint(f"{self.prefix}rtail_ratio", min=0)
 
     def guess(self, y, x=None, dx=None):
         if x is None:
@@ -384,11 +388,13 @@ class GaussDblExpModel(Model):
             (f"{self.prefix}mu", "max", x[-1]),
             (f"{self.prefix}sigma", "value", 1.0),
             (f"{self.prefix}sigma", "min", 0.0),
-            (f"{self.prefix}ltail_ratio", "value", 1.0),
-            (f"{self.prefix}ltail_slope", "value", 1.0),
+            (f"{self.prefix}ltail_ratio", "value", 0.1),
+            (f"{self.prefix}ltail_ratio", "min", 0.0),
+            (f"{self.prefix}ltail_slope", "value", 0.05),
             (f"{self.prefix}ltail_cutoff", "value", 1.0),
-            (f"{self.prefix}rtail_ratio", "value", 1.0),
-            (f"{self.prefix}rtail_slope", "value", 1.0),
+            (f"{self.prefix}rtail_ratio", "value", 0.1),
+            (f"{self.prefix}rtail_ratio", "min", 0.0),
+            (f"{self.prefix}rtail_slope", "value", -0.05),
             (f"{self.prefix}rtail_cutoff", "value", 1.0),
         ]
 
