@@ -331,15 +331,32 @@ class TestFittingHighStatSimData:
 
         # Sometimes the fit result does not have a reliable covariance matrix, but alas
         if "minuit" in fitter.backend:
-            covariance = np.array(fitter.result.covariance)
+            covariance = fitter.result.covariance
         else:
-            covariance = np.array(fitter.result.covar)
+            covariance = fitter.result.covar
         # We can at least check that it properly warns, then skip the rest of the tests
-        if not covariance.sum():
+        if covariance is None:
             with pytest.warns(bq.fitting.FittingWarning):
                 a = fitter.calc_area_and_unc()
                 assert a.std_dev == 0
             return
+
+        # The covariance check above only runs a handful of times and is subject to the
+        # fit quality, so let's synthetically create a zero covariance case and test it
+        fitter_copy = deepcopy(fitter)
+        fitter_copy.fit(sim_high_stat["method"])
+        if "minuit" in fitter.backend:
+            covariance = fitter_copy.result.covariance
+        else:
+            covariance = fitter_copy.result.covar
+        if covariance is not None:
+            if "minuit" in fitter.backend:
+                fitter_copy.result._covariance *= 0
+            else:
+                fitter_copy.result.covar *= 0
+            with pytest.warns(bq.fitting.FittingWarning):
+                a = fitter_copy.calc_area_and_unc()
+                assert a.std_dev == 0
 
         # Area under the entire curve
         a0 = fitter.calc_area_and_unc()

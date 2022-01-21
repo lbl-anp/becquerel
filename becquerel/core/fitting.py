@@ -896,7 +896,7 @@ class Fitter:
             covariance = self.result.covariance
         else:
             covariance = self.result.covar
-        if covariance is None:
+        if covariance is None or np.allclose(covariance, 0.0):
             warnings.warn(
                 "The covariance could not be estimated. Returning 0 for error estimate",
                 FittingWarning,
