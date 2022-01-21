@@ -342,7 +342,7 @@ class TestFittingHighStatSimData:
         fitter_copy = deepcopy(fitter)
         fitter_copy.fit(sim_high_stat["method"])
         if fitter_copy.covariance is not None:
-            if "minuit" in fitter.backend:
+            if "minuit" in fitter_copy.backend:
                 fitter_copy.result._covariance *= 0
             else:
                 fitter_copy.result.covar *= 0
