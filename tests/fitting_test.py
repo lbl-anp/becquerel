@@ -341,7 +341,7 @@ class TestFittingHighStatSimData:
         # fit quality, so let's synthetically create a zero covariance case and test it
         fitter_copy = deepcopy(fitter)
         fitter_copy.fit(sim_high_stat["method"])
-        if fitter.covariance is not None:
+        if fitter_copy.covariance is not None:
             if "minuit" in fitter.backend:
                 fitter_copy.result._covariance *= 0
             else:
