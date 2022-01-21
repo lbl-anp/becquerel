@@ -887,12 +887,16 @@ class Fitter:
         grad = nd.Gradient(_calc_area)
         g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
 
+        # Compute the gradient with respect to the best fit parameters
+        grad = nd.Gradient(_calc_area)
+        g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
+
         # Compute the variance in the area estimate: Tellinghuisen Eq. 1
         if "minuit" in self.backend:
-            covariance = np.array(self.result.covariance)
+            covariance = self.result.covariance
         else:
-            covariance = np.array(self.result.covar)
-        if not covariance.sum():
+            covariance = self.result.covar
+        if covariance is None:
             warnings.warn(
                 "The covariance could not be estimated. Returning 0 for error estimate",
                 FittingWarning,
