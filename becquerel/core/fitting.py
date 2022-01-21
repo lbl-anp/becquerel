@@ -892,11 +892,7 @@ class Fitter:
         g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
 
         # Compute the variance in the area estimate: Tellinghuisen Eq. 1
-        if "minuit" in self.backend:
-            covariance = self.result.covariance
-        else:
-            covariance = self.result.covar
-        if covariance is None or np.allclose(covariance, 0.0):
+        if self.covariance is None or np.allclose(self.covariance, 0.0):
             warnings.warn(
                 "The covariance could not be estimated. Returning 0 for error estimate",
                 FittingWarning,
@@ -971,6 +967,16 @@ class Fitter:
             return self.result.success
         elif "minuit" in self.backend:
             return self.result.valid
+        else:
+            raise FittingError("Unknown backend: {}", self.backend)
+
+    @property
+    def covariance(self):
+        """Wrapper for fit covariance matrix."""
+        if "lmfit" in self.backend:
+            return self.result.cov
+        elif "minuit" in self.backend:
+            return self.result.covariance
         else:
             raise FittingError("Unknown backend: {}", self.backend)
 
