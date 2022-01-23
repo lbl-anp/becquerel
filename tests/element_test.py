@@ -1,13 +1,10 @@
 """Test Element class."""
 
-from __future__ import print_function
 from becquerel.tools import element
 import pytest
 
-# pylint: disable=protected-access,unused-variable,no-self-use
 
-
-class TestElementFunctions(object):
+class TestElementFunctions:
     """Test Element functions."""
 
     def test_validated_z_good(self):
@@ -29,7 +26,7 @@ class TestElementFunctions(object):
     def test_validated_symbol_exception(self):
         """Test validated_symbol('Xz') raises ElementSymbolError..........."""
         with pytest.raises(element.ElementSymbolError):
-            element.validated_symbol('Xz')
+            element.validated_symbol("Xz")
 
     def test_validated_name_good(self):
         """Test validated_name............................................."""
@@ -40,31 +37,31 @@ class TestElementFunctions(object):
     def test_validated_name_exception(self):
         """Test validated_name('Xzzzzz') raises ElementNameError..........."""
         with pytest.raises(element.ElementNameError):
-            element.validated_name('Xzzzzz')
+            element.validated_name("Xzzzzz")
 
     def test_validated_name_aluminum(self):
         """Test validated_name('Aluminum') returns 'Aluminum'.............."""
-        name1 = 'Aluminum'
+        name1 = "Aluminum"
         for name2 in [name1, name1.lower(), name1.upper()]:
-            assert element.validated_name(name2) == 'Aluminum'
+            assert element.validated_name(name2) == "Aluminum"
 
     def test_validated_name_aluminium(self):
         """Test validated_name('Aluminium') returns 'Aluminum'............."""
-        name1 = 'Aluminium'
+        name1 = "Aluminium"
         for name2 in [name1, name1.lower(), name1.upper()]:
-            assert element.validated_name(name2) == 'Aluminum'
+            assert element.validated_name(name2) == "Aluminum"
 
     def test_validated_name_cesium(self):
         """Test validated_name('Cesium') returns 'Cesium'.................."""
-        name1 = 'Cesium'
+        name1 = "Cesium"
         for name2 in [name1, name1.lower(), name1.upper()]:
-            assert element.validated_name(name2) == 'Cesium'
+            assert element.validated_name(name2) == "Cesium"
 
     def test_validated_name_caesium(self):
         """Test validated_name('Caesium') returns 'Cesium'................."""
-        name1 = 'Caesium'
+        name1 = "Caesium"
         for name2 in [name1, name1.lower(), name1.upper()]:
-            assert element.validated_name(name2) == 'Cesium'
+            assert element.validated_name(name2) == "Cesium"
 
     def test_element_z(self):
         """Test element_z.................................................."""
@@ -107,15 +104,19 @@ class TestElementFunctions(object):
                 element.element_name(name1)
 
 
-@pytest.mark.parametrize('z, sym, name', [
-    (1, 'H', 'Hydrogen'),
-    (2, 'He', 'Helium'),
-    (13, 'Al', 'Aluminum'),
-    (19, 'K', 'Potassium'),
-    (32, 'Ge', 'Germanium'),
-    (70, 'Yb', 'Ytterbium'),
-    (92, 'U', 'Uranium'),
-    (118, 'Og', 'Oganesson')])
+@pytest.mark.parametrize(
+    "z, sym, name",
+    [
+        (1, "H", "Hydrogen"),
+        (2, "He", "Helium"),
+        (13, "Al", "Aluminum"),
+        (19, "K", "Potassium"),
+        (32, "Ge", "Germanium"),
+        (70, "Yb", "Ytterbium"),
+        (92, "U", "Uranium"),
+        (118, "Og", "Oganesson"),
+    ],
+)
 def test_element(z, sym, name):
     """Run instantiation tests for various elements.
 
@@ -128,8 +129,8 @@ def test_element(z, sym, name):
     args.extend([z, str(z)])
     print(args)
     for arg in args:
-        print('')
-        print('arg: ', arg)
+        print("")
+        print("arg: ", arg)
         elem = element.Element(arg)
         print(elem)
         assert elem.Z == z
@@ -137,18 +138,18 @@ def test_element(z, sym, name):
         assert elem.name == name
 
 
-class TestElementInitExceptions(object):
+class TestElementInitExceptions:
     """Test Element class throws exceptions."""
 
     def test_bad_arg_symbol(self):
         """Test Element init with a bad symbol raises ElementError........."""
         with pytest.raises(element.ElementError):
-            element.Element('Xx')
+            element.Element("Xx")
 
     def test_bad_arg_name(self):
         """Test Element init with a bad name raises ElementError..........."""
         with pytest.raises(element.ElementError):
-            element.Element('Xirconium')
+            element.Element("Xirconium")
 
     def test_bad_arg_z(self):
         """Test Element init with a bad Z raises ElementError.............."""
@@ -156,33 +157,31 @@ class TestElementInitExceptions(object):
             element.Element(0)
 
 
-class TestElementsEqual(object):
+class TestElementsEqual:
     """Test Element class equality."""
 
     def test_h(self):
         """Test Element equality: H........................................"""
-        assert element.Element('H') == element.Element(1)
+        assert element.Element("H") == element.Element(1)
 
     def test_og(self):
         """Test Element equality: Og......................................."""
-        assert element.Element('Og') == element.Element(118)
+        assert element.Element("Og") == element.Element(118)
 
     def test_bad(self):
         """Test Element equality: H != 0..................................."""
         with pytest.raises(element.ElementError):
-            elem = element.Element('H')
+            elem = element.Element("H")
             elem == 0
 
 
-class TestElementStrFormat(object):
+class TestElementStrFormat:
     """Test Element class string formatting."""
 
     def test_h(self):
         """Test Element string formatting: H..............................."""
-        assert '{:%n (%s) %z}'.format(element.Element('H')) == \
-            'Hydrogen (H) 1'
+        assert "{:%n (%s) %z}".format(element.Element("H")) == "Hydrogen (H) 1"
 
     def test_og(self):
         """Test Element string formatting: Og.............................."""
-        assert '{:%n (%s) %z}'.format(element.Element('Og')) == \
-            'Oganesson (Og) 118'
+        assert "{:%n (%s) %z}".format(element.Element("Og")) == "Oganesson (Og) 118"

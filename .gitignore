@@ -1,3 +1,8 @@
+# Becquerel-specific files
+becquerel/tools/Material*.json
+becquerel/tools/materials.csv
+tests/test_outputs
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -176,4 +181,3 @@ $RECYCLE.BIN/
 
 # Becquerel settings
 __df_cache_*.csv
-__metadata__.py

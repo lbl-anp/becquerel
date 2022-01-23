@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-
 """Spectral peak search using convolutions."""
 
-from __future__ import print_function
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
@@ -15,7 +12,7 @@ class PeakFilterError(Exception):
     pass
 
 
-class PeakFilter(object):
+class PeakFilter:
     """An energy-dependent kernel that can be convolved with a spectrum.
 
     To detect lines, a kernel should have a positive component in the center
@@ -37,14 +34,14 @@ class PeakFilter(object):
 
     """
 
-    def __init__(self, ref_x, ref_fwhm, fwhm_at_0=1.):
+    def __init__(self, ref_x, ref_fwhm, fwhm_at_0=1.0):
         """Initialize with a reference line position and FWHM in x-values."""
         if ref_x <= 0:
-            raise PeakFilterError('Reference x must be positive')
+            raise PeakFilterError("Reference x must be positive")
         if ref_fwhm <= 0:
-            raise PeakFilterError('Reference FWHM must be positive')
+            raise PeakFilterError("Reference FWHM must be positive")
         if fwhm_at_0 < 0:
-            raise PeakFilterError('FWHM at 0 must be non-negative')
+            raise PeakFilterError("FWHM at 0 must be non-negative")
         self.ref_x = float(ref_x)
         self.ref_fwhm = float(ref_fwhm)
         self.fwhm_at_0 = float(fwhm_at_0)
@@ -58,7 +55,7 @@ class PeakFilter(object):
         f0 = self.fwhm_at_0
         f1 = self.ref_fwhm
         x1 = self.ref_x
-        fwhm_sqr = f0**2 + (f1**2 - f0**2) * (x / x1)**2
+        fwhm_sqr = f0 ** 2 + (f1 ** 2 - f0 ** 2) * (x / x1)
         return np.sqrt(fwhm_sqr)
 
     def kernel(self, x, edges):
@@ -87,13 +84,16 @@ class PeakFilter(object):
         kern_max = max(kern_max, -1 * kern_min)
 
         plt.imshow(
-            kern_mat.T[::-1, :], cmap=plt.get_cmap('bwr'),
-            vmin=kern_min, vmax=kern_max,
-            extent=[n_channels, 0, 0, n_channels])
+            kern_mat.T[::-1, :],
+            cmap=plt.get_cmap("bwr"),
+            vmin=kern_min,
+            vmax=kern_max,
+            extent=[n_channels, 0, 0, n_channels],
+        )
         plt.colorbar()
-        plt.xlabel('Input x')
-        plt.ylabel('Output x')
-        plt.gca().set_aspect('equal')
+        plt.xlabel("Input x")
+        plt.ylabel("Output x")
+        plt.gca().set_aspect("equal")
 
     def convolve(self, edges, data):
         """Convolve this kernel with the data."""
@@ -103,7 +103,7 @@ class PeakFilter(object):
         peak_plus_bkg = np.dot(kern_mat_pos, data)
         bkg = np.dot(kern_mat_neg, data)
         signal = np.dot(kern_mat, data)
-        noise = np.sqrt(np.dot(kern_mat**2, data))
+        noise = np.sqrt(np.dot(kern_mat ** 2, data))
         snr = np.zeros_like(signal)
         snr[noise > 0] = signal[noise > 0] / noise[noise > 0]
         return peak_plus_bkg, bkg, signal, noise, snr
@@ -112,12 +112,12 @@ class PeakFilter(object):
 def _gaussian0(x, mean, sigma):
     """Gaussian function."""
     z = (x - mean) / sigma
-    return np.exp(-z**2 / 2.)
+    return np.exp(-(z ** 2) / 2.0)
 
 
 def _gaussian1(x, mean, sigma):
     """First derivative of a gaussian."""
-    z = (x - mean)
+    z = x - mean
     return -1 * z * _gaussian0(x, mean, sigma)
 
 
@@ -151,14 +151,19 @@ class PeakFinderError(Exception):
     pass
 
 
-class PeakFinder(object):
+class PeakFinderWarning(UserWarning):
+    """Warnings displayed during peak fitting."""
+
+    pass
+
+
+class PeakFinder:
     """Find peaks in a spectrum after convolving it with a kernel."""
 
     def __init__(self, spectrum, kernel, min_sep=5, fwhm_tol=(0.5, 1.5)):
         """Initialize with a spectrum and kernel."""
         if min_sep <= 0:
-            raise PeakFinderError(
-                'Minimum x separation must be positive')
+            raise PeakFinderError("Minimum x separation must be positive")
         self.min_sep = min_sep
         self.fwhm_tol = tuple(fwhm_tol)
         self.spectrum = None
@@ -177,8 +182,11 @@ class PeakFinder(object):
 
     @property
     def channels(self):
-        warnings.warn('channels is deprecated and will be removed in a future '
-                      'release. Use centroids instead.', DeprecationWarning)
+        warnings.warn(
+            "channels is deprecated and will be removed in a future "
+            "release. Use centroids instead.",
+            DeprecationWarning,
+        )
         return self.centroids
 
     def reset(self):
@@ -193,8 +201,10 @@ class PeakFinder(object):
         """Sort peaks by the provided array."""
         if len(arr) != len(self.centroids):
             raise PeakFinderError(
-                'Sorting array has length {} but must have length {}'.format(
-                    len(arr), len(self.centroids)))
+                "Sorting array has length {} but must have length {}".format(
+                    len(arr), len(self.centroids)
+                )
+            )
         self.centroids = np.array(self.centroids)
         self.snrs = np.array(self.snrs)
         self.fwhms = np.array(self.fwhms)
@@ -210,11 +220,9 @@ class PeakFinder(object):
     def calculate(self, spectrum, kernel):
         """Calculate the convolution of the spectrum with the kernel."""
         if not isinstance(spectrum, Spectrum):
-            raise PeakFinderError(
-                'Argument must be a Spectrum, not {}'.format(type(spectrum)))
+            raise PeakFinderError(f"Argument must be a Spectrum, not {type(spectrum)}")
         if not isinstance(kernel, PeakFilter):
-            raise PeakFinderError(
-                'Argument must be a PeakFilter, not {}'.format(type(kernel)))
+            raise PeakFinderError(f"Argument must be a PeakFilter, not {type(kernel)}")
         self.spectrum = spectrum
         self.kernel = kernel
         self.snr = np.zeros(len(self.spectrum))
@@ -222,8 +230,9 @@ class PeakFinder(object):
         bin_edges = self.spectrum.bin_edges_raw
 
         # calculate the convolution
-        peak_plus_bkg, bkg, signal, noise, snr = \
-            self.kernel.convolve(bin_edges, self.spectrum.counts_vals)
+        peak_plus_bkg, bkg, signal, noise, snr = self.kernel.convolve(
+            bin_edges, self.spectrum.counts_vals
+        )
         self._peak_plus_bkg = peak_plus_bkg
         self._bkg = bkg
         self._signal = signal
@@ -239,9 +248,7 @@ class PeakFinder(object):
         xmax = bin_edges.max()
 
         if xpeak < xmin or xpeak > xmax:
-            raise PeakFinderError(
-                'Peak x {} is outside of range {}-{}'.format(
-                    xpeak, xmin, xmax))
+            raise PeakFinderError(f"Peak x {xpeak} is outside of range {xmin}-{xmax}")
         is_new_x = True
         for cent in self.centroids:
             if abs(xpeak - cent) <= self.min_sep:
@@ -256,15 +263,24 @@ class PeakFinder(object):
             fwhm0 = self.kernel.fwhm(xpeak)
             bw = self.spectrum.bin_widths_raw[0]
             h = int(max(1, 0.2 * fwhm0 / bw))
-            d2 = (1 * self.snr[xbin - h]
-                  - 2 * self.snr[xbin]
-                  + 1 * self.snr[xbin + h]) / h**2 / bw**2
+
+            # skip peaks that are too close to the edge
+            if (xbin - h < 0) or (xbin + h > len(self.snr) - 1):
+                warnings.warn(
+                    f"Skipping peak @{xpeak}; too close to the edge of the spectrum",
+                    PeakFinderWarning,
+                )
+                return
+
+            d2 = (
+                (1 * self.snr[xbin - h] - 2 * self.snr[xbin] + 1 * self.snr[xbin + h])
+                / h ** 2
+                / bw ** 2
+            )
             if d2 >= 0:
-                raise PeakFinderError(
-                    'Second derivative must be negative at peak')
+                raise PeakFinderError("Second derivative must be negative at peak")
             d2 *= -1
             fwhm = 2 * np.sqrt(self.snr[xbin] / d2)
-            self.fwhms.append(fwhm)
             # add the peak if it has a similar FWHM to the kernel's FWHM
             if self.fwhm_tol[0] * fwhm0 <= fwhm <= self.fwhm_tol[1] * fwhm0:
                 self.centroids.append(xpeak)
@@ -275,27 +291,26 @@ class PeakFinder(object):
         # sort the peaks by centroid
         self.sort_by(self.centroids)
 
-    def plot(self, facecolor='red', linecolor='red', alpha=0.5, peaks=True):
+    def plot(self, facecolor="red", linecolor="red", alpha=0.5, peaks=True):
         """Plot the peak signal-to-noise ratios calculated using the kernel."""
         bin_edges = self.spectrum.bin_edges_raw
+        bin_centers = self.spectrum.bin_centers_raw
 
         if facecolor is not None:
-            plt.fill_between(
-                bin_edges[:-1], self.snr, 0,
-                color=facecolor, alpha=alpha)
+            plt.fill_between(bin_centers, self.snr, 0, color=facecolor, alpha=alpha)
         if linecolor is not None:
-            plt.plot(bin_edges[:-1], self.snr, '-', color=linecolor)
+            plt.plot(bin_centers, self.snr, "-", color=linecolor)
         if peaks:
             for cent, snr, fwhm in zip(self.centroids, self.snrs, self.fwhms):
-                plt.plot([cent] * 2, [0, snr], 'b-', lw=1.5)
-                plt.plot(cent, snr, 'bo')
+                plt.plot([cent] * 2, [0, snr], "b-", lw=1.5)
+                plt.plot(cent, snr, "bo")
                 plt.plot(
-                    [cent - fwhm / 2, cent + fwhm / 2], [snr / 2] * 2,
-                    'b-', lw=1.5)
-        plt.xlim(0, bin_edges.max())
+                    [cent - fwhm / 2, cent + fwhm / 2], [snr / 2] * 2, "b-", lw=1.5
+                )
+        plt.xlim(0, bin_centers.max())
         plt.ylim(0)
-        plt.xlabel('x')
-        plt.ylabel('SNR')
+        plt.xlabel("x")
+        plt.ylabel("SNR")
 
     def find_peak(self, xpeak, frac_range=(0.8, 1.2), min_snr=2):
         """Find the highest SNR peak within f0*xpeak and f1*xpeak."""
@@ -306,27 +321,33 @@ class PeakFinder(object):
 
         if xpeak < xmin or xpeak > xmax:
             raise PeakFinderError(
-                'Guess xpeak {} is outside of range {}-{}'.format(
-                    xpeak, xmin, xmax))
-        if frac_range[0] < 0 or frac_range[0] > 1 or frac_range[1] < 1 or \
-                frac_range[0] > frac_range[1]:
+                f"Guess xpeak {xpeak} is outside of range {xmin}-{xmax}"
+            )
+        if (
+            frac_range[0] < 0
+            or frac_range[0] > 1
+            or frac_range[1] < 1
+            or frac_range[0] > frac_range[1]
+        ):
             raise PeakFinderError(
-                'Fractional range {}-{} is invalid'.format(*frac_range))
+                "Fractional range {}-{} is invalid".format(*frac_range)
+            )
         if min_snr < 0:
-            raise PeakFinderError(
-                'Minimum SNR {:.3f} must be > 0'.format(min_snr))
+            raise PeakFinderError(f"Minimum SNR {min_snr:.3f} must be > 0")
         if self.snr.max() < min_snr:
             raise PeakFinderError(
-                'SNR threshold is {:.3f} but maximum SNR is {:.3f}'.format(
-                    min_snr, self.snr.max()))
+                "SNR threshold is {:.3f} but maximum SNR is {:.3f}".format(
+                    min_snr, self.snr.max()
+                )
+            )
         x0 = frac_range[0] * xpeak
         x1 = frac_range[1] * xpeak
         x_range = (x0 <= bin_edges[:-1]) & (bin_edges[:-1] <= x1)
         peak_snr = self.snr[x_range].max()
         if peak_snr < min_snr:
             raise PeakFinderError(
-                'No peak found in range {}-{} with SNR > {}'.format(
-                    x0, x1, min_snr))
+                f"No peak found in range {x0}-{x1} with SNR > {min_snr}"
+            )
 
         peak_index = np.where((self.snr == peak_snr) & x_range)[0][0]
         peak_x = bin_centers[peak_index]
@@ -342,39 +363,34 @@ class PeakFinder(object):
             xmin = bin_edges.min()
         if xmax is None:
             xmax = bin_edges.max()
-        if xmin < bin_edges.min() or \
-                xmin > bin_edges.max() or \
-                xmax > bin_edges.max() or \
-                xmax < bin_edges.min() or \
-                xmin > xmax:
-            raise PeakFinderError(
-                'x-axis range {}-{} is invalid'.format(xmin, xmax))
+        if (
+            xmin < bin_edges.min()
+            or xmin > bin_edges.max()
+            or xmax > bin_edges.max()
+            or xmax < bin_edges.min()
+            or xmin > xmax
+        ):
+            raise PeakFinderError(f"x-axis range {xmin}-{xmax} is invalid")
         if min_snr < 0:
-            raise PeakFinderError(
-                'Minimum SNR {:.3f} must be > 0'.format(min_snr))
+            raise PeakFinderError(f"Minimum SNR {min_snr:.3f} must be > 0")
         if self.snr.max() < min_snr:
             raise PeakFinderError(
-                'SNR threshold is {:.3f} but maximum SNR is {:.3f}'.format(
-                    min_snr, self.snr.max()))
+                "SNR threshold is {:.3f} but maximum SNR is {:.3f}".format(
+                    min_snr, self.snr.max()
+                )
+            )
         max_num = int(max_num)
         if max_num < 1:
-            raise PeakFinderError(
-                'Must keep at least 1 peak, not {}'.format(max_num))
-        # calculate the first derivative and second derivatives of the SNR
-        d1 = (self.snr[2:] - self.snr[:-2]) / 2
-        d1 = np.append(0, d1)
-        d1 = np.append(d1, 0)
-        d2 = self.snr[2:] - 2 * self.snr[1:-1] + self.snr[:-2]
-        d2 = np.append(0, d2)
-        d2 = np.append(d2, 0)
+            raise PeakFinderError(f"Must keep at least 1 peak, not {max_num}")
+
         # find maxima
-        peak = (d1[2:] < 0) & (d1[:-2] > 0) & (d2[1:-1] < 0)
+        peak = (self.snr[:-2] < self.snr[1:-1]) & (self.snr[1:-1] >= self.snr[2:])
         peak = np.append(False, peak)
         peak = np.append(peak, False)
         # select peaks using SNR and centroid criteria
-        peak &= (min_snr <= self.snr)
-        peak &= (xmin <= bin_edges[:-1])
-        peak &= (bin_edges[:-1] <= xmax)
+        peak &= min_snr <= self.snr
+        peak &= xmin <= bin_edges[:-1]
+        peak &= bin_edges[:-1] <= xmax
         for x in bin_centers[peak]:
             self.add_peak(x)
         # reduce number of centroids to a maximum number max_n of highest SNR
@@ -386,3 +402,4 @@ class PeakFinder(object):
         self.backgrounds = self.backgrounds[-max_num:]
         # sort by centroid
         self.sort_by(self.centroids)
+        self.peak = peak

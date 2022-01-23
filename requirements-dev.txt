@@ -1,6 +1,9 @@
 -r requirements.txt
+coverage
 flake8
-pydocstyle
-pylint
-pytest>=3.0.0
+black==21.4b2
+pytest<7.0.0
 pytest-cov
+pytest-black
+pytest-rerunfailures
+bump2version
