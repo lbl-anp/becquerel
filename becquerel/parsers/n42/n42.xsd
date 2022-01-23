@@ -4,7 +4,7 @@
   Schema Type: Domain, Constrained
   Version Number: 0.0.54
   Version Date: 2/1/2012
-  Contact: 
+  Contact:
   Namespace Prefix: n42
   Namespace URI: http://physics.nist.gov/N42/2011/N42
   Exchange Description: Data format standard for radiation instrument output used for homeland security, ANSI N42.42 - 2011.
@@ -3492,4 +3492,3 @@
   </xsd:annotation>
 </xsd:element>
 </xsd:schema>
-

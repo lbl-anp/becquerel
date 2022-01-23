@@ -5,13 +5,16 @@
 from __future__ import print_function
 from .spectrum_file import SpectrumFile, SpectrumFileParsingError
 import os
+
 # import sys
 import re
 import numpy as np
+
 # import xml.etree.ElementTree as ET
 # import dateutil.parser
 # import requests
 from lxml import etree
+
 # import matplotlib.pyplot as plt
 
 
@@ -22,19 +25,19 @@ scriptdir = os.path.dirname(os.path.realpath(__file__))
 # req = requests.get(N42_XSD_URL)
 # schema_root = etree.XML(schema_text)
 
-NIST_N42_URL = 'http://physics.nist.gov/N42/2011/'
-schema_text = etree.parse(os.path.join(scriptdir, 'n42/n42.xsd'))
+NIST_N42_URL = "http://physics.nist.gov/N42/2011/"
+schema_text = etree.parse(os.path.join(scriptdir, "n42/n42.xsd"))
 N42_SCHEMA = etree.XMLSchema(schema_text)
-N42_NAMESPACE = '{{{}}}'.format(NIST_N42_URL + 'N42')
+N42_NAMESPACE = "{{{}}}".format(NIST_N42_URL + "N42")
 
 
 SAMPLES = [
-    os.path.join(scriptdir, 'n42/Annex_B_n42.xml'),
+    os.path.join(scriptdir, "n42/Annex_B_n42.xml"),
     # 'n42/Annex_B_alternate_energy_calibration_n42.xml',
-    os.path.join(scriptdir, 'n42/Annex_C_n42.xml'),
-    os.path.join(scriptdir, 'n42/Annex_E_n42.xml'),
-    os.path.join(scriptdir, 'n42/Annex_G_n42.xml'),
-    os.path.join(scriptdir, 'n42/Annex_I_n42.xml'),
+    os.path.join(scriptdir, "n42/Annex_C_n42.xml"),
+    os.path.join(scriptdir, "n42/Annex_E_n42.xml"),
+    os.path.join(scriptdir, "n42/Annex_G_n42.xml"),
+    os.path.join(scriptdir, "n42/Annex_I_n42.xml"),
 ]
 
 
@@ -72,8 +75,8 @@ class N42File(SpectrumFile):
         """Initialize the N42 file."""
         super(N42File, self).__init__(filename)
         _, ext = os.path.splitext(self.filename)
-        if not ((ext.lower() == '.n42') or (ext.lower() == '.xml')):
-            raise N42FileParsingError('File extension is incorrect: ' + ext)
+        if not ((ext.lower() == ".n42") or (ext.lower() == ".xml")):
+            raise N42FileParsingError("File extension is incorrect: " + ext)
 
         # read in the data
         self.read()
@@ -81,7 +84,7 @@ class N42File(SpectrumFile):
 
     def read(self, verbose=False):
         """Read in the file."""
-        print('N42File: Reading file ' + self.filename)
+        print("N42File: Reading file " + self.filename)
         self.realtime = 0.0
         self.livetime = 0.0
         self.channels = np.array([], dtype=np.float)
@@ -95,11 +98,11 @@ class N42File(SpectrumFile):
         tree = xml_text
         root = tree.getroot()
         # root should be a RadInstrumentData
-        assert root.tag == N42_NAMESPACE + 'RadInstrumentData'
+        assert root.tag == N42_NAMESPACE + "RadInstrumentData"
 
         # read instrument information
         instrument_info = {}
-        for info in root.findall(N42_NAMESPACE + 'RadInstrumentInformation'):
+        for info in root.findall(N42_NAMESPACE + "RadInstrumentInformation"):
             for thing in info:
                 tag = thing.tag.split(N42_NAMESPACE)[-1]
                 instrument_info[tag] = thing.text
@@ -107,18 +110,18 @@ class N42File(SpectrumFile):
 
         # read detector information
         detector_info = {}
-        for info in root.findall(N42_NAMESPACE + 'RadDetectorInformation'):
+        for info in root.findall(N42_NAMESPACE + "RadDetectorInformation"):
             for thing in info:
                 tag = thing.tag.split(N42_NAMESPACE)[-1]
                 detector_info[tag] = thing.text
 
         # read energy calibrations
         energy_cals = {}
-        for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
+        for cal in root.findall(N42_NAMESPACE + "EnergyCalibration"):
             for thing in cal:
                 tag = thing.tag.split(N42_NAMESPACE)[-1]
-                if tag == 'CoefficientValues':
-                    coefs = [float(x) for x in thing.text.split(' ')]
+                if tag == "CoefficientValues":
+                    coefs = [float(x) for x in thing.text.split(" ")]
                     # if 'PHD' in self.detector_description['RadInstrumentManufacturerName']:
                     #     coefs[1] *= 2.
                     energy_cals[tag] = np.array(coefs)
@@ -128,61 +131,60 @@ class N42File(SpectrumFile):
 
         # read FWHM calibrations
         fwhm_cals = {}
-        for cal in root.findall(N42_NAMESPACE + 'EnergyCalibration'):
+        for cal in root.findall(N42_NAMESPACE + "EnergyCalibration"):
             for thing in cal:
                 tag = thing.tag.split(N42_NAMESPACE)[-1]
                 fwhm_cals[tag] = thing.text
 
         # read measurements
         measurements = []
-        for idx, measurement in enumerate(root.findall(
-                N42_NAMESPACE + 'RadMeasurement')):
+        for idx, measurement in enumerate(
+            root.findall(N42_NAMESPACE + "RadMeasurement")
+        ):
             if idx > 0:
-                print('WARNING: N42 parser ignoring additional measurements.')
+                print("WARNING: N42 parser ignoring additional measurements.")
 
             real_time = None
             measurements.append(measurement)
 
             # read real time duration
-            real_times = measurement.findall(N42_NAMESPACE + 'RealTimeDuration')
+            real_times = measurement.findall(N42_NAMESPACE + "RealTimeDuration")
             if len(real_times) > 0:
                 real_time = real_times[0]
                 real_time = parse_duration(real_time.text)
 
             spectra = {}
-            for spectrum in measurement.findall(N42_NAMESPACE + 'Spectrum'):
+            for spectrum in measurement.findall(N42_NAMESPACE + "Spectrum"):
                 spect = dict(spectrum.items())
                 # read live time duration
-                live_times = spectrum.findall(
-                    N42_NAMESPACE + 'LiveTimeDuration')
+                live_times = spectrum.findall(N42_NAMESPACE + "LiveTimeDuration")
                 if len(live_times) > 0:
                     live_time = parse_duration(live_times[0].text)
-                    spect['live_time'] = live_time
+                    spect["live_time"] = live_time
                     if idx == 0:
                         self.livetime = live_time
 
-                real_times = spectrum.findall(
-                    N42_NAMESPACE + 'RealTimeDuration')
+                real_times = spectrum.findall(N42_NAMESPACE + "RealTimeDuration")
                 if len(real_times) > 0:
                     real_time = real_times[0]
                     real_time = parse_duration(real_time.text)
                 if real_time is not None:
-                    spect['real_time'] = real_time
+                    spect["real_time"] = real_time
                     if idx == 0:
                         self.realtime = real_time
 
-                spect['channel_data'] = []
-                for cd in spectrum.findall(N42_NAMESPACE + 'ChannelData'):
-                    comp = cd.get('compressionCode', None)
+                spect["channel_data"] = []
+                for cd in spectrum.findall(N42_NAMESPACE + "ChannelData"):
+                    comp = cd.get("compressionCode", None)
                     d = parse_channel_data(cd.text, compression=comp)
-                    spect['channel_data'].append(d)
+                    spect["channel_data"].append(d)
                     if idx == 0:
                         self.data = d
                         self.channels = np.arange(len(d))
                         self.apply_calibration()
-                        self.spectrum_id = spect['id']
+                        self.spectrum_id = spect["id"]
 
-                spectra[spect['id']] = spect
+                spectra[spect["id"]] = spect
 
         # Could dump dicts to private attirubtes
         # self._instrument_info = instrument_info
@@ -194,13 +196,13 @@ class N42File(SpectrumFile):
 
 
 def etree_parse_clean(filename):
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         text = f.read()
-    text = re.sub(u"[^\x01-\x7f]+", u"", text)
-    with open('.temp.xml', 'w') as f:
+    text = re.sub("[^\x01-\x7f]+", "", text)
+    with open(".temp.xml", "w") as f:
         f.write(text)
-    xml_text = etree.parse('.temp.xml')
-    os.remove('.temp.xml')
+    xml_text = etree.parse(".temp.xml")
+    os.remove(".temp.xml")
     return xml_text
 
 
@@ -211,8 +213,8 @@ def parse_duration(text):
     https://en.wikipedia.org/wiki/ISO_8601#Durations
 
     """
-    assert text.startswith('PT')
-    assert text.endswith('S')
+    assert text.startswith("PT")
+    assert text.endswith("S")
     return float(text[2:-1])
 
 
@@ -223,10 +225,10 @@ def parse_channel_data(text, compression=None):
         compression: None or 'CountedZeroes'.
 
     """
-    text = text.strip().replace('\n', ' ')
+    text = text.strip().replace("\n", " ")
     tokens = text.split()
     data = [int(token) for token in tokens]
-    if compression == 'CountedZeroes':
+    if compression == "CountedZeroes":
         new_data = []
         k = 0
         while k < len(data):
@@ -274,7 +276,7 @@ def valid_xml(text):
     #     return False
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # import argparse
     # parser = argparse.ArgumentParser(description='Parse N42 samples')
     # parser.add_argument(
@@ -287,7 +289,7 @@ if __name__ == '__main__':
     # assert validate(args.filename), 'N42 file does not validate'
 
     for filename in SAMPLES:
-        print('')
+        print("")
         print(filename)
         test = N42File(filename)
 

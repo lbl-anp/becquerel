@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <?xml-model href="http://physics.nist.gov/N42/2011/N42/schematron/n42.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
-<RadInstrumentData xmlns="http://physics.nist.gov/N42/2011/N42" 
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-                   xsi:schemaLocation="http://physics.nist.gov/N42/2011/N42 http://physics.nist.gov/N42/2011/n42.xsd" 
+<RadInstrumentData xmlns="http://physics.nist.gov/N42/2011/N42"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://physics.nist.gov/N42/2011/N42 http://physics.nist.gov/N42/2011/n42.xsd"
                    n42DocUUID="64a170f5-4c39-4bd8-af16-f9e927b31ce6">
 
   <RadInstrumentDataCreatorName>iRID</RadInstrumentDataCreatorName>
@@ -73,12 +73,12 @@
 
   <EnergyCalibration id="EnergyCalibration-1">
     <CoefficientValues>-21.8 12.1 6.55e-03</CoefficientValues>
-  </EnergyCalibration> 
+  </EnergyCalibration>
 
   <FWHMCalibration id="FWHMCalibration-1">
     <EnergyValues>88.0 661.65 1173.21 1838.01</EnergyValues>
     <FWHMValues>2.9 11.1 14.2 19.8</FWHMValues>
-  </FWHMCalibration> 
+  </FWHMCalibration>
 
   <FullEnergyPeakEfficiencyCalibration id="TotalAbsorptionDetectorEfficiencyCalibration-1">
     <EnergyValues>88.0 661.65 1173.21 1838.01</EnergyValues>
@@ -91,7 +91,7 @@
     <StartDateTime>2003-11-22T23:35:30-07:00</StartDateTime>
     <RealTimeDuration>PT60S</RealTimeDuration>
 
-    <Spectrum id="RadMeasurement-1-Spectrum-1" radDetectorInformationReference="RadDetectorInformation-1" energyCalibrationReference="EnergyCalibration-1" FWHMCalibrationReference="FWHMCalibration-1" fullEnergyPeakEfficiencyCalibrationReference="TotalAbsorptionDetectorEfficiencyCalibration-1"> 
+    <Spectrum id="RadMeasurement-1-Spectrum-1" radDetectorInformationReference="RadDetectorInformation-1" energyCalibrationReference="EnergyCalibration-1" FWHMCalibrationReference="FWHMCalibration-1" fullEnergyPeakEfficiencyCalibrationReference="TotalAbsorptionDetectorEfficiencyCalibration-1">
       <LiveTimeDuration>PT59.7S</LiveTimeDuration>
       <ChannelData compressionCode="None">
         0 0 0 22 421 847 1295 1982 2127 2222 2302 2276
@@ -115,8 +115,8 @@
         0 0 0 1 0 0 0 0 0 0 0 2
         0 0 0 1 0 1 0 0 2 1 0 0
         0 0 1 3 0 0 0 1 0 1 0 0
-        0 0 0 0 
-      </ChannelData> 
+        0 0 0 0
+      </ChannelData>
     </Spectrum>
 
     <GrossCounts id="RadMeasurement-1-GrossCounts-1" radDetectorInformationReference="RadDetectorInformation-2">
@@ -127,33 +127,33 @@
     <DoseRate id="RadMeasurement-1-DoseRate-1" radDetectorInformationReference="RadDetectorInformation-1">
       <DoseRateValue>0.3</DoseRateValue>
     </DoseRate>
-  </RadMeasurement>	
+  </RadMeasurement>
 
   <RadMeasurement id="RadMeasurement-2" radMeasurementGroupReferences="RadMeasurementGroup-1">
     <MeasurementClassCode>Foreground</MeasurementClassCode>
     <StartDateTime>2003-11-22T23:45:19-07:00</StartDateTime>
     <RealTimeDuration>PT60S</RealTimeDuration>
 
-    <Spectrum id="RadMeasurement-2-Spectrum-2" radDetectorInformationReference="RadDetectorInformation-1" energyCalibrationReference="EnergyCalibration-1" FWHMCalibrationReference="FWHMCalibration-1" fullEnergyPeakEfficiencyCalibrationReference="TotalAbsorptionDetectorEfficiencyCalibration-1"> 
+    <Spectrum id="RadMeasurement-2-Spectrum-2" radDetectorInformationReference="RadDetectorInformation-1" energyCalibrationReference="EnergyCalibration-1" FWHMCalibrationReference="FWHMCalibration-1" fullEnergyPeakEfficiencyCalibrationReference="TotalAbsorptionDetectorEfficiencyCalibration-1">
       <LiveTimeDuration>PT59.61S</LiveTimeDuration>
       <ChannelData compressionCode="CountedZeroes">
-        0 3 22 421 847 1295 1982 2127 2222 2302 2276 2234 1921 1939 1715 1586 
-        1469 1296 1178 1127 1047 928 760 679 641 542 529 443 423 397 393 322 
-        272 294 227 216 224 208 191 189 163 167 173 150 137 136 129 150 
-        142 160 159 140 103 90 82 83 85 67 76 73 84 63 74 70 
-        69 76 61 49 61 63 65 58 62 48 75 56 61 46 56 43 
-        37 55 47 50 40 38 54 43 41 45 51 32 35 29 33 40 
-        44 33 35 20 26 27 17 19 20 16 19 18 19 18 20 17 
-        45 55 70 62 59 32 30 21 23 10 9 5 13 11 11 6 
-        7 7 9 11 4 8 8 14 14 11 9 13 5 5 6 10 
-        9 3 4 3 7 5 5 4 5 3 6 5 0 1 5 6 
-        3 1 4 4 3 10 11 4 1 4 2 11 9 6 3 5 
-        5 1 4 2 6 6 2 3 0 1 2 2 2 2 0 1 
-        1 3 1 1 2 3 2 4 5 2 6 4 1 0 1 3 
-        1 2 1 1 0 1 1 0 2 2 0 1 1 0 3 1 
-        0 7 2 0 3 1 0 1 1 0 2 2 1 0 4 1 
-        3 0 3 1 0 1 1 0 6 
-      </ChannelData> 
+        0 3 22 421 847 1295 1982 2127 2222 2302 2276 2234 1921 1939 1715 1586
+        1469 1296 1178 1127 1047 928 760 679 641 542 529 443 423 397 393 322
+        272 294 227 216 224 208 191 189 163 167 173 150 137 136 129 150
+        142 160 159 140 103 90 82 83 85 67 76 73 84 63 74 70
+        69 76 61 49 61 63 65 58 62 48 75 56 61 46 56 43
+        37 55 47 50 40 38 54 43 41 45 51 32 35 29 33 40
+        44 33 35 20 26 27 17 19 20 16 19 18 19 18 20 17
+        45 55 70 62 59 32 30 21 23 10 9 5 13 11 11 6
+        7 7 9 11 4 8 8 14 14 11 9 13 5 5 6 10
+        9 3 4 3 7 5 5 4 5 3 6 5 0 1 5 6
+        3 1 4 4 3 10 11 4 1 4 2 11 9 6 3 5
+        5 1 4 2 6 6 2 3 0 1 2 2 2 2 0 1
+        1 3 1 1 2 3 2 4 5 2 6 4 1 0 1 3
+        1 2 1 1 0 1 1 0 2 2 0 1 1 0 3 1
+        0 7 2 0 3 1 0 1 1 0 2 2 1 0 4 1
+        3 0 3 1 0 1 1 0 6
+      </ChannelData>
     </Spectrum>
 
     <GrossCounts id="RadMeasurement-2-GrossCounts-2" radDetectorInformationReference="RadDetectorInformation-2">
@@ -164,7 +164,7 @@
     <DoseRate id="RadMeasurement-2-DoseRate-2" radDetectorInformationReference="RadDetectorInformation-1">
       <DoseRateValue>0.5</DoseRateValue>
     </DoseRate>
-  </RadMeasurement>	
+  </RadMeasurement>
 
   <RadMeasurementGroup id="RadMeasurementGroup-1"/>
 

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://physics.nist.gov/N42/2011/N42/schematron/n42.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
-<RadInstrumentData xmlns="http://physics.nist.gov/N42/2011/N42" 
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<RadInstrumentData xmlns="http://physics.nist.gov/N42/2011/N42"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://physics.nist.gov/N42/2011/N42 http://physics.nist.gov/N42/2011/n42.xsd"
                    n42DocUUID="563f866d-1322-4510-a8e4-9dcc4cb302da">
 
@@ -46,8 +46,8 @@
 
   <EnergyCalibration id="Energy">
     <CoefficientValues>0.0 4.0 0.0</CoefficientValues>
-  </EnergyCalibration> 
-  
+  </EnergyCalibration>
+
   <RadMeasurement id="M112">
     <MeasurementClassCode>Foreground</MeasurementClassCode>
     <StartDateTime>2010-03-15T22:30:12</StartDateTime>
@@ -76,8 +76,8 @@
         0 0 0 1 0 0 0 0 0 0 0 2
         0 0 0 1 0 1 0 0 2 1 0 0
         0 0 1 3 0 0 0 1 0 1 0 0
-        0 0 0 0 
-      </ChannelData> 
+        0 0 0 0
+      </ChannelData>
     </Spectrum>
 
     <GrossCounts id="M112N" radDetectorInformationReference="Neutron">
@@ -117,7 +117,7 @@
         </CharacteristicGroup>
       </RadInstrumentCharacteristics>
     </RadInstrumentState>
-    
+
     <RadDetectorState radDetectorInformationReference="Gamma">
       <RadDetectorCharacteristics>
         <CharacteristicGroup groupOutOfLimits="false">
@@ -131,8 +131,8 @@
         </CharacteristicGroup>
       </RadDetectorCharacteristics>
     </RadDetectorState>
-    
-  </RadMeasurement>	
+
+  </RadMeasurement>
 
   <AnalysisResults radMeasurementReferences="M112">
     <NuclideAnalysisResults>
@@ -172,8 +172,8 @@
         0 0 0 1 0 0 0 0 0 0 0 2
         0 0 0 1 0 1 0 0 2 1 0 0
         0 0 1 3 0 0 0 1 0 1 0 0
-        0 0 0 0 
-      </ChannelData> 
+        0 0 0 0
+      </ChannelData>
     </Spectrum>
 
     <GrossCounts id="M113N" radDetectorInformationReference="Neutron">
@@ -231,7 +231,7 @@
         </CharacteristicGroup>
       </RadDetectorCharacteristics>
     </RadDetectorState>
-  </RadMeasurement>	
+  </RadMeasurement>
 
   <AnalysisResults radMeasurementReferences="M113">
     <NuclideAnalysisResults>

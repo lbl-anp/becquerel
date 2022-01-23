@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://physics.nist.gov/N42/2011/N42/schematron/n42.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
-<RadInstrumentData xmlns="http://physics.nist.gov/N42/2011/N42" 
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<RadInstrumentData xmlns="http://physics.nist.gov/N42/2011/N42"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://physics.nist.gov/N42/2011/N42 http://physics.nist.gov/N42/2011/n42.xsd"
                    n42DocUUID="0a91ca36-f473-4319-bef3-134898d15b69">
 
@@ -102,7 +102,7 @@
   <EnergyWindows id="GammaWindowSettings">
     <WindowStartEnergyValues>0 0 100</WindowStartEnergyValues>
     <WindowEndEnergyValues>100 3000 400</WindowEndEnergyValues>
-  </EnergyWindows> 
+  </EnergyWindows>
 
   <RadMeasurementGroup id="MG-1"/>
 
@@ -136,7 +136,7 @@
     </GrossCounts>
     <OccupancyIndicator>0</OccupancyIndicator>
   </RadMeasurement>
-  
+
   <RadMeasurement id="M-2" radMeasurementGroupReferences="MG-1">
     <MeasurementClassCode>Background</MeasurementClassCode>
     <StartDateTime>2003-11-22T23:45:00.1-07:00</StartDateTime>
@@ -167,7 +167,7 @@
     </GrossCounts>
     <OccupancyIndicator>0</OccupancyIndicator>
   </RadMeasurement>
-  
+
   <RadMeasurement id="M-3" radMeasurementGroupReferences="MG-1">
     <MeasurementClassCode>Background</MeasurementClassCode>
     <StartDateTime>2003-11-22T23:45:00.2-07:00</StartDateTime>
@@ -198,7 +198,7 @@
     </GrossCounts>
     <OccupancyIndicator>1</OccupancyIndicator>
   </RadMeasurement>
-  
+
   <RadMeasurement id="M-4" radMeasurementGroupReferences="MG-1">
     <MeasurementClassCode>Background</MeasurementClassCode>
     <StartDateTime>2003-11-22T23:45:00.3-07:00</StartDateTime>
@@ -241,7 +241,7 @@
     </RadItemState>
     <OccupancyIndicator>1</OccupancyIndicator>
   </RadMeasurement>
-  
+
   <RadMeasurement id="M-5" radMeasurementGroupReferences="MG-1">
     <MeasurementClassCode>Background</MeasurementClassCode>
     <StartDateTime>2003-11-22T23:45:00.4-07:00</StartDateTime>
@@ -284,7 +284,7 @@
     </RadItemState>
     <OccupancyIndicator>1</OccupancyIndicator>
   </RadMeasurement>
-  
+
   <RadMeasurement id="M-6" radMeasurementGroupReferences="MG-1">
     <MeasurementClassCode>Background</MeasurementClassCode>
     <StartDateTime>2003-11-22T23:45:00.5-07:00</StartDateTime>
@@ -315,7 +315,7 @@
     </GrossCounts>
     <OccupancyIndicator>0</OccupancyIndicator>
   </RadMeasurement>
-  
+
   <RadMeasurement id="M-7" radMeasurementGroupReferences="MG-1">
     <MeasurementClassCode>Background</MeasurementClassCode>
     <StartDateTime>2003-11-22T23:45:00.6-07:00</StartDateTime>
@@ -346,7 +346,7 @@
     </GrossCounts>
     <OccupancyIndicator>0</OccupancyIndicator>
   </RadMeasurement>
-  
+
   <AnalysisResults radMeasurementGroupReferences="MG-1">
     <RadAlarm id="A-1-1" radDetectorInformationReferences="Aa1 Aa2 Ba1 Ba2">
       <RadAlarmCategoryCode>Gamma</RadAlarmCategoryCode>
@@ -367,4 +367,4 @@
       </Nuclide>
     </NuclideAnalysisResults>
   </AnalysisResults>
-</RadInstrumentData> 
+</RadInstrumentData>
