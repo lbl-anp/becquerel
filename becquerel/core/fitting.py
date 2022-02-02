@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import scipy.special
 from lmfit.model import Model
+from lmfit.parameter import Parameters
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -339,6 +340,27 @@ MODEL_STR_TO_CLS = {
 }
 
 
+def _parameters_to_bq_guess(params: Parameters):
+    """Convert a Parameters object to the tuple format becquerel expects for guess().
+
+    Parameters
+    ----------
+    params : lmfit.parameter.Parameters
+        Parameters object to convert
+
+    Returns
+    -------
+    list of tuples
+        Guess, min, and max values for each parameter.
+    """
+    s = []
+    for k, v in params.items():
+        s.append((k, "value", v.value))
+        s.append((k, "min", v.min))
+        s.append((k, "max", v.max))
+    return s
+
+
 # -----------------------------------------------------------------------------
 # Fitters
 # -----------------------------------------------------------------------------
@@ -534,7 +556,7 @@ class Fitter:
             self.guess_param_defaults(update=True)
 
     def set_param(self, pname, ptype, pvalue):
-        self.params[pname].set(**{ptype: pvalue})
+        self.params[pname].set(**{ptype: pvalue})  # FIXME set(ptype, pvalue) ?
 
     def _translate_model(self, m):
         if inspect.isclass(m):
@@ -596,7 +618,10 @@ class Fitter:
     def _guess_param_defaults(self, **kwargs):
         params = []
         for comp in self.model.components:
-            params += comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
+            p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
+            if isinstance(p, Parameters):
+                p = _parameters_to_bq_guess(p)
+            params += p
         return params
 
     def guess_param_defaults(self, update=False, **kwargs):
@@ -739,7 +764,7 @@ class Fitter:
                 if p not in guess_i:
                     warn_str = f"No guess provided for parameter {p}. "
                     if (
-                        p in limits
+                        p in limits_i
                         and limits_i[p][0] is not None
                         and limits_i[p][1] is not None
                     ):

@@ -4,6 +4,7 @@ import pytest
 from copy import deepcopy
 import numpy as np
 import becquerel as bq
+import lmfit
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
 
@@ -123,7 +124,12 @@ HIGH_STAT_SIM_PARAMS = {
             "m": -10.0,
             "b": 1e4,
         },
-        "expgauss": {"amp": 1e5, "mu": 100, "sigma": 5.0, "gamma": 0.25},
+        "expgauss": {
+            "amp": 1e5,
+            "mu": 100,
+            "sigma": 5.0,
+            "gamma": 0.25,
+        },
     },
     "setup": {
         "roi": (25, 175),
@@ -212,7 +218,7 @@ for _e in HIGH_STAT_SIM_PARAMS["methods"]:
 
 @pytest.fixture(**HIGH_STAT_SIM_PARAMS["fixture"])
 def sim_high_stat(request):
-    """Fake data with high count statistics"""
+    """Synthetic data with high count statistics"""
     out = deepcopy(request.param)
     out["fitter"] = bq.Fitter(out["model"])
     sim_data_kwargs = out["sim_data_kwargs"].copy()
@@ -446,5 +452,55 @@ def test_gauss_gauss_gauss_line(method):
         rtol=0.05,
         fitter=fitter,
     )
+    # fitter.custom_plot()
+    # plt.show()
+
+
+@pytest.mark.parametrize("method", ["lmfit", "lmfit-pml", "minuit-pml"])
+def test_lmfit_and_bq_models(method):
+    models = {
+        "bq": (
+            bq.fitting.GaussModel(prefix="gauss0_")
+            + bq.fitting.GaussModel(prefix="gauss1_")
+            + bq.fitting.LineModel(prefix="line_")
+        ),
+        "mixed": (
+            bq.fitting.GaussModel(prefix="gauss0_")
+            + bq.fitting.GaussModel(prefix="gauss1_")
+            + lmfit.models.LinearModel(prefix="line_")
+        ),
+    }
+    peak_params = {
+        "gauss0_amp": 1e5,
+        "gauss0_mu": 80.0,
+        "gauss0_sigma": 5.0,
+        "gauss1_amp": 1e5,
+        "gauss1_mu": 120.0,
+        "gauss1_sigma": 5.0,
+    }
+    line_params = {
+        "bq": {"line_m": -10.0, "line_b": 1e4},
+        "mixed": {"line_slope": -10.0, "line_intercept": 1e4},
+    }
+    for k in models:
+        params = {**peak_params, **line_params[k]}
+        data = sim_data(
+            y_func=models[k].eval,
+            x_min=0,
+            x_max=200,
+            **params,
+        )
+
+        fitter = bq.Fitter(models[k], **data)
+        for i in range(2):
+            n = f"gauss{i}_mu"
+            fitter.params[n].set(value=params[n])
+        fitter.fit(method)
+        compare_params(
+            true_params=params,
+            fit_params=fitter.best_values,
+            rtol=0.05,
+            fitter=fitter,
+        )
     # fitter.custom_plot()
     # plt.show()
