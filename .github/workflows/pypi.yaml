@@ -8,20 +8,18 @@ name: pypi
 # Run on push/PR/manually BUT only uploads with a tag (see below)
 on:
   push:
-    tags: [ 'v*' ]
-    branches: [ $default-branch ]
+    tags: ["v*"]
+    branches: [$default-branch]
   pull_request:
   workflow_dispatch:
 
 jobs:
   pypi_deploy:
-
     strategy:
       matrix:
-        os: [ 'ubuntu-20.04' ]
-        python-version: [ '3.9' ]
+        os: ["ubuntu-20.04"]
+        python-version: ["3.9"]
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
