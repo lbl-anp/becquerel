@@ -75,7 +75,7 @@ def linear_regression(x, y):
     n = len(x)
     sx = np.sum(x)
     sy = np.sum(y)
-    b = float(n * np.sum(x * y) - sx * sy) / float(n * np.sum(x ** 2) - sx * sx)
+    b = float(n * np.sum(x * y) - sx * sy) / float(n * np.sum(x**2) - sx * sx)
     a = 1.0 / n * (sy - b * sx)
     return [a, b]
 

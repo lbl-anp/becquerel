@@ -48,7 +48,7 @@ def gauss(x, amp, mu, sigma):
         amp
         / sigma
         / np.sqrt(2.0 * np.pi)
-        * np.exp(-((x - mu) ** 2.0) / (2.0 * sigma ** 2.0))
+        * np.exp(-((x - mu) ** 2.0) / (2.0 * sigma**2.0))
     )
 
 
@@ -641,7 +641,7 @@ class Fitter:
 
         if self.backend == "lmfit":
             # Perform the fit, weighted by 1/uncertainties.
-            weights = self.y_unc_roi ** -1.0
+            weights = self.y_unc_roi**-1.0
             self.result = self.model.fit(
                 y_roi_norm,
                 self.params,
