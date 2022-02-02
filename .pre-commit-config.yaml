@@ -18,6 +18,10 @@ repos:
     rev: 22.1.0
     hooks:
     - id: black
+  - repo: https://github.com/myint/autoflake
+    rev: v1.4
+    hooks:
+      - id: autoflake
   - repo: https://gitlab.com/pycqa/flake8
     rev: 4.0.1
     hooks:

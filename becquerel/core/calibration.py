@@ -235,18 +235,18 @@ def _validate_expression(
     if len(param_indices) > 0:
         if param_indices.min() != 0:
             raise CalibrationError(
-                f"Minimum parameter index in expression is not 0:\n"
+                "Minimum parameter index in expression is not 0:\n"
                 f"{expression}\n{param_indices}"
             )
         if not np.allclose(np.diff(param_indices), 1):
             raise CalibrationError(
-                f"Parameter indices in expression are not contiguous:\n"
+                "Parameter indices in expression are not contiguous:\n"
                 f"{expression}\n{param_indices}"
             )
     if params is not None:
         if len(param_indices) != len(params):
             raise CalibrationError(
-                f"Not enough parameter indices in expression:\n"
+                "Not enough parameter indices in expression:\n"
                 f"{expression}\n{param_indices}"
             )
 
