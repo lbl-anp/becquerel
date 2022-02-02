@@ -1,5 +1,6 @@
 # Sample spectra for becquerel
 
+```txt
 | Filename | Detector type | Device | Description |
 |:---------|:--------------|:-------|:------------|
 | `01122014152731-GT01122014182338-GA37.4963000N-GO122.4633000W.cnf` | HPGe | Canberra Falcon 5000 | Measurement on beach at Half Moon Bay, CA |
@@ -13,3 +14,4 @@
 | `sim_spec.spe` | CsI | simulation | Background spectrum with CsI resolution (for testing AutoCalibrator) |
 | `SGM102432.spe` | CsI | Kromek D3S | Spectrum with Ba-133 and Cs-137 sources |
 | `misc/cllbc_listmode.h5` | CLLBC | | List-mode data from a CLLBC detector (for testing `Spectrum.from_listmode`) |
+```

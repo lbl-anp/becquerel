@@ -61,8 +61,8 @@ def fit_gain(channels, snrs, energies):
     x = np.asarray(channels)
     s = np.asarray(snrs)
     y = np.asarray(energies)
-    S2X = (s ** 2 * x).sum()
-    S2Y = (s ** 2 * y).sum()
+    S2X = (s**2 * x).sum()
+    S2Y = (s**2 * y).sum()
     gain = S2Y / S2X
     return gain
 
@@ -104,9 +104,9 @@ def fom_gain(channels, snrs, energies):
     s = np.asarray(snrs)
     y = np.asarray(energies)
     N = len(channels)
-    S2X = (s ** 2 * x).sum()
-    S2Y = (s ** 2 * y).sum()
-    squared_errs = s ** 2 * (S2Y * x - S2X * y) ** 2 / (S2X - s ** 2 * x) ** 2 / x
+    S2X = (s**2 * x).sum()
+    S2Y = (s**2 * y).sum()
+    squared_errs = s**2 * (S2Y * x - S2X * y) ** 2 / (S2X - s**2 * x) ** 2 / x
     return squared_errs.sum() / N / (N - 1)
 
 

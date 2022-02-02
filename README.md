@@ -6,7 +6,6 @@
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/becquerel.svg)](https://pypi.org/project/becquerel)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-
 Becquerel is a Python package for analyzing nuclear spectroscopic
 measurements. The core functionalities are reading and writing different
 spectrum file types, fitting spectral features, performing detector
@@ -20,22 +19,23 @@ researcher.
 
 ## Installation
 
-```
+```bash
 pip install becquerel
 ```
 
 ## Features in development (contributions welcome!)
 
-* Reading additional `Spectrum` file types (N42, CHN, CSV)
-* Writing `Spectrum` objects to various standard formats
-* Fitting spectral features with Poisson likelihood
+- Reading additional `Spectrum` file types (N42, CHN, CSV)
+- Writing `Spectrum` objects to various standard formats
+- Fitting spectral features with Poisson likelihood
 
 If you are interested in contributing or are want to install the package from
 source, please see the instructions in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Reporting issues
 
-When reporting issues with `becquerel`, please provide a minimum working example to help identify the problem and tag the issue as a `bug`.
+When reporting issues with `becquerel`, please provide a minimum working example
+to help identify the problem and tag the issue as a `bug`.
 
 ## Feature requests
 
@@ -63,14 +63,14 @@ code formatting and are converting to [`numpydoc`][4].
 becquerel (bq) Copyright (c) 2017-2021, The Regents of the University of
 California, through Lawrence Berkeley National Laboratory (subject to receipt
 of any required approvals from the U.S. Dept. of Energy) and University of
-California, Berkeley.  All rights reserved.
+California, Berkeley. All rights reserved.
 
 If you have questions about your rights to use or distribute this software,
 please contact Berkeley Lab's Intellectual Property Office at
 IPO@lbl.gov.
 
-NOTICE.  This Software was developed under funding from the U.S. Department
-of Energy and the U.S. Government consequently retains certain rights.  As
+NOTICE. This Software was developed under funding from the U.S. Department
+of Energy and the U.S. Government consequently retains certain rights. As
 such, the U.S. Government has been granted for itself and others acting on
 its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the
 Software to reproduce, distribute copies to the public, prepare derivative

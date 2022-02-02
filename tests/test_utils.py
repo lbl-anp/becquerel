@@ -17,7 +17,7 @@ def test_sqrt_bins():
     bc = (be[1:] + be[:-1]) / 2
     bw = np.diff(be)
     # compute slope of line
-    m = np.diff(bw ** 2) / np.diff(bc)
+    m = np.diff(bw**2) / np.diff(bc)
     # assert that the square of the bin
     assert np.allclose(m[0], m)
     # negative edge_min
