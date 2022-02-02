@@ -82,7 +82,7 @@ def test_peakfinder_double_peaks():
 
     # Toy data: gaussian lineshape
     x = np.arange(31)
-    y = 1.5 * np.exp(-0.5 * (x[:-1] - 15) ** 2 / (2 * 3 ** 2))
+    y = 1.5 * np.exp(-0.5 * (x[:-1] - 15) ** 2 / (2 * 3**2))
     spec = bq.Spectrum(bin_edges_raw=x, counts=y)
     kernel = bq.GaussianPeakFilter(15, 7.5, fwhm_at_0=7.5)
     finder = bq.PeakFinder(spec, kernel)
