@@ -37,7 +37,8 @@ def _load_and_compile_materials():
         if rho2:
             if not np.isclose(rho1, rho2, atol=2e-2):
                 raise MaterialsError(
-                    f"Material {name} densities do not match between different data sources:  {rho1:.6f}  {rho2:.6f}"
+                    f"Material {name} densities do not match between different "
+                    f"data sources:  {rho1:.6f}  {rho2:.6f}"
                 )
 
     for j in range(len(data_comp)):
@@ -49,20 +50,23 @@ def _load_and_compile_materials():
             ].values[0]
             if len(weight_fracs1) != len(weight_fracs2):
                 raise MaterialsError(
-                    f"Material {name} has different number of weight fractions in the different sources: {weight_fracs1}  {weight_fracs2}"
+                    f"Material {name} has different number of weight fractions "
+                    f"in the different sources: {weight_fracs1}  {weight_fracs2}"
                 )
             for k in range(len(weight_fracs1)):
                 elem1, frac1 = weight_fracs1[k].split(" ")
                 elem2, frac2 = weight_fracs2[k].split(" ")
                 if elem1 != elem2:
                     raise MaterialsError(
-                        f"Material {name} weight fraction elements do not match between different data sources:  {elem1}  {elem2}"
+                        f"Material {name} weight fraction elements do not match "
+                        f"between different data sources:  {elem1}  {elem2}"
                     )
                 frac1 = float(frac1)
                 frac2 = float(frac2)
             if not np.isclose(frac1, frac2, atol=3e-4):
                 raise MaterialsError(
-                    f"Material {name} weight fractions do not match between different data sources:  {elem1}  {frac1:.6f}  {frac2:.6f}"
+                    f"Material {name} weight fractions do not match between "
+                    f"different data sources:  {elem1}  {frac1:.6f}  {frac2:.6f}"
                 )
 
     # make a dictionary of all the materials
@@ -76,7 +80,7 @@ def _load_and_compile_materials():
             "formula": formula,
             "density": density,
             "weight_fractions": weight_fracs,
-            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html)"',
+            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html)"',  # noqa: E501
         }
         #  add duplicate entry under element symbol for backwards compatibility
         materials[formula] = materials[name]
@@ -90,7 +94,7 @@ def _load_and_compile_materials():
             "formula": formula,
             "density": density,
             "weight_fractions": weight_fracs,
-            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html)"',
+            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html)"',  # noqa: E501
         }
 
     for j in range(len(data_comp)):
@@ -107,7 +111,14 @@ def _load_and_compile_materials():
                 "formula": formula,
                 "density": density,
                 "weight_fractions": weight_fracs,
-                "source": '"Detwiler, Rebecca S., McConn, Ronald J., Grimes, Thomas F., Upton, Scott A., & Engel, Eric J. Compendium of Material Composition Data for Radiation Transport Modeling. United States. PNNL-15870 Revision 2., https://doi.org/10.2172/1782721 (https://compendium.cwmd.pnnl.gov)"',
+                "source": (
+                    '"Detwiler, Rebecca S., McConn, Ronald J., Grimes, '
+                    "Thomas F., Upton, Scott A., & Engel, Eric J. Compendium of "
+                    "Material Composition Data for Radiation Transport Modeling. "
+                    "United States. PNNL-15870 Revision 2., "
+                    "https://doi.org/10.2172/1782721 "
+                    '(https://compendium.cwmd.pnnl.gov)"'
+                ),
             }
 
     return materials

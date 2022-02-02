@@ -1,6 +1,5 @@
 """General utility functions to be shared among core modules."""
 
-import sys
 import datetime
 from dateutil.parser import parse as dateutil_parse
 from uncertainties import UFloat, unumpy

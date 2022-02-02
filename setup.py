@@ -31,7 +31,9 @@ with open("requirements.txt") as fh:
     REQUIREMENTS = [_line for _line in fh.readlines() if _line]
 
 with open("requirements-dev.txt") as fh:
-    REQUIREMENTS_DEV = [l.strip() for l in fh.readlines() if not l.startswith("-r")]
+    REQUIREMENTS_DEV = [
+        line.strip() for line in fh.readlines() if not line.startswith("-r")
+    ]
 
 # make long description from README and CONTRIBUTING
 # but move copyright notice to the end
