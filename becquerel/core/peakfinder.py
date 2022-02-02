@@ -293,7 +293,7 @@ class PeakFinder:
 
     def plot(self, facecolor="red", linecolor="red", alpha=0.5, peaks=True):
         """Plot the peak signal-to-noise ratios calculated using the kernel."""
-        bin_edges = self.spectrum.bin_edges_raw
+        self.spectrum.bin_edges_raw
         bin_centers = self.spectrum.bin_centers_raw
 
         if facecolor is not None:

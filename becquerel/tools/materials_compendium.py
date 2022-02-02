@@ -47,15 +47,11 @@ def fetch_compendium_data():
     # read the file
     if not os.path.exists(FNAME):
         warnings.warn(
-            f"""
-Material data from the "Compendium of Material Composition Data for Radiation Transport Modeling" cannot be found. If these data are desired, please visit the following URL:
-
-    https://compendium.cwmd.pnnl.gov
-
-and select "Download JSON". Then move the resulting file to the following path:
-
-    {FNAME}
-""",
+            'Material data from the "Compendium of Material Composition Data for '
+            'Radiation Transport Modeling" cannot be found. If these data are '
+            "desired, please visit the following URL: "
+            'https://compendium.cwmd.pnnl.gov and select "Download JSON". Then '
+            f"move the resulting file to the following path: {FNAME}",
             MaterialsWarning,
         )
         data = []

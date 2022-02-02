@@ -152,7 +152,7 @@ def test_construction_bad_points(cl, kl, io):
 def test_construction_empty_points(cl, kl, io):
     """Test errors of from_points with empty/insufficient input"""
 
-    with pytest.raises(bq.EnergyCalError) as excinfo:
+    with pytest.raises(bq.EnergyCalError):
         bq.LinearEnergyCal.from_points(chlist=cl, kevlist=kl, include_origin=io)
 
 

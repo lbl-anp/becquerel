@@ -406,5 +406,5 @@ class Element:
                 and self.symbol == other.symbol
                 and self.Z == other.Z
             )
-        except:
+        except Exception:
             raise ElementError("Cannot determine equality")
