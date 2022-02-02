@@ -6,7 +6,6 @@
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/becquerel.svg)](https://pypi.org/project/becquerel)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-
 Becquerel is a Python package for analyzing nuclear spectroscopic
 measurements. The core functionalities are reading and writing different
 spectrum file types, fitting spectral features, performing detector
@@ -20,7 +19,7 @@ researcher.
 
 ## Installation
 
-```
+```bash
 pip install becquerel
 ```
 
@@ -35,7 +34,8 @@ source, please see the instructions in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Reporting issues
 
-When reporting issues with `becquerel`, please provide a minimum working example to help identify the problem and tag the issue as a `bug`.
+When reporting issues with `becquerel`, please provide a minimum working example
+to help identify the problem and tag the issue as a `bug`.
 
 ## Feature requests
 
