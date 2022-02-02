@@ -80,7 +80,7 @@ def test_plot_uncal_counts(uncal_spec):
 
 
 def test_plot_cal_counts(cal_spec):
-    """Plot an calibrated spectrum"""
+    """Plot a calibrated spectrum"""
 
     cal_spec.fill_between()
     assert plt.gca().get_xlabel() == "Energy [keV]"
