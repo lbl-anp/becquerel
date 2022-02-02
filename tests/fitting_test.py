@@ -77,6 +77,7 @@ def compare_counts(fitter):
     model_counts = np.sum(
         fitter.eval(fitter.x_roi, **fitter.best_values) * fitter.dx_roi
     )
+    # TODO: restructure this, maybe use a return
     test = np.allclose(data_counts, model_counts, atol=1e-2)
     if not test and "minuit" in fitter.backend:
         fitter.fit(backend="lmfit-pml")
@@ -322,6 +323,31 @@ class TestFittingHighStatSimData:
             compare_counts(fitter)
         # fitter.custom_plot()
         # plt.show()
+
+    @pytest.mark.filterwarnings("ignore")
+    def test_from_spectrum(self, sim_high_stat):
+        """Test that Spectrum.fit also gives the same results."""
+        if sim_high_stat["binning"] != "linear":
+            return
+
+        x_edges = sim_high_stat["data"]["x"].copy()
+        x_edges -= np.diff(x_edges)[-1] * 0.5
+        x_edges = np.append(x_edges, x_edges[-1] + np.diff(x_edges)[-1])
+        spec = bq.Spectrum(
+            counts=sim_high_stat["data"]["y"],
+            uncs=sim_high_stat["data"]["y_unc"],
+            bin_edges_kev=x_edges,
+        )
+        fitter = spec.fit(
+            model=sim_high_stat["model"],
+            xmode="energy",
+            ymode="counts",
+            roi=sim_high_stat["roi"],
+            dx=sim_high_stat["data"]["dx"],
+            backend=sim_high_stat["method"],
+        )
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit-pml"]:
+            compare_counts(fitter)
 
     def test_component_areas(self, sim_high_stat):
         fitter = bq.Fitter(sim_high_stat["model"])
