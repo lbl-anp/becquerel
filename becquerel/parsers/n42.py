@@ -3,10 +3,8 @@
 # pylint: disable=no-member
 
 from __future__ import print_function
-from .spectrum_file import SpectrumFile, SpectrumFileParsingError
+from .parsers import BecquerelParserError
 import os
-
-# import sys
 import re
 import numpy as np
 
@@ -28,7 +26,7 @@ scriptdir = os.path.dirname(os.path.realpath(__file__))
 NIST_N42_URL = "http://physics.nist.gov/N42/2011/"
 schema_text = etree.parse(os.path.join(scriptdir, "n42/n42.xsd"))
 N42_SCHEMA = etree.XMLSchema(schema_text)
-N42_NAMESPACE = "{{{}}}".format(NIST_N42_URL + "N42")
+N42_NAMESPACE = f"{{{NIST_N42_URL}N42}"
 
 
 SAMPLES = [
@@ -41,13 +39,13 @@ SAMPLES = [
 ]
 
 
-class N42FileParsingError(SpectrumFileParsingError):
+class N42FileParsingError(BecquerelParserError):
     """Failed while parsing an SPE file."""
 
     pass
 
 
-class N42FileWritingError(SpectrumFileParsingError):
+class N42FileWritingError(BecquerelParserError):
     """Failed while writing an SPE file."""
 
     pass
