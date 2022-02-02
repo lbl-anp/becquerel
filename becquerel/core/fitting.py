@@ -846,7 +846,8 @@ class Fitter:
         if "lmfit" in self.backend:
             warnings.warn(
                 "`lmfit` error estimates are unreliable. "
-                "`minuit` is recommended where possible"
+                "`minuit` is recommended where possible",
+                FittingWarning,
             )
 
         def _calc_area(param_vec, **kwargs):
@@ -886,13 +887,19 @@ class Fitter:
         grad = nd.Gradient(_calc_area)
         g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
 
+        # Compute the gradient with respect to the best fit parameters
+        grad = nd.Gradient(_calc_area)
+        g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
+
         # Compute the variance in the area estimate: Tellinghuisen Eq. 1
-        if "minuit" in self.backend:
-            covariance = np.array(self.result.covariance)
+        if self.covariance is None or np.allclose(self.covariance, 0.0):
+            warnings.warn(
+                "The covariance could not be estimated. Returning 0 for error estimate",
+                FittingWarning,
+            )
+            covariance = np.zeros((len(g), len(g)))
         else:
-            covariance = np.array(self.result.covar)
-        if not covariance.sum():
-            raise FittingError("No covariance!")
+            covariance = self.covariance
         area_variance = g.T @ covariance @ g
         area_variance = area_variance[0, 0]
         # We don't divide by the binwidth here because we are summing bins: if we double
@@ -962,6 +969,16 @@ class Fitter:
             return self.result.success
         elif "minuit" in self.backend:
             return self.result.valid
+        else:
+            raise FittingError("Unknown backend: {}", self.backend)
+
+    @property
+    def covariance(self):
+        """Wrapper for fit covariance matrix."""
+        if "lmfit" in self.backend:
+            return self.result.covar
+        elif "minuit" in self.backend:
+            return self.result.covariance
         else:
             raise FittingError("Unknown backend: {}", self.backend)
 
