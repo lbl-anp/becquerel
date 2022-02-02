@@ -1417,7 +1417,16 @@ class Spectrum:
         return plotter.fill_between()
 
     def fit(
-        self, model, xmode, ymode, roi=None, perform_fit=True, backend="lmfit", **kwargs
+        self,
+        model,
+        xmode,
+        ymode,
+        dx=None,
+        roi=None,
+        mask=None,
+        perform_fit=True,
+        backend="lmfit",
+        **kwargs,
     ):
         """Create a Fitter object based on this Spectrum and perform the fit.
 
@@ -1429,8 +1438,12 @@ class Spectrum:
             Mode (effectively units) of the x-axis
         ymode : {'counts', 'cps', 'cpskev'}
             Mode (effectively units) of the y-axis
+        dx : array-like, optional
+            Bin widths
         roi : list or tuple of length 2, optional
             Min and max x-values between which to compute the fit
+        mask : array-like, optional
+            Mask of which (x, y) values to include in the fit
         perform_fit : bool
             If True, perform the fit now, otherwise, set up fitter without
             performing the fit.
@@ -1448,7 +1461,10 @@ class Spectrum:
         ydata, yuncs, ylabel = self.parse_ymode(ymode)
 
         xcenters = bin_centers_from_edges(xedges)
-        fitter = fitting.Fitter(model, x=xcenters, y=ydata, y_unc=yuncs, roi=roi)
+
+        fitter = fitting.Fitter(
+            model, x=xcenters, y=ydata, y_unc=yuncs, dx=dx, roi=roi, mask=mask
+        )
         fitter._xmode = xmode
         fitter._ymode = ymode
         if perform_fit:
