@@ -7,9 +7,22 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-added-large-files
+      - id: check-json
       - id: check-toml
       - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: mixed-line-ending
+      - id: requirements-txt-fixer
   - repo: https://github.com/psf/black
-    rev: 21.4b2
+    rev: 22.1.0
     hooks:
     - id: black
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 4.0.1
+    hooks:
+      - id: flake8
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.30.0
+    hooks:
+      - id: markdownlint-fix
