@@ -3,11 +3,13 @@ beautifulsoup4
 future
 h5py
 html5lib
+iminuit
+llvmlite
 lmfit
 lxml
 matplotlib
 numba>=0.47.0
-llvmlite
+numdifftools
 numpy
 pandas
 python-dateutil
@@ -15,5 +17,3 @@ requests
 scipy
 setuptools
 uncertainties>=3.0.3
-iminuit
-numdifftools

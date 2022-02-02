@@ -2,7 +2,7 @@ name: coveralls
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [$default-branch]
   pull_request:
   workflow_dispatch:
 
@@ -10,33 +10,33 @@ jobs:
   coveralls_test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip setuptools wheel
-        pip install --only-binary=numpy,scipy -r requirements-dev.txt
-    - name: Install package
-      run: |
-        pip install .
-    - name: Test with pytest
-      run: |
-        pytest
-    - name: Coveralls
-      uses: AndreMiras/coveralls-python-action@develop
-      with:
-        parallel: true
-        flag-name: Unit Test
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install --only-binary=numpy,scipy -r requirements-dev.txt
+      - name: Install package
+        run: |
+          pip install .
+      - name: Test with pytest
+        run: |
+          pytest
+      - name: Coveralls
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          parallel: true
+          flag-name: Unit Test
 
   coveralls_finish:
     needs: coveralls_test
     runs-on: ubuntu-latest
     steps:
-    - name: Coveralls Finished
-      uses: AndreMiras/coveralls-python-action@develop
-      with:
-        parallel-finished: true
-        debug: true
+      - name: Coveralls Finished
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          parallel-finished: true
+          debug: true

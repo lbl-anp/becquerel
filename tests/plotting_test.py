@@ -6,9 +6,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 plt.switch_backend("Agg")
-
-import becquerel as bq
-from becquerel import SpectrumPlotter as sp
+import becquerel as bq  # noqa: E402
+from becquerel import SpectrumPlotter as sp  # noqa: E402
 
 TEST_DATA_LENGTH = 256
 TEST_COUNTS = 4
@@ -80,8 +79,8 @@ def test_plot_uncal_counts(uncal_spec):
     plt.close("all")
 
 
-def test_plot_uncal_counts(cal_spec):
-    """Plot an calibrated spectrum"""
+def test_plot_cal_counts(cal_spec):
+    """Plot a calibrated spectrum"""
 
     cal_spec.fill_between()
     assert plt.gca().get_xlabel() == "Energy [keV]"
@@ -564,4 +563,4 @@ def test_errorband(uncal_spec):
 def test_unknown_emode(uncal_spec):
     """Test error mode unknown"""
     with pytest.raises(bq.SpectrumError):
-        ax = uncal_spec.plot(ymode="counts", emode="unknown")
+        uncal_spec.plot(ymode="counts", emode="unknown")
