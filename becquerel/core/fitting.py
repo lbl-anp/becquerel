@@ -49,7 +49,7 @@ def gauss(x, amp, mu, sigma):
         amp
         / sigma
         / np.sqrt(2.0 * np.pi)
-        * np.exp(-((x - mu) ** 2.0) / (2.0 * sigma ** 2.0))
+        * np.exp(-((x - mu) ** 2.0) / (2.0 * sigma**2.0))
     )
 
 
@@ -556,7 +556,7 @@ class Fitter:
             self.guess_param_defaults(update=True)
 
     def set_param(self, pname, ptype, pvalue):
-        self.params[pname].set(**{ptype: pvalue})
+        self.params[pname].set(**{ptype: pvalue})  # FIXME set(ptype, pvalue) ?
 
     def _translate_model(self, m):
         if inspect.isclass(m):
@@ -666,7 +666,7 @@ class Fitter:
 
         if self.backend == "lmfit":
             # Perform the fit, weighted by 1/uncertainties.
-            weights = self.y_unc_roi ** -1.0
+            weights = self.y_unc_roi**-1.0
             self.result = self.model.fit(
                 y_roi_norm,
                 self.params,
