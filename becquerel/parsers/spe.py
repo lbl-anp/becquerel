@@ -1,6 +1,5 @@
 """Read in an Ortec SPE file."""
 
-import datetime
 import os
 import warnings
 import dateutil.parser

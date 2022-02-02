@@ -13,7 +13,10 @@ import numpy as np
 import requests
 import pandas as pd
 import uncertainties
-
+from ._nndc_dummy_text import (
+    _NUCLEAR_WALLET_CARD_QUERY_DUMMY_TEXT,
+    _DECAY_RADIATION_QUERY_DUMMY_TEXT,
+)
 
 PARITIES = ["+", "-", "any"]
 
@@ -699,17 +702,7 @@ class _NuclearWalletCardQuery(_NNDCQuery):
     )
     _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
     _ALLOWED_KEYWORDS.extend(["elevel_range", "decay", "j", "parity"])
-    _DUMMY_TEXT = """
-<html>
-<body>
-
-<pre>
-A  	Element	Z  	N  	Energy  	JPi           	Mass Exc  	Unc  	T1/2 (txt)               	T1/2 (seconds)           	Abund.    	Unc     	Dec Mode	Branching (%)
-
- To save this output into a local file, clik on "File" in your browser menu and select "Save as"
-
-</pre></body></html>
-"""
+    _DUMMY_TEXT = _NUCLEAR_WALLET_CARD_QUERY_DUMMY_TEXT
 
     def update(self, **kwargs):
         """Update the search criteria."""
@@ -850,16 +843,7 @@ class _DecayRadiationQuery(_NNDCQuery):
     )
     _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
     _ALLOWED_KEYWORDS.extend(["elevel_range", "decay", "type", "e_range", "i_range"])
-    _DUMMY_TEXT = """
-<html>
-<body>
-<pre>
-A  	Element	Z  	N  	Par. Elevel	Unc. 	JPi       	Dec Mode	T1/2 (txt)    	T1/2 (num)        	Daughter	Radiation	Rad subtype 	Rad Ene.  	Unc       	EP Ene.   	Unc       	Rad Int.  	Unc       	Dose        	Unc
-
-</pre>
-To save this output into a local File, clik on "File" in your browser menu and select "Save as"
-</body></html>
-"""
+    _DUMMY_TEXT = _DECAY_RADIATION_QUERY_DUMMY_TEXT
 
     def update(self, **kwargs):
         """Update the search criteria."""

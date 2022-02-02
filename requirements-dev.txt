@@ -1,9 +1,10 @@
 -r requirements.txt
-coverage
-flake8
-black==21.4b2
-pytest<7.0.0
-pytest-cov
-pytest-black
-pytest-rerunfailures
+black>=22.1.0
 bump2version
+coverage
+flake8>=4.0.1
+pre-commit
+pytest<7.0.0
+pytest-black
+pytest-cov
+pytest-rerunfailures
