@@ -130,17 +130,6 @@ HIGH_STAT_SIM_PARAMS = {
             "sigma": 5.0,
             "gamma": 0.25,
         },
-        "gaussdblexp": {
-            "amp": 1e5,
-            "mu": 100.0,
-            "sigma": 5.0,
-            "ltail_ratio": 0.1,
-            "ltail_slope": 0.05,
-            "ltail_cutoff": 1.0,
-            "rtail_ratio": 0.1,
-            "rtail_slope": -0.05,
-            "rtail_cutoff": 1.0,
-        },
     },
     "setup": {
         "roi": (25, 175),
@@ -159,7 +148,6 @@ HIGH_STAT_SIM_PARAMS = {
         ["gausserf", "line"],
         ["gausserf", "exp"],
         "expgauss",
-        "gaussdblexp",
     ],
     "fixture": {
         "params": [],
@@ -516,3 +504,40 @@ def test_lmfit_and_bq_models(method):
         )
     # fitter.custom_plot()
     # plt.show()
+
+
+@pytest.mark.parametrize("method", ["lmfit", "lmfit-pml", "minuit-pml"])
+def test_gauss_dbl_exp(method):
+    params = {
+        "amp": 1e5,
+        "mu": 100.0,
+        "sigma": 5.0,
+        "ltail_ratio": 0.3,
+        "ltail_slope": 0.07,
+        "ltail_cutoff": 1.0,
+        "rtail_ratio": 0.1,
+        "rtail_slope": -0.03,
+        "rtail_cutoff": 1.0,
+    }
+    model = bq.fitting.GaussDblExpModel()
+    data = sim_data(y_func=model.eval, x_min=0, x_max=200, **params)
+
+    fitter = bq.Fitter(model, **data)
+    fitter.params["ltail_cutoff"].min = 0.99
+    fitter.params["ltail_cutoff"].value = 1.0
+    fitter.params["ltail_cutoff"].max = 1.01
+    fitter.params["rtail_cutoff"].min = 0.99
+    fitter.params["rtail_cutoff"].value = 1.0
+    fitter.params["rtail_cutoff"].max = 1.01
+    fitter.fit(method, guess=params)
+
+    compare_params(
+        true_params=params,
+        fit_params=fitter.best_values,
+        rtol=0.05,
+        fitter=fitter,
+    )
+    import matplotlib.pyplot as plt
+
+    fitter.custom_plot()
+    plt.show()
