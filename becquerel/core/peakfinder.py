@@ -55,7 +55,7 @@ class PeakFilter:
         f0 = self.fwhm_at_0
         f1 = self.ref_fwhm
         x1 = self.ref_x
-        fwhm_sqr = f0 ** 2 + (f1 ** 2 - f0 ** 2) * (x / x1)
+        fwhm_sqr = f0**2 + (f1**2 - f0**2) * (x / x1)
         return np.sqrt(fwhm_sqr)
 
     def kernel(self, x, edges):
@@ -103,7 +103,7 @@ class PeakFilter:
         peak_plus_bkg = np.dot(kern_mat_pos, data)
         bkg = np.dot(kern_mat_neg, data)
         signal = np.dot(kern_mat, data)
-        noise = np.sqrt(np.dot(kern_mat ** 2, data))
+        noise = np.sqrt(np.dot(kern_mat**2, data))
         snr = np.zeros_like(signal)
         snr[noise > 0] = signal[noise > 0] / noise[noise > 0]
         return peak_plus_bkg, bkg, signal, noise, snr
@@ -112,7 +112,7 @@ class PeakFilter:
 def _gaussian0(x, mean, sigma):
     """Gaussian function."""
     z = (x - mean) / sigma
-    return np.exp(-(z ** 2) / 2.0)
+    return np.exp(-(z**2) / 2.0)
 
 
 def _gaussian1(x, mean, sigma):
@@ -274,8 +274,8 @@ class PeakFinder:
 
             d2 = (
                 (1 * self.snr[xbin - h] - 2 * self.snr[xbin] + 1 * self.snr[xbin + h])
-                / h ** 2
-                / bw ** 2
+                / h**2
+                / bw**2
             )
             if d2 >= 0:
                 raise PeakFinderError("Second derivative must be negative at peak")
@@ -293,7 +293,6 @@ class PeakFinder:
 
     def plot(self, facecolor="red", linecolor="red", alpha=0.5, peaks=True):
         """Plot the peak signal-to-noise ratios calculated using the kernel."""
-        bin_edges = self.spectrum.bin_edges_raw
         bin_centers = self.spectrum.bin_centers_raw
 
         if facecolor is not None:

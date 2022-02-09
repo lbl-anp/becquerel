@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import scipy.special
 from lmfit.model import Model
+from lmfit.parameter import Parameters
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -48,7 +49,7 @@ def gauss(x, amp, mu, sigma):
         amp
         / sigma
         / np.sqrt(2.0 * np.pi)
-        * np.exp(-((x - mu) ** 2.0) / (2.0 * sigma ** 2.0))
+        * np.exp(-((x - mu) ** 2.0) / (2.0 * sigma**2.0))
     )
 
 
@@ -91,7 +92,7 @@ def gauss_dbl_exp(
     from CZT crystals. The exponential tails are characterized by 3 parameters: a
     tail-to-peak amplitude ratio, a slope, and a cutoff parameter.
     """
-    alpha = -1.0 / (2.0 * sigma ** 2)
+    alpha = -1.0 / (2.0 * sigma**2)
     ltail_func = np.zeros(shape=(len(x),))
     rtail_func = np.zeros(shape=(len(x),))
     # l and r tail_func are 0 when we're below/above the Gaussian mean
@@ -411,6 +412,27 @@ MODEL_STR_TO_CLS = {
 }
 
 
+def _parameters_to_bq_guess(params: Parameters):
+    """Convert a Parameters object to the tuple format becquerel expects for guess().
+
+    Parameters
+    ----------
+    params : lmfit.parameter.Parameters
+        Parameters object to convert
+
+    Returns
+    -------
+    list of tuples
+        Guess, min, and max values for each parameter.
+    """
+    s = []
+    for k, v in params.items():
+        s.append((k, "value", v.value))
+        s.append((k, "min", v.min))
+        s.append((k, "max", v.max))
+    return s
+
+
 # -----------------------------------------------------------------------------
 # Fitters
 # -----------------------------------------------------------------------------
@@ -606,7 +628,7 @@ class Fitter:
             self.guess_param_defaults(update=True)
 
     def set_param(self, pname, ptype, pvalue):
-        self.params[pname].set(**{ptype: pvalue})
+        self.params[pname].set(**{ptype: pvalue})  # FIXME set(ptype, pvalue) ?
 
     def _translate_model(self, m):
         if inspect.isclass(m):
@@ -668,7 +690,10 @@ class Fitter:
     def _guess_param_defaults(self, **kwargs):
         params = []
         for comp in self.model.components:
-            params += comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
+            p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
+            if isinstance(p, Parameters):
+                p = _parameters_to_bq_guess(p)
+            params += p
         return params
 
     def guess_param_defaults(self, update=False, **kwargs):
@@ -713,7 +738,7 @@ class Fitter:
 
         if self.backend == "lmfit":
             # Perform the fit, weighted by 1/uncertainties.
-            weights = self.y_unc_roi ** -1.0
+            weights = self.y_unc_roi**-1.0
             self.result = self.model.fit(
                 y_roi_norm,
                 self.params,
@@ -811,7 +836,7 @@ class Fitter:
                 if p not in guess_i:
                     warn_str = f"No guess provided for parameter {p}. "
                     if (
-                        p in limits
+                        p in limits_i
                         and limits_i[p][0] is not None
                         and limits_i[p][1] is not None
                     ):
@@ -918,7 +943,8 @@ class Fitter:
         if "lmfit" in self.backend:
             warnings.warn(
                 "`lmfit` error estimates are unreliable. "
-                "`minuit` is recommended where possible"
+                "`minuit` is recommended where possible",
+                FittingWarning,
             )
 
         def _calc_area(param_vec, **kwargs):
@@ -958,13 +984,19 @@ class Fitter:
         grad = nd.Gradient(_calc_area)
         g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
 
+        # Compute the gradient with respect to the best fit parameters
+        grad = nd.Gradient(_calc_area)
+        g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
+
         # Compute the variance in the area estimate: Tellinghuisen Eq. 1
-        if "minuit" in self.backend:
-            covariance = np.array(self.result.covariance)
+        if self.covariance is None or np.allclose(self.covariance, 0.0):
+            warnings.warn(
+                "The covariance could not be estimated. Returning 0 for error estimate",
+                FittingWarning,
+            )
+            covariance = np.zeros((len(g), len(g)))
         else:
-            covariance = np.array(self.result.covar)
-        if not covariance.sum():
-            raise FittingError("No covariance!")
+            covariance = self.covariance
         area_variance = g.T @ covariance @ g
         area_variance = area_variance[0, 0]
         # We don't divide by the binwidth here because we are summing bins: if we double
@@ -1034,6 +1066,16 @@ class Fitter:
             return self.result.success
         elif "minuit" in self.backend:
             return self.result.valid
+        else:
+            raise FittingError("Unknown backend: {}", self.backend)
+
+    @property
+    def covariance(self):
+        """Wrapper for fit covariance matrix."""
+        if "lmfit" in self.backend:
+            return self.result.covar
+        elif "minuit" in self.backend:
+            return self.result.covariance
         else:
             raise FittingError("Unknown backend: {}", self.backend)
 

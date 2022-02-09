@@ -48,6 +48,7 @@ def test_format_ufloat(arg, result):
 
 
 @pytest.mark.webtest
+@pytest.mark.flaky(reruns=3)
 class TestWalletCardCache:
     """Test functionality of wallet_cache."""
 

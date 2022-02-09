@@ -4,6 +4,7 @@ import pytest
 from copy import deepcopy
 import numpy as np
 import becquerel as bq
+import lmfit
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
 
@@ -31,7 +32,7 @@ def sim_data(x_min, x_max, y_func, num_x=200, binning="linear", **params):
         edges = np.linspace(x_min, x_max, num_x, dtype=float)
     elif binning == "sqrt":
         edges = np.linspace(np.sqrt(x_min), np.sqrt(x_max), num_x)
-        edges = edges ** 2
+        edges = edges**2
     x = (edges[1:] + edges[:-1]) * 0.5
     dx = edges[1:] - edges[:-1]
 
@@ -76,6 +77,7 @@ def compare_counts(fitter):
     model_counts = np.sum(
         fitter.eval(fitter.x_roi, **fitter.best_values) * fitter.dx_roi
     )
+    # TODO: restructure this, maybe use a return
     test = np.allclose(data_counts, model_counts, atol=1e-2)
     if not test and "minuit" in fitter.backend:
         fitter.fit(backend="lmfit-pml")
@@ -122,7 +124,12 @@ HIGH_STAT_SIM_PARAMS = {
             "m": -10.0,
             "b": 1e4,
         },
-        "expgauss": {"amp": 1e5, "mu": 100, "sigma": 5.0, "gamma": 0.25},
+        "expgauss": {
+            "amp": 1e5,
+            "mu": 100,
+            "sigma": 5.0,
+            "gamma": 0.25,
+        },
         "gaussdblexp": {
             "amp": 1e5,
             "mu": 100.0,
@@ -223,7 +230,7 @@ for _e in HIGH_STAT_SIM_PARAMS["methods"]:
 
 @pytest.fixture(**HIGH_STAT_SIM_PARAMS["fixture"])
 def sim_high_stat(request):
-    """Fake data with high count statistics"""
+    """Synthetic data with high count statistics"""
     out = deepcopy(request.param)
     out["fitter"] = bq.Fitter(out["model"])
     sim_data_kwargs = out["sim_data_kwargs"].copy()
@@ -329,6 +336,31 @@ class TestFittingHighStatSimData:
         # fitter.custom_plot()
         # plt.show()
 
+    @pytest.mark.filterwarnings("ignore")
+    def test_from_spectrum(self, sim_high_stat):
+        """Test that Spectrum.fit also gives the same results."""
+        if sim_high_stat["binning"] != "linear":
+            return
+
+        x_edges = sim_high_stat["data"]["x"].copy()
+        x_edges -= np.diff(x_edges)[-1] * 0.5
+        x_edges = np.append(x_edges, x_edges[-1] + np.diff(x_edges)[-1])
+        spec = bq.Spectrum(
+            counts=sim_high_stat["data"]["y"],
+            uncs=sim_high_stat["data"]["y_unc"],
+            bin_edges_kev=x_edges,
+        )
+        fitter = spec.fit(
+            model=sim_high_stat["model"],
+            xmode="energy",
+            ymode="counts",
+            roi=sim_high_stat["roi"],
+            dx=sim_high_stat["data"]["dx"],
+            backend=sim_high_stat["method"],
+        )
+        if sim_high_stat["method"] in ["lmfit-pml", "minuit-pml"]:
+            compare_counts(fitter)
+
     def test_component_areas(self, sim_high_stat):
         fitter = bq.Fitter(sim_high_stat["model"])
         fitter.set_data(**sim_high_stat["data"])
@@ -341,16 +373,26 @@ class TestFittingHighStatSimData:
                 fitter.calc_area_and_unc()
             return
 
-        # Sometimes the fit result does not have a reliable covariance matrix, but alas
-        if "minuit" in fitter.backend:
-            covariance = np.array(fitter.result.covariance)
-        else:
-            covariance = np.array(fitter.result.covar)
-        # We can at least check that it properly errors, then skip the rest of the tests
-        if not covariance.sum():
-            with pytest.raises(bq.fitting.FittingError):
-                fitter.calc_area_and_unc()
+        # Sometimes the fit result does not have a reliable covariance matrix, but alas.
+        # We can at least check that it properly warns, then skip the rest of the tests
+        if fitter.covariance is None:
+            with pytest.warns(bq.fitting.FittingWarning):
+                a = fitter.calc_area_and_unc()
+                assert a.std_dev == 0
             return
+
+        # The covariance check above only runs a handful of times and is subject to the
+        # fit quality, so let's synthetically create a zero covariance case and test it
+        fitter_copy = deepcopy(fitter)
+        fitter_copy.fit(sim_high_stat["method"])
+        if fitter_copy.covariance is not None:
+            if "minuit" in fitter_copy.backend:
+                fitter_copy.result._covariance *= 0
+            else:
+                fitter_copy.result.covar *= 0
+            with pytest.warns(bq.fitting.FittingWarning):
+                a = fitter_copy.calc_area_and_unc()
+                assert a.std_dev == 0
 
         # Area under the entire curve
         a0 = fitter.calc_area_and_unc()
@@ -422,5 +464,55 @@ def test_gauss_gauss_gauss_line(method):
         rtol=0.05,
         fitter=fitter,
     )
+    # fitter.custom_plot()
+    # plt.show()
+
+
+@pytest.mark.parametrize("method", ["lmfit", "lmfit-pml", "minuit-pml"])
+def test_lmfit_and_bq_models(method):
+    models = {
+        "bq": (
+            bq.fitting.GaussModel(prefix="gauss0_")
+            + bq.fitting.GaussModel(prefix="gauss1_")
+            + bq.fitting.LineModel(prefix="line_")
+        ),
+        "mixed": (
+            bq.fitting.GaussModel(prefix="gauss0_")
+            + bq.fitting.GaussModel(prefix="gauss1_")
+            + lmfit.models.LinearModel(prefix="line_")
+        ),
+    }
+    peak_params = {
+        "gauss0_amp": 1e5,
+        "gauss0_mu": 80.0,
+        "gauss0_sigma": 5.0,
+        "gauss1_amp": 1e5,
+        "gauss1_mu": 120.0,
+        "gauss1_sigma": 5.0,
+    }
+    line_params = {
+        "bq": {"line_m": -10.0, "line_b": 1e4},
+        "mixed": {"line_slope": -10.0, "line_intercept": 1e4},
+    }
+    for k in models:
+        params = {**peak_params, **line_params[k]}
+        data = sim_data(
+            y_func=models[k].eval,
+            x_min=0,
+            x_max=200,
+            **params,
+        )
+
+        fitter = bq.Fitter(models[k], **data)
+        for i in range(2):
+            n = f"gauss{i}_mu"
+            fitter.params[n].set(value=params[n])
+        fitter.fit(method)
+        compare_params(
+            true_params=params,
+            fit_params=fitter.best_values,
+            rtol=0.05,
+            fitter=fitter,
+        )
     # fitter.custom_plot()
     # plt.show()

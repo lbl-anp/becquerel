@@ -107,7 +107,7 @@ def _linear_offset(slope, cts, low, high):
     if np.abs(slope) < 1e-6:
         offset = cts / (high - low)
     else:
-        offset = (cts - slope / 2.0 * (high ** 2 - low ** 2)) / (high - low)
+        offset = (cts - slope / 2.0 * (high**2 - low**2)) / (high - low)
     return offset
 
 
@@ -124,7 +124,7 @@ def _slope_integral(x, m, b):
       The indefinite integral of y = mx + b, with an x value substituted in.
       (m x^2 / 2 + b x)
     """
-    return m * x ** 2 / 2 + b * x
+    return m * x**2 / 2 + b * x
 
 
 @nb.vectorize([nb.f8(nb.f8, nb.f8, nb.f8, nb.f8)], nopython=True)

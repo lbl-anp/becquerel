@@ -1,6 +1,5 @@
 """Class to describe a generic calibration function."""
 
-from abc import abstractmethod
 import ast
 import copy
 import asteval
@@ -222,7 +221,8 @@ def _validate_expression(
                 ind_var_appears = True
     if not ind_var_appears:
         raise CalibrationError(
-            f'Independent variable "{ind_var}" must appear in the expression:\n{expression}'
+            f'Independent variable "{ind_var}" must appear in the expression:\n'
+            f"{expression}"
         )
 
     # make sure each parameter appears at least once
@@ -235,16 +235,19 @@ def _validate_expression(
     if len(param_indices) > 0:
         if param_indices.min() != 0:
             raise CalibrationError(
-                f"Minimum parameter index in expression is not 0:\n{expression}\n{param_indices}"
+                "Minimum parameter index in expression is not 0:\n"
+                f"{expression}\n{param_indices}"
             )
         if not np.allclose(np.diff(param_indices), 1):
             raise CalibrationError(
-                f"Parameter indices in expression are not contiguous:\n{expression}\n{param_indices}"
+                "Parameter indices in expression are not contiguous:\n"
+                f"{expression}\n{param_indices}"
             )
     if params is not None:
         if len(param_indices) != len(params):
             raise CalibrationError(
-                f"Not enough parameter indices in expression:\n{expression}\n{param_indices}"
+                "Not enough parameter indices in expression:\n"
+                f"{expression}\n{param_indices}"
             )
 
     # make sure the expression can be evaluated
@@ -252,7 +255,7 @@ def _validate_expression(
         x_arr = np.linspace(domain[0], domain[1], num=n_eval)
         for x_val in x_arr:
             try:
-                y = _eval_expression(
+                _eval_expression(
                     expression,
                     params,
                     x_val,
@@ -263,10 +266,11 @@ def _validate_expression(
                 )
             except CalibrationError:
                 raise CalibrationError(
-                    f"Cannot evaluate expression for float {ind_var} = {x_val}:\n{expression}\n{safe_eval.symtable['x']}"
+                    f"Cannot evaluate expression for float {ind_var} = {x_val}:\n"
+                    f"{expression}\n{safe_eval.symtable['x']}"
                 )
         try:
-            y = _eval_expression(
+            _eval_expression(
                 expression,
                 params,
                 x_arr,
@@ -277,7 +281,8 @@ def _validate_expression(
             )
         except CalibrationError:
             raise CalibrationError(
-                f"Cannot evaluate expression for array {ind_var} = {x_arr}:\n{expression}\n{safe_eval.symtable['x']}"
+                f"Cannot evaluate expression for array {ind_var} = {x_arr}:\n"
+                f"{expression}\n{safe_eval.symtable['x']}"
             )
 
     return expression.strip()
@@ -348,7 +353,8 @@ def _fit_expression(
         params0 = np.asarray(params0).flatten()
     if len(params0) != n_params:
         raise CalibrationError(
-            f"Starting parameters have length {len(params0)}, but expression requires {n_params} parameters"
+            f"Starting parameters have length {len(params0)}, but expression "
+            f"requires {n_params} parameters"
         )
     expression = _validate_expression(
         expression, params=params0, aux_params=aux_params, domain=domain, rng=rng
@@ -357,7 +363,8 @@ def _fit_expression(
     # check that we have enough points
     if len(points_x) < n_params:
         raise CalibrationError(
-            f"Expression has {n_params} free parameters but there are only {len(points_x)} points to fit"
+            f"Expression has {n_params} free parameters but there are only "
+            f"{len(points_x)} points to fit"
         )
 
     # skip fitting if there are zero parameters to fit
@@ -433,7 +440,8 @@ def _check_points(
         raise CalibrationError(f"Calibration y points must be 1-D: {points_y}")
     if len(points_x) != len(points_y):
         raise CalibrationError(
-            f"Number of x and y calibration points must match: {len(points_x)}, {len(points_y)}"
+            f"Number of x and y calibration points must match: "
+            f"{len(points_x)}, {len(points_y)}"
         )
     # handle the weights
     if weights is None:
@@ -1136,7 +1144,7 @@ class Calibration:
         aux_params = np.array([points_x, points_y])
         expr = ""
         expr += (
-            f"scipy.interpolate.interp1d(a[0, :], a[1, :], fill_value='extrapolate')(x)"
+            "scipy.interpolate.interp1d(a[0, :], a[1, :], fill_value='extrapolate')(x)"
         )
         return cls(expr, [], aux_params=aux_params, domain=domain, rng=rng, **attrs)
 

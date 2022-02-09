@@ -659,7 +659,7 @@ def test_add_uncs(type1, type2):
     with pytest.warns(bq.SpectrumWarning):
         tot = spec1 + spec2
 
-    uncs = np.sqrt(spec1.counts_uncs ** 2 + spec2.counts_uncs ** 2)
+    uncs = np.sqrt(spec1.counts_uncs**2 + spec2.counts_uncs**2)
     assert np.allclose(tot.counts_uncs, uncs)
 
 
@@ -966,7 +966,7 @@ def test_no_downsample(cal_spec):
 def test_zero_downsample(cal_spec):
     """Test that downsample(very large number) gives 0"""
 
-    spec2 = cal_spec.downsample(10 ** 10)
+    spec2 = cal_spec.downsample(10**10)
     s2 = np.sum(spec2.counts_vals)
     assert s2 == 0
 
