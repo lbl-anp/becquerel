@@ -529,7 +529,13 @@ def test_gauss_dbl_exp(method):
     fitter.params["rtail_cutoff"].min = 0.99
     fitter.params["rtail_cutoff"].value = 1.0
     fitter.params["rtail_cutoff"].max = 1.01
-    fitter.fit(method, guess=params)
+
+    #
+    limits = {
+        "ltail_cutoff": (0.99, 1.01),
+        "rtail_cutoff": (0.99, 1.01),
+    }
+    fitter.fit(method, guess=params, limits=limits)
 
     compare_params(
         true_params=params,
@@ -537,7 +543,3 @@ def test_gauss_dbl_exp(method):
         rtol=0.05,
         fitter=fitter,
     )
-    import matplotlib.pyplot as plt
-
-    fitter.custom_plot()
-    plt.show()
