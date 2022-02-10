@@ -1,5 +1,4 @@
 -r requirements.txt
-black>=22.1.0
 bump2version
 coverage
 flake8>=4.0.1
