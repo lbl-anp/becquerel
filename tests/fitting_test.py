@@ -523,6 +523,7 @@ def test_gauss_dbl_exp(method):
     data = sim_data(y_func=model.eval, x_min=0, x_max=200, **params)
 
     fitter = bq.Fitter(model, **data)
+    # "fix" params for lmfit
     fitter.params["ltail_cutoff"].min = 0.99
     fitter.params["ltail_cutoff"].value = 1.0
     fitter.params["ltail_cutoff"].max = 1.01
@@ -530,7 +531,7 @@ def test_gauss_dbl_exp(method):
     fitter.params["rtail_cutoff"].value = 1.0
     fitter.params["rtail_cutoff"].max = 1.01
 
-    #
+    # "fix" params for minuit
     limits = {
         "ltail_cutoff": (0.99, 1.01),
         "rtail_cutoff": (0.99, 1.01),
