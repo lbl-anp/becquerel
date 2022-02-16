@@ -1143,7 +1143,7 @@ class Spectrum:
           cal: a Calibration object
         """
 
-        try:
+        if hasattr(cal, "ch2kev") and callable(getattr(cal, "ch2kev")):
             self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
             warnings.warn(
                 "The use of bq.EnergyCalBase classes is deprecated "
@@ -1151,7 +1151,7 @@ class Spectrum:
                 "use bq.Calibration instead",
                 DeprecationWarning,
             )
-        except AttributeError:
+        else:
             self.bin_edges_kev = cal(self.bin_edges_raw)
         self.energy_cal = cal
 
