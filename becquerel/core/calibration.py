@@ -695,6 +695,15 @@ class Calibration:
         _validate_domain_range((0, 1), rng)
         self._range = tuple(rng)
 
+    # rng as an alias for range
+    @property
+    def rng(self):
+        return self.range
+
+    @rng.setter
+    def rng(self, rng):
+        self.range = rng
+
     @property
     def attrs(self):
         return self._attrs

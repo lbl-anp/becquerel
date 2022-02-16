@@ -567,12 +567,13 @@ class Spectrum:
             self._bin_edges_raw = np.array(bin_edges_raw, dtype=float)
 
     @classmethod
-    def from_file(cls, infilename, verbose=False):
+    def from_file(cls, infilename, verbose=False, cal_kwargs={}):
         """Construct a Spectrum object from a filename.
 
         Args:
           infilename: a string representing the path to a parsable file
           verbose: (optional) whether to print debugging information.
+          cal_kwargs: (optional) kwargs to override the file Calibration.
 
         Returns:
           A Spectrum object
@@ -597,6 +598,9 @@ class Spectrum:
         spec = cls(**data)
         spec.attrs["infilename"] = infilename
         if cal is not None:
+            # override Calibration settings
+            for key in cal_kwargs:
+                setattr(cal, key, cal_kwargs[key])
             spec.apply_calibration(cal)
         return spec
 
