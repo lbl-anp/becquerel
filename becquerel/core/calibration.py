@@ -2,6 +2,7 @@
 
 import ast
 import copy
+import warnings
 import asteval
 import black
 import blib2to3
@@ -12,7 +13,7 @@ import matplotlib.pyplot as plt
 from .. import io
 
 DEFAULT_DOMAIN = (0, 1e5)
-DEFAULT_RANGE = (0, 1e5)
+DEFAULT_RANGE = (-1e2, 1e5)
 
 safe_eval = asteval.Interpreter(use_numpy=False)
 safe_eval.symtable["np"] = np
@@ -22,6 +23,12 @@ safe_eval.symtable["scipy"] = scipy
 
 class CalibrationError(Exception):
     """Base class for calibration errors."""
+
+    pass
+
+
+class CalibrationWarning(UserWarning):
+    """Warnings displayed by the Calibration class."""
 
     pass
 
@@ -128,6 +135,20 @@ def _eval_expression(
     if not np.all(np.isreal(y)):
         raise CalibrationError(f"Function evaluation resulted in complex values: {y}")
     # clip values of y to the range
+    clip_low = np.any(y < rng[0])
+    clip_high = np.any(y > rng[1])
+    print(x, y, rng, clip_low, clip_high)
+    if clip_low or clip_high:
+        msg = "Function values have been clipped because they are "
+        msg_low = f"less than the lower range ({rng[0]})"
+        msg_high = f"greater than the upper range ({rng[1]})"
+        if clip_low and clip_high:
+            msg = msg + msg_low + " and others are " + msg_high
+        elif clip_low:
+            msg = msg + msg_low
+        else:
+            msg = msg + msg_high
+        warnings.warn(msg, CalibrationWarning)
     y = np.clip(y, rng[0], rng[1])
     return y
 

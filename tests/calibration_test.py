@@ -11,6 +11,7 @@ from becquerel.core.calibration import (
     _validate_expression,
     _fit_expression,
     CalibrationError,
+    CalibrationWarning,
     Calibration,
 )
 import pytest
@@ -74,6 +75,15 @@ def test_eval_expression():
     # result is a complex number
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * x", [1j, 5.0], 2.0)
+    # warn when expression evaluates below the range
+    with pytest.warns(CalibrationWarning):
+        _eval_expression("p[0] + p[1] * x", [-10.0, 5.0], 0.0, rng=[0, 3])
+    # warn when expression evaluates above the range
+    with pytest.warns(CalibrationWarning):
+        _eval_expression("p[0] + p[1] * x", [0.0, 5.0], 2.0, rng=[0, 3])
+    # warn when expression evaluates both below and above the range
+    with pytest.warns(CalibrationWarning):
+        _eval_expression("p[0] + p[1] * x", [-10.0, 5.0], [0.0, 2.0], rng=[0, 3])
 
 
 def test_expression_param_indices():
