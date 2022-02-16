@@ -137,7 +137,6 @@ def _eval_expression(
     # clip values of y to the range
     clip_low = np.any(y < rng[0])
     clip_high = np.any(y > rng[1])
-    print(x, y, rng, clip_low, clip_high)
     if clip_low or clip_high:
         msg = "Function values have been clipped because they are "
         msg_low = f"less than the lower range ({rng[0]})"
