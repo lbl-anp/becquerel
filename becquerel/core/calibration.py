@@ -147,6 +147,11 @@ def _eval_expression(
             msg = msg + msg_low
         else:
             msg = msg + msg_high
+        msg += (
+            '. This clipping may result in "ValueError: Bin edge energies '
+            'must be strictly increasing" when the Calibration is used in '
+            "Spectrum.apply_calibration."
+        )
         warnings.warn(msg, CalibrationWarning)
     y = np.clip(y, rng[0], rng[1])
     return y
