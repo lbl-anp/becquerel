@@ -2,6 +2,7 @@
 
 import glob
 import os
+import numpy as np
 import pytest
 import matplotlib.pyplot as plt
 import becquerel as bq
@@ -33,6 +34,15 @@ class TestParsers:
             print(filename)
             data, cal = read_fn(filename)
             print(data, cal)
+
+            if cal is not None:
+                # repeat, but override the calibration
+                domain = [-1e7, 1e7]
+                rng = [-1e7, 1e7]
+                data, cal = read_fn(filename, cal_kwargs={"domain": domain, "rng": rng})
+                print(data, cal)
+                assert np.allclose(cal.domain, domain)
+                assert np.allclose(cal.rng, rng)
 
     def test_spe(self):
         """Test parsers.spe.read."""
