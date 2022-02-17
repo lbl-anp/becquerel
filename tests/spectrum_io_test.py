@@ -101,3 +101,25 @@ def test_from_file_cal_kwargs():
     assert np.allclose(spec.energy_cal.domain, domain)
     assert np.allclose(spec.energy_cal.rng, rng)
     assert np.allclose(spec.energy_cal.params, params)
+
+
+@pytest.mark.parametrize("extension", SAMPLES.keys())
+def test_spectrum_from_file_cal_kwargs(extension):
+    """Test Spectrum.from_file with calibration overrides."""
+    filenames = SAMPLES[extension]
+    assert len(filenames) >= 1
+    for filename in filenames:
+        domain = [-1e7, 1e7]
+        rng = [-1e7, 1e7]
+        # load without the calibration override
+        spec = bq.Spectrum.from_file(filename)
+        if spec.energy_cal is None:
+            continue
+        assert not np.allclose(spec.energy_cal.domain, domain)
+        assert not np.allclose(spec.energy_cal.rng, rng)
+        # load with the calibration override
+        spec = bq.Spectrum.from_file(
+            filename, cal_kwargs={"domain": domain, "rng": rng}
+        )
+        assert np.allclose(spec.energy_cal.domain, domain)
+        assert np.allclose(spec.energy_cal.rng, rng)

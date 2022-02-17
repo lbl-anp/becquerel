@@ -584,13 +584,29 @@ class Spectrum:
         # read the data using one of the low-level parsers
         _, ext = os.path.splitext(infilename)
         if io.h5.is_h5_filename(infilename):
-            data, cal = parsers.h5.read(infilename, verbose=verbose)
+            data, cal = parsers.h5.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         elif ext.lower() == ".cnf":
-            data, cal = parsers.cnf.read(infilename, verbose=verbose)
+            data, cal = parsers.cnf.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         elif ext.lower() == ".spc":
-            data, cal = parsers.spc.read(infilename, verbose=verbose)
+            data, cal = parsers.spc.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         elif ext.lower() == ".spe":
-            data, cal = parsers.spe.read(infilename, verbose=verbose)
+            data, cal = parsers.spe.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         else:
             raise NotImplementedError(f"File type {ext} can not be read")
 
@@ -598,9 +614,6 @@ class Spectrum:
         spec = cls(**data)
         spec.attrs["infilename"] = infilename
         if cal is not None:
-            # override Calibration settings
-            for key in cal_kwargs:
-                setattr(cal, key, cal_kwargs[key])
             spec.apply_calibration(cal)
         return spec
 
