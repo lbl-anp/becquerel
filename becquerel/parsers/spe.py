@@ -5,7 +5,7 @@ import warnings
 import dateutil.parser
 import numpy as np
 from ..core import calibration
-from .parsers import BecquerelParserError, BecquerelParserWarning, override_calibration
+from .parsers import BecquerelParserError, BecquerelParserWarning
 
 
 def read(filename, verbose=False, cal_kwargs={}):
@@ -131,7 +131,6 @@ def read(filename, verbose=False, cal_kwargs={}):
     # create an energy calibration object
     cal = None
     if len(cal_coeff) > 0 and not np.allclose(cal_coeff, 0):
-        cal = calibration.Calibration.from_polynomial(cal_coeff)
-        cal = override_calibration(cal, **cal_kwargs)
+        cal = calibration.Calibration.from_polynomial(cal_coeff, **cal_kwargs)
 
     return data, cal

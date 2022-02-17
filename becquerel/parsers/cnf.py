@@ -14,7 +14,7 @@ import os
 import struct
 import numpy as np
 from ..core import calibration
-from .parsers import BecquerelParserError, override_calibration
+from .parsers import BecquerelParserError
 
 
 def _from_little_endian(data, index, n_bytes):
@@ -300,7 +300,6 @@ def read(filename, verbose=False, cal_kwargs={}):
             data[key] = data[key].strip()
 
     # create an energy calibration object
-    cal = calibration.Calibration.from_polynomial(cal_coeff)
-    cal = override_calibration(cal, **cal_kwargs)
+    cal = calibration.Calibration.from_polynomial(cal_coeff, **cal_kwargs)
 
     return data, cal
