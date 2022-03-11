@@ -590,6 +590,8 @@ class Spectrum:
             data, cal = parsers.spc.read(infilename, verbose=verbose)
         elif ext.lower() == ".spe":
             data, cal = parsers.spe.read(infilename, verbose=verbose)
+        elif ext.lower() == ".iec":
+            data, cal = parsers.iec1455.read(infilename, verbose=verbose)
         else:
             raise NotImplementedError(f"File type {ext} can not be read")
 
