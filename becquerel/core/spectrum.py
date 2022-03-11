@@ -636,6 +636,11 @@ class Spectrum:
             if val is not None:
                 iso8601 = f"{val:%Y-%m-%dT%H:%M:%S.%f%z}"
                 attrs.update({key: iso8601})
+        for key in ["sample_collection_time"]:
+            if key in attrs:
+                val = attrs[key]
+                iso8601 = f"{val:%Y-%m-%dT%H:%M:%S.%f%z}"
+                attrs.update({key: iso8601})
         for key in ["livetime", "realtime"]:
             val = getattr(self, key)
             if val is not None:
