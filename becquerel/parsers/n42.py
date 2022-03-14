@@ -74,4 +74,15 @@ class N42File:
             if _strip_ns(child.tag) == "EnergyCalibration":
                 print(f"ENERGY CAL: {child.text}")
                 self.info[_strip_ns(child.tag)] = child.text
+            if _strip_ns(child.tag) == "RadMeasurement":
+                for gchild in child.getchildren():
+                    print(f"{gchild.tag=}")
+                    print(f"{gchild.text=}")
+                    # Get an attribute
+                    if len(gchild.items()) > 0:
+                        print(gchild.items())
+                    if len(gchild.getchildren()) > 0:
+                        for ggchild in gchild.getchildren():
+                            print(f"{ggchild.tag=}")
+                            print(f"{ggchild.text=}")
         print(self.info)
