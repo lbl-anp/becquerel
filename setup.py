@@ -54,7 +54,7 @@ setup(
     classifiers=METADATA.__classifiers__,
     platforms="any",
     packages=find_packages(),
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=REQUIREMENTS,
     setup_requires=["pytest-runner"],
     license=METADATA.__license__,
