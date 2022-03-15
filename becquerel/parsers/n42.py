@@ -26,6 +26,67 @@ def _strip_ns(item: str) -> str:
     return item.split(_NAMESPACE)[-1]
 
 
+def make_element_dict(element: etree.Element, dic: dict = {}) -> dict:
+    """Recurse down element's children and build a nested dictionary containing
+    items (properties), children (subelements) and text (value).
+
+    Parameters
+    ----------
+    element : etree.Element
+        lxml element to read
+    dic : dict, optional
+        Dictionary to populate (will be returned), by default {}
+
+    Returns
+    -------
+    dictionary
+        _description_
+
+    Raises
+    ------
+    NotImplementedError
+        If children tags or item names are not unique (i.e. multiple children
+        of the same type.) This can be implemented at a later time.
+    """
+    # Value (text)
+    dic["value"] = "" if element.text.strip() == "" else element.text
+    # Attributes (items)
+    for k, v in element.items():
+        dic[k] = v
+    # Children (subitems)
+    for subelement in element.getchildren():
+        if subelement.tag in dic:
+            raise NotImplementedError(
+                f"Multiple subelements/items with same tag: {subelement.tag}"
+            )
+        make_element_dict(
+            subelement, dic.setdefault(etree.QName(subelement).localname, {})
+        )
+    return dic
+
+
+def _find_all(val: str, element: etree.Element) -> list:
+    """Find all element tags matching `val` and build a list of dicts from
+    `make_element_dict`.
+
+    Parameters
+    ----------
+    val : str
+        Search term
+    element : etree.Element
+        lxml element to search within.
+
+    Returns
+    -------
+    list
+        Iterable of element dictionaries from `make_element_dict`.
+    """
+    results = []
+    for e in element.findall(val, namespaces=element.nsmap):
+        results.append(make_element_dict(e))
+    return results
+
+
 @dataclass
 class N42Spectrum:
     counts: np.ndarray
@@ -39,26 +100,44 @@ class N42File:
         _ext = self.path.suffix.lower()
         if _ext not in (".n42", ".xml"):
             raise BecquerelParserError(f"File extension is incorrect: {_ext}")
-        self._parse()
+        # Open
+        self.tree = etree.parse(str(self.path))
+        self.root = self.tree.getroot()
+        # Validate
+        try:
+            _SCHEMA.validate(self.tree)
+        except Exception:
+            raise BecquerelParserError("TODO")
+        # N42 requires that this be the top level key
+        if self.root.tag != _ns("RadInstrumentData"):
+            raise BecquerelParserError(f"Invalid N42 root tag: {self.root.tag}")
+
+    def find_all(self, val: str, element: etree.Element = None) -> list:
+        """Find all element tags matching `val` and build a list of dicts from
+        `make_element_dict`.
+
+        Parameters
+        ----------
+        val : str
+            Search term
+        element : etree.Element, optional
+            lxml element to search within, by default None (uses the root element)
+
+        Returns
+        -------
+        list
+            Iterable of element dictionaries from `make_element_dict`.
+        """
+        element = self.root if element is None else element
+        return _find_all(val, element)
 
     def get_compression_code(self) -> str:
         pass
 
     def _parse(self) -> None:
-        tree = etree.parse(str(self.path))
-        try:
-            _SCHEMA.validate(tree)
-        except Exception:
-            raise BecquerelParserError("TODO")
-
-        # N42 requires that this be the top level key
-        root = tree.getroot()
-        if root.tag != _ns("RadInstrumentData"):
-            raise BecquerelParserError(f"Invalid N42 root tag: {root.tag}")
-
         # Crawl through all of the possible levels and extract
         self.info = {}
-        children = root.getchildren()
+        children = self.root.getchildren()
         for child in children:
             if _strip_ns(child.tag) == "RadInstrumentInformation":
                 print(f"RadInstrumentInformation: {child.text}")
