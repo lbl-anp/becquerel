@@ -26,7 +26,7 @@ def _strip_ns(item: str) -> str:
     return item.split(_NAMESPACE)[-1]
 
 
-def make_element_dict(element: etree.Element, dic: dict = {}) -> dict:
+def make_element_dict(element: etree.Element, dic: dict = None) -> dict:
     """Recurse down element's children and build a nested dictionary containing
     items (properties), children (subelements) and text (value).
 
@@ -35,12 +35,16 @@ def make_element_dict(element: etree.Element, dic: dict = {}) -> dict:
     element : etree.Element
         lxml element to read
     dic : dict, optional
-        Dictionary to populate (will be returned), by default {}
+        Dictionary to populate (will be returned), by default None (create a new
+        dictionary).
 
     Returns
     -------
     dictionary
-        _description_
+        The contents of the element in the form:
+            item name: item value
+            children tag: children dict (recursion)
+            value: text for this element (between the tags: <tag>VALUE</tag>)
 
     Raises
     ------
@@ -48,6 +52,7 @@ def make_element_dict(element: etree.Element, dic: dict = {}) -> dict:
         If children tags or item names are not unique (i.e. multiple children
         of the same type.) This can be implemented at a later time.
     """
+    dic = {} if dic is None else dic
     # Value (text)
     dic["value"] = "" if element.text.strip() == "" else element.text
     # Attributes (items)
