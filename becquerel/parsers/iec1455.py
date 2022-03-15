@@ -22,7 +22,7 @@ def _read_nonzero_number_pairs(str_array):
                 out += [a, b]
     else:
         warnings.warn(
-            f"Cannot read number pairs from odd-length string array",
+            "Cannot read number pairs from odd-length string array",
             BecquerelParserWarning,
         )
 
@@ -97,7 +97,7 @@ def read(filename, verbose=False):
             # read line and check for prefix
             if line.startswith("A004") is False:
                 warnings.warn(
-                    f"Cannot parse line, ignoring record: " + line,
+                    "Cannot parse line, ignoring record: " + line,
                     BecquerelParserWarning,
                 )
                 continue
@@ -123,7 +123,7 @@ def read(filename, verbose=False):
                     data["digital_offset"] = int(tok[3])
                 else:
                     warnings.warn(
-                        f"Cannot parse record 1, ignoring information: " + line,
+                        "Cannot parse record 1, ignoring information: " + line,
                         BecquerelParserWarning,
                     )
             elif record == 2:
@@ -186,11 +186,17 @@ def read(filename, verbose=False):
         raise BecquerelParserError("Real time not found")
 
     if data["realtime"] <= 0.0:
-        raise BecquerelParserError(f"Real time not parsed correctly: {realtime}")
+        raise BecquerelParserError(
+            f"Real time not parsed correctly: {data['realtime']}"
+        )
     if data["livetime"] <= 0.0:
-        raise BecquerelParserError(f"Live time not parsed correctly: {livetime}")
+        raise BecquerelParserError(
+            f"Live time not parsed correctly: {data['livetime']}"
+        )
     if data["livetime"] > data["realtime"]:
-        raise BecquerelParserError(f"Livetime > realtime: {livetime} > {realtime}")
+        raise BecquerelParserError(
+            f"Livetime > realtime: {data['livetime']} > {data['realtime']}"
+        )
 
     if len(counts) < num_channels:
         raise BecquerelParserError(
