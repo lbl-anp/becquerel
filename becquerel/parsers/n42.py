@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import numpy as np
 from lxml import etree
 
-# from ..core import calibration
+from ..core.calibration import Calibration
 from .parsers import BecquerelParserError
 
 
@@ -54,7 +54,8 @@ def make_element_dict(element: etree.Element, dic: dict = None) -> dict:
     """
     dic = {} if dic is None else dic
     # Value (text)
-    dic["value"] = "" if element.text.strip() == "" else element.text
+    if element.text.strip() != "":
+        dic["value"] = element.text
     # Attributes (items)
     for k, v in element.items():
         dic[k] = v
@@ -71,7 +72,7 @@ def make_element_dict(element: etree.Element, dic: dict = None) -> dict:
 
 
 def _find_all(val: str, element: etree.Element) -> list:
-    """Find all element tags matching `val` and build a list of dicts from
+    """Find all element tags matching `val` and build a nested dict from
     `make_element_dict`.
 
     Parameters
@@ -83,8 +84,11 @@ def _find_all(val: str, element: etree.Element) -> list:
 
     Returns
     -------
-    list
-        Iterable of element dictionaries from `make_element_dict`.
+    dict
+        Dictionary of nested XML elements and attributes. The top level will
+        contain the key 'id', which holds the name of the top level element or
+        attribute requested. The other keys are element or attribute names. Values
+        are stored as dictionaries of the form {'value': str}.
     """
     results = []
     for e in element.findall(val, namespaces=element.nsmap):
@@ -92,11 +96,54 @@ def _find_all(val: str, element: etree.Element) -> list:
     return results
 
 
+def _parse_iso8601_duration(text: str) -> float:
+    """Parse ISO 8601 time duration into seconds.
+
+    Only covers case where text is "PTXS", where X is the number of seconds.
+    https://en.wikipedia.org/wiki/ISO_8601#Durations
+
+    """
+    if not text.startswith("PT") or not text.endswith("S"):
+        raise BecquerelParserError("Invalid ISO 8601 duration provided")
+    return float(text[2:-1])
+
+
+def _parse_channel_data(text: str, compression: str = "None") -> np.ndarray:
+    """Parse N42 ChannelData text into a numpy array of integer channel data.
+
+    Arguments
+    ---------
+    text : str
+        Raw ChannelData string read from an N42 file
+    compression : str
+        compression: 'None' or 'CountedZeroes'.
+    """
+    text = text.strip().replace("\n", " ")
+    tokens = text.split()
+    data = [int(token) for token in tokens]
+    if compression == "CountedZeroes":
+        new_data = []
+        k = 0
+        while k < len(data):
+            if data[k] != 0:
+                new_data.append(data[k])
+                k += 1
+            else:
+                new_data.extend([0] * data[k + 1])
+                k += 2
+        data = new_data
+    return np.array(data, dtype=int)
+
+
 @dataclass
-class N42Spectrum:
-    counts: np.ndarray
+class N42RadMeasurement:
+    startime: str
     realtime: float
     livetime: float
+    counts: np.ndarray
+    # Corresponding name in the XML file, e.g. "EnergyCalibration-1"
+    # TODO: keep the becquerel Calibration?
+    calibration: str
 
 
 class N42File:
@@ -116,6 +163,8 @@ class N42File:
         # N42 requires that this be the top level key
         if self.root.tag != _ns("RadInstrumentData"):
             raise BecquerelParserError(f"Invalid N42 root tag: {self.root.tag}")
+        # Read
+        self._parse()
 
     def find_all(self, val: str, element: etree.Element = None) -> list:
         """Find all element tags matching `val` and build a list of dicts from
@@ -140,33 +189,36 @@ class N42File:
         pass
 
     def _parse(self) -> None:
-        # Crawl through all of the possible levels and extract
-        self.info = {}
-        children = self.root.getchildren()
-        for child in children:
-            if _strip_ns(child.tag) == "RadInstrumentInformation":
-                print(f"RadInstrumentInformation: {child.text}")
-                if len(child.getchildren()) > 0:
-                    gchildren = child.getchildren()
-                    for gchild in gchildren:
-                        self.info[_strip_ns(gchild.tag)] = gchild.text
-                else:
-                    self.info[_strip_ns(child.tag)] = child.text
-            if _strip_ns(child.tag) == "RadDetectorInformation":
-                print(f"RadDetectorInformation: {child.text}")
-                self.info[_strip_ns(child.tag)] = child.text
-            if _strip_ns(child.tag) == "EnergyCalibration":
-                print(f"ENERGY CAL: {child.text}")
-                self.info[_strip_ns(child.tag)] = child.text
-            if _strip_ns(child.tag) == "RadMeasurement":
-                for gchild in child.getchildren():
-                    print(f"{gchild.tag=}")
-                    print(f"{gchild.text=}")
-                    # Get an attribute
-                    if len(gchild.items()) > 0:
-                        print(gchild.items())
-                    if len(gchild.getchildren()) > 0:
-                        for ggchild in gchild.getchildren():
-                            print(f"{ggchild.tag=}")
-                            print(f"{ggchild.text=}")
-        print(self.info)
+        # Populate basic top level properties
+        self.rad_inst_info = self.find_all("RadInstrumentInformation")
+        self.rad_det_info = self.find_all("RadDetectorInformation")
+
+        # Grab energy calibrations
+        calibrations = self.find_all("EnergyCalibration")
+        self.calibrations = {}
+        for cal in calibrations:
+            txt = cal["CoefficientValues"]["value"]
+            coefs = np.array([float(x) for x in txt.split(" ")], dtype=float)
+            self.calibrations[cal["id"]] = Calibration(
+                "p[0] + p[1] * x + p[2] * x * x", coefs
+            )
+        print(self.calibrations)
+
+        # Grab measurements
+        measurements = self.find_all("RadMeasurement")
+        self.measurements = {}
+        for meas in measurements:
+            starttime = meas["StartDateTime"]["value"]
+            realtime = _parse_iso8601_duration(meas["RealTimeDuration"]["value"])
+            livetime = _parse_iso8601_duration(
+                meas["Spectrum"]["LiveTimeDuration"]["value"]
+            )
+            calib = meas["Spectrum"]["energyCalibrationReference"]
+            compression = meas["Spectrum"]["ChannelData"]["compressionCode"]
+            # TODO: can you have multiple spectra per measurement?
+            counts = _parse_channel_data(
+                meas["Spectrum"]["ChannelData"]["value"], compression
+            )
+            n42_meas = N42RadMeasurement(starttime, realtime, livetime, counts, calib)
+            self.measurements[meas["id"]] = n42_meas
+        print(self.measurements)
