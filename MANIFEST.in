@@ -1,5 +1,2 @@
 include MANIFEST.in
-include *.txt
-include *.md
-include *.cfg
-include n42.xsd
+include becquerel/parsers/n42.xsd

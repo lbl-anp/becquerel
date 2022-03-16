@@ -59,4 +59,5 @@ setup(
     setup_requires=["pytest-runner"],
     license=METADATA.__license__,
     tests_require=REQUIREMENTS_DEV,
+    include_package_data=True,
 )
