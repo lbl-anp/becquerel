@@ -185,9 +185,6 @@ class N42File:
         element = self.root if element is None else element
         return _find_all(val, element)
 
-    def get_compression_code(self) -> str:
-        pass
-
     def _parse(self) -> None:
         # Populate basic top level properties
         self.rad_inst_info = self.find_all("RadInstrumentInformation")
