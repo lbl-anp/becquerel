@@ -196,8 +196,9 @@ class N42File:
         for cal in calibrations:
             txt = cal["CoefficientValues"]["value"]
             coefs = np.array([float(x) for x in txt.split(" ")], dtype=float)
+            # TODO: are these always 3 params?
             self.calibrations[cal["id"]] = Calibration(
-                "p[0] + p[1] * x + p[2] * x * x", coefs
+                "p[0] + p[1] * x + p[2] * x**2", coefs
             )
         print(self.calibrations)
 
