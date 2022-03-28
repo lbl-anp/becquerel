@@ -1092,7 +1092,10 @@ class Fitter:
         if sort_by_model:
             df.set_index(
                 pd.MultiIndex.from_tuples(
-                    [tuple(p.split("_")) for p in df.index], names=["model", "param"]
+                    # Only split on the first underscore, in case the param name
+                    # has an underscore in it
+                    [tuple(p.split("_", maxsplit=1)) for p in df.index],
+                    names=["model", "param"],
                 ),
                 inplace=True,
             )
