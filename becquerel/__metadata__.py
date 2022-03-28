@@ -6,7 +6,7 @@ __maintainer__ = __author__
 __email__ = "becquerel-dev@lbl.gov"
 __description__ = "Tools for radiation spectral analysis."
 __url__ = "https://github.com/lbl-anp/becquerel"
-__version__ = "0.4.5"
+__version__ = "0.5.0"
 # classifiers from list at https://pypi.org/classifiers/
 __classifiers__ = [
     "Development Status :: 4 - Beta",
@@ -19,6 +19,7 @@ __classifiers__ = [
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
 ]
