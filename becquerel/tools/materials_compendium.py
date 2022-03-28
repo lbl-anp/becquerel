@@ -18,7 +18,7 @@ import os
 import warnings
 import numpy as np
 import pandas as pd
-from .materials_error import MaterialsWarning
+from .materials_error import MaterialsWarning, MaterialsError
 
 FNAME = os.path.join(os.path.split(__file__)[0], "MaterialsCompendium.json")
 
@@ -64,8 +64,19 @@ def fetch_compendium_data():
         print("Pre-March 2022 JSON detected")
     elif isinstance(data, dict):
         print("Post-March 2022 JSON detected")
+        if "siteVersion" not in data.keys() or "data" not in data.keys():
+            raise MaterialsError(
+                "Attempt to read Compendium JSON failed; "
+                "dictionary must have keys 'siteVersion' "
+                "and 'data' but have keys " + str(list(data.keys()))
+            )
         print(f"Compendium data - site version: {data['siteVersion']}")
         data = data["data"]
+    else:
+        raise MaterialsError(
+            "Attempt to read Compendium JSON failed; "
+            "object must be a list or dict but is a " + str(type(data))
+        )
     names = [datum["Name"] for datum in data]
     formulae = [datum["Formula"] if "Formula" in datum else "-" for datum in data]
     densities = [datum["Density"] for datum in data]
