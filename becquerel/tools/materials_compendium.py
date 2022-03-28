@@ -60,6 +60,12 @@ def fetch_compendium_data():
             data = json.load(f)
 
     # extract relevant data
+    if isinstance(data, list):
+        print("Pre-March 2022 JSON detected")
+    elif isinstance(data, dict):
+        print("Post-March 2022 JSON detected")
+        print(f"Compendium data - site version: {data['siteVersion']}")
+        data = data["data"]
     names = [datum["Name"] for datum in data]
     formulae = [datum["Formula"] if "Formula" in datum else "-" for datum in data]
     densities = [datum["Density"] for datum in data]
