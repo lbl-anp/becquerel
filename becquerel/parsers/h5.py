@@ -24,18 +24,15 @@ def read(filename, verbose=False):
     """
     print("Reading HDF5 file " + filename)
 
-
     if not io.h5.is_h5_filename(filename):
         raise BecquerelParserError("File is not an HDF5: " + filename)
 
     # group datasets and attributes into one dictionary
     dsets, attrs, skipped = io.h5.read_h5(filename)
 
-    dummy = 'a'
+    dummy = "a"
 
-
-    data = {**dsets,
-    **attrs}
+    data = {**dsets, **attrs}
 
     # read energy calibration from file
     if "energy_cal" in skipped:
@@ -45,4 +42,4 @@ def read(filename, verbose=False):
     else:
         cal = None
 
-    return data, cal    
+    return data, cal
