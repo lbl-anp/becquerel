@@ -115,7 +115,7 @@ def read(filename, verbose=False):
                     data["segment_number"] = int(tok[3])
                     data["digital_offset"] = int(tok[4])
                 elif (
-                    len(tok) == 4 and line.startswith(" ") is True
+                    len(tok) == 4 and line.startswith(" ")
                 ):  # missing system identification
                     data["sub_system_identification"] = tok[0]
                     data["ADC_number"] = int(tok[1])
