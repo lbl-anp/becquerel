@@ -73,16 +73,16 @@ def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
 
 
 def gauss_dbl_exp(
-    x,
-    amp,
-    mu,
-    sigma,
-    ltail_ratio,
-    ltail_slope,
-    ltail_cutoff,
-    rtail_ratio,
-    rtail_slope,
-    rtail_cutoff,
+    x: np.ndarray,
+    amp: float,
+    mu: float,
+    sigma: float,
+    ltail_ratio: float,
+    ltail_slope: float,
+    ltail_cutoff: float,
+    rtail_ratio: float,
+    rtail_slope: float,
+    rtail_cutoff: float,
 ):
     """A Gaussian with exponential tails added to either side of the peak. This
     is an extension of the Gaussian with a low-side exponential tail described
@@ -91,6 +91,34 @@ def gauss_dbl_exp(
     The function is suitable for spectra with asymmetric peaks, such as those
     from CZT crystals. The exponential tails are characterized by 3 parameters: a
     tail-to-peak amplitude ratio, a slope, and a cutoff parameter.
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        X-data
+    amp : float
+        Amplitude parameter
+    mu: float
+        Mean parameter
+    sigma: float
+        Width parameter
+    ltail_ratio: float
+        Left-side exponential tail amplitude / Amplitude
+    ltail_slope: float
+        Left-side exponential tail slope, affects "steepness" of the tail
+    ltail_cutoff: float
+        Left-side exponential tail cutoff, affects "length" of the tail
+    rtail_ratio: float
+        Right-side exponential tail amplitude / Amplitude
+    rtail_slope: float
+        Right-side exponential tail slope, affects "steepness" of the tail
+    rtail_cutoff: float
+        Right-side exponential tail cutoff, affects "length" of the tail
+
+    Returns
+    -------
+    numpy.ndarray
+        Y-data
     """
     alpha = -1.0 / (2.0 * sigma**2)
     ltail_func = np.zeros(shape=(len(x),))
@@ -364,7 +392,22 @@ class ExpGaussModel(Model):
 
 
 class GaussDblExpModel(Model):
-    """TODO"""
+    """This model is a Gaussian combined with exponential tails on either side
+    of the center of the distribution. Each tail is characterized by 3 parameters:
+    an amplitude ratio, a slope, and a cutoff. This is an extension of the peak
+    shape described by Namboodiri et al here: https://www.osti.gov/biblio/392720
+    to fit CZT energy spectra. In their case, the exponential tail was only on
+    the low side of the peak.
+
+    A distribution with the exponential tail on only one side may be obtained by
+    fixing the undesired side's parameters to 0.
+
+    The tail amplitudes are expressed as ratios with respect to the peak
+    amplitude (tail_amplitude / amplitude).
+
+    The slope parameter impacts how steep the tail is, and the cutoff parameter
+    impacts how far out it goes.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(gauss_dbl_exp, **kwargs)
