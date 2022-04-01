@@ -137,7 +137,7 @@ class TestParseFloatUncertainty:
             nndc._parse_float_uncertainty("7", "@")
 
 
-@pytest.mark.flaky(reruns=3)
+@pytest.mark.flaky(reruns=10, reruns_delay=2)
 class NNDCQueryTests:
     """Tests common to NNDCQuery-derived classes."""
 
@@ -559,7 +559,7 @@ class NNDCQueryTests:
 
 
 @pytest.mark.webtest
-@pytest.mark.flaky(reruns=3)
+@pytest.mark.flaky(reruns=10, reruns_delay=2)
 class TestNuclearWalletCard(NNDCQueryTests):
     """Test NNDC nuclear_wallet_card query."""
 
@@ -703,7 +703,7 @@ class TestNuclearWalletCard(NNDCQueryTests):
 
 
 @pytest.mark.webtest
-@pytest.mark.flaky(reruns=3)
+@pytest.mark.flaky(reruns=10, reruns_delay=2)
 class TestDecayRadiationQuery(NNDCQueryTests):
     """Test NNDC decay_radiation."""
 
