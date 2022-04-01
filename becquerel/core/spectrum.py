@@ -590,6 +590,8 @@ class Spectrum:
             data, cal = parsers.spc.read(infilename, verbose=verbose)
         elif ext.lower() == ".spe":
             data, cal = parsers.spe.read(infilename, verbose=verbose)
+        elif ext.lower() == ".iec":
+            data, cal = parsers.iec1455.read(infilename, verbose=verbose)
         else:
             raise NotImplementedError(f"File type {ext} can not be read")
 
@@ -632,6 +634,11 @@ class Spectrum:
         for key in ["start_time", "stop_time"]:
             val = getattr(self, key)
             if val is not None:
+                iso8601 = f"{val:%Y-%m-%dT%H:%M:%S.%f%z}"
+                attrs.update({key: iso8601})
+        for key in ["sample_collection_time"]:
+            if key in attrs:
+                val = attrs[key]
                 iso8601 = f"{val:%Y-%m-%dT%H:%M:%S.%f%z}"
                 attrs.update({key: iso8601})
         for key in ["livetime", "realtime"]:

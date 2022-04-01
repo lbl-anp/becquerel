@@ -1,5 +1,5 @@
-# Exclude CNF and cnf files
-exclude: '(?:\.cnf|\.CNF)$'
+# Exclude CNF, cnf, and iec files
+exclude: '(?:\.cnf|\.CNF|\.iec)$'
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.4.0
