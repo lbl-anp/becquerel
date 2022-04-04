@@ -2,7 +2,7 @@
 
 import numpy as np
 from becquerel.tools import xcom
-from utils import nndc_is_up
+from utils import xcom_is_up
 import pytest
 
 XCOM_URL_ORIG = xcom._URL
@@ -123,7 +123,7 @@ GE_GRID_ENERGIES_PLUS_3 = [
 
 
 @pytest.mark.webtest
-@pytest.mark.skipif(not nndc_is_up(), reason="NNDC is down.")
+@pytest.mark.skipif(not xcom_is_up(), reason="XCOM is down.")
 class TestFetchXCOMData:
     """Test fetch_xcom_data function."""
 

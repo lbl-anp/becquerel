@@ -12,3 +12,13 @@ def nndc_is_up():
         requests.post("https://www.nndc.bnl.gov/nudat3/indx_sigma.jsp").status_code
         == requests.codes.ok
     )
+
+
+def xcom_is_up():
+    """Check whether the NIST XCOM databases can be reached."""
+    return (
+        requests.post(
+            "https://physics.nist.gov/PhysRefData/Xcom/html/xcom1.html"
+        ).status_code
+        == requests.codes.ok
+    )
