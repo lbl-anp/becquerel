@@ -87,8 +87,11 @@ def test_materials_dummy_csv():
 
 
 @pytest.mark.webtest
-def test_materials_dummy_compendium():
-    """Test fetch_materials with a dummy Compendium JSON file."""
+def test_materials_dummy_compendium_pre2022():
+    """Test fetch_materials with a dummy Compendium JSON file.
+
+    The dummy JSON file uses the format seen prior to March 2022.
+    """
     # point to an generate a dummy JSON file
     fname_orig = materials_compendium.FNAME
     materials_compendium.FNAME = fname_orig[:-5] + "_dummy.json"
@@ -123,6 +126,79 @@ def test_materials_dummy_compendium():
     with pytest.warns(None) as record:
         materials._load_and_compile_materials()
     assert len(record) == 0, "Expected no MaterialsWarnings to be raised"
+    # remove the dummy file and point back to original
+    os.remove(materials_compendium.FNAME)
+    materials_compendium.FNAME = fname_orig
+
+
+@pytest.mark.webtest
+def test_materials_dummy_compendium_2022():
+    """Test fetch_materials with a dummy Compendium JSON file.
+
+    The dummy JSON file uses the format first seen in March 2022.
+    """
+    # point to an generate a dummy JSON file
+    fname_orig = materials_compendium.FNAME
+    materials_compendium.FNAME = fname_orig[:-5] + "_dummy.json"
+    data = {
+        "siteVersion": "0.0.0",
+        "data": [
+            {
+                "Density": 8.4e-5,
+                "Elements": [
+                    {
+                        "AtomFraction_whole": 1.0,
+                        "Element": "H",
+                        "WeightFraction_whole": 1.0,
+                    }
+                ],
+                "Formula": "H2",
+                "Name": "Hydrogen",
+            },
+            {
+                "Density": 1.16e-3,
+                "Elements": [
+                    {
+                        "AtomFraction_whole": 1.0,
+                        "Element": "N",
+                        "WeightFraction_whole": 1.0,
+                    }
+                ],
+                "Formula": "N2",
+                "Name": "Nitrogen",
+            },
+        ],
+    }
+    with open(materials_compendium.FNAME, "w") as f:
+        json.dump(data, f, indent=4)
+    with pytest.warns(None) as record:
+        materials._load_and_compile_materials()
+    assert len(record) == 0, "Expected no MaterialsWarnings to be raised"
+    # remove siteVersion and make sure there is an error raised
+    del data["siteVersion"]
+    with open(materials_compendium.FNAME, "w") as f:
+        json.dump(data, f, indent=4)
+    with pytest.raises(MaterialsError):
+        materials._load_and_compile_materials()
+    # remove the dummy file and point back to original
+    os.remove(materials_compendium.FNAME)
+    materials_compendium.FNAME = fname_orig
+
+
+@pytest.mark.webtest
+def test_materials_dummy_compendium_error():
+    """Test fetch_materials with a dummy Compendium JSON file.
+
+    The dummy JSON file returns something that is not a list or dict.
+    """
+    # point to an generate a dummy JSON file
+    fname_orig = materials_compendium.FNAME
+    materials_compendium.FNAME = fname_orig[:-5] + "_dummy.json"
+    data = None
+    with open(materials_compendium.FNAME, "w") as f:
+        json.dump(data, f, indent=4)
+    with pytest.raises(MaterialsError):
+        materials._load_and_compile_materials()
     # remove the dummy file and point back to original
     os.remove(materials_compendium.FNAME)
     materials_compendium.FNAME = fname_orig
