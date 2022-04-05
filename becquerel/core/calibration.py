@@ -134,26 +134,20 @@ def _eval_expression(
         )
     if not np.all(np.isreal(y)):
         raise CalibrationError(f"Function evaluation resulted in complex values: {y}")
-    # clip values of y to the range
-    clip_low = np.any(y < rng[0])
-    clip_high = np.any(y > rng[1])
-    if clip_low or clip_high:
-        msg = "Function values have been clipped to "
-        msg_low = f"the lower range ({rng[0]})"
-        msg_high = f"the upper range ({rng[1]})"
-        if clip_low and clip_high:
+    # warn if y values outside range
+    y_low = np.any(y < rng[0])
+    y_high = np.any(y > rng[1])
+    if y_low or y_high:
+        msg = "Function values are "
+        msg_low = f"below the lower range ({rng[0]})"
+        msg_high = f"above the upper range ({rng[1]})"
+        if y_low and y_high:
             msg = msg + msg_low + " and " + msg_high
-        elif clip_low:
+        elif y_low:
             msg = msg + msg_low
         else:
             msg = msg + msg_high
-        msg += (
-            '. This clipping may result in "ValueError: Bin edge energies '
-            'must be strictly increasing" when the Calibration is used in '
-            "Spectrum.apply_calibration."
-        )
         warnings.warn(msg, CalibrationWarning)
-    y = np.clip(y, rng[0], rng[1])
     return y
 
 
