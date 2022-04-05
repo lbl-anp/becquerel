@@ -1,11 +1,11 @@
 -r requirements.txt
 bump2version
-coverage
+coverage==6.3.1
 flake8>=4.0.1
 pre-commit
 pytest<7.0.0
 pytest-black
-pytest-cov==6.3.1
+pytest-cov
 pytest-rerunfailures
 pytest-xdist
 requests
