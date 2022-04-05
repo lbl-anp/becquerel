@@ -20,11 +20,15 @@ from h5_tools_test import TEST_OUTPUTS
 
 def test_validate_domain_range():
     """Test calibration._validate_domain_range."""
-    # arguments must be length-two iterables
+    # arguments can be None -- returns defaults
+    _validate_domain_range(None, None)
+    _validate_domain_range(None, [0, 1])
+    _validate_domain_range([0, 1], None)
+    # arguments must be None or length-two iterables
     with pytest.raises(CalibrationError):
-        _validate_domain_range(None, [0, 1])
+        _validate_domain_range(0, [0, 1])
     with pytest.raises(CalibrationError):
-        _validate_domain_range([0, 1], None)
+        _validate_domain_range([0, 1], 0)
     with pytest.raises(CalibrationError):
         _validate_domain_range([0, 1, 2], [0, 1])
     with pytest.raises(CalibrationError):
@@ -69,9 +73,9 @@ def test_eval_expression():
         _eval_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0], 2.0)
     # argument outside of domain
     with pytest.raises(CalibrationError):
-        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], -2.0)
+        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], -2.0, domain=[0, 100])
     with pytest.raises(CalibrationError):
-        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2e6)
+        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2e6, domain=[0, 100])
     # result is a complex number
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * x", [1j, 5.0], 2.0)
@@ -282,21 +286,24 @@ points_x = [100, 500, 1000, 1500, 2500]
 points_y = [18, 42, 63, 82, 117]
 weights = [1.0, 0.3, 0.2, 0.2, 1.0]
 domain = [0, 3500]
+rng = [0, 1000]
 
 
 def make_calibration(name, args):
     """Make an instance of the desired Calibration type."""
     attrs = {"comment": "Test of Calibration class", "name": name}
     if name.startswith("lin"):
-        cal = Calibration.from_linear(*args, **attrs, domain=domain)
+        cal = Calibration.from_linear(*args, **attrs, domain=domain, rng=rng)
     elif name.startswith("poly"):
-        cal = Calibration.from_polynomial(*args, **attrs, domain=domain)
+        cal = Calibration.from_polynomial(*args, **attrs, domain=domain, rng=rng)
     elif name.startswith("sqrt"):
-        cal = Calibration.from_sqrt_polynomial(*args, **attrs, domain=domain)
+        cal = Calibration.from_sqrt_polynomial(*args, **attrs, domain=domain, rng=rng)
     elif name.startswith("interp"):
-        cal = Calibration.from_interpolation(points_x, points_y, **attrs, domain=domain)
+        cal = Calibration.from_interpolation(
+            points_x, points_y, **attrs, domain=domain, rng=rng
+        )
     else:
-        cal = Calibration(*args, **attrs, domain=domain)
+        cal = Calibration(*args, **attrs, domain=domain, rng=rng)
     return cal
 
 
@@ -388,7 +395,15 @@ def test_calibration_fit_from_points(name, args):
     else:
         # test from_points()
         cal2 = Calibration.from_points(args[0], points_x, points_y)
-        cal2 = Calibration.from_points(args[0], points_x, points_y, params0=args[1])
+        cal2 = Calibration.from_points(
+            args[0],
+            points_x,
+            points_y,
+            params0=args[1],
+            domain=cal1.domain,
+            rng=cal1.range,
+        )
+        print(args[1])
         assert cal2 == cal1
 
     # test fit() with weights
@@ -405,7 +420,13 @@ def test_calibration_fit_from_points(name, args):
         # test from_points() with weights
         cal2 = Calibration.from_points(args[0], points_x, points_y, weights)
         cal2 = Calibration.from_points(
-            args[0], points_x, points_y, weights, params0=args[1]
+            args[0],
+            points_x,
+            points_y,
+            weights,
+            params0=args[1],
+            domain=cal1.domain,
+            rng=cal1.range,
         )
         assert cal2 == cal1
 
@@ -476,7 +497,7 @@ def test_calibration_inverse():
 
     # evaluate the inverse for a value outside the range
     with pytest.raises(CalibrationError):
-        cal1.inverse(-10.0)
+        cal1.inverse(-2e6)
     with pytest.raises(CalibrationError):
         cal1.inverse(2e6)
 
