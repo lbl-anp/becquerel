@@ -64,16 +64,18 @@ class IsotopeQuantity:
       ref_atoms: the number of atoms of the isotope, at the reference time.
 
     Methods:
-      atoms_at: number of atoms at given time
-      bq_at: activity in Bq at given time
-      uci_at: activity in uCi at given time
-      g_at: mass in grams at given time
-      atoms_now, bq_now, uci_now, g_now: quantity at current time
+      atoms_at: number of atoms at given time, defaults to system time
+      bq_at: activity in Bq at given time, defaults to system time
+      uci_at: activity in uCi at given time, defaults to system time
+      g_at: mass in grams at given time, defaults to system time
       decays_from: number of decays during a time interval
       bq_from, uci_from: average activity during a time interval
       decays_during: number of decays during a Spectrum measurement
       bq_during, uci_during: average activity during a Spectrum measurement
       time_when: time at which activity or mass equals a given value
+
+    Deprecated:
+      atoms_now, bq_now, uci_now, g_now: quantity at current time (use *_at(None))
     """
 
     def __init__(self, isotope, date=None, stability=1e18, **kwargs):

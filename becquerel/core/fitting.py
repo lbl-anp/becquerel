@@ -830,7 +830,7 @@ class Fitter:
             mask = model <= 0  # This should not be necessary
             diff = model - scipy.special.xlogy(data, model)
             diff[mask] = 1e32
-            if diff.dtype == np.complex:
+            if np.issubdtype(diff.dtype, complex):
                 # data/model are complex
                 diff = diff.ravel().view(float)
             return np.asarray(diff).ravel()  # for compatibility with pandas.Series
