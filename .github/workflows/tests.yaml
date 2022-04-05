@@ -43,4 +43,4 @@ jobs:
       - name: Install dev dependencies
         run: pip install -r requirements-dev.txt
       - name: Test with pytest
-        run: pytest
+        run: pytest -n auto
