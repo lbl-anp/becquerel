@@ -1,6 +1,6 @@
 -r requirements.txt
 bump2version
-coverage==6.3.1
+coverage
 flake8>=4.0.1
 pre-commit
 pytest<7.0.0
