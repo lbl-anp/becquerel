@@ -5,6 +5,6 @@ flake8>=4.0.1
 pre-commit
 pytest<7.0.0
 pytest-black
-pytest-cov<3.0.0
+pytest-cov
 pytest-rerunfailures
 requests
