@@ -3,7 +3,7 @@ bump2version
 coverage
 flake8>=4.0.1
 pre-commit
-pytest<=5.3.5
+pytest
 pytest-black
 pytest-cov
 pytest-rerunfailures
