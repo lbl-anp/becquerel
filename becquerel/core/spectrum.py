@@ -608,7 +608,11 @@ class Spectrum:
                 cal_kwargs=cal_kwargs,
             )
         elif ext.lower() == ".iec":
-            data, cal = parsers.iec1455.read(infilename, verbose=verbose)
+            data, cal = parsers.iec1455.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         else:
             raise NotImplementedError(f"File type {ext} can not be read")
 

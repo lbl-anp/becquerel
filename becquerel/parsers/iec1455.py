@@ -29,7 +29,7 @@ def _read_nonzero_number_pairs(str_array):
     return out
 
 
-def read(filename, verbose=False):
+def read(filename, verbose=False, cal_kwargs={}):
     """Parse the ASCII IEC 1455 file and return a dictionary of data.
 
     IEC 1455 International Standard Format
@@ -67,6 +67,8 @@ def read(filename, verbose=False):
         The filename of the IEC 1455 file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
+    cal_kwargs : dict (optional)
+        Kwargs to override the Calibration parameters read from file.
 
     Returns
     -------
@@ -216,14 +218,16 @@ def read(filename, verbose=False):
     # coefficients or energy-channel pairs
     cal = None
     if len(cal_coeff) > 0 and not np.allclose(cal_coeff, 0):
-        cal = calibration.Calibration.from_polynomial(cal_coeff)
+        cal = calibration.Calibration.from_polynomial(cal_coeff, **cal_kwargs)
     elif len(energy_channel_pairs) >= 4:
         if len(energy_channel_pairs) == 4:  # 2 calibration points
-            cal = calibration.Calibration("p[0] * x", [1])
+            cal = calibration.Calibration("p[0] * x", [1], **cal_kwargs)
         elif len(energy_channel_pairs) == 6:  # 3 calibration points
-            cal = calibration.Calibration("p[0] + p[1] * x", [0, 1])
+            cal = calibration.Calibration("p[0] + p[1] * x", [0, 1], **cal_kwargs)
         else:
-            cal = calibration.Calibration("p[0] + p[1] * x + p[2] * x**2", [0, 1, 0.01])
+            cal = calibration.Calibration(
+                "p[0] + p[1] * x + p[2] * x**2", [0, 1, 0.01], **cal_kwargs
+            )
         cal.fit_points(energy_channel_pairs[1::2], energy_channel_pairs[::2])
 
     return data, cal
