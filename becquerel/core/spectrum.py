@@ -567,7 +567,7 @@ class Spectrum:
             self._bin_edges_raw = np.array(bin_edges_raw, dtype=float)
 
     @classmethod
-    def from_file(cls, infilename, verbose=False, cal_kwargs={}):
+    def from_file(cls, infilename, verbose=False, cal_kwargs=None):
         """Construct a Spectrum object from a filename.
 
         Args:

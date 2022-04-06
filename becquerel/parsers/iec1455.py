@@ -29,7 +29,7 @@ def _read_nonzero_number_pairs(str_array):
     return out
 
 
-def read(filename, verbose=False, cal_kwargs={}):
+def read(filename, verbose=False, cal_kwargs=None):
     """Parse the ASCII IEC 1455 file and return a dictionary of data.
 
     IEC 1455 International Standard Format
@@ -67,7 +67,7 @@ def read(filename, verbose=False, cal_kwargs={}):
         The filename of the IEC 1455 file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
-    cal_kwargs : dict (optional)
+    cal_kwargs : dict or None (optional)
         Kwargs to override the Calibration parameters read from file.
 
     Returns
@@ -216,6 +216,8 @@ def read(filename, verbose=False, cal_kwargs={}):
 
     # create an energy calibration object either using polynomial
     # coefficients or energy-channel pairs
+    if cal_kwargs is None:
+        cal_kwargs = {}
     cal = None
     if len(cal_coeff) > 0 and not np.allclose(cal_coeff, 0):
         cal = calibration.Calibration.from_polynomial(cal_coeff, **cal_kwargs)
