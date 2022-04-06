@@ -403,7 +403,6 @@ def test_calibration_fit_from_points(name, args):
             domain=cal1.domain,
             rng=cal1.range,
         )
-        print(args[1])
         assert cal2 == cal1
 
     # test fit() with weights
