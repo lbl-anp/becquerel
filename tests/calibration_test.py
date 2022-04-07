@@ -484,7 +484,7 @@ def test_calibration_domain_range():
 
     # expand domain and reevaluate
     cal.domain = (cal.domain[0], x1 + 1)
-    y1 = cal(x1)
+    cal(x1)
 
     # evaluate for x inside domain and result outside range (warns)
     cal.domain = [x0 - 1, x0 + 1]
