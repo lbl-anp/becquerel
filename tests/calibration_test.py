@@ -455,6 +455,50 @@ def test_calibration_fit_from_points(name, args):
     cal1.plot()
 
 
+def test_calibration_domain_range():
+    """Test setting the domain and range of a calibration."""
+    cal = Calibration("p[0] + p[1] * x", [5.0, 4.0])
+
+    # set the domain and range to defaults
+    cal.domain = None
+    cal.range = None
+
+    # cannot set domain or range to infinite values
+    with pytest.raises(CalibrationError):
+        cal.domain = [-np.inf, np.inf]
+    with pytest.raises(CalibrationError):
+        cal.range = [-np.inf, np.inf]
+
+    # set the domain and range to specific values
+    x0 = 1
+    cal.domain = [x0 - 1, x0 + 1]
+    cal.range = [-1e6, 1e6]
+
+    # evaluate for x inside domain and result inside range
+    y0 = cal(x0)
+
+    # evaluate for x outside domain (fails)
+    x1 = cal.domain[1] + 3
+    with pytest.raises(CalibrationError):
+        cal(x1)
+
+    # expand domain and reevaluate
+    cal.domain = (cal.domain[0], x1 + 1)
+    y1 = cal(x1)
+
+    # evaluate for x inside domain and result outside range (warns)
+    cal.domain = [x0 - 1, x0 + 1]
+    cal.range = [y0 + 10, y0 + 20]
+    with pytest.warns(CalibrationWarning):
+        y2 = cal(x0)
+    # y value is not clipped to the range so should be the same as before
+    assert np.isclose(y0, y2)
+
+    # expand range and reevaluate
+    cal.range = [y0 - 1, y0 + 1]
+    cal(x0)
+
+
 def test_calibration_inverse():
     """Test calibrations with and without inverse expression."""
     fname = os.path.join(TEST_OUTPUTS, "calibration__inverse.h5")
@@ -494,11 +538,37 @@ def test_calibration_inverse():
     assert np.allclose(x1, (y - 5.0) / 4.0)
     assert np.allclose(x1, x2)
 
-    # evaluate the inverse for a value outside the range
+    # evaluate inverse for values inside the range with result inside domain
+    cal1.domain = [0, 1]
+    cal1.range = [-1e6, 1e6]
+    x0 = 0.5
+    y0 = cal1(x0)
+    cal1.range = [y0 - 1, y0 + 1]
+    cal1.inverse(y0)
+
+    # evaluate inverse for values inside the range with result outside domain
+    cal1.domain = [0, 2]
+    cal1.range = [-1e6, 1e6]
+    x0 = 2.0
+    y0 = cal1(x0)
+    cal1.domain = [0, 1]
+    cal1.range = [y0 - 1, y0 + 1]
     with pytest.raises(CalibrationError):
-        cal1.inverse(-2e6)
+        cal1(x0)
     with pytest.raises(CalibrationError):
-        cal1.inverse(2e6)
+        cal1.inverse(y0)
+
+    # evaluate the inverse for a value outside the range and the domain
+    cal1.domain = [0, 2]
+    cal1.range = [-1e6, 1e6]
+    x0 = 2.0
+    y0 = cal1(x0)
+    cal1.domain = [x0 - 2, x0 - 1]
+    cal1.range = [y0 - 2, y0 - 1]
+    with pytest.raises(CalibrationError):
+        cal1(x0)
+    with pytest.raises(CalibrationError):
+        cal1.inverse(y0)
 
     # test __str__() and __repr__()
     str(cal1)
