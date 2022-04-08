@@ -42,5 +42,8 @@ jobs:
         run: python -c "import becquerel;"
       - name: Install dev dependencies
         run: pip install -r requirements-dev.txt
+      # Run tests on 4 node (processes) in parallel while guaranteeing that the
+      # tests from each file in tests/ runs in sequence on the same node. This
+      # is required for the code coverage function correctly.
       - name: Test with pytest
-        run: pytest
+        run: pytest -n 4 --dist=loadfile
