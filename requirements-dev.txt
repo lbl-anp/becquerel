@@ -7,4 +7,5 @@ pytest
 pytest-black
 pytest-cov
 pytest-rerunfailures
+pytest-xdist
 requests
