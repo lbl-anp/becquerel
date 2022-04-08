@@ -45,5 +45,6 @@ jobs:
       # Run tests on 4 node (processes) in parallel while guaranteeing that the
       # tests from each file in tests/ runs in sequence on the same node. This
       # is required for the code coverage function correctly.
+      # See: https://github.com/lbl-anp/becquerel/issues/336
       - name: Test with pytest
         run: pytest -n 4 --dist=loadfile
