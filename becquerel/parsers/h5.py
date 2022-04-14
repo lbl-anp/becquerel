@@ -2,10 +2,10 @@
 
 from .. import io
 from ..core import calibration
-from .parsers import BecquerelParserError
+from .parsers import BecquerelParserError, override_calibration
 
 
-def read(filename, verbose=False):
+def read(filename, verbose=False, cal_kwargs=None):
     """Parse the becquerel Spectrum HDF5 file and return a dictionary of data.
 
     Parameters
@@ -14,6 +14,8 @@ def read(filename, verbose=False):
         The filename of the HDF5 file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
+    cal_kwargs : dict or None (optional)
+        Kwargs to override the Calibration parameters read from file.
 
     Returns
     -------
@@ -31,10 +33,13 @@ def read(filename, verbose=False):
     data = {**dsets, **attrs}
 
     # read energy calibration from file
+    if cal_kwargs is None:
+        cal_kwargs = {}
     if "energy_cal" in skipped:
         with io.h5.open_h5(filename, "r") as h5:
             group = h5["energy_cal"]
             cal = calibration.Calibration.read(group)
+            cal = override_calibration(cal, **cal_kwargs)
     else:
         cal = None
 

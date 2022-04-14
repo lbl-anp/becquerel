@@ -75,7 +75,7 @@ def _read_energy_calibration(data, index):
     return coeff
 
 
-def read(filename, verbose=False):
+def read(filename, verbose=False, cal_kwargs=None):
     """Parse the CNF file and return a dictionary of data.
 
     Parameters
@@ -84,6 +84,8 @@ def read(filename, verbose=False):
         The filename of the CNF file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
+    cal_kwargs : dict or None (optional)
+        Kwargs to override the Calibration parameters read from file.
 
     Returns
     -------
@@ -298,6 +300,8 @@ def read(filename, verbose=False):
             data[key] = data[key].strip()
 
     # create an energy calibration object
-    cal = calibration.Calibration.from_polynomial(cal_coeff)
+    if cal_kwargs is None:
+        cal_kwargs = {}
+    cal = calibration.Calibration.from_polynomial(cal_coeff, **cal_kwargs)
 
     return data, cal
