@@ -42,5 +42,10 @@ jobs:
         run: python -c "import becquerel;"
       - name: Install dev dependencies
         run: pip install -r requirements-dev.txt
+      # Run tests on 4 nodes (processes) in parallel while guaranteeing that the
+      # tests from each file in tests/ run in sequence on the same node. The
+      # `loadfile` is required for the code coverage to complete in parallel
+      # without failing the pipeline.
+      # See: https://github.com/lbl-anp/becquerel/issues/336
       - name: Test with pytest
-        run: pytest
+        run: pytest -n 4 --dist=loadfile
