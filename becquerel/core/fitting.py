@@ -72,6 +72,68 @@ def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
     return amp * (gamma / 2) * np.exp(arg1) * scipy.special.erfc(arg2)
 
 
+def gauss_dbl_exp(
+    x: np.ndarray,
+    amp: float,
+    mu: float,
+    sigma: float,
+    ltail_ratio: float,
+    ltail_slope: float,
+    ltail_cutoff: float,
+    rtail_ratio: float,
+    rtail_slope: float,
+    rtail_cutoff: float,
+):
+    """A Gaussian with exponential tails added to either side of the peak. This
+    is an extension of the Gaussian with a low-side exponential tail described
+    by Namboodiri et al here: https://www.osti.gov/biblio/392720
+
+    The function is suitable for spectra with asymmetric peaks, such as those
+    from CZT crystals. The exponential tails are characterized by 3 parameters: a
+    tail-to-peak amplitude ratio, a slope, and a cutoff parameter.
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        X-data
+    amp : float
+        Amplitude parameter
+    mu: float
+        Mean parameter
+    sigma: float
+        Width parameter
+    ltail_ratio: float
+        Left-side exponential tail amplitude / Amplitude
+    ltail_slope: float
+        Left-side exponential tail slope, affects "steepness" of the tail
+    ltail_cutoff: float
+        Left-side exponential tail cutoff, affects "length" of the tail
+    rtail_ratio: float
+        Right-side exponential tail amplitude / Amplitude
+    rtail_slope: float
+        Right-side exponential tail slope, affects "steepness" of the tail
+    rtail_cutoff: float
+        Right-side exponential tail cutoff, affects "length" of the tail
+
+    Returns
+    -------
+    numpy.ndarray
+        Y-data
+    """
+    alpha = -1.0 / (2.0 * sigma**2)
+    ltail_func = np.zeros(shape=(len(x),))
+    rtail_func = np.zeros(shape=(len(x),))
+    # l and r tail_func are 0 when we're below/above the Gaussian mean
+    # "heavyside convolution"
+    mask = x < mu
+    ltail_func[mask] = amp * ltail_ratio * np.exp(ltail_slope * ((x[mask] - mu)))
+    ltail_func[mask] *= -np.expm1(ltail_cutoff * alpha * ((x[mask] - mu) ** 2))
+    mask = x > mu
+    rtail_func[mask] = amp * rtail_ratio * np.exp(rtail_slope * ((x[mask] - mu)))
+    rtail_func[mask] *= -np.expm1(rtail_cutoff * alpha * ((x[mask] - mu) ** 2))
+    return amp * np.exp(alpha * ((x - mu) ** 2)) + ltail_func + rtail_func
+
+
 # -----------------------------------------------------------------------------
 # Custom loss functions
 # -----------------------------------------------------------------------------
@@ -329,6 +391,58 @@ class ExpGaussModel(Model):
         ]
 
 
+class GaussDblExpModel(Model):
+    """This model is a Gaussian combined with exponential tails on either side
+    of the center of the distribution. Each tail is characterized by 3 parameters:
+    an amplitude ratio, a slope, and a cutoff. This is an extension of the peak
+    shape described by Namboodiri et al here: https://www.osti.gov/biblio/392720
+    to fit CZT energy spectra. In their case, the exponential tail was only on
+    the low side of the peak.
+
+    A distribution with the exponential tail on only one side may be obtained by
+    fixing the undesired side's parameters to 0.
+
+    The tail amplitudes are expressed as ratios with respect to the peak
+    amplitude (tail_amplitude / amplitude).
+
+    The slope parameter impacts how steep the tail is, and the cutoff parameter
+    impacts how far out it goes.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(gauss_dbl_exp, **kwargs)
+        self.set_param_hint(f"{self.prefix}amp", min=0)
+        self.set_param_hint(f"{self.prefix}mu", min=0)
+        self.set_param_hint(f"{self.prefix}sigma", min=0)
+        self.set_param_hint(f"{self.prefix}ltail_ratio", min=0)
+        self.set_param_hint(f"{self.prefix}rtail_ratio", min=0)
+
+    def guess(self, y, x=None, dx=None):
+        if x is None:
+            x = np.arange(0, len(y))
+        if dx is None:
+            dx = np.ones_like(x)
+        mu = np.mean(x)
+        amp = np.max(y)
+        return [
+            (f"{self.prefix}amp", "value", amp),
+            (f"{self.prefix}amp", "min", 0.0),
+            (f"{self.prefix}mu", "value", mu),
+            (f"{self.prefix}mu", "min", x[0]),
+            (f"{self.prefix}mu", "max", x[-1]),
+            (f"{self.prefix}sigma", "value", 1.0),
+            (f"{self.prefix}sigma", "min", 0.0),
+            (f"{self.prefix}ltail_ratio", "value", 0.1),
+            (f"{self.prefix}ltail_ratio", "min", 0.0),
+            (f"{self.prefix}ltail_slope", "value", 0.05),
+            (f"{self.prefix}ltail_cutoff", "value", 1.0),
+            (f"{self.prefix}rtail_ratio", "value", 0.1),
+            (f"{self.prefix}rtail_ratio", "min", 0.0),
+            (f"{self.prefix}rtail_slope", "value", -0.05),
+            (f"{self.prefix}rtail_cutoff", "value", 1.0),
+        ]
+
+
 MODEL_STR_TO_CLS = {
     "constant": ConstantModel,
     "line": LineModel,
@@ -337,6 +451,7 @@ MODEL_STR_TO_CLS = {
     "erf": ErfModel,
     "exp": ExpModel,
     "expgauss": ExpGaussModel,
+    "gaussdblexp": GaussDblExpModel,
 }
 
 
@@ -1020,7 +1135,10 @@ class Fitter:
         if sort_by_model:
             df.set_index(
                 pd.MultiIndex.from_tuples(
-                    [tuple(p.split("_")) for p in df.index], names=["model", "param"]
+                    # Only split on the first underscore, in case the param name
+                    # has an underscore in it
+                    [tuple(p.split("_", maxsplit=1)) for p in df.index],
+                    names=["model", "param"],
                 ),
                 inplace=True,
             )
