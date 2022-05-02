@@ -103,7 +103,10 @@ def test_isotopequantity_init_stable(stable_isotope, iq_date, iq_kwargs):
     assert iq.decay_const == stable_isotope.decay_const
     assert iq.bq_at() == iq.bq_at(iq.ref_date) == 0.0
     assert iq.uci_at() == iq.uci_at(iq.ref_date) == 0.0
-    # TODO: assert input property is the same as input arg
+    if "g" in iq_kwargs:
+        assert np.isclose(iq.g_at(), iq_kwargs["g"])
+    if "atoms" in iq_kwargs:
+        assert np.isclose(iq.atoms_at(), iq_kwargs["atoms"])
 
 
 def test_isotopequantity_quantity_at(radioisotope, iq_kwargs):
