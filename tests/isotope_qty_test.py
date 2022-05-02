@@ -101,6 +101,9 @@ def test_isotopequantity_init_stable(stable_isotope, iq_date, iq_kwargs):
     assert iq.isotope is stable_isotope
     assert iq.half_life == stable_isotope.half_life
     assert iq.decay_const == stable_isotope.decay_const
+    assert iq.bq_at() == iq.bq_at(iq.ref_date) == 0.0
+    assert iq.uci_at() == iq.uci_at(iq.ref_date) == 0.0
+    # TODO: assert input property is the same as input arg
 
 
 def test_isotopequantity_quantity_at(radioisotope, iq_kwargs):
