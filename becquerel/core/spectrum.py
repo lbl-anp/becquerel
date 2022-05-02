@@ -567,12 +567,13 @@ class Spectrum:
             self._bin_edges_raw = np.array(bin_edges_raw, dtype=float)
 
     @classmethod
-    def from_file(cls, infilename, verbose=False):
+    def from_file(cls, infilename, verbose=False, cal_kwargs=None):
         """Construct a Spectrum object from a filename.
 
         Args:
           infilename: a string representing the path to a parsable file
           verbose: (optional) whether to print debugging information.
+          cal_kwargs: (optional) kwargs to override the file Calibration.
 
         Returns:
           A Spectrum object
@@ -583,15 +584,35 @@ class Spectrum:
         # read the data using one of the low-level parsers
         _, ext = os.path.splitext(infilename)
         if io.h5.is_h5_filename(infilename):
-            data, cal = parsers.h5.read(infilename, verbose=verbose)
+            data, cal = parsers.h5.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         elif ext.lower() == ".cnf":
-            data, cal = parsers.cnf.read(infilename, verbose=verbose)
+            data, cal = parsers.cnf.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         elif ext.lower() == ".spc":
-            data, cal = parsers.spc.read(infilename, verbose=verbose)
+            data, cal = parsers.spc.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         elif ext.lower() == ".spe":
-            data, cal = parsers.spe.read(infilename, verbose=verbose)
+            data, cal = parsers.spe.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         elif ext.lower() == ".iec":
-            data, cal = parsers.iec1455.read(infilename, verbose=verbose)
+            data, cal = parsers.iec1455.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         else:
             raise NotImplementedError(f"File type {ext} can not be read")
 
@@ -1146,7 +1167,7 @@ class Spectrum:
           cal: a Calibration object
         """
 
-        try:
+        if hasattr(cal, "ch2kev") and callable(getattr(cal, "ch2kev")):
             self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
             warnings.warn(
                 "The use of bq.EnergyCalBase classes is deprecated "
@@ -1154,7 +1175,7 @@ class Spectrum:
                 "use bq.Calibration instead",
                 DeprecationWarning,
             )
-        except AttributeError:
+        else:
             self.bin_edges_kev = cal(self.bin_edges_raw)
         self.energy_cal = cal
 

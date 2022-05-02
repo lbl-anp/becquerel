@@ -12,7 +12,7 @@ from . import core
 from .core import utils, fitting
 from .core.autocal import AutoCalibrator, AutoCalibratorError
 from .core.energycal import LinearEnergyCal, EnergyCalError, BadInput
-from .core.calibration import Calibration, CalibrationError
+from .core.calibration import Calibration, CalibrationError, CalibrationWarning
 from .core.fitting import Fitter
 from .core.peakfinder import (
     PeakFilter,
@@ -54,6 +54,7 @@ __all__ = [
     "BadInput",
     "Calibration",
     "CalibrationError",
+    "CalibrationWarning",
     "Fitter",
     "PeakFilter",
     "PeakFilterError",
