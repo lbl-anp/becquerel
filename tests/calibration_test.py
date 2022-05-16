@@ -11,6 +11,7 @@ from becquerel.core.calibration import (
     _validate_expression,
     _fit_expression,
     CalibrationError,
+    CalibrationWarning,
     Calibration,
 )
 import pytest
@@ -19,11 +20,15 @@ from h5_tools_test import TEST_OUTPUTS
 
 def test_validate_domain_range():
     """Test calibration._validate_domain_range."""
-    # arguments must be length-two iterables
+    # arguments can be None -- returns defaults
+    _validate_domain_range(None, None)
+    _validate_domain_range(None, [0, 1])
+    _validate_domain_range([0, 1], None)
+    # arguments must be None or length-two iterables
     with pytest.raises(CalibrationError):
-        _validate_domain_range(None, [0, 1])
+        _validate_domain_range(0, [0, 1])
     with pytest.raises(CalibrationError):
-        _validate_domain_range([0, 1], None)
+        _validate_domain_range([0, 1], 0)
     with pytest.raises(CalibrationError):
         _validate_domain_range([0, 1, 2], [0, 1])
     with pytest.raises(CalibrationError):
@@ -68,12 +73,21 @@ def test_eval_expression():
         _eval_expression("p[0] + p[1] * f(x, x)", [1.0, 5.0], 2.0)
     # argument outside of domain
     with pytest.raises(CalibrationError):
-        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], -2.0)
+        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], -2.0, domain=[0, 100])
     with pytest.raises(CalibrationError):
-        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2e6)
+        _eval_expression("p[0] + p[1] * x", [1.0, 5.0], 2e6, domain=[0, 100])
     # result is a complex number
     with pytest.raises(CalibrationError):
         _eval_expression("p[0] + p[1] * x", [1j, 5.0], 2.0)
+    # warn when expression evaluates below the range
+    with pytest.warns(CalibrationWarning):
+        _eval_expression("p[0] + p[1] * x", [-10.0, 5.0], 0.0, rng=[0, 3])
+    # warn when expression evaluates above the range
+    with pytest.warns(CalibrationWarning):
+        _eval_expression("p[0] + p[1] * x", [0.0, 5.0], 2.0, rng=[0, 3])
+    # warn when expression evaluates both below and above the range
+    with pytest.warns(CalibrationWarning):
+        _eval_expression("p[0] + p[1] * x", [-10.0, 5.0], [0.0, 2.0], rng=[0, 3])
 
 
 def test_expression_param_indices():
@@ -272,21 +286,24 @@ points_x = [100, 500, 1000, 1500, 2500]
 points_y = [18, 42, 63, 82, 117]
 weights = [1.0, 0.3, 0.2, 0.2, 1.0]
 domain = [0, 3500]
+rng = [0, 1000]
 
 
 def make_calibration(name, args):
     """Make an instance of the desired Calibration type."""
     attrs = {"comment": "Test of Calibration class", "name": name}
     if name.startswith("lin"):
-        cal = Calibration.from_linear(*args, **attrs, domain=domain)
+        cal = Calibration.from_linear(*args, **attrs, domain=domain, rng=rng)
     elif name.startswith("poly"):
-        cal = Calibration.from_polynomial(*args, **attrs, domain=domain)
+        cal = Calibration.from_polynomial(*args, **attrs, domain=domain, rng=rng)
     elif name.startswith("sqrt"):
-        cal = Calibration.from_sqrt_polynomial(*args, **attrs, domain=domain)
+        cal = Calibration.from_sqrt_polynomial(*args, **attrs, domain=domain, rng=rng)
     elif name.startswith("interp"):
-        cal = Calibration.from_interpolation(points_x, points_y, **attrs, domain=domain)
+        cal = Calibration.from_interpolation(
+            points_x, points_y, **attrs, domain=domain, rng=rng
+        )
     else:
-        cal = Calibration(*args, **attrs, domain=domain)
+        cal = Calibration(*args, **attrs, domain=domain, rng=rng)
     return cal
 
 
@@ -378,7 +395,14 @@ def test_calibration_fit_from_points(name, args):
     else:
         # test from_points()
         cal2 = Calibration.from_points(args[0], points_x, points_y)
-        cal2 = Calibration.from_points(args[0], points_x, points_y, params0=args[1])
+        cal2 = Calibration.from_points(
+            args[0],
+            points_x,
+            points_y,
+            params0=args[1],
+            domain=cal1.domain,
+            rng=cal1.range,
+        )
         assert cal2 == cal1
 
     # test fit() with weights
@@ -395,7 +419,13 @@ def test_calibration_fit_from_points(name, args):
         # test from_points() with weights
         cal2 = Calibration.from_points(args[0], points_x, points_y, weights)
         cal2 = Calibration.from_points(
-            args[0], points_x, points_y, weights, params0=args[1]
+            args[0],
+            points_x,
+            points_y,
+            weights,
+            params0=args[1],
+            domain=cal1.domain,
+            rng=cal1.range,
         )
         assert cal2 == cal1
 
@@ -423,6 +453,50 @@ def test_calibration_fit_from_points(name, args):
     assert cal1.fit_R_squared > 0.8  # note: this is flexible
     assert 0 <= cal1.fit_reduced_chi_squared <= 200  # note: this is flexible
     cal1.plot()
+
+
+def test_calibration_domain_range():
+    """Test setting the domain and range of a calibration."""
+    cal = Calibration("p[0] + p[1] * x", [5.0, 4.0])
+
+    # set the domain and range to defaults
+    cal.domain = None
+    cal.range = None
+
+    # cannot set domain or range to infinite values
+    with pytest.raises(CalibrationError):
+        cal.domain = [-np.inf, np.inf]
+    with pytest.raises(CalibrationError):
+        cal.range = [-np.inf, np.inf]
+
+    # set the domain and range to specific values
+    x0 = 1
+    cal.domain = [x0 - 1, x0 + 1]
+    cal.range = [-1e6, 1e6]
+
+    # evaluate for x inside domain and result inside range
+    y0 = cal(x0)
+
+    # evaluate for x outside domain (fails)
+    x1 = cal.domain[1] + 3
+    with pytest.raises(CalibrationError):
+        cal(x1)
+
+    # expand domain and reevaluate
+    cal.domain = (cal.domain[0], x1 + 1)
+    cal(x1)
+
+    # evaluate for x inside domain and result outside range (warns)
+    cal.domain = [x0 - 1, x0 + 1]
+    cal.range = [y0 + 10, y0 + 20]
+    with pytest.warns(CalibrationWarning):
+        y2 = cal(x0)
+    # y value is not clipped to the range so should be the same as before
+    assert np.isclose(y0, y2)
+
+    # expand range and reevaluate
+    cal.range = [y0 - 1, y0 + 1]
+    cal(x0)
 
 
 def test_calibration_inverse():
@@ -464,11 +538,37 @@ def test_calibration_inverse():
     assert np.allclose(x1, (y - 5.0) / 4.0)
     assert np.allclose(x1, x2)
 
-    # evaluate the inverse for a value outside the range
+    # evaluate inverse for values inside the range with result inside domain
+    cal1.domain = [0, 1]
+    cal1.range = [-1e6, 1e6]
+    x0 = 0.5
+    y0 = cal1(x0)
+    cal1.range = [y0 - 1, y0 + 1]
+    cal1.inverse(y0)
+
+    # evaluate inverse for values inside the range with result outside domain
+    cal1.domain = [0, 2]
+    cal1.range = [-1e6, 1e6]
+    x0 = 2.0
+    y0 = cal1(x0)
+    cal1.domain = [0, 1]
+    cal1.range = [y0 - 1, y0 + 1]
     with pytest.raises(CalibrationError):
-        cal1.inverse(-10.0)
+        cal1(x0)
     with pytest.raises(CalibrationError):
-        cal1.inverse(2e6)
+        cal1.inverse(y0)
+
+    # evaluate the inverse for a value outside the range and the domain
+    cal1.domain = [0, 2]
+    cal1.range = [-1e6, 1e6]
+    x0 = 2.0
+    y0 = cal1(x0)
+    cal1.domain = [x0 - 2, x0 - 1]
+    cal1.range = [y0 - 2, y0 - 1]
+    with pytest.raises(CalibrationError):
+        cal1(x0)
+    with pytest.raises(CalibrationError):
+        cal1.inverse(y0)
 
     # test __str__() and __repr__()
     str(cal1)
