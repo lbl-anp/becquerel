@@ -12,9 +12,11 @@ from becquerel.tools.materials_nist import convert_composition
 import becquerel.tools.materials as materials
 import becquerel.tools.materials_compendium as materials_compendium
 import pytest
+from utils import xcom_is_up
 
 
 @pytest.mark.webtest
+@pytest.mark.skipif(not xcom_is_up(), reason="XCOM is down.")
 class TestConvertComposition:
     """Test convert_composition."""
 
@@ -51,6 +53,7 @@ class TestConvertComposition:
 
 
 @pytest.mark.webtest
+@pytest.mark.skipif(not xcom_is_up(), reason="XCOM is down.")
 def test_materials():
     """Test fetch_materials."""
     fetch_materials()
@@ -58,6 +61,7 @@ def test_materials():
 
 
 @pytest.mark.webtest
+@pytest.mark.skipif(not xcom_is_up(), reason="XCOM is down.")
 def test_materials_force():
     """Test fetch_materials with force=True."""
     assert os.path.exists(materials.FILENAME)
@@ -87,6 +91,7 @@ def test_materials_dummy_csv():
 
 
 @pytest.mark.webtest
+@pytest.mark.skipif(not xcom_is_up(), reason="XCOM is down.")
 def test_materials_dummy_compendium_pre2022():
     """Test fetch_materials with a dummy Compendium JSON file.
 
@@ -132,6 +137,7 @@ def test_materials_dummy_compendium_pre2022():
 
 
 @pytest.mark.webtest
+@pytest.mark.skipif(not xcom_is_up(), reason="XCOM is down.")
 def test_materials_dummy_compendium_2022():
     """Test fetch_materials with a dummy Compendium JSON file.
 
@@ -186,6 +192,7 @@ def test_materials_dummy_compendium_2022():
 
 
 @pytest.mark.webtest
+@pytest.mark.skipif(not xcom_is_up(), reason="XCOM is down.")
 def test_materials_dummy_compendium_error():
     """Test fetch_materials with a dummy Compendium JSON file.
 
@@ -205,6 +212,7 @@ def test_materials_dummy_compendium_error():
 
 
 @pytest.mark.webtest
+@pytest.mark.skipif(not xcom_is_up(), reason="XCOM is down.")
 def test_materials_no_compendium():
     """Test fetch_materials with no Compendium JSON file."""
     # point to a dummy JSON file that does not exist

@@ -103,7 +103,10 @@ def test_isotopequantity_init_stable(stable_isotope, iq_date, iq_kwargs):
     assert iq.decay_const == stable_isotope.decay_const
     assert iq.bq_at() == iq.bq_at(iq.ref_date) == 0.0
     assert iq.uci_at() == iq.uci_at(iq.ref_date) == 0.0
-    # TODO: assert input property is the same as input arg
+    if "g" in iq_kwargs:
+        assert np.isclose(iq.g_at(), iq_kwargs["g"])
+    if "atoms" in iq_kwargs:
+        assert np.isclose(iq.atoms_at(), iq_kwargs["atoms"])
 
 
 def test_isotopequantity_quantity_at(radioisotope, iq_kwargs):
@@ -546,6 +549,26 @@ def test_irradiation_str(start, stop, n_cm2, n_cm2_s):
 
     ni = NeutronIrradiation(start, stop, n_cm2=n_cm2, n_cm2_s=n_cm2_s)
     print(str(ni))
+
+
+def test_irradiation_nan_g():
+    """Regression test for https://github.com/lbl-anp/becquerel/issues/325.
+
+    From examples/isotopes.ipynb
+    """
+    iso = Isotope("Na-23")
+    iso2 = Isotope("Na-24")
+    barns = 2.3  # making this up for now
+
+    irradiation_start = "2017-04-30 10:32:00"
+    irradiation_stop = "2017-04-30 11:32:00"
+    flux = 3.1e11
+    ni = NeutronIrradiation(irradiation_start, irradiation_stop, n_cm2_s=flux)
+
+    activated_qty = IsotopeQuantity(iso2, date="2017-05-01", bq=103.2)
+    na23_qty = ni.activate(barns, initial=iso, activated=activated_qty)
+
+    assert not np.isnan(na23_qty.g_at())
 
 
 # ----------------------------------------------------
