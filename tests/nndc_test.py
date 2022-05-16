@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 from becquerel.tools import nndc
+from utils import nndc_is_up
 import pytest
 
 
@@ -137,7 +138,8 @@ class TestParseFloatUncertainty:
             nndc._parse_float_uncertainty("7", "@")
 
 
-@pytest.mark.flaky(reruns=3)
+@pytest.mark.skipif(not nndc_is_up(), reason="NNDC is down.")
+@pytest.mark.flaky(reruns=10)
 class NNDCQueryTests:
     """Tests common to NNDCQuery-derived classes."""
 
@@ -559,7 +561,8 @@ class NNDCQueryTests:
 
 
 @pytest.mark.webtest
-@pytest.mark.flaky(reruns=3)
+@pytest.mark.skipif(not nndc_is_up(), reason="NNDC is down.")
+@pytest.mark.flaky(reruns=10)
 class TestNuclearWalletCard(NNDCQueryTests):
     """Test NNDC nuclear_wallet_card query."""
 
@@ -703,7 +706,8 @@ class TestNuclearWalletCard(NNDCQueryTests):
 
 
 @pytest.mark.webtest
-@pytest.mark.flaky(reruns=3)
+@pytest.mark.skipif(not nndc_is_up(), reason="NNDC is down.")
+@pytest.mark.flaky(reruns=10)
 class TestDecayRadiationQuery(NNDCQueryTests):
     """Test NNDC decay_radiation."""
 
