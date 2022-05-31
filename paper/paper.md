@@ -20,6 +20,8 @@ authors:
     affiliation: 1
   - name: Chun Ho Chow
     affiliation: 1
+  - name: Micah Folsom
+    affiliation: 1
   - name: Tenzing H.Y. Joshi
     affiliation: 1
   - name: Daniel Hellfeld
