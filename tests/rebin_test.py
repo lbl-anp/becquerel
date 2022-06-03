@@ -33,16 +33,33 @@ def old_edges(request):
         np.linspace(-1, 30, 31),
         np.linspace(0, 30, 7),
         np.linspace(0, 30, 45),
+        np.linspace(0, 25, 26),
+        np.linspace(5, 30, 26),
+        np.linspace(5, 25, 21),
     ],
     ids=[
         "1 keV bins",
         "1 keV bins with negative starting edge",
         "5 keV bins",
         ".66 keV bins",
+        "1 keV bins, left edge == 0, right edge < 30",
+        "1 keV bins, left edge > 0, right edge == 30",
+        "1 keV bins, left edge > 0, right edge < 30",
     ],
 )
 def new_edges(request):
     return request.param.astype(float)
+
+
+@pytest.fixture(
+    params=[True, False],
+    ids=[
+        "include overflow events outside of the new binning in the first and last bins",
+        "discard any events outside of the new binning",
+    ],
+)
+def include_overflows(request):
+    return request.param
 
 
 @pytest.fixture(params=[1, 5, 25], ids=["sparse counts", "~5 counts", "~25 counts"])
@@ -72,13 +89,17 @@ def make_fake_spec_array(lam, size, dtype=float):
 class TestRebin:
     """Tests for core.rebin()"""
 
-    def test_total_counts(self, lam, old_edges, new_edges):
+    def test_total_counts(self, lam, old_edges, new_edges, include_overflows):
         """Check total counts in spectrum data before and after rebin
 
         interpolation and listmode are separate as the latter requires ints
         """
-        self._test_total_counts(lam, old_edges, new_edges, "interpolation", float)
-        self._test_total_counts(lam, old_edges, new_edges, "listmode", int)
+        self._test_total_counts(
+            lam, old_edges, new_edges, "interpolation", float, include_overflows
+        )
+        self._test_total_counts(
+            lam, old_edges, new_edges, "listmode", int, include_overflows
+        )
 
     def test_total_counts_listmode_float(self, lam, old_edges, new_edges):
         """Check that listmode rebinning raises a warning if counts are floats
@@ -94,22 +115,33 @@ class TestRebin:
                 zero_pad_warnings=False,
             )
 
-    def _test_total_counts(self, lam, old_edges, new_edges, method, dtype):
+    def _test_total_counts(
+        self, lam, old_edges, new_edges, method, dtype, include_overflows
+    ):
         """Check total counts in spectrum data before and after rebin"""
         old_counts, new_counts = self._gen_old_new_counts(
-            lam, old_edges, new_edges, method, dtype
+            lam, old_edges, new_edges, method, dtype, include_overflows
         )
-        assert np.isclose(old_counts.sum(), new_counts.sum())
+        if include_overflows:
+            assert np.isclose(old_counts.sum(), new_counts.sum())
+        else:
+            assert int(old_counts.sum()) >= int(new_counts.sum())
 
-    def test_rebin2d_counts(self, lam, old_edges, new_edges):
+    def test_rebin2d_counts(self, lam, old_edges, new_edges, include_overflows):
         """Check total counts in spectrum data before and after rebin
 
         interpolation and listmode are separate as the latter requires ints
         """
-        self._test_total_counts_2d(lam, old_edges, new_edges, "interpolation", "float")
-        self._test_total_counts_2d(lam, old_edges, new_edges, "listmode", "int")
+        self._test_total_counts_2d(
+            lam, old_edges, new_edges, "interpolation", "float", include_overflows
+        )
+        self._test_total_counts_2d(
+            lam, old_edges, new_edges, "listmode", "int", include_overflows
+        )
 
-    def _test_total_counts_2d(self, lam, old_edges, new_edges, method, dtype):
+    def _test_total_counts_2d(
+        self, lam, old_edges, new_edges, method, dtype, include_overflows
+    ):
         """Check total counts in spectra data before and after rebin"""
 
         nspectra = 20
@@ -123,38 +155,63 @@ class TestRebin:
             new_edges,
             method=method,
             zero_pad_warnings=False,
+            include_overflows=include_overflows,
         )
-        assert np.allclose(old_counts_2d.sum(axis=1), new_counts_2d.sum(axis=1))
+        if include_overflows:
+            assert np.allclose(old_counts_2d.sum(axis=1), new_counts_2d.sum(axis=1))
+        else:
+            assert np.all(
+                old_counts_2d.sum(axis=1).astype(int)
+                >= new_counts_2d.sum(axis=1).astype(int)
+            )
 
-    def test_unchanged_binning(self, lam, old_edges):
+    def test_unchanged_binning(self, lam, old_edges, include_overflows):
         """Check counts in spectrum is the same after a identity/null rebin
         (i.e. same bin edges for old and new)
 
         interpolation and listmode are separate as the latter requires ints
         """
-        self._test_unchanged_binning(lam, old_edges, "interpolation", "float")
-        self._test_unchanged_binning(lam, old_edges, "listmode", "int")
+        self._test_unchanged_binning(
+            lam, old_edges, "interpolation", "float", include_overflows
+        )
+        self._test_unchanged_binning(
+            lam, old_edges, "listmode", "int", include_overflows
+        )
 
-    def _test_unchanged_binning(self, lam, edges, method, dtype):
+    def _test_unchanged_binning(self, lam, edges, method, dtype, include_overflows):
         old_counts, new_counts = self._gen_old_new_counts(
-            lam, edges, edges, method, dtype
+            lam, edges, edges, method, dtype, include_overflows
         )
         assert np.allclose(old_counts, new_counts)
 
-    def _gen_old_new_counts(self, lam, old_edges, new_edges, method, dtype):
+    def _gen_old_new_counts(
+        self, lam, old_edges, new_edges, method, dtype, include_overflows
+    ):
         """generate old and new counts (1D)"""
         old_counts = make_fake_spec_array(lam, len(old_edges) - 1, dtype=dtype)
         new_counts = bq.core.rebin.rebin(
-            old_counts, old_edges, new_edges, method=method, zero_pad_warnings=False
+            old_counts,
+            old_edges,
+            new_edges,
+            method=method,
+            zero_pad_warnings=False,
+            include_overflows=include_overflows,
         )
         return (old_counts, new_counts)
 
-    def test_subset_bin_edges(self, lam, old_edges):
+    def test_subset_bin_edges(self, lam, old_edges, include_overflows):
         old_counts = make_fake_spec_array(lam, len(old_edges) - 1, dtype=float)
         new_counts = bq.core.rebin.rebin(
-            old_counts, old_edges, old_edges[1:-1], method="interpolation"
+            old_counts,
+            old_edges,
+            old_edges[1:-1],
+            method="interpolation",
+            include_overflows=include_overflows,
         )
-        assert np.isclose(np.sum(old_counts), np.sum(new_counts))
+        if include_overflows:
+            assert np.isclose(np.sum(old_counts), np.sum(new_counts))
+        else:
+            assert int(np.sum(old_counts)) >= int(np.sum(new_counts))
         assert np.allclose(old_counts[2:-2], new_counts[1:-1])
 
     def test_overlap_warnings(self, old_spec_float):

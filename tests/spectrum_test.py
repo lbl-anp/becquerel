@@ -1122,16 +1122,39 @@ def rebin_spectrum_success(request):
     return make_spec(request.param[0], lt=request.param[1])
 
 
-def test_spectrum_rebin_success(rebin_spectrum_success, rebin_new_edges, rebin_method):
+@pytest.fixture(
+    params=[True, False],
+    ids=[
+        "include overflow events outside of the new binning in the first and last bins",
+        "discard any events outside of the new binning",
+    ],
+)
+def include_overflows(request):
+    return request.param
+
+
+def test_spectrum_rebin_success(
+    rebin_spectrum_success, rebin_new_edges, rebin_method, include_overflows
+):
     kwargs = dict(
-        out_edges=rebin_new_edges, method=rebin_method, zero_pad_warnings=False
+        out_edges=rebin_new_edges,
+        method=rebin_method,
+        zero_pad_warnings=False,
+        include_overflows=include_overflows,
     )
     if (rebin_spectrum_success._counts is None) and (rebin_method == "listmode"):
         with pytest.warns(bq.SpectrumWarning):
             spec = rebin_spectrum_success.rebin(**kwargs)
     else:
         spec = rebin_spectrum_success.rebin(**kwargs)
-    assert np.isclose(rebin_spectrum_success.counts_vals.sum(), spec.counts_vals.sum())
+    if include_overflows:
+        assert np.isclose(
+            rebin_spectrum_success.counts_vals.sum(), spec.counts_vals.sum()
+        )
+    else:
+        assert int(rebin_spectrum_success.counts_vals.sum()) >= int(
+            spec.counts_vals.sum()
+        )
     if rebin_spectrum_success.livetime is None:
         assert spec.livetime is None
     else:
