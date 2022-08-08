@@ -274,3 +274,56 @@ class TestRebin:
             label="rebinned",
         )
         plt.show()
+
+
+@pytest.mark.parametrize(
+    "edges2, counts2, method, include_overflows",
+    [
+        (
+            np.linspace(2, 9, num=8),
+            np.array([3000, 1000, 1000, 1000, 1000, 1000, 2000]),
+            "interpolation",
+            True,
+        ),
+        (
+            np.linspace(2, 9, num=8),
+            np.array([1000, 1000, 1000, 1000, 1000, 1000, 1000]),
+            "interpolation",
+            False,
+        ),
+        (
+            np.linspace(2, 9, num=8),
+            np.array([3000, 1000, 1000, 1000, 1000, 1000, 2000]),
+            "listmode",
+            True,
+        ),
+        (
+            np.linspace(2, 9, num=8),
+            np.array([1000, 1000, 1000, 1000, 1000, 1000, 1000]),
+            "listmode",
+            False,
+        ),
+        (
+            np.linspace(2.5, 9.5, num=8),
+            np.array([3500, 1000, 1000, 1000, 1000, 1000, 1500]),
+            "interpolation",
+            True,
+        ),
+        (
+            np.linspace(2.5, 9.5, num=8),
+            np.array([1000, 1000, 1000, 1000, 1000, 1000, 1000]),
+            "interpolation",
+            False,
+        ),
+    ],
+)
+def test_rebin_include_overflows(edges2, counts2, method, include_overflows):
+    """Perform specific numerical rebinning tests."""
+
+    counts = 1000 * np.ones(10)
+    spec = bq.Spectrum(counts=counts)
+    cal = bq.Calibration("p[0] * x", [1.0])
+    spec.apply_calibration(cal)
+
+    spec2 = spec.rebin(edges2, method=method, include_overflows=include_overflows)
+    assert np.allclose(counts2, spec2.counts_vals)
