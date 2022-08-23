@@ -278,7 +278,11 @@ class PeakFinder:
                 / bw**2
             )
             if d2 >= 0:
-                raise PeakFinderError("Second derivative must be negative at peak")
+                warnings.warn(
+                    f"Second derivative must be negative at peakposition {xbin}",
+                    PeakFinderWarning,
+                )
+                return
             d2 *= -1
             fwhm = 2 * np.sqrt(self.snr[xbin] / d2)
             # add the peak if it has a similar FWHM to the kernel's FWHM
