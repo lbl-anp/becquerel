@@ -355,6 +355,9 @@ class PeakFinder:
 
     def find_peaks(self, xmin=None, xmax=None, min_snr=2, max_num=40):
         """Find the highest SNR peaks in the data."""
+
+        self.reset()
+
         bin_edges = self.spectrum.bin_edges_raw
         bin_centers = self.spectrum.bin_centers_raw
 
