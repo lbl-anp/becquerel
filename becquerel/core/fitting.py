@@ -1059,7 +1059,7 @@ class Fitter:
                 return self.result.params[param].value
             elif param in self.fit.best_values:
                 return self.result.best_values[param]
-            raise FittingError("Unknown param: {}", param)
+            raise FittingError(f"Unknown param: {param}")
         elif "minuit" in self.backend:
             if param in self.result.parameters:
                 return self.result.params[param].value
@@ -1078,7 +1078,7 @@ class Fitter:
             elif param in self.result.best_values:
                 # This is the case for the `erf_form` key
                 return np.nan
-            raise FittingError("Unknown param: {}", param)
+            raise FittingError(f"Unknown param: {param}")
         elif "minuit" in self.backend:
             if param in self.result.parameters:
                 return self.result.params[param].error  # TODO minos vs hesse?
