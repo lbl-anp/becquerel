@@ -1057,7 +1057,7 @@ class Fitter:
         if "lmfit" in self.backend:
             if param in self.result.params:
                 return self.result.params[param].value
-            elif param in self.fit.best_values:
+            elif param in self.result.best_values:
                 return self.result.best_values[param]
             raise FittingError(f"Unknown param: {param}")
         elif "minuit" in self.backend:
