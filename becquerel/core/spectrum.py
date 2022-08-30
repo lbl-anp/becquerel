@@ -1252,7 +1252,12 @@ class Spectrum:
         return obj
 
     def rebin(
-        self, out_edges, method="interpolation", slopes=None, zero_pad_warnings=True
+        self,
+        out_edges,
+        method="interpolation",
+        slopes=None,
+        zero_pad_warnings=True,
+        include_overflows=False,
     ):
         """
         Spectra rebinning via deterministic or stochastic methods.
@@ -1269,8 +1274,11 @@ class Spectrum:
                 for quadratic interpolation
                 (only applies for "interpolation" method)
                 [len(spectrum) + 1]
-        zero_pad_warnings (boolean): warn when edge overlap results in
-            appending empty bins
+            zero_pad_warnings (boolean): warn when edge overlap results in
+                appending empty bins
+            include_overflows (boolean): whether to include counts below
+                out_edges[0] and above out_edges[-1] in the first and last
+                of the "out" bins, respectively, or to discard them (default).
 
         Raises:
             SpectrumError: for bad input arguments
@@ -1297,6 +1305,7 @@ class Spectrum:
             method=method,
             slopes=slopes,
             zero_pad_warnings=zero_pad_warnings,
+            include_overflows=include_overflows,
         )
         return Spectrum(
             counts=out_spec,
