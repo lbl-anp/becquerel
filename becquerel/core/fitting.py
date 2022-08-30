@@ -1061,7 +1061,9 @@ class Fitter:
                 return self.result.best_values[param]
             raise FittingError("Unknown param: {}", param)
         elif "minuit" in self.backend:
-            return self.result.params[param].value
+            if param in self.result.parameters:
+                return self.result.params[param].value
+            raise FittingError(f"Unknown param: {param}")
         raise FittingError("Unknown backend: {}", self.backend)
 
     def param_unc(self, param):
@@ -1078,7 +1080,9 @@ class Fitter:
                 return np.nan
             raise FittingError("Unknown param: {}", param)
         elif "minuit" in self.backend:
-            return self.result.params[param].error  # TODO minos vs hesse?
+            if param in self.result.parameters:
+                return self.result.params[param].error  # TODO minos vs hesse?
+            raise FittingError(f"Unknown param: {param}")
         raise FittingError("Unknown backend: {}", self.backend)
 
     @property
