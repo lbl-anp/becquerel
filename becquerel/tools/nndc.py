@@ -89,7 +89,6 @@ DECAYRAD_RADIATION_TYPE = {
 class NNDCError(Exception):
     """General NNDC request error."""
 
-    pass
 
 
 class NoDataFound(NNDCError):
@@ -99,13 +98,11 @@ class NoDataFound(NNDCError):
 class NNDCInputError(NNDCError):
     """Error related to the user input to an NNDC query."""
 
-    pass
 
 
 class NNDCRequestError(NNDCError):
     """Error related to communicating with NNDC or parsing the result."""
 
-    pass
 
 
 def _parse_headers(headers):

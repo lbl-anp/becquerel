@@ -9,7 +9,6 @@ from .spectrum import Spectrum
 class PeakFilterError(Exception):
     """Base class for errors in PeakFilter."""
 
-    pass
 
 
 class PeakFilter:
@@ -148,13 +147,11 @@ class GaussianPeakFilter(PeakFilter):
 class PeakFinderError(Exception):
     """Base class for errors in PeakFinder."""
 
-    pass
 
 
 class PeakFinderWarning(UserWarning):
     """Warnings displayed during peak fitting."""
 
-    pass
 
 
 class PeakFinder:

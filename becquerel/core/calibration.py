@@ -25,13 +25,11 @@ safe_eval.symtable["scipy"] = scipy
 class CalibrationError(Exception):
     """Base class for calibration errors."""
 
-    pass
 
 
 class CalibrationWarning(UserWarning):
     """Warnings displayed by the Calibration class."""
 
-    pass
 
 
 def _validate_domain_range(domain, rng):

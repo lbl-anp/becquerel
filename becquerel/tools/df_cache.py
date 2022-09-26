@@ -7,7 +7,6 @@ import pandas as pd
 class CacheError(Exception):
     """Problem fetching, saving, or retrieving cached data."""
 
-    pass
 
 
 class DataFrameCache:

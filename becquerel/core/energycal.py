@@ -11,13 +11,11 @@ import warnings
 class EnergyCalError(Exception):
     """Base class for errors in energycal.py"""
 
-    pass
 
 
 class BadInput(EnergyCalError):
     """Error related to energy cal input"""
 
-    pass
 
 
 class EnergyCalBase:
@@ -218,7 +216,6 @@ class EnergyCalBase:
           energy values, the same size/type as ch [keV]
         """
 
-        pass
 
     def kev2ch(self, kev):
         """Convert energy value(s) to channel(s).
@@ -251,7 +248,6 @@ class EnergyCalBase:
         """
 
         # if this is not possible, raise a NotImplementedError ?
-        pass
 
     @abstractproperty
     def valid_coeffs(self):
@@ -261,7 +257,6 @@ class EnergyCalBase:
           a tuple of strings, the names of the coefficients for this curve
         """
 
-        pass
 
     def _set_coeff(self, name, val):
         """Set a coefficient for the calibration curve.
@@ -301,7 +296,6 @@ class EnergyCalBase:
     def _perform_fit(self):
         """Do the actual curve fitting."""
 
-        pass
 
     def plot(self, ax=None):
         """Plot the calibration.

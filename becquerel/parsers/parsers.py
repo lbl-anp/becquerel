@@ -8,13 +8,11 @@ warnings.simplefilter("always", DeprecationWarning)
 class BecquerelParserWarning(UserWarning):
     """Warnings encountered during parsing."""
 
-    pass
 
 
 class BecquerelParserError(Exception):
     """Failure encountered while parsing."""
 
-    pass
 
 
 def override_calibration(cal, **kwargs):

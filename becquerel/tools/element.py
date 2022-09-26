@@ -156,25 +156,21 @@ _MASS_FROM_SYMBOL = {d[1]: d[3] for d in _Z_SYMBOL_NAME_MASS}
 class ElementError(Exception):
     """Problem with element properties."""
 
-    pass
 
 
 class ElementZError(ElementError):
     """Bad element Z value."""
 
-    pass
 
 
 class ElementSymbolError(ElementError):
     """Bad element symbol."""
 
-    pass
 
 
 class ElementNameError(ElementError):
     """Bad element name."""
 
-    pass
 
 
 def validated_z(z):
