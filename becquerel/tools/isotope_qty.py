@@ -291,7 +291,9 @@ class IsotopeQuantity:
         date = date if date is not None else datetime.datetime.now()
         t1 = utils.handle_datetime(date)
         dt = (t1 - self.ref_date).total_seconds()
-        return self._ref_quantities[quantity] * np.exp(-dt * self.decay_const)
+        # here we use expm1, to use the same function consistently
+        # different numpy functions that could have different numerical precisions
+        return self._ref_quantities[quantity] * (np.expm1(-dt * self.decay_const) + 1.0)
 
     def atoms_at(self, date=None):
         """Calculate the number of atoms at a given time.
