@@ -26,10 +26,8 @@ class CalibrationError(Exception):
     """Base class for calibration errors."""
 
 
-
 class CalibrationWarning(UserWarning):
     """Warnings displayed by the Calibration class."""
-
 
 
 def _validate_domain_range(domain, rng):

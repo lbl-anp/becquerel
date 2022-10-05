@@ -10,7 +10,6 @@ class PlottingError(Exception):
     """General exception for plotting.py"""
 
 
-
 class SpectrumPlotter:
     """Class for handling spectrum plotting."""
 

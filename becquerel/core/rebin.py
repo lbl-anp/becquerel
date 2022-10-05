@@ -7,10 +7,8 @@ class RebinError(Exception):
     """Exception raised by rebin operations."""
 
 
-
 class RebinWarning(UserWarning):
     """Warnings displayed by rebin operations."""
-
 
 
 def _check_monotonic_increasing(arr, arr_name="array"):

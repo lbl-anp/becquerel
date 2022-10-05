@@ -10,7 +10,6 @@ class PeakFilterError(Exception):
     """Base class for errors in PeakFilter."""
 
 
-
 class PeakFilter:
     """An energy-dependent kernel that can be convolved with a spectrum.
 
@@ -148,10 +147,8 @@ class PeakFinderError(Exception):
     """Base class for errors in PeakFinder."""
 
 
-
 class PeakFinderWarning(UserWarning):
     """Warnings displayed during peak fitting."""
-
 
 
 class PeakFinder:

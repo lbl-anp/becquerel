@@ -90,7 +90,6 @@ class NNDCError(Exception):
     """General NNDC request error."""
 
 
-
 class NoDataFound(NNDCError):
     """No datasets were found within the specified search."""
 
@@ -99,10 +98,8 @@ class NNDCInputError(NNDCError):
     """Error related to the user input to an NNDC query."""
 
 
-
 class NNDCRequestError(NNDCError):
     """Error related to communicating with NNDC or parsing the result."""
-
 
 
 def _parse_headers(headers):

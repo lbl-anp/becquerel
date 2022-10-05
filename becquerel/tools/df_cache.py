@@ -8,7 +8,6 @@ class CacheError(Exception):
     """Problem fetching, saving, or retrieving cached data."""
 
 
-
 class DataFrameCache:
     """Abstract base class for downloading, saving, and retrieving a DataFrame.
 

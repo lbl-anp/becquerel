@@ -16,7 +16,6 @@ class IsotopeQuantityError(Exception):
     """Raised by the IsotopeQuantity class"""
 
 
-
 def handle_isotope(isotope, error_name=None):
     """Handle string or Isotope input.
 
@@ -560,7 +559,6 @@ class IsotopeQuantity:
 
 class NeutronIrradiationError(Exception):
     """Exception from NeutronIrradiation class."""
-
 
 
 class NeutronIrradiation:

@@ -105,15 +105,12 @@ class XCOMError(Exception):
     """General XCOM error."""
 
 
-
 class XCOMInputError(XCOMError):
     """Error related to the user input to XCOMQuery."""
 
 
-
 class XCOMRequestError(XCOMError):
     """Error related to communicating with XCOM or parsing the result."""
-
 
 
 class _XCOMQuery:

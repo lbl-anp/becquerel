@@ -9,10 +9,8 @@ class BecquerelParserWarning(UserWarning):
     """Warnings encountered during parsing."""
 
 
-
 class BecquerelParserError(Exception):
     """Failure encountered while parsing."""
-
 
 
 def override_calibration(cal, **kwargs):

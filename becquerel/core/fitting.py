@@ -25,7 +25,6 @@ class FittingError(Exception):
     """Exception raised by Fitters."""
 
 
-
 class FittingWarning(UserWarning):
     """Warning raised by Fitters."""
 

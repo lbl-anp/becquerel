@@ -157,20 +157,16 @@ class ElementError(Exception):
     """Problem with element properties."""
 
 
-
 class ElementZError(ElementError):
     """Bad element Z value."""
-
 
 
 class ElementSymbolError(ElementError):
     """Bad element symbol."""
 
 
-
 class ElementNameError(ElementError):
     """Bad element name."""
-
 
 
 def validated_z(z):

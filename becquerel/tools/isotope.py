@@ -13,7 +13,6 @@ class IsotopeError(element.ElementError):
     """Problem with isotope properties."""
 
 
-
 def _split_element_mass(arg):
     """Split a string into an element name/symbol plus a mass number/isomer.
 

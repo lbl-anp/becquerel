@@ -18,15 +18,12 @@ class SpectrumError(Exception):
     """Exception raised by Spectrum."""
 
 
-
 class SpectrumWarning(UserWarning):
     """Warnings displayed by Spectrum."""
 
 
-
 class UncalibratedError(SpectrumError):
     """Raised when an uncalibrated spectrum is treated as calibrated."""
-
 
 
 class Spectrum:

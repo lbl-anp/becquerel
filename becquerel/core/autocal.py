@@ -32,7 +32,6 @@ class AutoCalibratorError(Exception):
     """Base class for errors in AutoCalibrator."""
 
 
-
 def fit_gain(channels, snrs, energies):
     """Calculate the mean gain to relate channels to energies.
 
