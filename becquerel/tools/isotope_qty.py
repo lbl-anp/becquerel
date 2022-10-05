@@ -15,8 +15,6 @@ N_AV = 6.022141e23
 class IsotopeQuantityError(Exception):
     """Raised by the IsotopeQuantity class"""
 
-    pass
-
 
 def handle_isotope(isotope, error_name=None):
     """Handle string or Isotope input.
@@ -561,8 +559,6 @@ class IsotopeQuantity:
 
 class NeutronIrradiationError(Exception):
     """Exception from NeutronIrradiation class."""
-
-    pass
 
 
 class NeutronIrradiation:

@@ -14,8 +14,6 @@ VECTOR_TYPES = (list, tuple, np.ndarray)
 class UncertaintiesError(Exception):
     """Raised when uncertainties are badly specified in an input."""
 
-    pass
-
 
 def all_ufloats(x):
     """Check if every element of x is a UFloat.
