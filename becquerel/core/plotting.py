@@ -9,8 +9,6 @@ import warnings
 class PlottingError(Exception):
     """General exception for plotting.py"""
 
-    pass
-
 
 class SpectrumPlotter:
     """Class for handling spectrum plotting."""
