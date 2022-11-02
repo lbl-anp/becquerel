@@ -17,19 +17,13 @@ import warnings
 class SpectrumError(Exception):
     """Exception raised by Spectrum."""
 
-    pass
-
 
 class SpectrumWarning(UserWarning):
     """Warnings displayed by Spectrum."""
 
-    pass
-
 
 class UncalibratedError(SpectrumError):
     """Raised when an uncalibrated spectrum is treated as calibrated."""
-
-    pass
 
 
 class Spectrum:

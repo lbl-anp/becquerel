@@ -31,8 +31,6 @@ MAJOR_BACKGROUND_LINES = [
 class AutoCalibratorError(Exception):
     """Base class for errors in AutoCalibrator."""
 
-    pass
-
 
 def fit_gain(channels, snrs, energies):
     """Calculate the mean gain to relate channels to energies.

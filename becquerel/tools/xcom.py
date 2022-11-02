@@ -104,19 +104,13 @@ COLUMNS_LONG = {
 class XCOMError(Exception):
     """General XCOM error."""
 
-    pass
-
 
 class XCOMInputError(XCOMError):
     """Error related to the user input to XCOMQuery."""
 
-    pass
-
 
 class XCOMRequestError(XCOMError):
     """Error related to communicating with XCOM or parsing the result."""
-
-    pass
 
 
 class _XCOMQuery:
