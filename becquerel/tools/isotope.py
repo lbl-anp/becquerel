@@ -12,8 +12,6 @@ N_AV = 6.022141e23  # mol^-1
 class IsotopeError(element.ElementError):
     """Problem with isotope properties."""
 
-    pass
-
 
 def _split_element_mass(arg):
     """Split a string into an element name/symbol plus a mass number/isomer.

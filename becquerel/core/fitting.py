@@ -24,8 +24,6 @@ COLORS = [
 class FittingError(Exception):
     """Exception raised by Fitters."""
 
-    pass
-
 
 class FittingWarning(UserWarning):
     """Warning raised by Fitters."""
