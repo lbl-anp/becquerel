@@ -351,8 +351,31 @@ class PeakFinder:
         self.add_peak(peak_x)
         return peak_x
 
-    def find_peaks(self, xmin=None, xmax=None, min_snr=2, max_num=40):
-        """Find the highest SNR peaks in the data."""
+    def find_peaks(self, xmin=None, xmax=None, min_snr=2, max_num=40, reset=False):
+        """Find the highest SNR peaks in the data.
+
+        Parameters
+        ----------
+        xmin
+            Left edge of the x-range that should be scanned for
+            peaks. Uses min(x-range) if not given.
+        xmax
+            Right edge of the x-range that should be scanned for
+            peaks. Uses max(x-range) if not given.
+        min_snr
+            Minium SNR for a peak to be added
+        max_num
+            Maximum number of peaks to be added
+        reset
+            If true, reset the already found peaks. Useful when
+            changing `min_snr` and calling find_peaks again on the
+            same x-range.
+
+        """
+
+        if reset:
+            self.reset()
+
         bin_edges = self.spectrum.bin_edges_raw
         bin_centers = self.spectrum.bin_centers_raw
 
