@@ -59,7 +59,6 @@ _DATA = {
     "Energies": "",  # additional energies separated by ; (MeV)
     "WindowXmin": "0.001",  # lower limit of energy grid (MeV)
     "WindowXmax": "100",  # upper limit of energy grid (MeV)
-    "Output": "",  # 'on' for standard energy grid
     "OutOpt": "PIC",  # return cross sections in cm^2/g
     "ResizeFlag": "on",  # seems to determine whether Xmin and Xmax are used
 }
@@ -431,7 +430,7 @@ class _XCOMQuery:
             raise XCOMInputError(
                 "XCOM search method not set. Need to call update() method."
             )
-        if self._data["Energies"] == "" and self._data["Output"] == "":
+        if self._data["Energies"] == "" and "Output" not in self._data:
             raise XCOMInputError("No energies_kev or e_range_kev requested.")
         # submit the query
         self._request()
