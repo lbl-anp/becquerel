@@ -6,7 +6,6 @@ import pytest
 
 
 class ExampleCache(DataFrameCache):
-
     name = "example"
 
     def fetch(self):
