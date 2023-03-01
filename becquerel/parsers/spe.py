@@ -8,7 +8,7 @@ from ..core import calibration
 from .parsers import BecquerelParserError, BecquerelParserWarning
 
 
-def read(filename, verbose=False):
+def read(filename, verbose=False, cal_kwargs=None):
     """Parse the ASCII SPE file and return a dictionary of data.
 
     ORTEC's SPE file format is given on page 73 of this document:
@@ -20,6 +20,8 @@ def read(filename, verbose=False):
         The filename of the CNF file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
+    cal_kwargs : dict or None (optional)
+        Kwargs to override the Calibration parameters read from file.
 
     Returns
     -------
@@ -127,8 +129,10 @@ def read(filename, verbose=False):
     data["counts"] = counts
 
     # create an energy calibration object
+    if cal_kwargs is None:
+        cal_kwargs = {}
     cal = None
     if len(cal_coeff) > 0 and not np.allclose(cal_coeff, 0):
-        cal = calibration.Calibration.from_polynomial(cal_coeff)
+        cal = calibration.Calibration.from_polynomial(cal_coeff, **cal_kwargs)
 
     return data, cal

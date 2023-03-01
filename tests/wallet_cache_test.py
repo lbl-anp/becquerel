@@ -4,6 +4,7 @@ import numpy as np
 import uncertainties
 import becquerel.tools.wallet_cache as wallet_cache
 import pytest
+from utils import nndc_is_up
 
 
 @pytest.mark.parametrize(
@@ -49,6 +50,7 @@ def test_format_ufloat(arg, result):
 
 @pytest.mark.webtest
 @pytest.mark.flaky(reruns=3)
+@pytest.mark.skipif(not nndc_is_up(), reason="NNDC is down.")
 class TestWalletCardCache:
     """Test functionality of wallet_cache."""
 

@@ -6,7 +6,6 @@ import pytest
 
 
 class ExampleCache(DataFrameCache):
-
     name = "example"
 
     def fetch(self):
@@ -61,6 +60,7 @@ class TestCacheExceptions:
         """Test ExampleCache.check_path() exception for a bad path."""
         d = ExampleCache()
         d.path = "/bad/path"
+        d.filename = "/bad/path/filename.csv"
         with pytest.raises(CacheError):
             d.check_path()
         with pytest.raises(CacheError):

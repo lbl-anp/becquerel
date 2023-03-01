@@ -6,13 +6,9 @@ import warnings
 class RebinError(Exception):
     """Exception raised by rebin operations."""
 
-    pass
-
 
 class RebinWarning(UserWarning):
     """Warnings displayed by rebin operations."""
-
-    pass
 
 
 def _check_monotonic_increasing(arr, arr_name="array"):
@@ -164,7 +160,7 @@ def _rebin_interpolation(
       in_spectrum: iterable of input spectrum counts in each bin
       in_edges: iterable of input bin edges (len = len(in_spectrum) + 1)
       out_edges_no_rightmost: iterable of output bin edges
-                              (sans the rightmost bin)
+                              (sans the rightmost bin edge)
       slopes: the slopes of each histogram bin, with the lines drawn between
               each bin edge. (len = len(in_spectrum))
       out_spectrum: for nb.guvectorize; This is the return array, do not
@@ -278,6 +274,7 @@ def rebin(
     method="interpolation",
     slopes=None,
     zero_pad_warnings=True,
+    include_overflows=False,
 ):
     """
     Spectra rebinning via deterministic or stochastic methods.
@@ -307,6 +304,9 @@ def rebin(
             [num_spectra, num_bins_in + 1] or [num_bins_in + 1]
         zero_pad_warnings (boolean): warn when edge overlap results in
             appending empty bins
+        include_overflows (boolean): whether to include counts below
+            out_edges[0] and above out_edges[-1] in the first and last
+            of the "out" bins, respectively, or to discard them (default).
 
     Raises:
         AssertionError: for bad input arguments
@@ -362,12 +362,35 @@ def rebin(
     _check_any_overlap(in_edges, out_edges)
     if zero_pad_warnings:
         _check_partial_overlap(in_edges, out_edges)
+
+    # add an extra bin at each end if we don't want overflow counts in
+    # the first and last bins
+    if not include_overflows:
+        if not np.isfinite(out_edges[0]):
+            raise RebinError(
+                "Lowest output edge must be finite if not including overflows"
+            )
+        if not np.isfinite(out_edges[-1]):
+            raise RebinError(
+                "Highest output edge must be finite if not including overflows"
+            )
+        out_edges_temp = np.concatenate(
+            (np.array([-np.inf]), out_edges, np.array([np.inf]))
+        )
+    else:
+        out_edges_temp = out_edges
+
     # Remove highest output edge, necessary for guvectorize
-    out_edges = out_edges[..., :-1]
+    out_edges = out_edges_temp[..., :-1]
 
     # Specific calls to (wrapped) nb.guvectorize'd rebinning methods
     if method == "interpolation":
-        return _rebin_interpolation(in_spectra, in_edges, out_edges, slopes)
+        hist = _rebin_interpolation(in_spectra, in_edges, out_edges, slopes)
     elif method == "listmode":
-        return _rebin_listmode(in_spectra, in_edges, out_edges)
-    raise ValueError(f"{method} is not a valid rebinning method")
+        hist = _rebin_listmode(in_spectra, in_edges, out_edges)
+    else:
+        raise ValueError(f"{method} is not a valid rebinning method")
+
+    if not include_overflows:
+        hist = hist[..., 1:-1]
+    return hist

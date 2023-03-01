@@ -15,8 +15,6 @@ N_AV = 6.022141e23
 class IsotopeQuantityError(Exception):
     """Raised by the IsotopeQuantity class"""
 
-    pass
-
 
 def handle_isotope(isotope, error_name=None):
     """Handle string or Isotope input.
@@ -64,16 +62,18 @@ class IsotopeQuantity:
       ref_atoms: the number of atoms of the isotope, at the reference time.
 
     Methods:
-      atoms_at: number of atoms at given time
-      bq_at: activity in Bq at given time
-      uci_at: activity in uCi at given time
-      g_at: mass in grams at given time
-      atoms_now, bq_now, uci_now, g_now: quantity at current time
+      atoms_at: number of atoms at given time, defaults to system time
+      bq_at: activity in Bq at given time, defaults to system time
+      uci_at: activity in uCi at given time, defaults to system time
+      g_at: mass in grams at given time, defaults to system time
       decays_from: number of decays during a time interval
       bq_from, uci_from: average activity during a time interval
       decays_during: number of decays during a Spectrum measurement
       bq_during, uci_during: average activity during a Spectrum measurement
       time_when: time at which activity or mass equals a given value
+
+    Deprecated:
+      atoms_now, bq_now, uci_now, g_now: quantity at current time (use *_at(None))
     """
 
     def __init__(self, isotope, date=None, stability=1e18, **kwargs):
@@ -161,16 +161,24 @@ class IsotopeQuantity:
 
         # dictionary with functions that define how to calculate all quantities
         # in a circular manner
-        conversions = dict(
-            atoms=lambda: ref_quantities["g"] / self.isotope.A * N_AV,
-            bq=lambda: ref_quantities["atoms"] * self.decay_const,
-            uci=lambda: ref_quantities["bq"] / UCI_TO_BQ,
-            g=lambda: ref_quantities["uci"]
-            * UCI_TO_BQ
-            / self.decay_const
-            / N_AV
-            * self.isotope.A,
-        )
+        if self.is_stable:
+            conversions = dict(
+                atoms=lambda: ref_quantities["g"] / self.isotope.A * N_AV,
+                g=lambda: ref_quantities["atoms"] * self.isotope.A / N_AV,
+                bq=lambda: 0,
+                uci=lambda: 0,
+            )
+        else:
+            conversions = dict(
+                atoms=lambda: ref_quantities["g"] / self.isotope.A * N_AV,
+                bq=lambda: ref_quantities["atoms"] * self.decay_const,
+                uci=lambda: ref_quantities["bq"] / UCI_TO_BQ,
+                g=lambda: ref_quantities["uci"]
+                * UCI_TO_BQ
+                / self.decay_const
+                / N_AV
+                * self.isotope.A,
+            )
 
         # rotates the order of the list so that the provided kwarg is at [0]
         order = ["atoms", "bq", "uci", "g"]
@@ -283,7 +291,9 @@ class IsotopeQuantity:
         date = date if date is not None else datetime.datetime.now()
         t1 = utils.handle_datetime(date)
         dt = (t1 - self.ref_date).total_seconds()
-        return self._ref_quantities[quantity] * np.exp(-dt * self.decay_const)
+        # here we use expm1, to use the same function consistently
+        # different numpy functions that could have different numerical precisions
+        return self._ref_quantities[quantity] * (np.expm1(-dt * self.decay_const) + 1.0)
 
     def atoms_at(self, date=None):
         """Calculate the number of atoms at a given time.
@@ -551,8 +561,6 @@ class IsotopeQuantity:
 
 class NeutronIrradiationError(Exception):
     """Exception from NeutronIrradiation class."""
-
-    pass
 
 
 class NeutronIrradiation:

@@ -1,6 +1,7 @@
 """Test Spectrum I/O for different file types."""
 
 import os
+import numpy as np
 import pytest
 import becquerel as bq
 from h5_tools_test import TEST_OUTPUTS
@@ -78,3 +79,47 @@ def test_spectrum_samples_write_read_h5(extension):
         spec.write(fname2)
         spec = bq.Spectrum.from_file(fname2)
         assert spec.livetime is not None
+
+
+def test_from_file_cal_kwargs():
+    """Test Spectrum.from_file overrides calibration with cal_kwargs."""
+    fname = os.path.join(
+        TEST_OUTPUTS, "spectrum_io__test_write_h5__applied_energy_cal.h5"
+    )
+    domain = [-100, 10000]
+    rng = [-10, 1000]
+    params = [0.6]
+    # load without the calibration override
+    spec = bq.Spectrum.from_file(fname)
+    assert not np.allclose(spec.energy_cal.domain, domain)
+    assert not np.allclose(spec.energy_cal.rng, rng)
+    assert not np.allclose(spec.energy_cal.params, params)
+    # load with the calibration override
+    spec = bq.Spectrum.from_file(
+        fname, cal_kwargs={"domain": domain, "rng": rng, "params": params}
+    )
+    assert np.allclose(spec.energy_cal.domain, domain)
+    assert np.allclose(spec.energy_cal.rng, rng)
+    assert np.allclose(spec.energy_cal.params, params)
+
+
+@pytest.mark.parametrize("extension", SAMPLES.keys())
+def test_spectrum_from_file_cal_kwargs(extension):
+    """Test Spectrum.from_file with calibration overrides."""
+    filenames = SAMPLES[extension]
+    assert len(filenames) >= 1
+    for filename in filenames:
+        domain = [-1e7, 1e7]
+        rng = [-1e7, 1e7]
+        # load without the calibration override
+        spec = bq.Spectrum.from_file(filename)
+        if spec.energy_cal is None:
+            continue
+        assert not np.allclose(spec.energy_cal.domain, domain)
+        assert not np.allclose(spec.energy_cal.rng, rng)
+        # load with the calibration override
+        spec = bq.Spectrum.from_file(
+            filename, cal_kwargs={"domain": domain, "rng": rng}
+        )
+        assert np.allclose(spec.energy_cal.domain, domain)
+        assert np.allclose(spec.energy_cal.rng, rng)

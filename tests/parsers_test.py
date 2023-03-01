@@ -2,6 +2,7 @@
 
 import glob
 import os
+import numpy as np
 import pytest
 import matplotlib.pyplot as plt
 import becquerel as bq
@@ -9,7 +10,7 @@ import becquerel as bq
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
 SAMPLES = {}
-for extension in [".spe", ".spc", ".cnf", ".h5"]:
+for extension in [".spe", ".spc", ".cnf", ".h5", ".iec"]:
     filenames = glob.glob(os.path.join(SAMPLES_PATH + "*", "*.*"))
     filenames_filtered = []
     for filename in filenames:
@@ -34,6 +35,15 @@ class TestParsers:
             data, cal = read_fn(filename)
             print(data, cal)
 
+            if cal is not None:
+                # repeat, but override the calibration
+                domain = [-1e7, 1e7]
+                rng = [-1e7, 1e7]
+                data, cal = read_fn(filename, cal_kwargs={"domain": domain, "rng": rng})
+                print(data, cal)
+                assert np.allclose(cal.domain, domain)
+                assert np.allclose(cal.rng, rng)
+
     def test_spe(self):
         """Test parsers.spe.read."""
         self.run_parser(bq.parsers.spe.read, ".spe")
@@ -49,6 +59,10 @@ class TestParsers:
     def test_h5(self):
         """Test parsers.h5.read."""
         self.run_parser(bq.parsers.h5.read, ".h5")
+
+    def test_iec1455(self):
+        """Test parsers.iec1455.read."""
+        self.run_parser(bq.parsers.iec1455.read, ".iec")
 
 
 @pytest.mark.plottest
@@ -105,3 +119,7 @@ class TestParsersSpectrumPlot:
     def test_h5(self):
         """Test parsers.h5.read."""
         self.run_parser(bq.parsers.h5.read, ".h5")
+
+    def test_iec1455(self):
+        """Test parsers.iec1455.read."""
+        self.run_parser(bq.parsers.iec1455.read, ".iec")
