@@ -111,6 +111,10 @@ def _parse_iso8601_duration(text: str) -> float:
 def _parse_int_or_float(s) -> Union[int, float]:
     """Parse `s` to an int if possible or a float otherwise.
 
+    Returns
+    -------
+    int or float
+
     Examples
     --------
     _parse_int_or_float(1)        # 1
