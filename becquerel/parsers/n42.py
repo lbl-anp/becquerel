@@ -108,6 +108,24 @@ def _parse_iso8601_duration(text: str) -> float:
     return float(text[2:-1])
 
 
+def _parse_int_or_float(s) -> Union[int, float]:
+    """Parse `s` to an int if possible or a float otherwise.
+
+    Examples
+    --------
+    _parse_int_or_float(1)        # 1
+    _parse_int_or_float("1")      # 1
+    _parse_int_or_float(1.1)      # 1
+    _parse_int_or_float("1.1")    # 1.1
+    _parse_int_or_float(1.0e3)    # 1000
+    _parse_int_or_float("1.0e3")  # 1000.0
+    """
+    try:
+        return int(s)
+    except ValueError:
+        return float(s)
+
+
 def _parse_channel_data(text: str, compression: str = "None") -> np.ndarray:
     """Parse N42 ChannelData text into a numpy array of integer channel data.
 
@@ -120,7 +138,7 @@ def _parse_channel_data(text: str, compression: str = "None") -> np.ndarray:
     """
     text = text.strip().replace("\n", " ")
     tokens = text.split()
-    data = [int(token) for token in tokens]
+    data = [_parse_int_or_float(token) for token in tokens]
     if compression == "CountedZeroes":
         new_data = []
         k = 0
