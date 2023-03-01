@@ -119,6 +119,10 @@ def _parse_int_or_float(s) -> Union[int, float]:
     _parse_int_or_float("1.1")    # 1.1
     _parse_int_or_float(1.0e3)    # 1000
     _parse_int_or_float("1.0e3")  # 1000.0
+
+    References
+    ----------
+    * https://stackoverflow.com/a/5609191
     """
     try:
         return int(s)
