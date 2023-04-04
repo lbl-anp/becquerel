@@ -1081,6 +1081,12 @@ class Fitter:
         else:
             raise FittingError("Unknown backend: {}", self.backend)
 
+    def param_rel_unc(self, param):
+        """
+        Relative error of fit parameter `param`
+        """
+        return self.param_unc(param) / self.param_val(param)
+
     @property
     def best_values(self):
         """Wrapper for dictionary of best_values."""
