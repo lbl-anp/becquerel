@@ -293,7 +293,7 @@ class TestFittingHighStatSimData:
 
         if "gauss_amp" in fitter.param_names:
             u = fitter.param_rel_unc("gauss_amp")
-            assert u is None or u < 0.10
+            assert u is None or u < 0.01
 
     @pytest.mark.filterwarnings("ignore")
     def test_no_roi(self, sim_high_stat):
