@@ -1083,7 +1083,9 @@ class Fitter:
         """
         Relative error of fit parameter `param`
         """
-        return self.param_unc(param) / self.param_val(param)
+        if self.param_unc(param):
+            return self.param_unc(param) / self.param_val(param)
+        return None
 
     @property
     def best_values(self):
