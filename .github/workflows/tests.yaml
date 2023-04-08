@@ -1,0 +1,52 @@
+# This workflow will install dependencies, install becquerel and run tests.
+# It runs on multiple python3 versions on macOS, Ubuntu and Windows.
+# It runs when a commit (merge) is push to the main (default) branch or for updates to a PR targeting main.
+# Based on: https://github.com/actions/starter-workflows/blob/main/ci/python-package.yml
+
+name: tests
+
+on:
+  # When to test
+  push:
+    branches: [$default-branch]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # 0700 UTC every day
+    - cron: "00 7 * * *"
+
+jobs:
+  pip_build_test:
+    # OS and python combos to test
+    # Ubuntu 20.04 is specified because GHA are currently transitioning from
+    # 18.04 to 20.04 and the `latest` tag could run on either.
+    strategy:
+      matrix:
+        os: ["macos-latest", "ubuntu-20.04", "windows-latest"]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+
+    # Installation and testing
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install without dev dependencies
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install --only-binary=numpy,scipy -r requirements.txt
+          pip install .
+      - name: Make sure import works
+        run: python -c "import becquerel;"
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+      # Run tests on 4 nodes (processes) in parallel while guaranteeing that the
+      # tests from each file in tests/ run in sequence on the same node. The
+      # `loadfile` is required for the code coverage to complete in parallel
+      # without failing the pipeline.
+      # See: https://github.com/lbl-anp/becquerel/issues/336
+      - name: Test with pytest
+        run: pytest -n 4 --dist=loadfile

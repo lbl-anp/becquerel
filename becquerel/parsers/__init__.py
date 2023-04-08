@@ -1,16 +1,14 @@
-"""Spectrum file parser classes.
+"""Code for parsing spectrum file types."""
 
-Just instantiate a class with a filename:
-    spec = SpeFile(filename)
+from .parsers import BecquerelParserError, BecquerelParserWarning
+from . import h5, cnf, spc, spe, iec1455
 
-Then the data are in
-    spec.data [counts]
-    spec.channels
-    spec.energies
-    spec.energy_bin_widths
-
-"""
-
-from .spe_file import SpeFile
-from .spc_file import SpcFile
-from .cnf_file import CnfFile
+__all__ = [
+    "BecquerelParserError",
+    "BecquerelParserWarning",
+    "h5",
+    "cnf",
+    "spc",
+    "spe",
+    "iec1455",
+]

@@ -4,22 +4,18 @@ import pandas as pd
 from becquerel.tools.df_cache import DataFrameCache, CacheError
 import pytest
 
-# pylint: disable=no-self-use
-
 
 class ExampleCache(DataFrameCache):
-
-    name = 'example'
+    name = "example"
 
     def fetch(self):
         self.df = pd.DataFrame()
-        self.df['letters'] = ['a', 'b', 'c', 'g', 'h']
-        self.df['numbers'] = [1, 2, 6, 8, 3]
+        self.df["letters"] = ["a", "b", "c", "g", "h"]
+        self.df["numbers"] = [1, 2, 6, 8, 3]
         self.loaded = True
 
 
-class TestCacheFunctionality(object):
-
+class TestCacheFunctionality:
     def test_fetch(self):
         """Test ExampleCache.fetch()."""
         d = ExampleCache()
@@ -59,12 +55,12 @@ class TestCacheFunctionality(object):
         d.delete_file()
 
 
-class TestCacheExceptions(object):
-
+class TestCacheExceptions:
     def test_bad_path(self):
         """Test ExampleCache.check_path() exception for a bad path."""
         d = ExampleCache()
-        d.path = '/bad/path'
+        d.path = "/bad/path"
+        d.filename = "/bad/path/filename.csv"
         with pytest.raises(CacheError):
             d.check_path()
         with pytest.raises(CacheError):

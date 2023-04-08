@@ -1,0 +1,26 @@
+# This workflow will run pre-commit to check formatting compliance, etc
+# It runs on Ubuntu with python 3.9  when a commit (merge) is push to the main
+# (default) branch or for updates to a PR targeting main.
+
+name: pre-commit
+
+on:
+  push:
+    branches: [$default-branch]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run-pre-commit:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Run pre-commit
+        run: |
+          pip install pre-commit
+          pre-commit install
+          pre-commit run --all-files --show-diff-on-failure

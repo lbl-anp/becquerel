@@ -1,27 +1,29 @@
 """"Energy calibration classes"""
 
 from abc import ABCMeta, abstractmethod, abstractproperty
+from future.builtins import dict, super, zip
 from future.utils import viewitems
-from builtins import dict, super, zip  # pylint: disable=redefined-builtin
 import numpy as np
-
-from .utils import VECTOR_TYPES
+import matplotlib.pyplot as plt
+import warnings
 
 
 class EnergyCalError(Exception):
     """Base class for errors in energycal.py"""
 
-    pass
-
 
 class BadInput(EnergyCalError):
     """Error related to energy cal input"""
 
-    pass
 
-
-class EnergyCalBase(object):
+class EnergyCalBase:
     """Abstract base class for energy calibration.
+
+    A note on nomenclature: for historic reasons, 'channels' is used in
+    energycal.py for generic uncalibrated x-axis values. A 'channel' is no
+    longer necessarily an integer channel number (i.e., bin) from a
+    multi-channel analyzer, but could for instance be a float-type fC of charge
+    collected.
 
     Subclasses must implement:
       _ch2kev (method)
@@ -44,30 +46,48 @@ class EnergyCalBase(object):
         self._calpoints = dict()
         self._coeffs = dict()
         # initialize fit constraints?
+        warnings.warn(
+            "The use of bq.EnergyCalBase classes is deprecated "
+            "and will be removed in a future release; "
+            "use bq.Calibration instead",
+            DeprecationWarning,
+        )
 
     @classmethod
-    def from_points(cls, chlist, kevlist):
+    def from_points(cls, chlist, kevlist, include_origin=False):
         """Construct EnergyCal from calibration points.
 
         Args:
           chlist: list/tuple/array of the channel values of calibration points
           kevlist: list/tuple/array of the corresponding energy values [keV]
+          include_origin: Default is False, if set to True will add a point
+                          at zero into the fit.
 
         Raises:
           BadInput: for bad chlist and/or kevlist.
         """
 
         if chlist is None or kevlist is None:
-            raise BadInput('Channel list and energy list are required')
-        elif (not isinstance(chlist, VECTOR_TYPES) or
-                not isinstance(kevlist, VECTOR_TYPES)):
-            raise BadInput('Inputs should be vector iterables, not scalars')
-        elif len(chlist) != len(kevlist):
-            raise BadInput('Channels and energies must be same length')
+            raise BadInput("Channel list and energy list are required")
+
+        try:
+            cond = len(chlist) != len(kevlist)
+        except TypeError:
+            raise BadInput("Inputs must be one dimensional iterables")
+        if cond:
+            raise BadInput("Channels and energies must be same length")
 
         cal = cls()
+
+        if include_origin:
+            cal.new_calpoint(0, 0)
+
         for ch, kev in zip(chlist, kevlist):
-            cal.new_calpoint(ch, kev)
+            try:
+                cal.new_calpoint(ch, kev)
+            except (ValueError, TypeError):
+                raise BadInput("Inputs must be one dimensional iterables")
+        cal.update_fit()
         return cal
 
     @classmethod
@@ -151,7 +171,7 @@ class EnergyCalBase(object):
         """
 
         if kev in self._calpoints:
-            raise EnergyCalError('Calibration energy already exists')
+            raise EnergyCalError("Calibration energy already exists")
         self.add_calpoint(ch, kev)
 
     def rm_calpoint(self, kev):
@@ -194,8 +214,6 @@ class EnergyCalBase(object):
           energy values, the same size/type as ch [keV]
         """
 
-        pass
-
     def kev2ch(self, kev):
         """Convert energy value(s) to channel(s).
 
@@ -227,7 +245,6 @@ class EnergyCalBase(object):
         """
 
         # if this is not possible, raise a NotImplementedError ?
-        pass
 
     @abstractproperty
     def valid_coeffs(self):
@@ -236,8 +253,6 @@ class EnergyCalBase(object):
         Returns:
           a tuple of strings, the names of the coefficients for this curve
         """
-
-        pass
 
     def _set_coeff(self, name, val):
         """Set a coefficient for the calibration curve.
@@ -253,7 +268,7 @@ class EnergyCalBase(object):
         if name in self.valid_coeffs:
             self._coeffs[name] = val
         else:
-            raise EnergyCalError('Invalid coefficient name: {}'.format(name))
+            raise EnergyCalError(f"Invalid coefficient name: {name}")
 
     def update_fit(self):
         """Compute the calibration curve from the current points.
@@ -267,9 +282,9 @@ class EnergyCalBase(object):
         num_points = len(self._calpoints)
 
         if num_points == 0:
-            raise EnergyCalError('No calibration points; cannot calibrate')
+            raise EnergyCalError("No calibration points; cannot calibrate")
         elif num_points < num_coeffs:
-            raise EnergyCalError('Not enough calibration points to fit curve')
+            raise EnergyCalError("Not enough calibration points to fit curve")
         else:
             self._perform_fit()
 
@@ -277,7 +292,46 @@ class EnergyCalBase(object):
     def _perform_fit(self):
         """Do the actual curve fitting."""
 
-        pass
+    def plot(self, ax=None):
+        """Plot the calibration.
+
+        Parameters
+        ----------
+        ax : np.ndarray of shape (2,), or matplotlib axes object, optional
+            Plot axes to use. If None, create new axes.
+        """
+
+        # Handle whether we have fit points or just a fit function
+        has_points = self.channels.size > 0
+
+        if ax is None:
+            fig, ax = plt.subplots(1 + has_points, 1, sharex=True)
+
+        if has_points:
+            assert ax.shape == (2,)
+            ax_cal, ax_res = ax
+            xmin, xmax = self.channels.min(), self.channels.max()
+        else:
+            ax_cal = ax
+            xmin, xmax = 0, 3000
+
+        # Plot calibration curve
+        xx = np.linspace(xmin, xmax, 1000)
+        yy = self.ch2kev(xx)
+        ax_cal.plot(xx, yy, alpha=1.0 - 0.7 * has_points)
+        ax_cal.set_ylabel("energy [keV]")
+
+        if has_points:
+            # Plot calibration points
+            ax_cal.scatter(self.channels, self.energies)
+
+            # Plot residuals
+            ax_res.scatter(self.channels, self.ch2kev(self.channels) - self.energies)
+            ax_res.set_xlabel("channel")
+            ax_res.set_ylabel("fit-data [keV]")
+            ax_res.axhline(0, linestyle="dashed", linewidth=1, c="k")
+        else:
+            ax_cal.set_xlabel("channel")
 
 
 # TODO: dummy class for testing?
@@ -304,15 +358,15 @@ class LinearEnergyCal(EnergyCalBase):
         """
 
         new_coeffs = {}
-        if 'p0' in coeffs and 'p1' in coeffs:
-            new_coeffs['b'] = coeffs['p1']
-            new_coeffs['c'] = coeffs['p0']
-        elif 'slope' in coeffs and 'offset' in coeffs:
-            new_coeffs['b'] = coeffs['slope']
-            new_coeffs['c'] = coeffs['offset']
-        elif 'm' in coeffs and 'b' in coeffs:
-            new_coeffs['b'] = coeffs['m']
-            new_coeffs['c'] = coeffs['b']
+        if "p0" in coeffs and "p1" in coeffs:
+            new_coeffs["b"] = coeffs["p1"]
+            new_coeffs["c"] = coeffs["p0"]
+        elif "slope" in coeffs and "offset" in coeffs:
+            new_coeffs["b"] = coeffs["slope"]
+            new_coeffs["c"] = coeffs["offset"]
+        elif "m" in coeffs and "b" in coeffs:
+            new_coeffs["b"] = coeffs["m"]
+            new_coeffs["c"] = coeffs["b"]
         else:
             new_coeffs = coeffs.copy()
         cal = super().from_coeffs(new_coeffs)
@@ -326,19 +380,25 @@ class LinearEnergyCal(EnergyCalBase):
           a tuple of strings, the names of the coefficients for this curve
         """
 
-        return ('b', 'c')
+        return ("b", "c")
 
     @property
     def slope(self):
         """Return the slope coefficient value."""
 
-        return self._coeffs['b']
+        try:
+            return self._coeffs["b"]
+        except KeyError:
+            raise EnergyCalError("Slope coefficient not yet supplied or calculated.")
 
     @property
     def offset(self):
         """Return the offset coefficient value."""
 
-        return self._coeffs['c']
+        try:
+            return self._coeffs["c"]
+        except KeyError:
+            raise EnergyCalError("Offset coefficient not yet supplied or calculated.")
 
     def _ch2kev(self, ch):
         """Convert scalar OR np.array of channel(s) to energies.
@@ -371,5 +431,5 @@ class LinearEnergyCal(EnergyCalBase):
         """Do the actual curve fitting."""
 
         b, c = np.polyfit(self.channels, self.energies, 1)
-        self._set_coeff('b', b)
-        self._set_coeff('c', c)
+        self._set_coeff("b", b)
+        self._set_coeff("c", c)

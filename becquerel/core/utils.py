@@ -1,19 +1,18 @@
 """General utility functions to be shared among core modules."""
 
-from __future__ import print_function
 import datetime
 from dateutil.parser import parse as dateutil_parse
-from six import string_types
 from uncertainties import UFloat, unumpy
+import warnings
 import numpy as np
+
+EPS = np.finfo(float).eps
 
 VECTOR_TYPES = (list, tuple, np.ndarray)
 
 
 class UncertaintiesError(Exception):
     """Raised when uncertainties are badly specified in an input."""
-
-    pass
 
 
 def all_ufloats(x):
@@ -38,8 +37,7 @@ def all_ufloats(x):
         if all(are_ufloats):
             return True
         elif any(are_ufloats):
-            raise UncertaintiesError(
-                'Input should be all UFloats or no UFloats')
+            raise UncertaintiesError("Input should be all UFloats or no UFloats")
         else:
             return False
 
@@ -65,18 +63,20 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
     ufloats = all_ufloats(x_array)
 
     if ufloats and x_uncs is None:
-        return np.array(x_array)
+        return np.asarray(x_array)
     elif ufloats:
-        raise UncertaintiesError('Specify uncertainties with UFloats or ' +
-                                 'by separate argument, but not both')
+        raise UncertaintiesError(
+            "Specify uncertainties with UFloats or "
+            + "by separate argument, but not both"
+        )
     elif x_uncs is not None:
         return unumpy.uarray(x_array, x_uncs)
     else:
         return unumpy.uarray(x_array, default_unc_func(x_array))
 
 
-def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
-    """Parse an argument as a datetime, date+time string, or None.
+def handle_datetime(input_time, error_name="datetime arg", allow_none=False):
+    """Parse an argument as a date, datetime, date+time string, or None.
 
     Args:
       input_time: the input argument to be converted to a datetime
@@ -86,7 +86,7 @@ def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
         (default: False)
 
     Raises:
-      TypeError: if input_time is not a string, datetime, or None
+      TypeError: if input_time is not a string, datetime, date, or None
 
     Returns:
       a datetime.datetime, or None
@@ -94,13 +94,17 @@ def handle_datetime(input_time, error_name='datetime arg', allow_none=False):
 
     if isinstance(input_time, datetime.datetime):
         return input_time
-    elif isinstance(input_time, string_types):
+    elif isinstance(input_time, datetime.date):
+        warnings.warn(
+            "datetime.date passed in with no time; defaulting to 0:00 on date"
+        )
+        return datetime.datetime(input_time.year, input_time.month, input_time.day)
+    elif isinstance(input_time, str):
         return dateutil_parse(input_time)
     elif input_time is None and allow_none:
         return None
     else:
-        raise TypeError(
-            'Unknown type for {}: {}'.format(error_name, input_time))
+        raise TypeError(f"Unknown type for {error_name}: {input_time}")
 
 
 def bin_centers_from_edges(edges_kev):
@@ -117,3 +121,20 @@ def bin_centers_from_edges(edges_kev):
     edges_kev = np.array(edges_kev)
     centers_kev = (edges_kev[:-1] + edges_kev[1:]) / 2
     return centers_kev
+
+
+def sqrt_bins(bin_edge_min, bin_edge_max, nbins):
+    """
+    Square root binning
+
+    Args:
+      bin_edge_min (float): Minimum bin edge (must be >= 0)
+      bin_edge_max (float): Maximum bin edge (must be greater than bin_min)
+      nbins (int): Number of bins
+
+    Returns:
+      np.array of bin edges (length = nbins + 1)
+    """
+    assert bin_edge_min >= 0
+    assert bin_edge_max > bin_edge_min
+    return np.linspace(np.sqrt(bin_edge_min), np.sqrt(bin_edge_max), nbins + 1) ** 2
