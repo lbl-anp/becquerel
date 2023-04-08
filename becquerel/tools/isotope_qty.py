@@ -553,7 +553,7 @@ class NeutronIrradiation(object):
             return '{} n/cm2/s from {} to {}'.format(
                 self.n_cm2_s, self.start_time, self.stop_time)
 
-    def activate(self, barns, initial, activated,  stability=1e18):
+    def activate(self, barns, initial, activated, stability=1e18):
         """
         Calculate an IsotopeQuantity from before or after a neutron activation.
 
