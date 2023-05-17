@@ -734,6 +734,8 @@ class Fitter:
             p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
             if isinstance(p, Parameters):
                 p = _parameters_to_bq_guess(p)
+            elif p is None:
+                raise TypeError()
             params += p
         return params
 
@@ -1053,12 +1055,14 @@ class Fitter:
         if "lmfit" in self.backend:
             if param in self.result.params:
                 return self.result.params[param].value
-            elif param in self.fit.best_values:
+            elif param in self.result.best_values:
                 return self.result.best_values[param]
             else:
                 raise FittingError(f"Unknown param: {param}")
         elif "minuit" in self.backend:
-            return self.result.params[param].value
+            if param in self.result.parameters:
+                return self.result.params[param].value
+            raise FittingError(f"Unknown param: {param}")
         raise FittingError(f"Unknown backend: {self.backend}")
 
     def param_unc(self, param):
@@ -1076,7 +1080,9 @@ class Fitter:
             else:
                 raise FittingError(f"Unknown param: {param}")
         elif "minuit" in self.backend:
-            return self.result.params[param].error  # TODO minos vs hesse?
+            if param in self.result.parameters:
+                return self.result.params[param].error  # TODO minos vs hesse?
+            raise FittingError(f"Unknown param: {param}")
         raise FittingError(f"Unknown backend: {self.backend}")
 
     def param_rel_unc(self, param):
