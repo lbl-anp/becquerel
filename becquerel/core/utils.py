@@ -100,7 +100,10 @@ def handle_datetime(input_time, error_name="datetime arg", allow_none=False):
         )
         return datetime.datetime(input_time.year, input_time.month, input_time.day)
     elif isinstance(input_time, str):
-        return dateutil_parse(input_time)
+        try:
+            return datetime.datetime.strptime(input_time, "%Y_%m_%d_%H_%M_%S")
+        except ValueError:
+            return dateutil_parse(input_time)
     elif input_time is None and allow_none:
         return None
     else:
