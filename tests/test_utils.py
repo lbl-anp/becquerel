@@ -1,3 +1,4 @@
+import datetime
 import pytest
 import numpy as np
 import becquerel as bq
@@ -26,3 +27,11 @@ def test_sqrt_bins():
     # edge_max < edge_min
     with pytest.raises(AssertionError):
         be = bq.utils.sqrt_bins(100, 50, n_bins)
+
+
+@pytest.mark.parametrize(
+    "timestamp", [datetime.date(year=2023, month=6, day=14), "2023_06_14_00_00_00"]
+)
+def test_handle_datetime(timestamp):
+    expected = datetime.datetime(year=2023, month=6, day=14, hour=0, minute=0, second=0)
+    assert bq.core.utils.handle_datetime(timestamp) == expected
