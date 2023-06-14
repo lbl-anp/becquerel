@@ -46,3 +46,15 @@ def test_handle_datetime_None():
     assert bq.core.utils.handle_datetime(None, allow_none=True) is None
     with pytest.raises(TypeError):
         bq.core.utils.handle_datetime(None, allow_none=False)
+
+
+@pytest.mark.parametrize(
+    "arg,error_type",
+    [
+        ("2023_06_14-08_01_02", ValueError),
+        (2022, TypeError),
+    ]
+)
+def test_handle_datetime_err(arg, error_type):
+    with pytest.raises(error_type):
+        bq.core.utils.handle_datetime(arg)
