@@ -35,11 +35,12 @@ def test_sqrt_bins():
         datetime.date(year=2023, month=6, day=14),
         datetime.datetime(year=2023, month=6, day=14, hour=0, minute=0, second=0),
         "2023_06_14_00_00_00",
+        "2023-06-14T00:00:00.000Z-0000",  # ISO 8601, with timezone
     ]
 )
 def test_handle_datetime(timestamp):
     expected = datetime.datetime(year=2023, month=6, day=14, hour=0, minute=0, second=0)
-    assert bq.core.utils.handle_datetime(timestamp) == expected
+    assert bq.core.utils.handle_datetime(timestamp).replace(tzinfo=None) == expected
 
 
 def test_handle_datetime_None():
