@@ -35,7 +35,7 @@ def test_sqrt_bins():
         datetime.date(year=2023, month=6, day=14),
         datetime.datetime(year=2023, month=6, day=14, hour=0, minute=0, second=0),
         "2023_06_14_00_00_00",
-    ]
+    ],
 )
 def test_handle_datetime(timestamp):
     expected = datetime.datetime(year=2023, month=6, day=14, hour=0, minute=0, second=0)
@@ -53,7 +53,7 @@ def test_handle_datetime_None():
     [
         ("2023_06_14-08_01_02", ValueError),
         (2022, TypeError),
-    ]
+    ],
 )
 def test_handle_datetime_err(arg, error_type):
     with pytest.raises(error_type):
