@@ -2,6 +2,7 @@
 
 import datetime
 from dateutil.parser import parse as dateutil_parse
+from dateutil.parser import ParserError
 from uncertainties import UFloat, unumpy
 import warnings
 import numpy as np
@@ -101,9 +102,9 @@ def handle_datetime(input_time, error_name="datetime arg", allow_none=False):
         return datetime.datetime(input_time.year, input_time.month, input_time.day)
     elif isinstance(input_time, str):
         try:
-            return datetime.datetime.strptime(input_time, "%Y_%m_%d_%H_%M_%S")
-        except ValueError:
             return dateutil_parse(input_time)
+        except ParserError:
+            return datetime.datetime.strptime(input_time, "%Y_%m_%d_%H_%M_%S")
     elif input_time is None and allow_none:
         return None
     else:
