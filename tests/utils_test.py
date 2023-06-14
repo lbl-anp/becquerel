@@ -30,8 +30,19 @@ def test_sqrt_bins():
 
 
 @pytest.mark.parametrize(
-    "timestamp", [datetime.date(year=2023, month=6, day=14), "2023_06_14_00_00_00"]
+    "timestamp",
+    [
+        datetime.date(year=2023, month=6, day=14),
+        datetime.datetime(year=2023, month=6, day=14, hour=0, minute=0, second=0),
+        "2023_06_14_00_00_00",
+    ]
 )
 def test_handle_datetime(timestamp):
     expected = datetime.datetime(year=2023, month=6, day=14, hour=0, minute=0, second=0)
     assert bq.core.utils.handle_datetime(timestamp) == expected
+
+
+def test_handle_datetime_None():
+    assert bq.core.utils.handle_datetime(None, allow_none=True) is None
+    with pytest.raises(TypeError):
+        bq.core.utils.handle_datetime(None, allow_none=False)
