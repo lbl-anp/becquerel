@@ -291,6 +291,17 @@ class TestFittingHighStatSimData:
         assert bq.fitting._is_count_like(fitter.y_roi)
         assert not bq.fitting._is_count_like(fitter.y_roi * 0.5)
 
+        name0 = fitter.param_names[0]
+        fitter.param_val(name0)
+        fitter.param_unc(name0)
+        with pytest.raises(bq.core.fitting.FittingError):
+            fitter.param_val("bad_name")
+        with pytest.raises(bq.core.fitting.FittingError):
+            fitter.param_unc("bad_name")
+        if "gauss_amp" in fitter.param_names:
+            u = fitter.param_rel_unc("gauss_amp")
+            assert u is None or u < 0.01
+
     @pytest.mark.filterwarnings("ignore")
     def test_no_roi(self, sim_high_stat):
         fitter = bq.Fitter(sim_high_stat["model"])

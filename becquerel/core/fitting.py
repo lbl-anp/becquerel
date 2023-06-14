@@ -734,6 +734,8 @@ class Fitter:
             p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
             if isinstance(p, Parameters):
                 p = _parameters_to_bq_guess(p)
+            elif p is None:
+                raise TypeError()
             params += p
         return params
 
@@ -1053,14 +1055,15 @@ class Fitter:
         if "lmfit" in self.backend:
             if param in self.result.params:
                 return self.result.params[param].value
-            elif param in self.fit.best_values:
+            elif param in self.result.best_values:
                 return self.result.best_values[param]
             else:
-                raise FittingError("Unknown param: {}", param)
+                raise FittingError(f"Unknown param: {param}")
         elif "minuit" in self.backend:
-            return self.result.params[param].value
-        else:
-            raise FittingError("Unknown backend: {}", self.backend)
+            if param in self.result.parameters:
+                return self.result.params[param].value
+            raise FittingError(f"Unknown param: {param}")
+        raise FittingError(f"Unknown backend: {self.backend}")
 
     def param_unc(self, param):
         """
@@ -1075,11 +1078,20 @@ class Fitter:
                 # This is the case for the `erf_form` key
                 return np.nan
             else:
-                raise FittingError("Unknown param: {}", param)
+                raise FittingError(f"Unknown param: {param}")
         elif "minuit" in self.backend:
-            return self.result.params[param].error  # TODO minos vs hesse?
-        else:
-            raise FittingError("Unknown backend: {}", self.backend)
+            if param in self.result.parameters:
+                return self.result.params[param].error  # TODO minos vs hesse?
+            raise FittingError(f"Unknown param: {param}")
+        raise FittingError(f"Unknown backend: {self.backend}")
+
+    def param_rel_unc(self, param):
+        """
+        Relative error of fit parameter `param`
+        """
+        if self.param_unc(param):
+            return self.param_unc(param) / self.param_val(param)
+        return None
 
     @property
     def best_values(self):
@@ -1088,8 +1100,7 @@ class Fitter:
             return self.result.best_values
         elif "minuit" in self.backend:
             return self._best_values
-        else:
-            raise FittingError("Unknown backend: {}", self.backend)
+        raise FittingError(f"Unknown backend: {self.backend}")
 
     @property
     def init_values(self):
@@ -1098,8 +1109,7 @@ class Fitter:
             return self.result.init_values
         elif "minuit" in self.backend:
             return self._init_values
-        else:
-            raise FittingError("Unknown backend: {}", self.backend)
+        raise FittingError(f"Unknown backend: {self.backend}")
 
     @property
     def success(self):
@@ -1107,8 +1117,7 @@ class Fitter:
             return self.result.success
         elif "minuit" in self.backend:
             return self.result.valid
-        else:
-            raise FittingError("Unknown backend: {}", self.backend)
+        raise FittingError(f"Unknown backend: {self.backend}")
 
     @property
     def covariance(self):
@@ -1117,8 +1126,7 @@ class Fitter:
             return self.result.covar
         elif "minuit" in self.backend:
             return self.result.covariance
-        else:
-            raise FittingError("Unknown backend: {}", self.backend)
+        raise FittingError(f"Unknown backend: {self.backend}")
 
     def param_dataframe(self, sort_by_model=False):
         """
