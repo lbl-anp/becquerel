@@ -88,6 +88,7 @@ def handle_datetime(input_time, error_name="datetime arg", allow_none=False):
 
     Raises:
       TypeError: if input_time is not a string, datetime, date, or None
+      ValueError: if input_time is a string but can't be parsed
 
     Returns:
       a datetime.datetime, or None
