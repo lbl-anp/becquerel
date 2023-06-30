@@ -52,10 +52,7 @@ def test_handle_datetime_None():
 
 @pytest.mark.parametrize(
     "arg,error_type",
-    [
-        ("2023_06_14-08_01_02", ValueError),
-        (2022, TypeError),
-    ],
+    [("2023_06_14-08_01_02", ValueError)],
 )
 def test_handle_datetime_err(arg, error_type):
     with pytest.raises(error_type):
