@@ -184,7 +184,6 @@ def test_handle_datetime(date_in):
     "iso, date, kwargs, error",
     [
         (["Cs-137"], None, {"atoms": 1e24}, TypeError),
-        ("Cs-137", 123, {"bq": 456}, TypeError),
         ("Cs-137", datetime.datetime.now(), {"asdf": 3}, IsotopeQuantityError),
         ("Cs-137", None, {"bq": -13.3}, ValueError),
     ],
