@@ -69,7 +69,7 @@ def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
     gss = gamma * sigma * sigma
     arg1 = sign * gamma * (mu - x + gss / 2.0)
     arg2 = sign * (mu + gss - x) / (SQRT_TWO * sigma)
-    return amp * gamma / 2 * np.exp(arg1) * scipy.special.erfc(arg2)
+    return amp * (gamma / 2) * np.exp(arg1) * scipy.special.erfc(arg2)
 
 
 def gauss_dbl_exp(
