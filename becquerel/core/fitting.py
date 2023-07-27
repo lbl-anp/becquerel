@@ -731,7 +731,12 @@ class Fitter:
     def _guess_param_defaults(self, **kwargs):
         params = []
         for comp in self.model.components:
-            p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
+            prefix = comp.prefix
+            plen = len(prefix)
+            comp_kwargs = {
+                k[plen:]: v for k, v in kwargs.items() if k.startswith(prefix)
+            }
+            p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi, **comp_kwargs)
             if isinstance(p, Parameters):
                 p = _parameters_to_bq_guess(p)
             elif p is None:
