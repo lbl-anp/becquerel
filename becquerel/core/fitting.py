@@ -64,10 +64,12 @@ def gausserf(x, ampgauss, amperf, mu, sigma):
 
 
 def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
+    sign = np.sign(gamma)
+    gamma = np.fabs(gamma)
     gss = gamma * sigma * sigma
-    arg1 = gamma * (mu + gss / 2.0 - x)
-    arg2 = (mu + gss - x) / (SQRT_TWO * sigma)
-    return amp * (gamma / 2) * np.exp(arg1) * scipy.special.erfc(arg2)
+    arg1 = sign * gamma * (mu - x + gss / 2.0)
+    arg2 = sign * (mu + gss - x) / (SQRT_TWO * sigma)
+    return amp * np.fabs(gamma / 2) * np.exp(arg1) * scipy.special.erfc(arg2)
 
 
 def gauss_dbl_exp(
@@ -349,12 +351,13 @@ class ExpModel(Model):
 class ExpGaussModel(Model):
     """A model of an Exponentially modified Gaussian distribution
     (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
+    A negative "gamma" will create a left tail, a positive "gamma" a right tail.
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(expgauss, **kwargs)
-        self.set_param_hint(f"{self.prefix}sigma", min=0)
-        self.set_param_hint(f"{self.prefix}gamma", min=0, max=1)
+        self.set_param_hint(f"{self.prefix}sigma", min=0.0)
+        self.set_param_hint(f"{self.prefix}gamma", min=-1.0, max=1.0)
         # TODO: This is obviously wrong but best I can think of
         self.set_param_hint(
             f"{self.prefix}fwhm",
@@ -385,7 +388,8 @@ class ExpGaussModel(Model):
             (f"{self.prefix}sigma", "value", sigma),
             (f"{self.prefix}sigma", "min", 0.0),
             (f"{self.prefix}gamma", "value", 0.95),
-            (f"{self.prefix}gamma", "min", 0.0),
+            (f"{self.prefix}gamma", "min", -1.0),
+            (f"{self.prefix}gamma", "max", 1.0),
         ]
 
 
