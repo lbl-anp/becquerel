@@ -436,7 +436,7 @@ class _NNDCQuery:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=ResourceWarning)
                 resp = session.post(self._URL, data=self._data, stream=False)
-            if not resp.ok or resp.reason != "OK" or resp.status_code != 200:
+            if not resp.ok or resp.status_code != 200:
                 raise NNDCRequestError("Request failed: " + resp.reason)
             for msg in [
                 "Your search was unsuccessful",
