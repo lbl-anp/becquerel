@@ -222,5 +222,7 @@ class N42File:
 
 
 def read(filename, verbose=False, cal_kwargs=None):
-    data, cal = None, None
+    n42_file = N42File(filename)
+    data = n42_file.measurements[0]
+    cal = n42_file.calibrations[0]
     return data, cal
