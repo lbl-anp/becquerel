@@ -15,6 +15,10 @@ import pytest
 from utils import xcom_is_up
 
 
+def _get_warning_messages(record):
+    return [str(rec.message) for rec in record]
+
+
 @pytest.mark.webtest
 @pytest.mark.skipif(not xcom_is_up(), reason="XCOM is down.")
 class TestConvertComposition:
@@ -68,13 +72,15 @@ def test_materials_force():
     with pytest.warns(MaterialsWarning) as record:
         fetch_materials(force=True)
     if not os.path.exists(materials_compendium.FNAME):
-        assert (
-            len(record) == 2
-        ), f"Expected two MaterialsWarnings to be raised; got {record}"
+        assert len(record) == 2, (
+            "Expected two MaterialsWarnings to be raised; "
+            f"got {_get_warning_messages(record)}"
+        )
     else:
-        assert (
-            len(record) == 1
-        ), f"Expected one MaterialsWarning to be raised; got {record}"
+        assert len(record) == 1, (
+            "Expected one MaterialsWarning to be raised; "
+            f"got {_get_warning_messages(record)}"
+        )
     assert os.path.exists(materials.FILENAME)
 
 
@@ -134,7 +140,10 @@ def test_materials_dummy_compendium_pre2022():
         json.dump(data, f, indent=4)
     with pytest.warns(None) as record:
         materials._load_and_compile_materials()
-    assert len(record) == 0, f"Expected no MaterialsWarnings to be raised; got {record}"
+    assert len(record) == 0, (
+        "Expected no MaterialsWarnings to be raised; "
+        f"got {_get_warning_messages(record)}"
+    )
     # remove the dummy file and point back to original
     os.remove(materials_compendium.FNAME)
     materials_compendium.FNAME = fname_orig
@@ -183,7 +192,10 @@ def test_materials_dummy_compendium_2022():
         json.dump(data, f, indent=4)
     with pytest.warns(None) as record:
         materials._load_and_compile_materials()
-    assert len(record) == 0, f"Expected no MaterialsWarnings to be raised; got {record}"
+    assert len(record) == 0, (
+        "Expected no MaterialsWarnings to be raised; "
+        f"got {_get_warning_messages(record)}"
+    )
     # remove siteVersion and make sure there is an error raised
     del data["siteVersion"]
     with open(materials_compendium.FNAME, "w") as f:
@@ -226,7 +238,10 @@ def test_materials_no_compendium():
         os.remove(materials_compendium.FNAME)
     with pytest.warns(MaterialsWarning) as record:
         materials_compendium.fetch_compendium_data()
-    assert len(record) == 1, f"Expected one MaterialsWarning to be raised; got {record}"
+    assert len(record) == 1, (
+        "Expected one MaterialsWarning to be raised; "
+        f"got {_get_warning_messages(record)}"
+    )
     # point back to original file
     materials_compendium.FNAME = fname_orig
 
