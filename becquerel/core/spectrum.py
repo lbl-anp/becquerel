@@ -607,6 +607,12 @@ class Spectrum:
                 verbose=verbose,
                 cal_kwargs=cal_kwargs,
             )
+        elif ext.lower() == ".n42":
+            data, cal = parsers.n42.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
         else:
             raise NotImplementedError(f"File type {ext} can not be read")
 
