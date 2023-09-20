@@ -219,3 +219,8 @@ class N42File:
             n42_meas = N42RadMeasurement(starttime, realtime, livetime, counts, calib)
             self.measurements[meas["id"]] = n42_meas
         print(self.measurements)
+
+
+def read(filename, verbose=False, cal_kwargs=None):
+    data, cal = None, None
+    return data, cal
