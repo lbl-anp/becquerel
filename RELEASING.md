@@ -5,6 +5,7 @@ We (loosely) follow the `git flow` [release process](https://www.atlassian.com/g
 - [ ] Pull the most recent version of `main`
 - [ ] Branch off of `main` and name the branch `release-X.X.X` or `hotfix-X` or `vX.X.X`
 - [ ] Update version number within the repository with `bump2version`
+- [ ] Check `becquerel/__metadata__.py` and update if needed
 - [ ] Commit the changes, push to GitHub, and start a pull request into `main`
 - [ ] Once PR approved, merge it into `main`, and delete release branch.
 - [ ] Create tagged version (`vX.X.X`) on
