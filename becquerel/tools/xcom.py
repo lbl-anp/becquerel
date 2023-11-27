@@ -9,6 +9,7 @@ References:
 
 """
 
+from io import StringIO
 import requests
 import pandas as pd
 from collections.abc import Iterable
@@ -398,7 +399,7 @@ class _XCOMQuery:
         self._text = str(self._req.text)
         if len(self._text) == 0:
             raise XCOMRequestError("XCOM returned no text")
-        tables = pd.read_html(self._text, header=0, skiprows=[1, 2])
+        tables = pd.read_html(StringIO(self._text), header=0, skiprows=[1, 2])
         if len(tables) != 1:
             raise XCOMRequestError("More than one HTML table found")
         self.df = tables[0]
