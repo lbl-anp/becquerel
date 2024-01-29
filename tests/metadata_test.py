@@ -1,4 +1,5 @@
 """Ensure the metadata is updated and valid."""
+
 from utils import REPO_PATH
 import becquerel as bq
 
