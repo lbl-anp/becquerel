@@ -1,6 +1,5 @@
 """Element symbols, names, Z values, and masses."""
 
-
 # Element data (Z, symbol, name, and relative atomic mass) are from Wikipedia:
 # https://en.wikipedia.org/wiki/List_of_chemical_elements
 
