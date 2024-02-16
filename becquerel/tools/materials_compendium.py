@@ -58,7 +58,7 @@ def fetch_compendium_data():
         )
         data = []
     else:
-        with open(FNAME, "r") as f:
+        with open(FNAME) as f:
             data = json.load(f)
 
     # extract relevant data

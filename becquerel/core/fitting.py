@@ -125,10 +125,10 @@ def gauss_dbl_exp(
     # l and r tail_func are 0 when we're below/above the Gaussian mean
     # "heavyside convolution"
     mask = x < mu
-    ltail_func[mask] = amp * ltail_ratio * np.exp(ltail_slope * ((x[mask] - mu)))
+    ltail_func[mask] = amp * ltail_ratio * np.exp(ltail_slope * (x[mask] - mu))
     ltail_func[mask] *= -np.expm1(ltail_cutoff * alpha * ((x[mask] - mu) ** 2))
     mask = x > mu
-    rtail_func[mask] = amp * rtail_ratio * np.exp(rtail_slope * ((x[mask] - mu)))
+    rtail_func[mask] = amp * rtail_ratio * np.exp(rtail_slope * (x[mask] - mu))
     rtail_func[mask] *= -np.expm1(rtail_cutoff * alpha * ((x[mask] - mu) ** 2))
     return amp * np.exp(alpha * ((x - mu) ** 2)) + ltail_func + rtail_func
 
