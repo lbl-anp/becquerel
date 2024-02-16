@@ -1,17 +1,24 @@
-import datetime
-from dateutil.parser import parse as dateutil_parse
 import copy
+import datetime
+
 import numpy as np
-from uncertainties import ufloat
-from becquerel.tools.isotope import Isotope
-from becquerel.tools.isotope_qty import IsotopeQuantity, NeutronIrradiation
-from becquerel.tools.isotope_qty import IsotopeQuantityError, UCI_TO_BQ, N_AV
-from becquerel.tools.isotope_qty import NeutronIrradiationError
-from becquerel.tools.isotope_qty import decay_normalize
-from becquerel.tools.isotope_qty import decay_normalize_spectra
-from becquerel import Spectrum
-import becquerel as bq
 import pytest
+from dateutil.parser import parse as dateutil_parse
+from uncertainties import ufloat
+
+import becquerel as bq
+from becquerel import Spectrum
+from becquerel.tools.isotope import Isotope
+from becquerel.tools.isotope_qty import (
+    N_AV,
+    UCI_TO_BQ,
+    IsotopeQuantity,
+    IsotopeQuantityError,
+    NeutronIrradiation,
+    NeutronIrradiationError,
+    decay_normalize,
+    decay_normalize_spectra,
+)
 
 
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):

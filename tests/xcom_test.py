@@ -1,9 +1,10 @@
 """Test XCOM data queries."""
 
 import numpy as np
-from becquerel.tools import xcom
-from utils import xcom_is_up
 import pytest
+from utils import xcom_is_up
+
+from becquerel.tools import xcom
 
 XCOM_URL_ORIG = xcom._URL
 

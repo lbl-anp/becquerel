@@ -1,7 +1,8 @@
 """Simple tools to perform HDF5 I/O."""
 
 import pathlib
-from typing import Union, Tuple
+from typing import Tuple, Union
+
 import h5py
 
 

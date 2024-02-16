@@ -2,11 +2,12 @@
 
 import os
 import struct
+
 import dateutil.parser
 import numpy as np
+
 from ..core import calibration
 from .parsers import BecquerelParserError
-
 
 SPC_FORMAT_BEGINNING = [
     # Record 1

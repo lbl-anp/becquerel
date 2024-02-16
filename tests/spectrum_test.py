@@ -1,11 +1,12 @@
 """Test becquerel's Spectrum."""
 
-import pytest
 import datetime
-import numpy as np
-from uncertainties import ufloat, UFloat, unumpy
-import becquerel as bq
 
+import numpy as np
+import pytest
+from uncertainties import UFloat, ufloat, unumpy
+
+import becquerel as bq
 
 TEST_DATA_LENGTH = 256
 TEST_COUNTS = 4

@@ -9,10 +9,12 @@ References:
 
 """
 
-from io import StringIO
-import requests
-import pandas as pd
 from collections.abc import Iterable
+from io import StringIO
+
+import pandas as pd
+import requests
+
 from . import element
 
 # Dry air relative weights taken from:

@@ -1,17 +1,18 @@
-import warnings
 import inspect
+import warnings
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numdifftools as nd
 import numpy as np
 import pandas as pd
 import scipy.special
+from iminuit import Minuit
 from lmfit.model import Model
 from lmfit.parameter import Parameters
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-from iminuit import Minuit
+from matplotlib.gridspec import GridSpec
 from uncertainties import ufloat
-import numdifftools as nd
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562

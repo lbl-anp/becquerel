@@ -1,10 +1,12 @@
 """Read in an IEC 1455 file."""
 
 import os
-import warnings
-import dateutil.parser
 import re
+import warnings
+
+import dateutil.parser
 import numpy as np
+
 from ..core import calibration
 from .parsers import BecquerelParserError, BecquerelParserWarning
 

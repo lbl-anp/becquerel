@@ -1,6 +1,7 @@
+import warnings
+
 import numba as nb
 import numpy as np
-import warnings
 
 
 class RebinError(Exception):

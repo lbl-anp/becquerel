@@ -1,11 +1,12 @@
 """"Energy calibration classes"""
 
+import warnings
 from abc import ABCMeta, abstractmethod, abstractproperty
+
+import matplotlib.pyplot as plt
+import numpy as np
 from future.builtins import dict, super, zip
 from future.utils import viewitems
-import numpy as np
-import matplotlib.pyplot as plt
-import warnings
 
 
 class EnergyCalError(Exception):

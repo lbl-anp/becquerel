@@ -1,6 +1,7 @@
 """Ensure the metadata is updated and valid."""
 
 from utils import REPO_PATH
+
 import becquerel as bq
 
 COPYRIGHT = (REPO_PATH / "COPYRIGHT.txt").read_text()

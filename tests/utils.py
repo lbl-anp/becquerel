@@ -1,6 +1,7 @@
 """Helpers for testing."""
 
 from pathlib import Path
+
 import requests
 
 TESTS_PATH = Path(__file__).parent.absolute()

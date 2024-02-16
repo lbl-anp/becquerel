@@ -1,13 +1,14 @@
 """Test core.plotting"""
 
-import pytest
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+import pytest
 
-plt.switch_backend("Agg")
 import becquerel as bq  # noqa: E402
 from becquerel import SpectrumPlotter as sp  # noqa: E402
+
+plt.switch_backend("Agg")
 
 TEST_DATA_LENGTH = 256
 TEST_COUNTS = 4

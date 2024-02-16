@@ -3,13 +3,15 @@
 import ast
 import copy
 import warnings
+
 import asteval
 import black
 import blib2to3
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import scipy.optimize
-import matplotlib.pyplot as plt
+
 from .. import io
 
 # the default domain (x) and range (y) ranges over which a calibration is valid
