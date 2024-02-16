@@ -36,7 +36,7 @@ def test_sqrt_bins():
         datetime.datetime(year=2023, month=6, day=14, hour=0, minute=0, second=0),
         "2023_06_14_00_00_00",
         "2023-06-14T00:00:00.000Z-0000",  # ISO 8601, with timezone
-        1686726000.0,  # UNIX timestamp
+        1686700800.0,  # UNIX timestamp
     ],
 )
 def test_handle_datetime(timestamp):

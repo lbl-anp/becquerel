@@ -103,7 +103,7 @@ def handle_datetime(input_time, error_name="datetime arg", allow_none=False):
         )
         return datetime.datetime(input_time.year, input_time.month, input_time.day)
     elif isinstance(input_time, Number):
-        return datetime.datetime.fromtimestamp(input_time)
+        return datetime.datetime.utcfromtimestamp(input_time)
     elif isinstance(input_time, str):
         try:
             return dateutil_parse(input_time)
