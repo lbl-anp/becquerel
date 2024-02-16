@@ -160,7 +160,7 @@ def _read_materials_csv():
     if not os.path.exists(FILENAME):
         raise MaterialsError(f"Materials data CSV does not exist at {FILENAME}")
     materials = {}
-    with open(FILENAME, "r") as f:
+    with open(FILENAME) as f:
         lines = f.readlines()
         for tokens in csv.reader(
             lines,
