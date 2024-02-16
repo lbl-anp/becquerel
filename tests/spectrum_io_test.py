@@ -1,12 +1,14 @@
 """Test Spectrum I/O for different file types."""
 
 import os
+
 import numpy as np
 import pytest
-import becquerel as bq
 from h5_tools_test import TEST_OUTPUTS
-from spectrum_test import make_spec
 from parsers_test import SAMPLES
+from spectrum_test import make_spec
+
+import becquerel as bq
 
 
 @pytest.mark.parametrize("extension", SAMPLES.keys())

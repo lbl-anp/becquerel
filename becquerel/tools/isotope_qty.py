@@ -1,12 +1,14 @@
 """Quantities of a nuclear isotope, with decay and activation tools."""
 
-import datetime
 import copy
-import numpy as np
+import datetime
 import warnings
-from .isotope import Isotope
-from ..core import utils
 from collections import OrderedDict
+
+import numpy as np
+
+from ..core import utils
+from .isotope import Isotope
 
 UCI_TO_BQ = 3.7e4
 N_AV = 6.022141e23

@@ -1,11 +1,12 @@
 """Automatic calibration by associating peaks with energies."""
 
 from itertools import combinations
+
 import matplotlib.pyplot as plt
 import numpy as np
-from .peakfinder import PeakFinder
-from .calibration import Calibration
 
+from .calibration import Calibration
+from .peakfinder import PeakFinder
 
 MAJOR_BACKGROUND_LINES = [
     1460.82,

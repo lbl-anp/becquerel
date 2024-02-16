@@ -7,15 +7,17 @@ References:
 
 """
 
-from future.builtins import super
 import warnings
+
 import numpy as np
-import requests
 import pandas as pd
+import requests
 import uncertainties
+from future.builtins import super
+
 from ._nndc_dummy_text import (
-    _NUCLEAR_WALLET_CARD_QUERY_DUMMY_TEXT,
     _DECAY_RADIATION_QUERY_DUMMY_TEXT,
+    _NUCLEAR_WALLET_CARD_QUERY_DUMMY_TEXT,
 )
 
 PARITIES = ["+", "-", "any"]

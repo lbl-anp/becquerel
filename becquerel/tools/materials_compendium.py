@@ -16,9 +16,11 @@ and it is available at:
 import json
 import os
 import warnings
+
 import numpy as np
 import pandas as pd
-from .materials_error import MaterialsWarning, MaterialsError
+
+from .materials_error import MaterialsError, MaterialsWarning
 
 FNAME = os.path.join(os.path.split(__file__)[0], "MaterialsCompendium.json")
 

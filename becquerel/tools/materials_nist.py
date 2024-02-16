@@ -7,10 +7,12 @@ References:
 
 """
 
-import requests
-import pandas as pd
-from io import StringIO
 from collections.abc import Iterable
+from io import StringIO
+
+import pandas as pd
+import requests
+
 from .element import element_symbol
 from .materials_error import MaterialsError
 

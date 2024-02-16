@@ -3,11 +3,12 @@
 import csv
 import os
 import warnings
-import numpy as np
-from .materials_error import MaterialsError, MaterialsWarning
-from .materials_compendium import fetch_compendium_data
-from .materials_nist import fetch_element_data, fetch_compound_data
 
+import numpy as np
+
+from .materials_compendium import fetch_compendium_data
+from .materials_error import MaterialsError, MaterialsWarning
+from .materials_nist import fetch_compound_data, fetch_element_data
 
 FILENAME = os.path.join(os.path.split(__file__)[0], "materials.csv")
 

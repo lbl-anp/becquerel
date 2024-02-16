@@ -1,12 +1,13 @@
 """General utility functions to be shared among core modules."""
 
 import datetime
-from dateutil.parser import parse as dateutil_parse
-from dateutil.parser import ParserError
-from numbers import Number
-from uncertainties import UFloat, unumpy
 import warnings
+from numbers import Number
+
 import numpy as np
+from dateutil.parser import ParserError
+from dateutil.parser import parse as dateutil_parse
+from uncertainties import UFloat, unumpy
 
 EPS = np.finfo(float).eps
 

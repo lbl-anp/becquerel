@@ -2,9 +2,10 @@
 
 import numpy as np
 import pandas as pd
-from becquerel.tools import nndc
-from utils import nndc_is_up
 import pytest
+from utils import nndc_is_up
+
+from becquerel.tools import nndc
 
 
 def ufloats_overlap_range(ufloats, vmin, vmax):

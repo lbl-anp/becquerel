@@ -1,21 +1,23 @@
 """Test Calibration class."""
 
 import os
+
 import matplotlib.pyplot as plt
 import numpy as np
-from becquerel.io import h5
-from becquerel.core.calibration import (
-    _validate_domain_range,
-    _eval_expression,
-    _param_indices,
-    _validate_expression,
-    _fit_expression,
-    CalibrationError,
-    CalibrationWarning,
-    Calibration,
-)
 import pytest
 from h5_tools_test import TEST_OUTPUTS
+
+from becquerel.core.calibration import (
+    Calibration,
+    CalibrationError,
+    CalibrationWarning,
+    _eval_expression,
+    _fit_expression,
+    _param_indices,
+    _validate_domain_range,
+    _validate_expression,
+)
+from becquerel.io import h5
 
 
 def test_validate_domain_range():

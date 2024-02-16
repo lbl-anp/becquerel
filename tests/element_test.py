@@ -1,7 +1,8 @@
 """Test Element class."""
 
-from becquerel.tools import element
 import pytest
+
+from becquerel.tools import element
 
 
 class TestElementFunctions:

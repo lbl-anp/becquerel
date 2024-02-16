@@ -1,6 +1,7 @@
 """A simple class for caching a pandas DataFrame."""
 
 import os
+
 import pandas as pd
 
 

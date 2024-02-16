@@ -19,6 +19,11 @@ repos:
     hooks:
       - id: pyupgrade
         args: [--py38-plus]
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile, black, --float-to-top, --color]
   - repo: https://github.com/psf/black
     rev: 24.1.1
     hooks:
