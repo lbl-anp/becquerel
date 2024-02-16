@@ -1,8 +1,8 @@
-import pytest
-import numpy as np
 import matplotlib.pyplot as plt
-import becquerel as bq
+import numpy as np
+import pytest
 
+import becquerel as bq
 
 # ----------------------------------------------
 #         Test Rebinning

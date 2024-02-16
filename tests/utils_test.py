@@ -1,8 +1,9 @@
 import datetime
-import pytest
-import numpy as np
-import becquerel as bq
 
+import numpy as np
+import pytest
+
+import becquerel as bq
 
 # ----------------------------------------------
 #         Test utils

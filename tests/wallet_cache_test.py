@@ -1,10 +1,11 @@
 """Test WalletCardCache class."""
 
 import numpy as np
-import uncertainties
-import becquerel.tools.wallet_cache as wallet_cache
 import pytest
+import uncertainties
 from utils import nndc_is_up
+
+import becquerel.tools.wallet_cache as wallet_cache
 
 
 @pytest.mark.parametrize(

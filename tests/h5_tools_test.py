@@ -1,11 +1,12 @@
 """Test HDF5 I/O tools."""
 
 import os
+
 import h5py
 import numpy as np
 import pytest
-from becquerel.io.h5 import ensure_string, is_h5_filename, open_h5, write_h5, read_h5
 
+from becquerel.io.h5 import ensure_string, is_h5_filename, open_h5, read_h5, write_h5
 
 TEST_OUTPUTS = os.path.join(os.path.split(__file__)[0], "test_outputs")
 if not os.path.exists(TEST_OUTPUTS):

@@ -1,8 +1,9 @@
 """Nuclear isotopes and isomers."""
 
-from future.builtins import super
 import numpy as np
 import uncertainties
+from future.builtins import super
+
 from . import element
 from .wallet_cache import wallet_cache
 

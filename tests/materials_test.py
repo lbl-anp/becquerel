@@ -2,17 +2,19 @@
 
 import json
 import os
-from becquerel.tools import (
-    fetch_materials,
-    remove_materials_csv,
-    MaterialsError,
-    MaterialsWarning,
-)
-from becquerel.tools.materials_nist import convert_composition
-import becquerel.tools.materials as materials
-import becquerel.tools.materials_compendium as materials_compendium
+
 import pytest
 from utils import xcom_is_up
+
+import becquerel.tools.materials as materials
+import becquerel.tools.materials_compendium as materials_compendium
+from becquerel.tools import (
+    MaterialsError,
+    MaterialsWarning,
+    fetch_materials,
+    remove_materials_csv,
+)
+from becquerel.tools.materials_nist import convert_composition
 
 
 def _get_warning_messages(record):

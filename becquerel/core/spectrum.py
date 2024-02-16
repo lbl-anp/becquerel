@@ -1,17 +1,17 @@
 """Base class for spectrum file parsers."""
 
-import os
-from copy import deepcopy
 import datetime
+import os
+import warnings
+from copy import deepcopy
+
 import numpy as np
 from uncertainties import UFloat, unumpy
-from .. import parsers
-from .. import io
-from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
+
+from .. import io, parsers
+from . import fitting, plotting
 from .rebin import rebin
-from . import plotting
-from . import fitting
-import warnings
+from .utils import EPS, bin_centers_from_edges, handle_datetime, handle_uncs
 
 
 class SpectrumError(Exception):
