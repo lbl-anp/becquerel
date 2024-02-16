@@ -1,6 +1,6 @@
 # becquerel
 
-[![tests](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml/badge.svg)](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml)
+[![tests](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml/badge.svg?branch=main)](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml)
 [![Coverage Status](https://coveralls.io/repos/github/lbl-anp/becquerel/badge.svg?branch=main)](https://coveralls.io/github/lbl-anp/becquerel?branch=main)
 [![PyPI version](https://img.shields.io/pypi/v/becquerel.svg)](https://pypi.org/project/becquerel)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/becquerel.svg)](https://pypi.org/project/becquerel)
