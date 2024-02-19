@@ -15,7 +15,7 @@ repos:
       - id: mixed-line-ending
       - id: requirements-txt-fixer
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0
+    rev: v3.15.1
     hooks:
       - id: pyupgrade
         args: [--py38-plus]
@@ -25,11 +25,11 @@ repos:
       - id: isort
         args: [--profile, black, --float-to-top, --color]
   - repo: https://github.com/psf/black
-    rev: 24.1.1
+    rev: 24.2.0
     hooks:
       - id: black
   - repo: https://github.com/PyCQA/autoflake
-    rev: v2.2.1
+    rev: v2.3.0
     hooks:
       - id: autoflake
   - repo: https://github.com/PyCQA/flake8
