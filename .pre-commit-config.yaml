@@ -53,6 +53,11 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        args: [--skip, "B101"]
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.39.0
     hooks:
