@@ -10,7 +10,7 @@ class TestElementFunctions:
 
     def test_validated_z_good(self):
         """Test validated_z................................................"""
-        for z1, sym1, name1, mass1 in element._Z_SYMBOL_NAME_MASS:
+        for z1, _, _, _ in element._Z_SYMBOL_NAME_MASS:
             assert element.validated_z(z1) == z1
 
     def test_validated_z_exception(self):
@@ -20,7 +20,7 @@ class TestElementFunctions:
 
     def test_validated_symbol_good(self):
         """Test validated_symbol..........................................."""
-        for z1, sym1, name1, mass1 in element._Z_SYMBOL_NAME_MASS:
+        for _, sym1, _, _ in element._Z_SYMBOL_NAME_MASS:
             for sym2 in [sym1, sym1.lower(), sym1.upper()]:
                 assert element.validated_symbol(sym2) == sym1
 
@@ -31,7 +31,7 @@ class TestElementFunctions:
 
     def test_validated_name_good(self):
         """Test validated_name............................................."""
-        for z1, sym1, name1, mass1 in element._Z_SYMBOL_NAME_MASS:
+        for _, _, name1, _ in element._Z_SYMBOL_NAME_MASS:
             for name2 in [name1, name1.lower(), name1.upper()]:
                 assert element.validated_name(name2) == name1
 
@@ -66,7 +66,7 @@ class TestElementFunctions:
 
     def test_element_z(self):
         """Test element_z.................................................."""
-        for z1, sym1, name1, mass1 in element._Z_SYMBOL_NAME_MASS:
+        for z1, sym1, name1, _ in element._Z_SYMBOL_NAME_MASS:
             for sym2 in [sym1, sym1.lower(), sym1.upper()]:
                 assert element.element_z(sym2) == z1
             for name2 in [name1, name1.lower(), name1.upper()]:
@@ -74,33 +74,33 @@ class TestElementFunctions:
 
     def test_element_z_exception(self):
         """Test element_z with bad input raises ElementZError.............."""
-        for z1, sym1, name1, mass1 in element._Z_SYMBOL_NAME_MASS:
+        for z1, _, _, _ in element._Z_SYMBOL_NAME_MASS:
             with pytest.raises(element.ElementZError):
                 element.element_z(z1)
 
     def test_element_symbol(self):
         """Test element_symbol............................................."""
-        for z1, sym1, name1, mass1 in element._Z_SYMBOL_NAME_MASS:
+        for z1, sym1, name1, _ in element._Z_SYMBOL_NAME_MASS:
             assert element.element_symbol(z1) == sym1
             for name2 in [name1, name1.lower(), name1.upper()]:
                 assert element.element_symbol(name2) == sym1
 
     def test_element_symbol_exception(self):
         """Test element_symbol with bad input raises ElementSymbolError...."""
-        for z1, sym1, name1, mass1 in element._Z_SYMBOL_NAME_MASS:
+        for _, sym1, _, _ in element._Z_SYMBOL_NAME_MASS:
             with pytest.raises(element.ElementSymbolError):
                 element.element_symbol(sym1)
 
     def test_element_name(self):
         """Test element_name..............................................."""
-        for z1, sym1, name1, mass1 in element._Z_SYMBOL_NAME_MASS:
+        for z1, sym1, name1, _ in element._Z_SYMBOL_NAME_MASS:
             assert element.element_name(z1) == name1
             for sym2 in [sym1, sym1.lower(), sym1.upper()]:
                 assert element.element_name(sym2) == name1
 
     def test_element_name_exception(self):
         """Test element_name with bad input raises ElementNameError........"""
-        for z1, sym1, name1, mass1 in element._Z_SYMBOL_NAME_MASS:
+        for _, _, name1, _ in element._Z_SYMBOL_NAME_MASS:
             with pytest.raises(element.ElementNameError):
                 element.element_name(name1)
 

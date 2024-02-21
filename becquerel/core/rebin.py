@@ -179,15 +179,15 @@ def _rebin_interpolation(
     out_edges = np.concatenate((out_edges_no_rightmost, np.array([np.inf])))
     # in_idx: input bin or left edge
     #         init to the first in_bin which overlaps the 0th out_bin
-    in_idx = max(0, np.searchsorted(in_edges, out_edges[0]) - 1)
+    in_idx_start = max(0, np.searchsorted(in_edges, out_edges[0]) - 1)
     # Under-flow handling: Put all counts from in_bins that are completely to
     # the left of the 0th out_bin into the 0th out_bin
-    out_spectrum[0] += np.sum(in_spectrum[:in_idx])
+    out_spectrum[0] += np.sum(in_spectrum[:in_idx_start])
     # out_idx: output bin or left edge
     #          init to the first out_bin which overlaps the 0th in_bin
     out_idx = max(0, np.searchsorted(out_edges, in_edges[0]) - 1)
     # loop through input bins (starting from the above in_idx value):
-    for in_idx in range(in_idx, len(in_spectrum)):
+    for in_idx in range(in_idx_start, len(in_spectrum)):
         # input bin info/data
         in_left_edge = in_edges[in_idx]
         in_right_edge = in_edges[in_idx + 1]
@@ -195,7 +195,7 @@ def _rebin_interpolation(
         slope = slopes[in_idx]
         offset = _linear_offset(slope, counts, in_left_edge, in_right_edge)
         # loop through output bins that overlap with the current input bin
-        for out_idx in range(out_idx, len(out_spectrum)):
+        while out_idx < len(out_spectrum):
             out_left_edge = out_edges[out_idx]
             out_right_edge = out_edges[out_idx + 1]
             if out_left_edge > in_right_edge:
@@ -217,6 +217,14 @@ def _rebin_interpolation(
                 high = min(in_right_edge, out_right_edge)
             # Calc counts for this bin
             out_spectrum[out_idx] += _counts(slope, offset, low, high)
+
+            # move to next output bin
+            out_idx += 1
+
+        # make sure the while loop runs at least once when we get to the
+        # rightmost output bin
+        if out_idx == len(out_spectrum):
+            out_idx -= 1
 
 
 @nb.guvectorize([(nb.i8[:], nb.f8[:], nb.f8[:], nb.i8[:])], "(n),(N),(m)->(m)")

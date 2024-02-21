@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-import becquerel as bq  # noqa: E402
-from becquerel import SpectrumPlotter as sp  # noqa: E402
+import becquerel as bq
+from becquerel import SpectrumPlotter as sp
 
 plt.switch_backend("Agg")
 

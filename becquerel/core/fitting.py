@@ -1302,7 +1302,7 @@ class Fitter:
             )
         # Components
         fit_ax.set_prop_cycle(color=COLORS)
-        for i, m in enumerate(self.model.components):
+        for m in self.model.components:
             y = m.eval(x=x_plot, **self.best_values)
             if isinstance(y, float):
                 y = np.ones(x_plot.shape) * y
