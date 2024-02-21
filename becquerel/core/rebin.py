@@ -289,7 +289,7 @@ def rebin(
     Spectra rebinning via deterministic or stochastic methods.
 
     Args:
-        in_spectrum (np.ndarray): an ND array of input counts spectra
+        in_spectrum (np.ndarray): an ndarray of input counts spectra
             [..., num_bins_in]
         in_edges (np.ndarray): an array of the input bin edges
             [..., num_bins_in + 1] or [num_bins_in + 1] (either contains
