@@ -106,8 +106,8 @@ def read(filename, verbose=False, cal_kwargs=None):
                 )
                 continue
 
-            # strip prefix and tokenize
-            line = line.strip("A004")
+            # strip A004 prefix and tokenize
+            line = line[4:]
             tok = line.split()
 
             # parse records

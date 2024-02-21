@@ -53,6 +53,8 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
+        additional_dependencies: [flake8-bugbear]
+        args: ["--ignore=W503,B015,B028"]
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.7
     hooks:
@@ -84,5 +86,5 @@ repos:
         additional_dependencies: [pydocstyle==6.3.0]
         args: ["--ignore=D100,D103"]
       - id: nbqa-flake8
-        additional_dependencies: [flake8==7.0.0]
-        args: [--max-line-length=88, "--ignore=E203,E722,F821,W503"]
+        additional_dependencies: [flake8==7.0.0, flake8-bugbear]
+        args: [--max-line-length=88, "--ignore=E203,E722,F821,W503,B001,B015"]
