@@ -370,7 +370,7 @@ def test_error_positional_parameters(cal_spec):
 
 
 def test_uncal_as_cal(uncal_spec):
-    """Test errors for calibrated reqested for an uncalibrated spectrum"""
+    """Test errors for calibrated requested for an uncalibrated spectrum"""
 
     with pytest.raises(bq.PlottingError):
         uncal_spec.plot(xmode="energy")
