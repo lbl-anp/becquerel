@@ -527,7 +527,7 @@ class _NNDCQuery:
         # add string m giving the isomer level name (e.g., '' or 'm' or 'm2')
         self.df["m"] = [""] * len(self)
         # loop over each isotope in the dataframe
-        A_Z = [(a, z) for a, z in zip(self["A"], self["Z"])]
+        A_Z = list(zip(self["A"], self["Z"]))
         A_Z = set(A_Z)
         for a, z in A_Z:
             isotope = (self["A"] == a) & (self["Z"] == z)

@@ -141,7 +141,7 @@ def find_best_gain(
     snrs = np.array(snrs)
     n_req = len(required_energies)
     # make sure the required and optional sets do not overlap
-    optional = sorted(list(set(optional) - set(required_energies)))
+    optional = sorted(set(optional) - set(required_energies))
     n_opt = len(optional)
     n_set = n_req + n_opt
     best_fom = None

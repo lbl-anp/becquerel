@@ -164,23 +164,23 @@ class IsotopeQuantity:
         # dictionary with functions that define how to calculate all quantities
         # in a circular manner
         if self.is_stable:
-            conversions = dict(
-                atoms=lambda: ref_quantities["g"] / self.isotope.A * N_AV,
-                g=lambda: ref_quantities["atoms"] * self.isotope.A / N_AV,
-                bq=lambda: 0,
-                uci=lambda: 0,
-            )
+            conversions = {
+                "atoms": lambda: ref_quantities["g"] / self.isotope.A * N_AV,
+                "g": lambda: ref_quantities["atoms"] * self.isotope.A / N_AV,
+                "bq": lambda: 0,
+                "uci": lambda: 0,
+            }
         else:
-            conversions = dict(
-                atoms=lambda: ref_quantities["g"] / self.isotope.A * N_AV,
-                bq=lambda: ref_quantities["atoms"] * self.decay_const,
-                uci=lambda: ref_quantities["bq"] / UCI_TO_BQ,
-                g=lambda: ref_quantities["uci"]
+            conversions = {
+                "atoms": lambda: ref_quantities["g"] / self.isotope.A * N_AV,
+                "bq": lambda: ref_quantities["atoms"] * self.decay_const,
+                "uci": lambda: ref_quantities["bq"] / UCI_TO_BQ,
+                "g": lambda: ref_quantities["uci"]
                 * UCI_TO_BQ
                 / self.decay_const
                 / N_AV
                 * self.isotope.A,
-            )
+            }
 
         # rotates the order of the list so that the provided kwarg is at [0]
         order = ["atoms", "bq", "uci", "g"]

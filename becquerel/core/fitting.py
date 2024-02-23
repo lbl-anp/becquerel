@@ -993,7 +993,7 @@ class Fitter:
 
         def _calc_area(param_vec, **kwargs):
             """Internal function to compute the area given the fit values."""
-            param_dict = {name: val for (name, val) in zip(kwargs["names"], param_vec)}
+            param_dict = dict(zip(kwargs["names"], param_vec))
             return kwargs["model"].eval(x=kwargs["xvals"], **param_dict).sum()
 
         # Handle input defaults
@@ -1341,7 +1341,7 @@ class Fitter:
         # Residuals
         # ---------
         y_eval = self.eval(self.x_roi, **self.best_values) * dx_roi
-        res_kwargs = dict(fmt="o", color="k", markersize=5, label="residuals")
+        res_kwargs = {"fmt": "o", "color": "k", "markersize": 5, "label": "residuals"}
 
         # Y-values of the residual plot, depending on residual_type
         y_plot = self.compute_residuals(residual_type)
@@ -1366,8 +1366,13 @@ class Fitter:
         # -------------------
         # Fit report (txt_ax)
         # -------------------
-        props = dict(boxstyle="round", facecolor="white", edgecolor="black", alpha=1)
-        props = dict(facecolor="white", edgecolor="none", alpha=0)
+        props = {
+            "boxstyle": "round",
+            "facecolor": "white",
+            "edgecolor": "black",
+            "alpha": 1,
+        }
+        props = {"facecolor": "white", "edgecolor": "none", "alpha": 0}
         fp = FontProperties(family="monospace", size=8)
         if "lmfit" in self.backend:
             best_fit_values = ""
