@@ -1,6 +1,5 @@
 """becquerel package metadata."""
 
-__name__ = "becquerel"
 __author__ = "The Becquerel Development Team"
 __maintainer__ = __author__
 __email__ = "becquerel-dev@lbl.gov"
