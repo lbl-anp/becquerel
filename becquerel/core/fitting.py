@@ -1,7 +1,7 @@
 import inspect
 import warnings
 
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numdifftools as nd
 import numpy as np
@@ -17,8 +17,7 @@ from uncertainties import ufloat
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
 COLORS = [
-    matplotlib.colors.to_rgb(c)
-    for c in ["C0", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
+    mpl.colors.to_rgb(c) for c in ["C0", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
 ]
 
 

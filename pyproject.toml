@@ -68,7 +68,7 @@ select = [
   "EXE",     # flake8-executable
   "FA",      # flake8-future-annotations
   "ISC",     # flake8-implicit-str-concat
-  # "ICN",     # flake8-import-conventions
+  "ICN",     # flake8-import-conventions
   # "PIE",     # flake8-pie
   # "T20",     # flake8-print
   "PYI",     # flake8-pyi
