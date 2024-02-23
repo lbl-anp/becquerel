@@ -89,7 +89,7 @@ select = [
   # "PD",      # pandas-vet
   "PGH",     # pygrep-hooks
   # "PL",      # pylint
-  # "TRY",     # tryceratops
+  "TRY",     # tryceratops
   "FLY",     # flynt
   # "NPY",     # NumPy-specific rules
   # "PERF",    # Perflint
@@ -102,6 +102,7 @@ ignore = [
   "B015",      # Pointless comparison. Did you mean to assign a value? Otherwise, prepend `assert` or remove it.
   "B018",      # Found useless expression. Either assign it to a variable or remove it.
   "B028",      # No explicit `stacklevel` keyword argument found
+  "TRY003",    # Avoid specifying long messages outside the exception class
   "RUF012",    # Mutable class attributes should be annotated with `typing.ClassVar`
 ]
 
