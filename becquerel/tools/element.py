@@ -183,8 +183,8 @@ def validated_z(z):
 
     try:
         int(z)
-    except ValueError:
-        raise ElementZError(f'Element Z="{z}" invalid')
+    except ValueError as exc:
+        raise ElementZError(f'Element Z="{z}" invalid') from exc
     if int(z) not in ZS:
         raise ElementZError(f'Element Z="{z}" not found')
     return int(z)
@@ -205,8 +205,8 @@ def validated_symbol(sym):
 
     try:
         sym.lower()
-    except AttributeError:
-        raise ElementSymbolError(f'Element symbol "{sym}" invalid')
+    except AttributeError as exc:
+        raise ElementSymbolError(f'Element symbol "{sym}" invalid') from exc
     if sym.lower() not in SYMBOLS_LOWER:
         raise ElementSymbolError(f'Element symbol "{sym}" not found')
     return _SYMBOL_FROM_SYMBOL_LOWER[sym.lower()]
@@ -227,8 +227,8 @@ def validated_name(nm):
 
     try:
         nm.lower()
-    except AttributeError:
-        raise ElementNameError(f'Element name "{nm}" invalid')
+    except AttributeError as exc:
+        raise ElementNameError(f'Element name "{nm}" invalid') from exc
     # special case: Alumin[i]um
     if nm.lower() == "aluminium":
         nm = "Aluminum"
@@ -259,8 +259,8 @@ def element_z(sym_or_name):
         pass
     try:
         return _Z_FROM_NAME[validated_name(sym_or_name)]
-    except ElementNameError:
-        raise ElementZError("Must supply either the element symbol or name")
+    except ElementNameError as exc:
+        raise ElementZError("Must supply either the element symbol or name") from exc
 
 
 def element_symbol(name_or_z):
@@ -282,8 +282,8 @@ def element_symbol(name_or_z):
         pass
     try:
         return _SYMBOL_FROM_NAME[validated_name(name_or_z)]
-    except ElementNameError:
-        raise ElementSymbolError("Must supply either the Z or element name")
+    except ElementNameError as exc:
+        raise ElementSymbolError("Must supply either the Z or element name") from exc
 
 
 def element_name(sym_or_z):
@@ -305,8 +305,8 @@ def element_name(sym_or_z):
         pass
     try:
         return _NAME_FROM_Z[validated_z(sym_or_z)]
-    except ElementZError:
-        raise ElementNameError("Must supply either the element symbol or Z")
+    except ElementZError as exc:
+        raise ElementNameError("Must supply either the element symbol or Z") from exc
 
 
 class Element:
@@ -346,8 +346,8 @@ class Element:
             except ElementNameError:
                 try:
                     self._init_z(arg)
-                except ElementZError:
-                    raise ElementError(f"Could not instantiate Element: {arg}")
+                except ElementZError as exc:
+                    raise ElementError(f"Could not instantiate Element: {arg}") from exc
         self.atomic_mass = _MASS_FROM_SYMBOL[self.symbol]
 
     def _init_sym(self, arg):
@@ -397,5 +397,5 @@ class Element:
                 and self.symbol == other.symbol
                 and self.Z == other.Z
             )
-        except Exception:
-            raise ElementError("Cannot determine equality")
+        except Exception as exc:
+            raise ElementError("Cannot determine equality") from exc

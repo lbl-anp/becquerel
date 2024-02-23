@@ -260,10 +260,10 @@ class Spectrum:
         else:
             try:
                 return self.cps * self.livetime
-            except TypeError:
+            except TypeError as exc:
                 raise SpectrumError(
                     "Unknown livetime; cannot calculate counts from CPS"
-                )
+                ) from exc
 
     @property
     def counts_vals(self):
@@ -304,10 +304,10 @@ class Spectrum:
         else:
             try:
                 return self.counts / self.livetime
-            except TypeError:
+            except TypeError as exc:
                 raise SpectrumError(
                     "Unknown livetime; cannot calculate CPS from counts"
-                )
+                ) from exc
 
     @property
     def cps_vals(self):
@@ -848,11 +848,11 @@ class Spectrum:
                     + "livetimes have been ignored.",
                     SpectrumWarning,
                 )
-            except SpectrumError:
+            except SpectrumError as exc:
                 raise SpectrumError(
                     "Subtraction of counts and CPS-based spectra without"
                     + "livetimes not possible"
-                )
+                ) from exc
 
         if self.is_calibrated and other.is_calibrated:
             spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **kwargs)
@@ -952,8 +952,10 @@ class Spectrum:
         if not isinstance(scaling_factor, UFloat):
             try:
                 scaling_factor = float(scaling_factor)
-            except (TypeError, ValueError):
-                raise TypeError("Spectrum must be multiplied/divided by a scalar")
+            except (TypeError, ValueError) as exc:
+                raise TypeError(
+                    "Spectrum must be multiplied/divided by a scalar"
+                ) from exc
             if (
                 scaling_factor == 0
                 or np.isinf(scaling_factor)

@@ -126,12 +126,12 @@ def convert_composition(comp):
             raise MaterialsError(f"Line must be a string type: {line} {type(line)}")
         try:
             z, weight = line.split(":")
-        except ValueError:
-            raise MaterialsError(f"Unable to split compound line: {line}")
+        except ValueError as exc:
+            raise MaterialsError(f"Unable to split compound line: {line}") from exc
         try:
             z = int(z)
-        except ValueError:
-            raise MaterialsError(f"Unable to convert Z {z} to integer: {line}")
+        except ValueError as exc:
+            raise MaterialsError(f"Unable to convert Z {z} to integer: {line}") from exc
         if z < 1 or z > MAX_Z:
             raise MaterialsError(f"Z {z} out of range [1, {line}]: {MAX_Z}")
         comp_sym.append(element_symbol(z) + " " + weight.strip())

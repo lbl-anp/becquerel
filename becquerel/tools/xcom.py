@@ -241,21 +241,21 @@ class _XCOMQuery:
         for formula in formulae:
             try:
                 compound, weight = formula.split()
-            except AttributeError:
+            except AttributeError as exc:
                 raise XCOMInputError(
                     f'Mixture formulae "{formulae}" line "{formula}" must be a string'
-                )
-            except ValueError:
+                ) from exc
+            except ValueError as exc:
                 raise XCOMInputError(
                     f'Mixture formulae "{formulae}" line "{formula}" must split into 2'
-                )
+                ) from exc
             _XCOMQuery._check_compound(compound)
             try:
                 float(weight)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as exc:
                 raise XCOMInputError(
                     f'Mixture formulae "{formulae}" has bad weight "{weight}"'
-                )
+                ) from exc
 
     def update(self, **kwargs):
         """Update the search criteria.

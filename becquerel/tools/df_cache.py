@@ -84,8 +84,8 @@ class DataFrameCache:
             raise CacheError("Cache has not been fetched or loaded")
         try:
             self.df.to_csv(self.filename, float_format="%.12f")
-        except Exception:
-            raise CacheError(f"Problem writing cache to file {self.filename}")
+        except Exception as exc:
+            raise CacheError(f"Problem writing cache to file {self.filename}") from exc
         self.check_file()
 
     def read_file(self):
@@ -98,8 +98,10 @@ class DataFrameCache:
         self.check_file()
         try:
             self.df = pd.read_csv(self.filename)
-        except Exception:
-            raise CacheError(f"Problem reading cache from file {self.filename}")
+        except Exception as exc:
+            raise CacheError(
+                f"Problem reading cache from file {self.filename}"
+            ) from exc
         self.loaded = True
 
     def delete_file(self):
@@ -112,8 +114,8 @@ class DataFrameCache:
         self.check_file()
         try:
             os.remove(self.filename)
-        except Exception:
-            raise CacheError(f"Problem deleting cache file {self.filename}")
+        except Exception as exc:
+            raise CacheError(f"Problem deleting cache file {self.filename}") from exc
         try:
             self.check_file()
         except CacheError:
@@ -143,8 +145,8 @@ class DataFrameCache:
         except CacheError:
             try:
                 self.fetch()
-            except CacheError:
-                raise CacheError("Cannot read or download DataFrame")
+            except CacheError as exc:
+                raise CacheError("Cannot read or download DataFrame") from exc
             self.write_file()
             self.read_file()
         self.loaded = True

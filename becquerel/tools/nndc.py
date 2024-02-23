@@ -179,7 +179,7 @@ def _parse_table(text):
         text = text.split("To save this output")[0]
         lines = text.split("\n")
     except Exception as exc:
-        raise NNDCRequestError(f"Unable to parse text:\n{exc}\n{text}")
+        raise NNDCRequestError(f"Unable to parse text:\n{exc}\n{text}") from exc
     table = {}
     headers = None
     for line in lines:
@@ -268,8 +268,8 @@ def _parse_float_uncertainty(x, dx):
         dx = ""
     try:
         x2 = float(x)
-    except ValueError:
-        raise NNDCRequestError(f'Value cannot be parsed as float: "{x}"')
+    except ValueError as exc:
+        raise NNDCRequestError(f'Value cannot be parsed as float: "{x}"') from exc
     if dx == "":
         return x2
     # handle multiple exponents with some uncertainties, e.g., "7E-4E-5"
@@ -281,8 +281,10 @@ def _parse_float_uncertainty(x, dx):
         factor = 1.0
     try:
         dx2 = float(dx) * factor
-    except ValueError:
-        raise NNDCRequestError(f'Uncertainty cannot be parsed as float: "{dx}"')
+    except ValueError as exc:
+        raise NNDCRequestError(
+            f'Uncertainty cannot be parsed as float: "{dx}"'
+        ) from exc
     return uncertainties.ufloat(x2, dx2)
 
 
@@ -303,8 +305,10 @@ def _format_range(x_range):
 
     try:
         x1, x2 = x_range
-    except (TypeError, ValueError):
-        raise NNDCInputError(f'Range keyword arg must have two elements: "{x_range}"')
+    except (TypeError, ValueError) as exc:
+        raise NNDCInputError(
+            f'Range keyword arg must have two elements: "{x_range}"'
+        ) from exc
     try:
         if np.isfinite(x1):
             x1 = f"{x1}"
