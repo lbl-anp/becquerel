@@ -313,8 +313,8 @@ class Element:
     """Basic properties (symbol, name, Z, and mass) of an element.
 
     Also provides string formatting:
-    >>> elem = Element('Ge')
-    >>> '{:%n(%s) Z=%z}'.format(elem)
+    >>> elem = Element("Ge")
+    >>> "{:%n(%s) Z=%z}".format(elem)
     'Germanium(Ge) Z=32'
 
     Properties:

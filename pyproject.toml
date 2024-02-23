@@ -14,3 +14,115 @@ exclude = '''
   | becquerel.egg-info
 )/
 '''
+
+# all of ruff's settings
+# https://docs.astral.sh/ruff/settings/
+# all of ruff's rules:
+# https://docs.astral.sh/ruff/rules/
+
+[tool.ruff]
+namespace-packages = ["becquerel"]
+target-version = "py38"
+fix = true
+show-fixes = true
+
+# include linting of notebooks
+extend-include = ["*.ipynb"]
+
+# format the same as black
+indent-width = 4
+line-length = 88
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+line-ending = "auto"
+skip-magic-trailing-comma = false
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint]
+select = [
+  # "F",       # pyflakes
+  # "E",       # pycodestyle errors
+  # "W",       # pycodestyle warnings
+  # "C",       # mccabe
+  # "I",       # isort
+  # "N",       # pep8-naming
+  # "D",       # pydocstyle
+  # "UP",      # pyupgrade
+  # "YTT",     # flake8-2020
+  # "ANN",     # flake8-annotations
+  # "ASYNC",   # flake8-async
+  # "S",       # flake8-bandit
+  # "BLE",     # flake8-blind-except
+  # "FBT",     # flake8-boolean-trap
+  # "B",       # flake8-bugbear
+  # "A",       # flake8-builtins
+  # "COM",     # flake8-commas
+  # "C4",      # flake8-comprehensions
+  # "DTZ",     # flake8-datetimez
+  # "T10",     # flake8-debugger
+  # "EM",      # flake8-errmsg
+  # "EXE",     # flake8-executable
+  # "FA",      # flake8-future-annotations
+  # "ISC",     # flake8-implicit-str-concat
+  # "ICN",     # flake8-import-conventions
+  # "PIE",     # flake8-pie
+  # "T20",     # flake8-print
+  # "PYI",     # flake8-pyi
+  # "PT",      # flake8-pytest-style
+  # "Q",       # flake8-quotes
+  # "RSE",     # flake8-raise
+  # "RET",     # flake8-return
+  # "SLF",     # flake8-self
+  # "SIM",     # flake8-simplify
+  # "TID",     # flake8-tidy-imports
+  # "TCH",     # flake8-type-checking
+  # "INT",     # flake8-gettext
+  # "ARG",     # flake8-unused-arguments
+  # "PTH",     # flake8-use-pathlib
+  # "TD",      # flake8-todos
+  # "FIX",     # flake8-fixme
+  # "ERA",     # eradicate
+  # "PD",      # pandas-vet
+  # "PGH",     # pygrep-hooks
+  # "PL",      # pylint
+  # "TRY",     # tryceratops
+  # "FLY",     # flynt
+  # "NPY",     # NumPy-specific rules
+  # "PERF",    # Perflint
+  # "FURB",    # refurb
+  # "RUF",     # Ruff-specific rules
+]
+
+ignore = [
+  # "E203",    # Whitespace before ':'
+  # "E501",    # Line too long
+]
+
+exclude = []
+
+unfixable = [
+  "B",       # flake8-bugbear
+]
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+
+[tool.ruff.lint.isort]
+lines-after-imports = 1
+known-first-party = ["becquerel"]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 88
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pylint]
+max-args = 15
+max-branches = 15
+max-locals = 25
+max-nested-blocks = 15
+max-statements = 100

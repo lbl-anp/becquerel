@@ -157,8 +157,8 @@ class Isotope(element.Element):
     """Basic properties of a nuclear isotope, including isomers.
 
     Also provides string formatting:
-    >>> iso = Isotope('178M2HF')
-    >>> '{:%n(%s)-%a%m Z=%z A=%a}'.format(iso)
+    >>> iso = Isotope("178M2HF")
+    >>> "{:%n(%s)-%a%m Z=%z A=%a}".format(iso)
     'Hafnium(Hf)-178m2 Z=72 A=178'
 
     Properties (read-only):

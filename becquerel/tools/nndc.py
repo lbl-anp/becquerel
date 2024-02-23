@@ -208,9 +208,9 @@ def _parse_float_uncertainty(x, dx):
     """Parse a string and its uncertainty into a float or ufloat.
 
     Examples:
-      >>> _parse_float_uncertainty('257.123', '0.005')
+      >>> _parse_float_uncertainty("257.123", "0.005")
       257.123+/-0.005
-      >>> _parse_float_uncertainty('8', '')
+      >>> _parse_float_uncertainty("8", "")
       8.0
 
     Args:
