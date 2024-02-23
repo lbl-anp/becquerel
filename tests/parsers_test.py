@@ -31,7 +31,7 @@ class TestParsers:
         for filename in filenames:
             fname, _ = os.path.splitext(filename)
             _, fname = os.path.split(fname)
-            print("")
+            print()
             print(filename)
             data, cal = read_fn(filename)
             print(data, cal)
@@ -83,7 +83,7 @@ class TestParsersSpectrumPlot:
         for filename in filenames:
             fname, ext = os.path.splitext(filename)
             _, fname = os.path.split(fname)
-            print("")
+            print()
             print(filename)
             data, cal = read_fn(filename)
             spec = bq.Spectrum(**data)

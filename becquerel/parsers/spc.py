@@ -251,18 +251,18 @@ def read(filename, verbose=False, cal_kwargs=None):
                 for data_format in record_format:
                     fmt += data_format[1]
                 if verbose:
-                    print("")
-                    print("")
+                    print()
+                    print()
                     print("-" * 60)
-                    print("")
+                    print()
                     print(record_format)
                     print(fmt)
-                    print("")
+                    print()
                 binary_data = struct.unpack(fmt, binary_data)
                 if verbose:
-                    print("")
+                    print()
                     print(binary_data)
-                    print("")
+                    print()
                 for j, data_format in enumerate(record_format):
                     if isinstance(binary_data[j], bytes):
                         data[data_format[0]] = binary_data[j].decode("ascii")
@@ -299,18 +299,18 @@ def read(filename, verbose=False, cal_kwargs=None):
             for data_format in record_format:
                 fmt += data_format[1]
             if verbose:
-                print("")
-                print("")
+                print()
+                print()
                 print("-" * 60)
-                print("")
+                print()
                 print(record_format)
                 print(fmt)
-                print("")
+                print()
             binary_data = struct.unpack(fmt, binary_data)
             if verbose:
-                print("")
+                print()
                 print(binary_data)
-                print("")
+                print()
             for j, data_format in enumerate(record_format):
                 if isinstance(binary_data[j], bytes):
                     data[data_format[0]] = binary_data[j].decode("ascii")

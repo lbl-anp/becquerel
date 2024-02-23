@@ -49,7 +49,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal_coeff = []
     with open(filename) as f:
         # read & remove newlines from end of each line
-        lines = [line.strip() for line in f.readlines()]
+        lines = [line.strip() for line in f]
         i = 0
         while i < len(lines):
             # check whether we have reached a keyword and parse accordingly

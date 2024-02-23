@@ -93,7 +93,7 @@ select = [
   "FLY",     # flynt
   "NPY",     # NumPy-specific rules
   "PERF",    # Perflint
-  # "FURB",    # refurb
+  "FURB",    # refurb
   "RUF",     # Ruff-specific rules
 ]
 
@@ -105,6 +105,8 @@ ignore = [
   "TRY003",    # Avoid specifying long messages outside the exception class
   "NPY002",    # Replace legacy `np.random.poisson` call with `np.random.Generator`
   "PERF203",   # `try`-`except` within a loop incurs performance overhead
+  "FURB101",   # `open` and `read` should be replaced by `Path("CONTRIBUTING.md").read_text()`
+  "FURB113",   # Use `s.extend(...)` instead of repeatedly calling `s.append()`
   "RUF012",    # Mutable class attributes should be annotated with `typing.ClassVar`
 ]
 

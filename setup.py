@@ -28,12 +28,10 @@ with open("CONTRIBUTING.md") as fh:
     CONTRIBUTING = fh.read()
 
 with open("requirements.txt") as fh:
-    REQUIREMENTS = [_line for _line in fh.readlines() if _line]
+    REQUIREMENTS = [_line for _line in fh if _line]
 
 with open("requirements-dev.txt") as fh:
-    REQUIREMENTS_DEV = [
-        line.strip() for line in fh.readlines() if not line.startswith("-r")
-    ]
+    REQUIREMENTS_DEV = [line.strip() for line in fh if not line.startswith("-r")]
 
 # make long description from README and CONTRIBUTING
 # but move copyright notice to the end
