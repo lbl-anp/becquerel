@@ -1,7 +1,8 @@
 """Simple tools to perform HDF5 I/O."""
 
+from __future__ import annotations
+
 import pathlib
-from typing import Tuple, Union
 
 import h5py
 
@@ -43,7 +44,7 @@ def is_h5_filename(name: str):
 class open_h5:
     """Context manager to allow I/O given HDF5 filename, File, or Group."""
 
-    def __init__(self, name: Union[str, h5py.File, h5py.Group], mode=None, **kwargs):
+    def __init__(self, name: str | h5py.File | h5py.Group, mode=None, **kwargs):
         """Initialize the context manager.
 
         Parameters
@@ -83,7 +84,7 @@ class open_h5:
             self.file.close()
 
 
-def write_h5(name: Union[str, h5py.File, h5py.Group], dsets: dict, attrs: dict) -> None:
+def write_h5(name: str | h5py.File | h5py.Group, dsets: dict, attrs: dict) -> None:
     """Write the datasets and attributes to an HDF5 file or group.
 
     Parameters
@@ -111,7 +112,7 @@ def write_h5(name: Union[str, h5py.File, h5py.Group], dsets: dict, attrs: dict) 
         file.attrs.update(attrs)
 
 
-def read_h5(name: Union[str, h5py.File, h5py.Group]) -> Tuple[dict, dict, list]:
+def read_h5(name: str | h5py.File | h5py.Group) -> tuple[dict, dict, list]:
     """Read the datasets and attributes from an HDF5 file or group.
 
     Parameters
