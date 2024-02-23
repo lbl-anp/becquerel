@@ -680,8 +680,8 @@ class NeutronIrradiation:
             activated, IsotopeQuantity
         ):
             raise NeutronIrradiationError(
-                "Two IsotopeQuantity's in args, nothing left to calculate!"
-                + f"Args: {initial}, {activated}"
+                "Two IsotopeQuantity's in args, nothing left to calculate! "
+                f"Args: {initial}, {activated}"
             )
         elif isinstance(initial, IsotopeQuantity) and isinstance(activated, Isotope):
             forward = True
@@ -690,12 +690,12 @@ class NeutronIrradiation:
         elif isinstance(initial, Isotope) and isinstance(activated, Isotope):
             raise NeutronIrradiationError(
                 "No IsotopeQuantity specified, not enough data. "
-                + f"Args: {initial}, {activated}"
+                f"Args: {initial}, {activated}"
             )
         else:
             raise TypeError(
                 "Input args should be Isotope or IsotopeQuantity objects: "
-                + f"{initial}, {activated}"
+                f"{initial}, {activated}"
             )
 
         if not initial.half_life > stability:

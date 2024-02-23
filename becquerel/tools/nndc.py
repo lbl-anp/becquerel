@@ -150,8 +150,8 @@ def _parse_headers(headers):
     if len(set(headers_new)) != len(headers_new):
         raise NNDCRequestError(
             "Duplicate headers after parsing\n"
-            + f'    Original headers: "{headers}"\n'
-            + f'    Parsed headers:   "{headers_new}"'
+            f'    Original headers: "{headers}"\n'
+            f'    Parsed headers:   "{headers_new}"'
         )
     return headers_new
 
@@ -194,8 +194,8 @@ def _parse_table(text):
             if len(tokens) != len(headers):
                 raise NNDCRequestError(
                     "Too few data in table row\n"
-                    + f'    Headers: "{headers}"\n'
-                    + f'    Row:     "{tokens}"'
+                    f'    Headers: "{headers}"\n'
+                    f'    Row:     "{tokens}"'
                 )
             for header, token in zip(headers, tokens):
                 table[header].append(token)
@@ -714,8 +714,8 @@ class _NuclearWalletCardQuery(_NNDCQuery):
                 )
             warnings.warn(
                 'query kwarg "decay" may not be working on NNDC, '
-                + "and the user is advised to check the "
-                + '"Decay Mode" column of the resulting DataFrame'
+                "and the user is advised to check the "
+                '"Decay Mode" column of the resulting DataFrame'
             )
             self._data["dmed"] = "enabled"
             self._data["dmn"] = WALLET_DECAY_MODE[kwargs["decay"].lower()]

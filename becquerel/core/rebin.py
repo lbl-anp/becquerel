@@ -351,8 +351,8 @@ def rebin(
             else:
                 warnings.warn(
                     "Argument in_spectra contains float value(s) which "
-                    + "will have decimal precision loss when converting to "
-                    + "integers for rebin method listmode.",
+                    "will have decimal precision loss when converting to "
+                    "integers for rebin method listmode.",
                     RebinWarning,
                 )
             in_spectra = in_spectra_rint

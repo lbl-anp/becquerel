@@ -516,15 +516,15 @@ class Fitter:
     def __str__(self):
         return (
             "bq.Fitter instance\n"
-            + f"     name: {self.name}\n"
-            + f"    model: {self.model}\n"
-            + f"        x: {self.x}\n"
-            + f"        y: {self.y}\n"
-            + f"    y_unc: {self.y_unc}\n"
-            + f"    xmode: {self.xmode}\n"
-            + f"    ymode: {self.ymode}\n"
-            + f"       dx: {self.dx}\n"
-            + f"      roi: {self.roi}"
+            f"     name: {self.name}\n"
+            f"    model: {self.model}\n"
+            f"        x: {self.x}\n"
+            f"        y: {self.y}\n"
+            f"    y_unc: {self.y_unc}\n"
+            f"    xmode: {self.xmode}\n"
+            f"    ymode: {self.ymode}\n"
+            f"       dx: {self.dx}\n"
+            f"      roi: {self.roi}"
         )
 
     __repr__ = __str__
@@ -550,7 +550,7 @@ class Fitter:
         if self._y_unc is None:
             warnings.warn(
                 "No y uncertainties (y_unc) provided. The fit will not be "
-                + "weighted causing in poor results at low counting statistics.",
+                "weighted causing in poor results at low counting statistics.",
                 FittingWarning,
             )
         return self._y_unc
@@ -567,8 +567,8 @@ class Fitter:
                 min_v = np.min(self._y_unc[self._y_unc > 0.0])
                 warnings.warn(
                     "Negative or zero uncertainty not supported. Changing "
-                    + f"them to {min_v}. If you have Poisson data, "
-                    + "this should be 1."
+                    f"them to {min_v}. If you have Poisson data, "
+                    "this should be 1."
                 )
                 self._y_unc[self._y_unc <= 0.0] = min_v
         else:
@@ -717,8 +717,8 @@ class Fitter:
             if m_instance.prefix in model_prefixes:
                 raise FittingError(
                     "A model prefix is not unique: "
-                    + f"{m_instance.prefix} "
-                    + f"All models: {model_translated}"
+                    f"{m_instance.prefix} "
+                    f"All models: {model_translated}"
                 )
             model_prefixes.add(m_instance.prefix)
             models.append(m_instance)
@@ -808,8 +808,8 @@ class Fitter:
         elif self.backend in ["iminuit", "minuit"]:
             raise NotImplementedError(
                 f"Backend {self.backend} with least-squares loss not yet "
-                + f"supported. Use {self.backend}-pml for Poisson loss or "
-                + "lmfit for least-squares."
+                f"supported. Use {self.backend}-pml for Poisson loss or "
+                "lmfit for least-squares."
             )
 
         elif self.backend in ["iminuit-pml", "minuit-pml"]:

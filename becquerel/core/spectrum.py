@@ -194,7 +194,7 @@ class Spectrum:
         ):
             raise SpectrumError(
                 "Specify no more than 2 out of 3 args: "
-                + "realtime, stop_time, start_time"
+                "realtime, stop_time, start_time"
             )
         elif self.start_time is not None and self.stop_time is not None:
             if self.start_time > self.stop_time:
@@ -781,8 +781,8 @@ class Spectrum:
         if (self._counts is None) ^ (other._counts is None):
             raise SpectrumError(
                 "Addition of counts-based and CPS-based spectra is "
-                + "ambiguous, use Spectrum(counts=specA.counts+specB.counts) "
-                + "or Spectrum(cps=specA.cps+specB.cps) instead."
+                "ambiguous, use Spectrum(counts=specA.counts+specB.counts) "
+                "or Spectrum(cps=specA.cps+specB.cps) instead."
             )
 
         if self._counts is not None and other._counts is not None:
@@ -792,7 +792,7 @@ class Spectrum:
             else:
                 warnings.warn(
                     "Addition of counts with missing livetimes, "
-                    + "livetime was set to None.",
+                    "livetime was set to None.",
                     SpectrumWarning,
                 )
         else:
@@ -836,7 +836,7 @@ class Spectrum:
             if (self._cps is None) or (other._cps is None):
                 warnings.warn(
                     "Subtraction of counts-based specta, spectra "
-                    + "have been converted to CPS",
+                    "have been converted to CPS",
                     SpectrumWarning,
                 )
         except SpectrumError:
@@ -845,13 +845,13 @@ class Spectrum:
                 kwargs["uncs"] = [np.nan] * len(self)
                 warnings.warn(
                     "Subtraction of counts-based spectra, "
-                    + "livetimes have been ignored.",
+                    "livetimes have been ignored.",
                     SpectrumWarning,
                 )
             except SpectrumError as exc:
                 raise SpectrumError(
                     "Subtraction of counts and CPS-based spectra without"
-                    + "livetimes not possible"
+                    "livetimes not possible"
                 ) from exc
 
         if self.is_calibrated and other.is_calibrated:
@@ -882,14 +882,14 @@ class Spectrum:
         if self.is_calibrated ^ other.is_calibrated:
             raise SpectrumError(
                 "Cannot add/subtract uncalibrated spectrum to/from a "
-                + "calibrated spectrum. If both have the same calibration, "
-                + 'please use the "calibrate_like" method'
+                "calibrated spectrum. If both have the same calibration, "
+                'please use the "calibrate_like" method'
             )
         if self.is_calibrated and other.is_calibrated:
             if not np.all(self.bin_edges_kev == other.bin_edges_kev):
                 raise NotImplementedError(
                     "Addition/subtraction for arbitrary calibrated spectra "
-                    + "not implemented"
+                    "not implemented"
                 )
                 # TODO: if both spectra are calibrated but with different
                 #   calibrations, should one be rebinned to match?
@@ -897,7 +897,7 @@ class Spectrum:
             if not np.all(self.bin_edges_raw == other.bin_edges_raw):
                 raise NotImplementedError(
                     "Addition/subtraction for arbitrary uncalibrated "
-                    + "spectra not implemented"
+                    "spectra not implemented"
                 )
 
     def __mul__(self, other):
@@ -1291,7 +1291,7 @@ class Spectrum:
             if (self._counts is None) and (self.livetime is not None):
                 warnings.warn(
                     "Rebinning by listmode method without explicit counts "
-                    + "provided in Spectrum object",
+                    "provided in Spectrum object",
                     SpectrumWarning,
                 )
         out_spec = rebin(
@@ -1418,9 +1418,7 @@ class Spectrum:
         elif emode == "bars" or emode == "bar":
             plotter.errorbar(color=color, label="_nolegend_")
         elif emode != "none":
-            raise SpectrumError(
-                f"Unknown error mode '{emode}', use 'bars' " "or 'band'"
-            )
+            raise SpectrumError(f"Unknown error mode '{emode}', use 'bars' or 'band'")
         return ax
 
     def fill_between(self, **kwargs):

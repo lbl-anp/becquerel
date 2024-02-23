@@ -98,8 +98,8 @@ class SpectrumPlotter:
             if mode.lower() in ("kev", "energy"):
                 if not self.spec.is_calibrated:
                     raise PlottingError(
-                        "Spectrum is not calibrated, however"
-                        " x axis was requested as energy"
+                        "Spectrum is not calibrated, however "
+                        "x axis was requested as energy"
                     )
                 self._xmode = "energy"
             elif mode.lower() in ("channel", "channels", "chn", "chns"):
