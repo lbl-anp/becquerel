@@ -735,7 +735,7 @@ class Fitter:
             if isinstance(p, Parameters):
                 p = _parameters_to_bq_guess(p)
             elif p is None:
-                raise TypeError()
+                raise TypeError
             params += p
         return params
 
