@@ -277,7 +277,7 @@ def read(filename, verbose=False, cal_kwargs=None):
         raise BecquerelParserError("Channel data not found")
     channels = np.array([], dtype=float)
     counts = np.array([], dtype=float)
-    for i in range(0, 2):
+    for i in range(2):
         y = _from_little_endian(file_bytes, offset_chan + 512 + 4 * i, 4)
         if y == int(realtime) or y == int(livetime):
             y = 0
