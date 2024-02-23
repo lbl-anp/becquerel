@@ -255,9 +255,11 @@ def _rebin_listmode(in_spectrum, in_edges, out_edges_no_rightmost, out_spectrum)
     """
     # knock out leftmost bin edge too, because we put all overflows into
     # first and last bins anyways
-    out_edges = np.concatenate(
-        (np.array([-np.inf]), out_edges_no_rightmost[1:], np.array([np.inf]))
-    )
+    out_edges = np.concatenate((
+        np.array([-np.inf]),
+        out_edges_no_rightmost[1:],
+        np.array([np.inf]),
+    ))
     energies = np.zeros(np.sum(in_spectrum))
     energy_idx_start = 0
     # loop through input bins:
@@ -383,9 +385,11 @@ def rebin(
             raise RebinError(
                 "Highest output edge must be finite if not including overflows"
             )
-        out_edges_temp = np.concatenate(
-            (np.array([-np.inf]), out_edges, np.array([np.inf]))
-        )
+        out_edges_temp = np.concatenate((
+            np.array([-np.inf]),
+            out_edges,
+            np.array([np.inf]),
+        ))
     else:
         out_edges_temp = out_edges
 

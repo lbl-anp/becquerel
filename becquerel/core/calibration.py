@@ -907,7 +907,7 @@ class Calibration:
         -------
         calibration : becquerel.Calibration
         """
-        dsets, attrs, skipped = io.h5.read_h5(name)
+        dsets, attrs, _ = io.h5.read_h5(name)
         if "params" not in dsets:
             raise CalibrationError('Expected dataset "params"')
         if "expression" not in dsets:
@@ -1237,7 +1237,7 @@ class Calibration:
         has_points = self.points_x.size > 0
 
         if ax is None:
-            fig, ax = plt.subplots(1 + has_points, 1, sharex=True)
+            _, ax = plt.subplots(1 + has_points, 1, sharex=True)
 
         if has_points:
             assert ax.shape == (2,)

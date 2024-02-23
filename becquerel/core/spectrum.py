@@ -1122,7 +1122,7 @@ class Spectrum:
                 "Cannot access energy bins with an uncalibrated Spectrum."
             )
 
-        bin_edges, bin_widths, _ = self.get_bin_properties(use_kev)
+        bin_edges, _, _ = self.get_bin_properties(use_kev)
         x = np.asarray(x)
 
         if np.any(x < bin_edges[0]):
@@ -1490,8 +1490,8 @@ class Spectrum:
         Fitter
         """
 
-        xedges, xlabel = self.parse_xmode(xmode)
-        ydata, yuncs, ylabel = self.parse_ymode(ymode)
+        xedges, _ = self.parse_xmode(xmode)
+        ydata, yuncs, _ = self.parse_ymode(ymode)
 
         xcenters = bin_centers_from_edges(xedges)
 

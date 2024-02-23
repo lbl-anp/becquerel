@@ -25,6 +25,7 @@ namespace-packages = ["becquerel"]
 target-version = "py38"
 fix = true
 show-fixes = true
+preview = true
 
 # include linting of notebooks
 extend-include = ["*.ipynb"]
@@ -92,7 +93,7 @@ select = [
   "FLY",     # flynt
   # "NPY",     # NumPy-specific rules
   # "PERF",    # Perflint
-  "FURB",    # refurb
+  # "FURB",    # refurb
   "RUF",     # Ruff-specific rules
 ]
 

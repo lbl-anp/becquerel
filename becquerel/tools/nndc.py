@@ -49,26 +49,24 @@ DECAYRAD_DECAY_MODE = {
 
 
 WALLET_DECAY_MODE = dict(DECAYRAD_DECAY_MODE)
-WALLET_DECAY_MODE.update(
-    {
-        "double beta": "DB",
-        "bb": "DB",
-        "cluster": "C",
-        "c": "C",
-        "beta-delayed neutron": "DN",
-        "b-delayed n": "DN",
-        "bdn": "DN",
-        "beta-delayed proton": "DP",
-        "b-delayed p": "DP",
-        "bdp": "DP",
-        "beta-delayed alpha": "DA",
-        "b-delayed a": "DA",
-        "bda": "DA",
-        "beta-delayed fission": "DF",
-        "b-delayed f": "DF",
-        "bdf": "DF",
-    }
-)
+WALLET_DECAY_MODE.update({
+    "double beta": "DB",
+    "bb": "DB",
+    "cluster": "C",
+    "c": "C",
+    "beta-delayed neutron": "DN",
+    "b-delayed n": "DN",
+    "bdn": "DN",
+    "beta-delayed proton": "DP",
+    "b-delayed p": "DP",
+    "bdp": "DP",
+    "beta-delayed alpha": "DA",
+    "b-delayed a": "DA",
+    "bda": "DA",
+    "beta-delayed fission": "DF",
+    "b-delayed f": "DF",
+    "bdf": "DF",
+})
 
 
 DECAYRAD_RADIATION_TYPE = {
@@ -468,9 +466,10 @@ class _NNDCQuery:
             # handle Z, A, and N settings
             if x in kwargs:
                 self._data["spnuc"] = "zanrange"
-                self._data[x + "min"], self._data[x + "max"] = _format_range(
-                    (kwargs[x], kwargs[x])
-                )
+                self._data[x + "min"], self._data[x + "max"] = _format_range((
+                    kwargs[x],
+                    kwargs[x],
+                ))
             # handle *_range, *_any, *_odd, *_even
             elif x + "_range" in kwargs:
                 self._data["spnuc"] = "zanrange"
@@ -689,17 +688,15 @@ class _NuclearWalletCardQuery(_NNDCQuery):
 
     _URL = "https://www.nndc.bnl.gov/nudat3/sigma_searchi.jsp"
     _DATA = dict(_NNDCQuery._DATA)
-    _DATA.update(
-        {
-            "eled": "disabled",  # E(level) condition on/off
-            "elmin": "0",  # E(level) min
-            "elmax": "40",  # E(level) max
-            "jled": "disabled",  # J_pi(level) condition on/off
-            "jlv": "",  # J
-            "plv": "ANY",  # parity
-            "ord": "zalt",  # order file by Z, A, E(level), T1/2
-        }
-    )
+    _DATA.update({
+        "eled": "disabled",  # E(level) condition on/off
+        "elmin": "0",  # E(level) min
+        "elmax": "40",  # E(level) max
+        "jled": "disabled",  # J_pi(level) condition on/off
+        "jlv": "",  # J
+        "plv": "ANY",  # parity
+        "ord": "zalt",  # order file by Z, A, E(level), T1/2
+    })
     _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
     _ALLOWED_KEYWORDS.extend(["elevel_range", "decay", "j", "parity"])
     _DUMMY_TEXT = _NUCLEAR_WALLET_CARD_QUERY_DUMMY_TEXT
@@ -828,19 +825,17 @@ class _DecayRadiationQuery(_NNDCQuery):
 
     _URL = "https://www.nndc.bnl.gov/nudat3/dec_searchi.jsp"
     _DATA = dict(_NNDCQuery._DATA)
-    _DATA.update(
-        {
-            "rted": "enabled",  # radiation type condition on/off
-            "rtn": "ANY",  # radiation type: 'ANY' = any, 'G' = gamma
-            "reed": "disabled",  # radiation energy condition on/off
-            "remin": "0",  # radiation energy min (keV)
-            "remax": "10000",  # radiation energy max (keV)
-            "ried": "disabled",  # radiation intensity condition on/off
-            "rimin": "0",  # radiation intensity min (%)
-            "rimax": "100",  # radiation intensity max (%)
-            "ord": "zate",  # order file by Z, A, T1/2, E
-        }
-    )
+    _DATA.update({
+        "rted": "enabled",  # radiation type condition on/off
+        "rtn": "ANY",  # radiation type: 'ANY' = any, 'G' = gamma
+        "reed": "disabled",  # radiation energy condition on/off
+        "remin": "0",  # radiation energy min (keV)
+        "remax": "10000",  # radiation energy max (keV)
+        "ried": "disabled",  # radiation intensity condition on/off
+        "rimin": "0",  # radiation intensity min (%)
+        "rimax": "100",  # radiation intensity max (%)
+        "ord": "zate",  # order file by Z, A, T1/2, E
+    })
     _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
     _ALLOWED_KEYWORDS.extend(["elevel_range", "decay", "type", "e_range", "i_range"])
     _DUMMY_TEXT = _DECAY_RADIATION_QUERY_DUMMY_TEXT

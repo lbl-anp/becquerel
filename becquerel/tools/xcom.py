@@ -376,9 +376,9 @@ class _XCOMQuery:
                     raise XCOMInputError(
                         f"XCOM energy must be >= 1 and <= 1E8 keV: {energy}"
                     )
-            self._data["Energies"] = ";".join(
-                [f"{erg / 1000.0:.6f}" for erg in kwargs["energies_kev"]]
-            )
+            self._data["Energies"] = ";".join([
+                f"{erg / 1000.0:.6f}" for erg in kwargs["energies_kev"]
+            ])
 
     def _request(self):
         """Request data table from the URL."""

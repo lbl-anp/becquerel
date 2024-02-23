@@ -1,4 +1,4 @@
-""""Energy calibration classes"""
+"""Energy calibration classes"""
 
 import warnings
 from abc import ABCMeta, abstractmethod, abstractproperty
@@ -306,7 +306,7 @@ class EnergyCalBase:
         has_points = self.channels.size > 0
 
         if ax is None:
-            fig, ax = plt.subplots(1 + has_points, 1, sharex=True)
+            _, ax = plt.subplots(1 + has_points, 1, sharex=True)
 
         if has_points:
             assert ax.shape == (2,)
