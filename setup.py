@@ -40,7 +40,7 @@ LONG_DESCRIPTION = "{0}\n{2}\n## Copyright Notice\n{1}".format(
 )
 
 setup(
-    name=METADATA.__name__,
+    name="becquerel",
     version=METADATA.__version__,
     description=METADATA.__description__,
     long_description=LONG_DESCRIPTION,
