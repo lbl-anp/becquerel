@@ -243,15 +243,11 @@ class _XCOMQuery:
                 compound, weight = formula.split()
             except AttributeError:
                 raise XCOMInputError(
-                    'Mixture formulae "{}" line "{}" must be a string'.format(
-                        formulae, formula
-                    )
+                    f'Mixture formulae "{formulae}" line "{formula}" must be a string'
                 )
             except ValueError:
                 raise XCOMInputError(
-                    'Mixture formulae "{}" line "{}" must split into 2'.format(
-                        formulae, formula
-                    )
+                    f'Mixture formulae "{formulae}" line "{formula}" must split into 2'
                 )
             _XCOMQuery._check_compound(compound)
             try:

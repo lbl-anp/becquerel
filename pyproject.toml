@@ -43,18 +43,18 @@ docstring-code-line-length = "dynamic"
 
 [tool.ruff.lint]
 select = [
-  # "F",       # pyflakes
-  # "E",       # pycodestyle errors
-  # "W",       # pycodestyle warnings
+  "F",       # pyflakes
+  "E",       # pycodestyle errors
+  "W",       # pycodestyle warnings
   # "C",       # mccabe
-  # "I",       # isort
+  "I",       # isort
   # "N",       # pep8-naming
   # "D",       # pydocstyle
-  # "UP",      # pyupgrade
+  "UP",      # pyupgrade
   # "YTT",     # flake8-2020
   # "ANN",     # flake8-annotations
   # "ASYNC",   # flake8-async
-  # "S",       # flake8-bandit
+  "S",       # flake8-bandit
   # "BLE",     # flake8-blind-except
   # "FBT",     # flake8-boolean-trap
   # "B",       # flake8-bugbear
@@ -93,12 +93,13 @@ select = [
   # "NPY",     # NumPy-specific rules
   # "PERF",    # Perflint
   # "FURB",    # refurb
-  # "RUF",     # Ruff-specific rules
+  "RUF",     # Ruff-specific rules
 ]
 
 ignore = [
-  # "E203",    # Whitespace before ':'
-  # "E501",    # Line too long
+  "S101",      # Use of `assert` detected
+  "B028",      # No explicit `stacklevel` keyword argument found
+  "RUF012",    # Mutable class attributes should be annotated with `typing.ClassVar`
 ]
 
 exclude = []
@@ -111,7 +112,7 @@ unfixable = [
 docstring-quotes = "double"
 
 [tool.ruff.lint.isort]
-lines-after-imports = 1
+lines-after-imports = -1
 known-first-party = ["becquerel"]
 
 [tool.ruff.lint.pycodestyle]

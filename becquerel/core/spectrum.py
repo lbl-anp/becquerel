@@ -1417,7 +1417,7 @@ class Spectrum:
             plotter.errorbar(color=color, label="_nolegend_")
         elif emode != "none":
             raise SpectrumError(
-                "Unknown error mode '{}', use 'bars' " "or 'band'".format(emode)
+                f"Unknown error mode '{emode}', use 'bars' " "or 'band'"
             )
         return ax
 

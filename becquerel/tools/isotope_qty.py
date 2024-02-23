@@ -238,9 +238,7 @@ class IsotopeQuantity:
         duration = (stop_time - obj.ref_date).total_seconds()
         if duration < 0:
             raise ValueError(
-                "Start time must precede stop time: {}, {}".format(
-                    start_time, stop_time
-                )
+                f"Start time must precede stop time: {start_time}, {stop_time}"
             )
         atoms = n_decays / (-np.expm1(-obj.decay_const * duration))
 
@@ -506,9 +504,7 @@ class IsotopeQuantity:
         if self.isotope.is_stable:
             s = f"{self.g_at(self.ref_date)} g of {self.isotope}"
         else:
-            s = "{} Bq of {} (at {})".format(
-                self.bq_at(self.ref_date), self.isotope, self.ref_date
-            )
+            s = f"{self.bq_at(self.ref_date)} Bq of {self.isotope} (at {self.ref_date})"
         return s
 
     def __mul__(self, other):
@@ -605,9 +601,7 @@ class NeutronIrradiation:
         )
         if self.stop_time < self.start_time:
             raise ValueError(
-                "Timestamps out of order: {}, {}".format(
-                    self.start_time, self.stop_time
-                )
+                f"Timestamps out of order: {self.start_time}, {self.stop_time}"
             )
         self.duration = (self.stop_time - self.start_time).total_seconds()
 
@@ -632,9 +626,7 @@ class NeutronIrradiation:
         if self.duration == 0:
             return f"{self.n_cm2} neutrons/cm2 at {self.start_time}"
         else:
-            return "{} n/cm2/s from {} to {}".format(
-                self.n_cm2_s, self.start_time, self.stop_time
-            )
+            return f"{self.n_cm2_s} n/cm2/s from {self.start_time} to {self.stop_time}"
 
     def activate(self, barns, initial, activated, stability=1e18):
         """

@@ -628,7 +628,7 @@ class Calibration:
         if len(self.attrs) > 0:
             for key in self.attrs:
                 result += ", "
-                result += f"{key}={repr(self.attrs[key])}"
+                result += f"{key}={self.attrs[key]!r}"
         result += ")"
         return result
 

@@ -81,7 +81,7 @@ def _load_and_compile_materials():
             "formula": formula,
             "density": density,
             "weight_fractions": weight_fracs,
-            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html)"',  # noqa: E501
+            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html)"',
         }
         #  add duplicate entry under element symbol for backwards compatibility
         materials[formula] = materials[name]
@@ -95,7 +95,7 @@ def _load_and_compile_materials():
             "formula": formula,
             "density": density,
             "weight_fractions": weight_fracs,
-            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html)"',  # noqa: E501
+            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html)"',
         }
 
     for j in range(len(data_comp)):

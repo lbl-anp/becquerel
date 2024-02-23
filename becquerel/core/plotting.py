@@ -275,7 +275,7 @@ class SpectrumPlotter:
         if hasattr(fmt, "__len__") and len(fmt) > 0:
             self.fmt = fmt
 
-        if not hasattr(self.fmt, "__len__") or not len(self.fmt) in [0, 1]:
+        if not hasattr(self.fmt, "__len__") or len(self.fmt) not in [0, 1]:
             raise PlottingError("Wrong number of positional argument")
 
         xcorners, ycorners = self._prepare_plot(**kwargs)

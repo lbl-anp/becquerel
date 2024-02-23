@@ -259,9 +259,7 @@ class Isotope(element.Element):
                     self.M = 1
             else:
                 raise IsotopeError(
-                    "Metastable level must be integer or string: {} {}".format(
-                        arg, type(arg)
-                    )
+                    f"Metastable level must be integer or string: {arg} {type(arg)}"
                 )
 
     def __str__(self):
