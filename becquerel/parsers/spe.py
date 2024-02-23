@@ -85,8 +85,8 @@ def read(filename, verbose=False, cal_kwargs=None):
                 i += 1
                 n_coeff = int(lines[i])
                 i += 1
-                for j in range(n_coeff):
-                    cal_coeff.append(float(lines[i].split(" ")[j]))
+                tokens = lines[i].split(" ")
+                cal_coeff += [float(token) for token in tokens[:n_coeff]]
                 if verbose:
                     print(cal_coeff)
             elif lines[i].startswith("$"):

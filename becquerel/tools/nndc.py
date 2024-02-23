@@ -637,13 +637,8 @@ class _NNDCQuery:
             "Radiation Energy (keV)",
             "Radiation Intensity (%)",
         ]
-        new_cols = []
-        for col in preferred_order:
-            if col in self.keys():
-                new_cols.append(col)
-        for col in self.keys():
-            if col not in new_cols:
-                new_cols.append(col)
+        new_cols = [col for col in preferred_order if col in self.keys()]
+        new_cols += [col for col in self.keys() if col not in new_cols]
         self.df = self.df[new_cols]
 
 

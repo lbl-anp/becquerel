@@ -219,9 +219,16 @@ class Spectrum:
 
     def __str__(self):
         lines = ["becquerel.Spectrum"]
-        ltups = []
-        for k in ["start_time", "stop_time", "realtime", "livetime", "is_calibrated"]:
-            ltups.append((k, getattr(self, k)))
+        ltups = [
+            (k, getattr(self, k))
+            for k in [
+                "start_time",
+                "stop_time",
+                "realtime",
+                "livetime",
+                "is_calibrated",
+            ]
+        ]
         ltups.append(("num_bins", len(self.bin_indices)))
         if self._counts is None:
             ltups.append(("gross_counts", None))
@@ -235,8 +242,7 @@ class Spectrum:
             ltups.append(("filename", self.attrs["infilename"]))
         else:
             ltups.append(("filename", None))
-        for lt in ltups:
-            lines.append("    {:15} {}".format(f"{lt[0]}:", lt[1]))
+        lines += [f"    {lt[0] + ':':15s} {lt[1]}" for lt in ltups]
         return "\n".join(lines)
 
     __repr__ = __str__

@@ -92,7 +92,7 @@ select = [
   "TRY",     # tryceratops
   "FLY",     # flynt
   "NPY",     # NumPy-specific rules
-  # "PERF",    # Perflint
+  "PERF",    # Perflint
   # "FURB",    # refurb
   "RUF",     # Ruff-specific rules
 ]
@@ -104,6 +104,7 @@ ignore = [
   "B028",      # No explicit `stacklevel` keyword argument found
   "TRY003",    # Avoid specifying long messages outside the exception class
   "NPY002",    # Replace legacy `np.random.poisson` call with `np.random.Generator`
+  "PERF203",   # `try`-`except` within a loop incurs performance overhead
   "RUF012",    # Mutable class attributes should be annotated with `typing.ClassVar`
 ]
 
