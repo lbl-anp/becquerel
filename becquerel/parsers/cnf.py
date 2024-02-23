@@ -56,7 +56,7 @@ def _from_pdp11(data, index):
     exb = ((data[index + 1] & 0x7F) << 1) + ((data[index] & 0x80) >> 7)
     if exb == 0:
         if sign == -1:
-            return np.NaN
+            return np.nan
         else:
             return 0.0
     h = (
