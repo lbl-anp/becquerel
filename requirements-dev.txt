@@ -1,11 +1,11 @@
 -r requirements.txt
 bump2version
 coverage
-flake8>=4.0.1
 pre-commit
 pytest
-pytest-black
 pytest-cov
 pytest-rerunfailures
+pytest-ruff
 pytest-xdist
 requests
+ruff
