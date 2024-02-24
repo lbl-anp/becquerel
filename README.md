@@ -3,6 +3,7 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![PyPI version](https://img.shields.io/pypi/v/becquerel.svg)](https://pypi.org/project/becquerel)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/becquerel.svg)](https://pypi.org/project/becquerel)
+[![PyPI license](https://img.shields.io/pypi/l/becquerel.svg)](https://pypi.python.org/project/becquerel)
 [![tests](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml/badge.svg?branch=)](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml)
 [![Coverage Status](https://coveralls.io/repos/github/lbl-anp/becquerel/badge.svg?branch=main)](https://coveralls.io/github/lbl-anp/becquerel?branch=main)
 
