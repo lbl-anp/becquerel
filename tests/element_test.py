@@ -130,7 +130,7 @@ def test_element(z, sym, name):
     args.extend([z, str(z)])
     print(args)
     for arg in args:
-        print("")
+        print()
         print("arg: ", arg)
         elem = element.Element(arg)
         print(elem)

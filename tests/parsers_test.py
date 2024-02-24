@@ -29,9 +29,9 @@ class TestParsers:
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
         for filename in filenames:
-            fname, ext = os.path.splitext(filename)
-            path, fname = os.path.split(fname)
-            print("")
+            fname, _ = os.path.splitext(filename)
+            _, fname = os.path.split(fname)
+            print()
             print(filename)
             data, cal = read_fn(filename)
             print(data, cal)
@@ -82,8 +82,8 @@ class TestParsersSpectrumPlot:
         assert len(filenames) >= 1
         for filename in filenames:
             fname, ext = os.path.splitext(filename)
-            path, fname = os.path.split(fname)
-            print("")
+            _, fname = os.path.split(fname)
+            print()
             print(filename)
             data, cal = read_fn(filename)
             spec = bq.Spectrum(**data)

@@ -70,7 +70,7 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
     elif ufloats:
         raise UncertaintiesError(
             "Specify uncertainties with UFloats or "
-            + "by separate argument, but not both"
+            "by separate argument, but not both"
         )
     elif x_uncs is not None:
         return unumpy.uarray(x_array, x_uncs)

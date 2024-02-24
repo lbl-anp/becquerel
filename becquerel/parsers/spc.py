@@ -225,8 +225,10 @@ def read(filename, verbose=False, cal_kwargs=None):
                 data_records.append(binary_data)
             try:
                 binary_data = f.read(128)
-            except OSError:
-                raise BecquerelParserError("Unable to read 128 bytes from file")
+            except OSError as exc:
+                raise BecquerelParserError(
+                    "Unable to read 128 bytes from file"
+                ) from exc
             if len(binary_data) < 128:
                 break
         if verbose:
@@ -249,18 +251,18 @@ def read(filename, verbose=False, cal_kwargs=None):
                 for data_format in record_format:
                     fmt += data_format[1]
                 if verbose:
-                    print("")
-                    print("")
+                    print()
+                    print()
                     print("-" * 60)
-                    print("")
+                    print()
                     print(record_format)
                     print(fmt)
-                    print("")
+                    print()
                 binary_data = struct.unpack(fmt, binary_data)
                 if verbose:
-                    print("")
+                    print()
                     print(binary_data)
-                    print("")
+                    print()
                 for j, data_format in enumerate(record_format):
                     if isinstance(binary_data[j], bytes):
                         data[data_format[0]] = binary_data[j].decode("ascii")
@@ -297,18 +299,18 @@ def read(filename, verbose=False, cal_kwargs=None):
             for data_format in record_format:
                 fmt += data_format[1]
             if verbose:
-                print("")
-                print("")
+                print()
+                print()
                 print("-" * 60)
-                print("")
+                print()
                 print(record_format)
                 print(fmt)
-                print("")
+                print()
             binary_data = struct.unpack(fmt, binary_data)
             if verbose:
-                print("")
+                print()
                 print(binary_data)
-                print("")
+                print()
             for j, data_format in enumerate(record_format):
                 if isinstance(binary_data[j], bytes):
                     data[data_format[0]] = binary_data[j].decode("ascii")
@@ -385,8 +387,8 @@ def read(filename, verbose=False, cal_kwargs=None):
             float(data["Calibration parameter 1"]),
             float(data["Calibration parameter 2"]),
         ]
-    except KeyError:
-        raise BecquerelParserError("Calibration parameters not found")
+    except KeyError as exc:
+        raise BecquerelParserError("Calibration parameters not found") from exc
 
     # clean up null characters in any strings
     for key in data.keys():

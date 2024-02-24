@@ -194,7 +194,7 @@ class Spectrum:
         ):
             raise SpectrumError(
                 "Specify no more than 2 out of 3 args: "
-                + "realtime, stop_time, start_time"
+                "realtime, stop_time, start_time"
             )
         elif self.start_time is not None and self.stop_time is not None:
             if self.start_time > self.stop_time:
@@ -219,9 +219,16 @@ class Spectrum:
 
     def __str__(self):
         lines = ["becquerel.Spectrum"]
-        ltups = []
-        for k in ["start_time", "stop_time", "realtime", "livetime", "is_calibrated"]:
-            ltups.append((k, getattr(self, k)))
+        ltups = [
+            (k, getattr(self, k))
+            for k in [
+                "start_time",
+                "stop_time",
+                "realtime",
+                "livetime",
+                "is_calibrated",
+            ]
+        ]
         ltups.append(("num_bins", len(self.bin_indices)))
         if self._counts is None:
             ltups.append(("gross_counts", None))
@@ -235,8 +242,7 @@ class Spectrum:
             ltups.append(("filename", self.attrs["infilename"]))
         else:
             ltups.append(("filename", None))
-        for lt in ltups:
-            lines.append("    {:15} {}".format(f"{lt[0]}:", lt[1]))
+        lines += [f"    {lt[0] + ':':15s} {lt[1]}" for lt in ltups]
         return "\n".join(lines)
 
     __repr__ = __str__
@@ -260,10 +266,10 @@ class Spectrum:
         else:
             try:
                 return self.cps * self.livetime
-            except TypeError:
+            except TypeError as exc:
                 raise SpectrumError(
                     "Unknown livetime; cannot calculate counts from CPS"
-                )
+                ) from exc
 
     @property
     def counts_vals(self):
@@ -304,10 +310,10 @@ class Spectrum:
         else:
             try:
                 return self.counts / self.livetime
-            except TypeError:
+            except TypeError as exc:
                 raise SpectrumError(
                     "Unknown livetime; cannot calculate CPS from counts"
-                )
+                ) from exc
 
     @property
     def cps_vals(self):
@@ -781,8 +787,8 @@ class Spectrum:
         if (self._counts is None) ^ (other._counts is None):
             raise SpectrumError(
                 "Addition of counts-based and CPS-based spectra is "
-                + "ambiguous, use Spectrum(counts=specA.counts+specB.counts) "
-                + "or Spectrum(cps=specA.cps+specB.cps) instead."
+                "ambiguous, use Spectrum(counts=specA.counts+specB.counts) "
+                "or Spectrum(cps=specA.cps+specB.cps) instead."
             )
 
         if self._counts is not None and other._counts is not None:
@@ -792,7 +798,7 @@ class Spectrum:
             else:
                 warnings.warn(
                     "Addition of counts with missing livetimes, "
-                    + "livetime was set to None.",
+                    "livetime was set to None.",
                     SpectrumWarning,
                 )
         else:
@@ -836,7 +842,7 @@ class Spectrum:
             if (self._cps is None) or (other._cps is None):
                 warnings.warn(
                     "Subtraction of counts-based specta, spectra "
-                    + "have been converted to CPS",
+                    "have been converted to CPS",
                     SpectrumWarning,
                 )
         except SpectrumError:
@@ -845,14 +851,14 @@ class Spectrum:
                 kwargs["uncs"] = [np.nan] * len(self)
                 warnings.warn(
                     "Subtraction of counts-based spectra, "
-                    + "livetimes have been ignored.",
+                    "livetimes have been ignored.",
                     SpectrumWarning,
                 )
-            except SpectrumError:
+            except SpectrumError as exc:
                 raise SpectrumError(
                     "Subtraction of counts and CPS-based spectra without"
-                    + "livetimes not possible"
-                )
+                    "livetimes not possible"
+                ) from exc
 
         if self.is_calibrated and other.is_calibrated:
             spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **kwargs)
@@ -882,14 +888,14 @@ class Spectrum:
         if self.is_calibrated ^ other.is_calibrated:
             raise SpectrumError(
                 "Cannot add/subtract uncalibrated spectrum to/from a "
-                + "calibrated spectrum. If both have the same calibration, "
-                + 'please use the "calibrate_like" method'
+                "calibrated spectrum. If both have the same calibration, "
+                'please use the "calibrate_like" method'
             )
         if self.is_calibrated and other.is_calibrated:
             if not np.all(self.bin_edges_kev == other.bin_edges_kev):
                 raise NotImplementedError(
                     "Addition/subtraction for arbitrary calibrated spectra "
-                    + "not implemented"
+                    "not implemented"
                 )
                 # TODO: if both spectra are calibrated but with different
                 #   calibrations, should one be rebinned to match?
@@ -897,7 +903,7 @@ class Spectrum:
             if not np.all(self.bin_edges_raw == other.bin_edges_raw):
                 raise NotImplementedError(
                     "Addition/subtraction for arbitrary uncalibrated "
-                    + "spectra not implemented"
+                    "spectra not implemented"
                 )
 
     def __mul__(self, other):
@@ -952,8 +958,10 @@ class Spectrum:
         if not isinstance(scaling_factor, UFloat):
             try:
                 scaling_factor = float(scaling_factor)
-            except (TypeError, ValueError):
-                raise TypeError("Spectrum must be multiplied/divided by a scalar")
+            except (TypeError, ValueError) as exc:
+                raise TypeError(
+                    "Spectrum must be multiplied/divided by a scalar"
+                ) from exc
             if (
                 scaling_factor == 0
                 or np.isinf(scaling_factor)
@@ -1120,7 +1128,7 @@ class Spectrum:
                 "Cannot access energy bins with an uncalibrated Spectrum."
             )
 
-        bin_edges, bin_widths, _ = self.get_bin_properties(use_kev)
+        bin_edges, _, _ = self.get_bin_properties(use_kev)
         x = np.asarray(x)
 
         if np.any(x < bin_edges[0]):
@@ -1289,7 +1297,7 @@ class Spectrum:
             if (self._counts is None) and (self.livetime is not None):
                 warnings.warn(
                     "Rebinning by listmode method without explicit counts "
-                    + "provided in Spectrum object",
+                    "provided in Spectrum object",
                     SpectrumWarning,
                 )
         out_spec = rebin(
@@ -1416,9 +1424,7 @@ class Spectrum:
         elif emode == "bars" or emode == "bar":
             plotter.errorbar(color=color, label="_nolegend_")
         elif emode != "none":
-            raise SpectrumError(
-                "Unknown error mode '{}', use 'bars' " "or 'band'".format(emode)
-            )
+            raise SpectrumError(f"Unknown error mode '{emode}', use 'bars' or 'band'")
         return ax
 
     def fill_between(self, **kwargs):
@@ -1488,8 +1494,8 @@ class Spectrum:
         Fitter
         """
 
-        xedges, xlabel = self.parse_xmode(xmode)
-        ydata, yuncs, ylabel = self.parse_ymode(ymode)
+        xedges, _ = self.parse_xmode(xmode)
+        ydata, yuncs, _ = self.parse_ymode(ymode)
 
         xcenters = bin_centers_from_edges(xedges)
 

@@ -49,26 +49,24 @@ DECAYRAD_DECAY_MODE = {
 
 
 WALLET_DECAY_MODE = dict(DECAYRAD_DECAY_MODE)
-WALLET_DECAY_MODE.update(
-    {
-        "double beta": "DB",
-        "bb": "DB",
-        "cluster": "C",
-        "c": "C",
-        "beta-delayed neutron": "DN",
-        "b-delayed n": "DN",
-        "bdn": "DN",
-        "beta-delayed proton": "DP",
-        "b-delayed p": "DP",
-        "bdp": "DP",
-        "beta-delayed alpha": "DA",
-        "b-delayed a": "DA",
-        "bda": "DA",
-        "beta-delayed fission": "DF",
-        "b-delayed f": "DF",
-        "bdf": "DF",
-    }
-)
+WALLET_DECAY_MODE.update({
+    "double beta": "DB",
+    "bb": "DB",
+    "cluster": "C",
+    "c": "C",
+    "beta-delayed neutron": "DN",
+    "b-delayed n": "DN",
+    "bdn": "DN",
+    "beta-delayed proton": "DP",
+    "b-delayed p": "DP",
+    "bdp": "DP",
+    "beta-delayed alpha": "DA",
+    "b-delayed a": "DA",
+    "bda": "DA",
+    "beta-delayed fission": "DF",
+    "b-delayed f": "DF",
+    "bdf": "DF",
+})
 
 
 DECAYRAD_RADIATION_TYPE = {
@@ -152,8 +150,8 @@ def _parse_headers(headers):
     if len(set(headers_new)) != len(headers_new):
         raise NNDCRequestError(
             "Duplicate headers after parsing\n"
-            + f'    Original headers: "{headers}"\n'
-            + f'    Parsed headers:   "{headers_new}"'
+            f'    Original headers: "{headers}"\n'
+            f'    Parsed headers:   "{headers_new}"'
         )
     return headers_new
 
@@ -179,7 +177,7 @@ def _parse_table(text):
         text = text.split("To save this output")[0]
         lines = text.split("\n")
     except Exception as exc:
-        raise NNDCRequestError(f"Unable to parse text:\n{exc}\n{text}")
+        raise NNDCRequestError(f"Unable to parse text:\n{exc}\n{text}") from exc
     table = {}
     headers = None
     for line in lines:
@@ -196,8 +194,8 @@ def _parse_table(text):
             if len(tokens) != len(headers):
                 raise NNDCRequestError(
                     "Too few data in table row\n"
-                    + f'    Headers: "{headers}"\n'
-                    + f'    Row:     "{tokens}"'
+                    f'    Headers: "{headers}"\n'
+                    f'    Row:     "{tokens}"'
                 )
             for header, token in zip(headers, tokens):
                 table[header].append(token)
@@ -208,9 +206,9 @@ def _parse_float_uncertainty(x, dx):
     """Parse a string and its uncertainty into a float or ufloat.
 
     Examples:
-      >>> _parse_float_uncertainty('257.123', '0.005')
+      >>> _parse_float_uncertainty("257.123", "0.005")
       257.123+/-0.005
-      >>> _parse_float_uncertainty('8', '')
+      >>> _parse_float_uncertainty("8", "")
       8.0
 
     Args:
@@ -268,8 +266,8 @@ def _parse_float_uncertainty(x, dx):
         dx = ""
     try:
         x2 = float(x)
-    except ValueError:
-        raise NNDCRequestError(f'Value cannot be parsed as float: "{x}"')
+    except ValueError as exc:
+        raise NNDCRequestError(f'Value cannot be parsed as float: "{x}"') from exc
     if dx == "":
         return x2
     # handle multiple exponents with some uncertainties, e.g., "7E-4E-5"
@@ -281,8 +279,10 @@ def _parse_float_uncertainty(x, dx):
         factor = 1.0
     try:
         dx2 = float(dx) * factor
-    except ValueError:
-        raise NNDCRequestError(f'Uncertainty cannot be parsed as float: "{dx}"')
+    except ValueError as exc:
+        raise NNDCRequestError(
+            f'Uncertainty cannot be parsed as float: "{dx}"'
+        ) from exc
     return uncertainties.ufloat(x2, dx2)
 
 
@@ -303,8 +303,10 @@ def _format_range(x_range):
 
     try:
         x1, x2 = x_range
-    except (TypeError, ValueError):
-        raise NNDCInputError(f'Range keyword arg must have two elements: "{x_range}"')
+    except (TypeError, ValueError) as exc:
+        raise NNDCInputError(
+            f'Range keyword arg must have two elements: "{x_range}"'
+        ) from exc
     try:
         if np.isfinite(x1):
             x1 = f"{x1}"
@@ -464,9 +466,10 @@ class _NNDCQuery:
             # handle Z, A, and N settings
             if x in kwargs:
                 self._data["spnuc"] = "zanrange"
-                self._data[x + "min"], self._data[x + "max"] = _format_range(
-                    (kwargs[x], kwargs[x])
-                )
+                self._data[x + "min"], self._data[x + "max"] = _format_range((
+                    kwargs[x],
+                    kwargs[x],
+                ))
             # handle *_range, *_any, *_odd, *_even
             elif x + "_range" in kwargs:
                 self._data["spnuc"] = "zanrange"
@@ -524,7 +527,7 @@ class _NNDCQuery:
         # add string m giving the isomer level name (e.g., '' or 'm' or 'm2')
         self.df["m"] = [""] * len(self)
         # loop over each isotope in the dataframe
-        A_Z = [(a, z) for a, z in zip(self["A"], self["Z"])]
+        A_Z = list(zip(self["A"], self["Z"]))
         A_Z = set(A_Z)
         for a, z in A_Z:
             isotope = (self["A"] == a) & (self["Z"] == z)
@@ -634,13 +637,8 @@ class _NNDCQuery:
             "Radiation Energy (keV)",
             "Radiation Intensity (%)",
         ]
-        new_cols = []
-        for col in preferred_order:
-            if col in self.keys():
-                new_cols.append(col)
-        for col in self.keys():
-            if col not in new_cols:
-                new_cols.append(col)
+        new_cols = [col for col in preferred_order if col in self.keys()]
+        new_cols += [col for col in self.keys() if col not in new_cols]
         self.df = self.df[new_cols]
 
 
@@ -685,17 +683,15 @@ class _NuclearWalletCardQuery(_NNDCQuery):
 
     _URL = "https://www.nndc.bnl.gov/nudat3/sigma_searchi.jsp"
     _DATA = dict(_NNDCQuery._DATA)
-    _DATA.update(
-        {
-            "eled": "disabled",  # E(level) condition on/off
-            "elmin": "0",  # E(level) min
-            "elmax": "40",  # E(level) max
-            "jled": "disabled",  # J_pi(level) condition on/off
-            "jlv": "",  # J
-            "plv": "ANY",  # parity
-            "ord": "zalt",  # order file by Z, A, E(level), T1/2
-        }
-    )
+    _DATA.update({
+        "eled": "disabled",  # E(level) condition on/off
+        "elmin": "0",  # E(level) min
+        "elmax": "40",  # E(level) max
+        "jled": "disabled",  # J_pi(level) condition on/off
+        "jlv": "",  # J
+        "plv": "ANY",  # parity
+        "ord": "zalt",  # order file by Z, A, E(level), T1/2
+    })
     _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
     _ALLOWED_KEYWORDS.extend(["elevel_range", "decay", "j", "parity"])
     _DUMMY_TEXT = _NUCLEAR_WALLET_CARD_QUERY_DUMMY_TEXT
@@ -713,8 +709,8 @@ class _NuclearWalletCardQuery(_NNDCQuery):
                 )
             warnings.warn(
                 'query kwarg "decay" may not be working on NNDC, '
-                + "and the user is advised to check the "
-                + '"Decay Mode" column of the resulting DataFrame'
+                "and the user is advised to check the "
+                '"Decay Mode" column of the resulting DataFrame'
             )
             self._data["dmed"] = "enabled"
             self._data["dmn"] = WALLET_DECAY_MODE[kwargs["decay"].lower()]
@@ -824,19 +820,17 @@ class _DecayRadiationQuery(_NNDCQuery):
 
     _URL = "https://www.nndc.bnl.gov/nudat3/dec_searchi.jsp"
     _DATA = dict(_NNDCQuery._DATA)
-    _DATA.update(
-        {
-            "rted": "enabled",  # radiation type condition on/off
-            "rtn": "ANY",  # radiation type: 'ANY' = any, 'G' = gamma
-            "reed": "disabled",  # radiation energy condition on/off
-            "remin": "0",  # radiation energy min (keV)
-            "remax": "10000",  # radiation energy max (keV)
-            "ried": "disabled",  # radiation intensity condition on/off
-            "rimin": "0",  # radiation intensity min (%)
-            "rimax": "100",  # radiation intensity max (%)
-            "ord": "zate",  # order file by Z, A, T1/2, E
-        }
-    )
+    _DATA.update({
+        "rted": "enabled",  # radiation type condition on/off
+        "rtn": "ANY",  # radiation type: 'ANY' = any, 'G' = gamma
+        "reed": "disabled",  # radiation energy condition on/off
+        "remin": "0",  # radiation energy min (keV)
+        "remax": "10000",  # radiation energy max (keV)
+        "ried": "disabled",  # radiation intensity condition on/off
+        "rimin": "0",  # radiation intensity min (%)
+        "rimax": "100",  # radiation intensity max (%)
+        "ord": "zate",  # order file by Z, A, T1/2, E
+    })
     _ALLOWED_KEYWORDS = list(_NNDCQuery._ALLOWED_KEYWORDS)
     _ALLOWED_KEYWORDS.extend(["elevel_range", "decay", "type", "e_range", "i_range"])
     _DUMMY_TEXT = _DECAY_RADIATION_QUERY_DUMMY_TEXT

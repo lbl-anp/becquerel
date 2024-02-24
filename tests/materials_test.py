@@ -256,7 +256,7 @@ def test_remove_materials_csv():
     if os.path.exists(materials.FILENAME):
         os.remove(materials.FILENAME)
     with open(materials.FILENAME, "w") as f:
-        print("", file=f)
+        print(file=f)
     remove_materials_csv()
     assert not os.path.exists(materials.FILENAME)
     # make sure remove works if the file does not exist

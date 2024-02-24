@@ -57,7 +57,7 @@ def test_isotope_init_args(iso_str, sym, A, m):
                 if isomer == "" or isomer is None:
                     args_list.append((elem, mass))
                 for args in args_list:
-                    print("")
+                    print()
                     print(args)
                     i = isotope.Isotope(*args)
                     print(i)
@@ -159,7 +159,7 @@ def test_isotope_init_str(iso_str, sym, A, m):
         ]
         for iso in iso_tests:
             for iso2 in [iso, iso.upper(), iso.lower()]:
-                print("")
+                print()
                 print(f"{sym}-{mass_number}: {iso2}")
                 i = isotope.Isotope(iso2)
                 print(i)
