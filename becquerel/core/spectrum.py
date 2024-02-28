@@ -1161,7 +1161,7 @@ class Spectrum:
           cal: a Calibration object
         """
 
-        if hasattr(cal, "ch2kev") and callable(getattr(cal, "ch2kev")):
+        if hasattr(cal, "ch2kev") and callable(cal.ch2kev):
             self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
             warnings.warn(
                 "The use of bq.EnergyCalBase classes is deprecated "
@@ -1389,9 +1389,9 @@ class Spectrum:
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
-          title:  costum plot title
-          xlabel: costum xlabel value
-          ylabel: costum ylabel value
+          title:  custom plot title
+          xlabel: custom xlabel value
+          ylabel: custom ylabel value
           emode:  can be 'band' for adding an erroband or 'bars' for adding
                   error bars, default is 'none'. It herits the color from
                   matplotlib plot and can not be configured. For better
@@ -1433,9 +1433,9 @@ class Spectrum:
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
-          title:  costum plot title
-          xlabel: costum xlabel value
-          ylabel: costum ylabel value
+          title:  custom plot title
+          xlabel: custom xlabel value
+          ylabel: custom ylabel value
           kwargs: arguments that are directly passed to matplotlib's
                   fill_between command. In addition it is possible to pass
                   linthresh if ylim='default' and ymode='symlog'.

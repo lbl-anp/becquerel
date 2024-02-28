@@ -386,7 +386,7 @@ class _XCOMQuery:
 
     def _request(self):
         """Request data table from the URL."""
-        self._req = requests.post(self._url + self._method, data=self._data)
+        self._req = requests.post(self._url + self._method, data=self._data, timeout=15)
         if not self._req.ok or self._req.reason != "OK" or self._req.status_code != 200:
             raise XCOMRequestError(
                 "XCOM Request failed: reason={}, status_code={}".format(

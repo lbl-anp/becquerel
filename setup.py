@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Becquerel: Tools for radiation spectral analysis."""
 
 import importlib.util

@@ -279,12 +279,12 @@ def read(filename, verbose=False, cal_kwargs=None):
         i_channel = 0
         channels = []
         counts = []
-        for j in range(256):
+        for _ in range(256):
             binary_data = data_records[i_rec]
             i_rec += 1
             N = struct.unpack("<32I", binary_data)
             # print(': ', N)
-            for j, N_j in enumerate(N):
+            for N_j in N:
                 channels = np.append(channels, i_channel)
                 counts = np.append(counts, N_j)
                 i_channel += 1
