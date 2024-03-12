@@ -56,12 +56,12 @@ repos:
         additional_dependencies: [flake8-bugbear]
         args: ["--ignore=W503,B015,B028"]
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.7
+    rev: 1.7.8
     hooks:
       - id: bandit
         args: [--skip, "B101"]
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.4
+    rev: v2.2.6
     hooks:
       - id: codespell
         args: [
@@ -77,7 +77,7 @@ repos:
     hooks:
       - id: prettier
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.7.1
+    rev: 1.8.4
     hooks:
       - id: nbqa-check-ast
         additional_dependencies: [pre-commit-hooks]
