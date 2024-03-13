@@ -65,7 +65,7 @@ repos:
     hooks:
       - id: codespell
         args: [
-            "--ignore-words-list=livetime,Te,te,Nb,nd,FOM,fom",
+            "--ignore-words-list=livetime,livetimes,Te,te,Nb,nd,FOM,fom",
             '--ignore-regex=^\s*"image\/png":\s.*', # ignore jupyter notebook images
           ]
   - repo: https://github.com/igorshubovych/markdownlint-cli
