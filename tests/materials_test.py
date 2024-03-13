@@ -128,7 +128,7 @@ def test_materials_dummy_compendium_pre2022():
     ]
     with open(materials_compendium.FNAME, "w") as f:
         json.dump(data, f, indent=4)
-    with pytest.warns(None) as record:
+    with pytest.warns() as record:
         materials._load_and_compile_materials()
     assert len(record) == 0, "Expected no MaterialsWarnings to be raised"
     # remove the dummy file and point back to original
@@ -177,7 +177,7 @@ def test_materials_dummy_compendium_2022():
     }
     with open(materials_compendium.FNAME, "w") as f:
         json.dump(data, f, indent=4)
-    with pytest.warns(None) as record:
+    with pytest.warns() as record:
         materials._load_and_compile_materials()
     assert len(record) == 0, "Expected no MaterialsWarnings to be raised"
     # remove siteVersion and make sure there is an error raised
