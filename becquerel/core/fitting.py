@@ -364,7 +364,7 @@ class ExpGaussModel(Model):
             expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
-    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05):
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05, gamma=0.95):
         assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
         assert (
             width_ratio < 1.0 and width_ratio > 0.0
@@ -387,7 +387,7 @@ class ExpGaussModel(Model):
             (f"{self.prefix}mu", "max", x[-1]),
             (f"{self.prefix}sigma", "value", sigma),
             (f"{self.prefix}sigma", "min", 0.0),
-            (f"{self.prefix}gamma", "value", 0.95),
+            (f"{self.prefix}gamma", "value", gamma),
             (f"{self.prefix}gamma", "min", -1.0),
             (f"{self.prefix}gamma", "max", 1.0),
         ]
