@@ -1,9 +1,9 @@
 """Test isotope.py classes."""
 
 import numpy as np
-from becquerel.tools import element
-from becquerel.tools import isotope
 import pytest
+
+from becquerel.tools import element, isotope
 
 TEST_ISOTOPES = [
     ("H-3", "H", 3, ""),

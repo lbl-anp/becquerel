@@ -2,11 +2,12 @@
 
 import glob
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-import matplotlib.pyplot as plt
-import becquerel as bq
 
+import becquerel as bq
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
 SAMPLES = {}

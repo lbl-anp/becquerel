@@ -1,10 +1,12 @@
-import os
 import glob
-import pytest
+import os
 from copy import deepcopy
-import numpy as np
-import becquerel as bq
+
 import lmfit
+import numpy as np
+import pytest
+
+import becquerel as bq
 
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
 

@@ -12,7 +12,9 @@ The relevant code is in these files:
 import datetime
 import os
 import struct
+
 import numpy as np
+
 from ..core import calibration
 from .parsers import BecquerelParserError
 

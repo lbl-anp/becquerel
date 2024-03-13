@@ -7,9 +7,12 @@ References:
 
 """
 
-import requests
-import pandas as pd
 from collections.abc import Iterable
+from io import StringIO
+
+import pandas as pd
+import requests
+
 from .element import element_symbol
 from .materials_error import MaterialsError
 
@@ -35,7 +38,7 @@ def _get_request(url):
 
     """
 
-    req = requests.get(url)
+    req = requests.get(url, timeout=15)
     if not req.ok or req.reason != "OK" or req.status_code != 200:
         raise MaterialsError(
             "NIST materials request failed: reason={}, status_code={}".format(
@@ -77,7 +80,7 @@ def fetch_element_data():
     # remove open <TR> at the end of the table
     text = text.replace("</TD></TR><TR>", "</TD></TR>")
     # read HTML table into pandas DataFrame
-    tables = pd.read_html(text, header=0, skiprows=[1, 2])
+    tables = pd.read_html(StringIO(text), header=0, skiprows=[1, 2])
     if len(tables) != 1:
         raise MaterialsError(f"1 HTML table expected, but found {len(tables)}")
     df = tables[0]
@@ -162,7 +165,7 @@ def fetch_compound_data():
     # replace <BR> symbols in composition lists with semicolons
     text = text.replace("<BR>", ";")
     # read HTML table into pandas DataFrame
-    tables = pd.read_html(text, header=0, skiprows=[1, 2])
+    tables = pd.read_html(StringIO(text), header=0, skiprows=[1, 2])
     if len(tables) != 1:
         raise MaterialsError(f"1 HTML table expected, but found {len(tables)}")
     df = tables[0]
