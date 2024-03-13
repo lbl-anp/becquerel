@@ -1,11 +1,12 @@
 """Test PeakFinder and AutoCalibrator classes."""
 
 import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-import becquerel as bq
 
+import becquerel as bq
 
 # read in spectra
 SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")

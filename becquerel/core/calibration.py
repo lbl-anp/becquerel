@@ -3,13 +3,15 @@
 import ast
 import copy
 import warnings
+
 import asteval
 import black
 import blib2to3
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import scipy.optimize
-import matplotlib.pyplot as plt
+
 from .. import io
 
 # the default domain (x) and range (y) ranges over which a calibration is valid
@@ -868,7 +870,11 @@ class Calibration:
                     else:
                         x0j = None
                     result = scipy.optimize.root_scalar(
-                        lambda _x: self(_x) - y[j], x0=x0j, bracket=bracket, **kwargs
+                        lambda _x, _y: self(_x) - _y,
+                        args=(y[j],),
+                        x0=x0j,
+                        bracket=bracket,
+                        **kwargs,
                     )
                     x[j] = result.root
         else:
@@ -1034,7 +1040,7 @@ class Calibration:
         aux_params=None,
         domain=None,
         rng=None,
-        fit_kwargs={},
+        fit_kwargs=None,
         **attrs,
     ):
         """Create a Calibration with the expression and fit the points.
@@ -1066,7 +1072,7 @@ class Calibration:
         rng : array_like
             The range of the function. Expression outputs will be clipped to
             this interval. Must be finite. By default DEFAULT_RANGE.
-        fit_kwargs : dict
+        fit_kwargs : None or dict
             Kwargs to pass to the minimization routine.
         attrs : dict
             Other information to be stored with the calibration.
@@ -1080,6 +1086,8 @@ class Calibration:
         points_x, points_y, weights = _check_points(
             points_x, points_y, weights=weights, domain=domain, rng=rng
         )
+        if fit_kwargs is None:
+            fit_kwargs = {}
         params = _fit_expression(
             expression,
             points_x,

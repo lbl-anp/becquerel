@@ -1,17 +1,18 @@
-import warnings
 import inspect
+import warnings
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numdifftools as nd
 import numpy as np
 import pandas as pd
 import scipy.special
+from iminuit import Minuit
 from lmfit.model import Model
 from lmfit.parameter import Parameters
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-from iminuit import Minuit
+from matplotlib.gridspec import GridSpec
 from uncertainties import ufloat
-import numdifftools as nd
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
@@ -126,10 +127,10 @@ def gauss_dbl_exp(
     # l and r tail_func are 0 when we're below/above the Gaussian mean
     # "heavyside convolution"
     mask = x < mu
-    ltail_func[mask] = amp * ltail_ratio * np.exp(ltail_slope * ((x[mask] - mu)))
+    ltail_func[mask] = amp * ltail_ratio * np.exp(ltail_slope * (x[mask] - mu))
     ltail_func[mask] *= -np.expm1(ltail_cutoff * alpha * ((x[mask] - mu) ** 2))
     mask = x > mu
-    rtail_func[mask] = amp * rtail_ratio * np.exp(rtail_slope * ((x[mask] - mu)))
+    rtail_func[mask] = amp * rtail_ratio * np.exp(rtail_slope * (x[mask] - mu))
     rtail_func[mask] *= -np.expm1(rtail_cutoff * alpha * ((x[mask] - mu) ** 2))
     return amp * np.exp(alpha * ((x - mu) ** 2)) + ltail_func + rtail_func
 
@@ -1310,7 +1311,7 @@ class Fitter:
             )
         # Components
         fit_ax.set_prop_cycle(color=COLORS)
-        for i, m in enumerate(self.model.components):
+        for m in self.model.components:
             y = m.eval(x=x_plot, **self.best_values)
             if isinstance(y, float):
                 y = np.ones(x_plot.shape) * y

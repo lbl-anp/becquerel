@@ -1,13 +1,14 @@
 """Test core.plotting"""
 
-import pytest
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+
+import becquerel as bq
+from becquerel import SpectrumPlotter as sp
 
 plt.switch_backend("Agg")
-import becquerel as bq  # noqa: E402
-from becquerel import SpectrumPlotter as sp  # noqa: E402
 
 TEST_DATA_LENGTH = 256
 TEST_COUNTS = 4
@@ -369,7 +370,7 @@ def test_error_positional_parameters(cal_spec):
 
 
 def test_uncal_as_cal(uncal_spec):
-    """Test errors for calibrated reqested for an uncalibrated spectrum"""
+    """Test errors for calibrated requested for an uncalibrated spectrum"""
 
     with pytest.raises(bq.PlottingError):
         uncal_spec.plot(xmode="energy")
