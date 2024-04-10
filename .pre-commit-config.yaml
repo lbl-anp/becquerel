@@ -2,7 +2,7 @@
 exclude: '(?:\.cnf|\.CNF|\.iec)$'
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-ast
       - id: check-added-large-files
@@ -28,7 +28,7 @@ repos:
       - id: sort-simple-yaml
       - id: trailing-whitespace
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.1
+    rev: v3.15.2
     hooks:
       - id: pyupgrade
         args: [--py38-plus]
@@ -42,11 +42,11 @@ repos:
       - id: isort
         args: [--profile, black, --float-to-top, --color]
   - repo: https://github.com/psf/black
-    rev: 24.2.0
+    rev: 24.3.0
     hooks:
       - id: black
   - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.0
+    rev: v2.3.1
     hooks:
       - id: autoflake
   - repo: https://github.com/PyCQA/flake8
@@ -77,7 +77,7 @@ repos:
     hooks:
       - id: prettier
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.8.4
+    rev: 1.8.5
     hooks:
       - id: nbqa-check-ast
         additional_dependencies: [pre-commit-hooks]
