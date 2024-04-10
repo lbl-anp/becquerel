@@ -2,6 +2,7 @@
 
 import json
 import os
+import warnings
 
 import pytest
 from utils import xcom_is_up
@@ -140,12 +141,10 @@ def test_materials_dummy_compendium_pre2022():
     ]
     with open(materials_compendium.FNAME, "w") as f:
         json.dump(data, f, indent=4)
-    with pytest.warns(None) as record:
+    # Check that no warning is raised
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         materials._load_and_compile_materials()
-    assert len(record) == 0, (
-        "Expected no MaterialsWarnings to be raised; "
-        f"got {_get_warning_messages(record)}"
-    )
     # remove the dummy file and point back to original
     os.remove(materials_compendium.FNAME)
     materials_compendium.FNAME = fname_orig
@@ -192,12 +191,10 @@ def test_materials_dummy_compendium_2022():
     }
     with open(materials_compendium.FNAME, "w") as f:
         json.dump(data, f, indent=4)
-    with pytest.warns(None) as record:
+    # Check that no warning is raised
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         materials._load_and_compile_materials()
-    assert len(record) == 0, (
-        "Expected no MaterialsWarnings to be raised; "
-        f"got {_get_warning_messages(record)}"
-    )
     # remove siteVersion and make sure there is an error raised
     del data["siteVersion"]
     with open(materials_compendium.FNAME, "w") as f:
