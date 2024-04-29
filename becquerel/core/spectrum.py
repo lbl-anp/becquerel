@@ -938,7 +938,7 @@ class Spectrum:
     # This line adds true division
     __truediv__ = __div__
 
-    def _mul_div(self, scaling_factor, div=False):
+    def _mul_div(self, scaling_factor: float, div=False):
         """Multiply or divide a spectrum by a scalar. Handle errors.
 
         Raises:
@@ -1242,7 +1242,7 @@ class Spectrum:
             "bin_edges_kev": combined_bin_edges,
             "livetime": self.livetime,
         }
-        obj = Spectrum(**kwargs)
+        obj = Spectrum(**kwargs)  # TODO: replace with self.__class__ ?
         return obj
 
     def rebin(
@@ -1314,7 +1314,7 @@ class Spectrum:
         )
         # TODO: raw here too?
 
-    def parse_xmode(self, xmode: str):
+    def parse_xmode(self, xmode: str) -> tuple:
         """Parse the x-axis mode to get the associated data and plot label.
 
         Parameters
@@ -1342,7 +1342,7 @@ class Spectrum:
             raise ValueError(f"Unsupported xmode: {xmode:s}")
         return xedges, xlabel
 
-    def parse_ymode(self, ymode: str):
+    def parse_ymode(self, ymode: str) -> tuple:
         """Parse the y-axis mode to get the associated data and plot label.
 
         Parameters
@@ -1455,8 +1455,8 @@ class Spectrum:
         dx=None,
         roi=None,
         mask=None,
-        perform_fit=True,
-        backend="lmfit",
+        perform_fit: bool = True,
+        backend: str = "lmfit",
         **kwargs,
     ):
         """Create a Fitter object based on this Spectrum and perform the fit.
