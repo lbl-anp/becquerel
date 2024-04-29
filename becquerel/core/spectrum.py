@@ -983,7 +983,7 @@ class Spectrum:
             spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **data_arg)
         return spect_obj
 
-    def downsample(self, f, handle_livetime=None):
+    def downsample(self, f: float, handle_livetime=None):
         """Downsample counts and create a new spectrum.
 
         The spectrum is resampled from a binomial distribution. Each count in
@@ -1089,7 +1089,7 @@ class Spectrum:
                 return False
         return True
 
-    def find_bin_index(self, x, use_kev=None) -> int:
+    def find_bin_index(self, x: float, use_kev=None) -> int:
         """Find the Spectrum bin index or indices containing x-axis value(s) x.
 
         One might think that if the Spectrum has uniform binning, we could just
@@ -1198,7 +1198,7 @@ class Spectrum:
         self.bin_edges_kev = None
         self.energy_cal = None
 
-    def combine_bins(self, f):
+    def combine_bins(self, f: int):
         """Make a new Spectrum with counts combined into bigger bins.
 
         If f is not a factor of the number of bins, the counts from the first
@@ -1314,7 +1314,7 @@ class Spectrum:
         )
         # TODO: raw here too?
 
-    def parse_xmode(self, xmode):
+    def parse_xmode(self, xmode: str):
         """Parse the x-axis mode to get the associated data and plot label.
 
         Parameters
@@ -1342,7 +1342,7 @@ class Spectrum:
             raise ValueError(f"Unsupported xmode: {xmode:s}")
         return xedges, xlabel
 
-    def parse_ymode(self, ymode):
+    def parse_ymode(self, ymode: str):
         """Parse the y-axis mode to get the associated data and plot label.
 
         Parameters
@@ -1450,8 +1450,8 @@ class Spectrum:
     def fit(
         self,
         model,
-        xmode,
-        ymode,
+        xmode: str,
+        ymode: str,
         dx=None,
         roi=None,
         mask=None,
