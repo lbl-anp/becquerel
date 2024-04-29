@@ -217,7 +217,7 @@ class Spectrum:
         self.__array_ufunc__ = None
         self.__array_priority__ = 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         lines = ["becquerel.Spectrum"]
         ltups = []
         for k in ["start_time", "stop_time", "realtime", "livetime", "is_calibrated"]:
@@ -242,7 +242,7 @@ class Spectrum:
     __repr__ = __str__
 
     @property
-    def counts(self):
+    def counts(self) -> np.ndarray:
         """Counts in each bin, with uncertainty.
 
         If cps is defined, counts is calculated from cps and livetime.
@@ -266,7 +266,7 @@ class Spectrum:
                 )
 
     @property
-    def counts_vals(self):
+    def counts_vals(self) -> np.ndarray:
         """Counts in each bin, no uncertainties.
 
         Returns:
@@ -276,7 +276,7 @@ class Spectrum:
         return unumpy.nominal_values(self.counts)
 
     @property
-    def counts_uncs(self):
+    def counts_uncs(self) -> np.ndarray:
         """Uncertainties on the counts in each bin.
 
         Returns:
@@ -286,7 +286,7 @@ class Spectrum:
         return unumpy.std_devs(self.counts)
 
     @property
-    def cps(self):
+    def cps(self) -> np.ndarray:
         """Counts per second in each bin, with uncertainty.
 
         If counts is defined, cps is calculated from counts and livetime.
@@ -310,7 +310,7 @@ class Spectrum:
                 )
 
     @property
-    def cps_vals(self):
+    def cps_vals(self) -> np.ndarray:
         """Counts per second in each bin, no uncertainties.
 
         Returns:
@@ -320,7 +320,7 @@ class Spectrum:
         return unumpy.nominal_values(self.cps)
 
     @property
-    def cps_uncs(self):
+    def cps_uncs(self) -> np.ndarray:
         """Uncertainties on the counts per second in each bin.
 
         Returns:
@@ -330,7 +330,7 @@ class Spectrum:
         return unumpy.std_devs(self.cps)
 
     @property
-    def cpskev(self):
+    def cpskev(self) -> np.ndarray:
         """Counts per second per keV in each bin, with uncertainty.
 
         Raises:
@@ -344,7 +344,7 @@ class Spectrum:
         return self.cps / self.bin_widths_kev
 
     @property
-    def cpskev_vals(self):
+    def cpskev_vals(self) -> np.ndarray:
         """Counts per second per keV in each bin, no uncertainties.
 
         Returns:
@@ -354,7 +354,7 @@ class Spectrum:
         return unumpy.nominal_values(self.cpskev)
 
     @property
-    def cpskev_uncs(self):
+    def cpskev_uncs(self) -> np.ndarray:
         """Uncertainties on the counts per second per keV in each bin.
 
         Returns:
@@ -364,7 +364,7 @@ class Spectrum:
         return unumpy.std_devs(self.cpskev)
 
     @property
-    def bin_indices(self):
+    def bin_indices(self) -> np.ndarray:
         """Bin indices.
 
         Returns:
@@ -374,7 +374,7 @@ class Spectrum:
         return np.arange(len(self), dtype=int)
 
     @property
-    def channels(self):
+    def channels(self) -> np.ndarray:
         """Alias for bin_indices. Raises a DeprecationWarning, as it will be
         removed in a future release.
 
@@ -390,7 +390,7 @@ class Spectrum:
         return np.arange(len(self), dtype=int)
 
     @property
-    def bin_centers_raw(self):
+    def bin_centers_raw(self) -> np.ndarray:
         """Convenience function for accessing the raw values of bin centers.
 
         Returns:
@@ -400,7 +400,7 @@ class Spectrum:
         return bin_centers_from_edges(self.bin_edges_raw)
 
     @property
-    def bin_widths_raw(self):
+    def bin_widths_raw(self) -> np.ndarray:
         """The width of each bin, in raw values.
 
         Returns:
@@ -410,7 +410,7 @@ class Spectrum:
         return np.diff(self.bin_edges_raw)
 
     @property
-    def bin_centers_kev(self):
+    def bin_centers_kev(self) -> np.ndarray:
         """Convenience function for accessing the energies of bin centers.
 
         Returns:
@@ -426,7 +426,7 @@ class Spectrum:
             return bin_centers_from_edges(self.bin_edges_kev)
 
     @property
-    def energies_kev(self):
+    def energies_kev(self) -> np.ndarray:
         """Convenience function for accessing the energies of bin centers.
 
         Returns:
@@ -450,7 +450,7 @@ class Spectrum:
             return bin_centers_from_edges(self.bin_edges_kev)
 
     @property
-    def bin_widths_kev(self):
+    def bin_widths_kev(self) -> np.ndarray:
         """The width of each bin, in keV.
 
         Returns:
@@ -466,7 +466,7 @@ class Spectrum:
             return np.diff(self.bin_edges_kev)
 
     @property
-    def bin_widths(self):
+    def bin_widths(self) -> np.ndarray:
         """The width of each bin, in keV.
 
         Returns:
@@ -491,7 +491,7 @@ class Spectrum:
             return np.diff(self.bin_edges_kev)
 
     @property
-    def is_calibrated(self):
+    def is_calibrated(self) -> bool:
         """Is the spectrum calibrated?
 
         Returns:
@@ -501,7 +501,7 @@ class Spectrum:
         return self.bin_edges_kev is not None
 
     @property
-    def bin_edges_kev(self):
+    def bin_edges_kev(self) -> np.ndarray:
         """Get the bin edge energies of a spectrum
 
         Returns:
@@ -531,7 +531,7 @@ class Spectrum:
             self._bin_edges_kev = np.array(bin_edges_kev, dtype=float)
 
     @property
-    def bin_edges_raw(self):
+    def bin_edges_raw(self) -> np.ndarray:
         """Get the raw bin edges of a spectrum
 
         Returns:
@@ -742,7 +742,7 @@ class Spectrum:
 
         return deepcopy(self)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """The number of bins in the spectrum.
 
         Returns:
@@ -1041,7 +1041,7 @@ class Spectrum:
                 livetime=new_livetime,
             )
 
-    def has_uniform_bins(self, use_kev=None, rtol=None):
+    def has_uniform_bins(self, use_kev=None, rtol=None) -> bool:
         """Test whether the Spectrum has uniform binning.
 
         This is possibly the best way to test for uniform binning within float
@@ -1089,7 +1089,7 @@ class Spectrum:
                 return False
         return True
 
-    def find_bin_index(self, x, use_kev=None):
+    def find_bin_index(self, x, use_kev=None) -> int:
         """Find the Spectrum bin index or indices containing x-axis value(s) x.
 
         One might think that if the Spectrum has uniform binning, we could just
@@ -1154,7 +1154,7 @@ class Spectrum:
         else:
             return self.bin_edges_raw, self.bin_widths_raw, self.bin_centers_raw
 
-    def apply_calibration(self, cal):
+    def apply_calibration(self, cal) -> None:
         """Use a Calibration to generate bin edge energies for this spectrum.
 
         Args:
@@ -1173,7 +1173,7 @@ class Spectrum:
             self.bin_edges_kev = cal(self.bin_edges_raw)
         self.energy_cal = cal
 
-    def calibrate_like(self, other):
+    def calibrate_like(self, other) -> None:
         """Apply another Spectrum object's calibration (bin edges vector).
 
         Bin edges are copied, so the two spectra do not have the same object
@@ -1192,7 +1192,7 @@ class Spectrum:
         else:
             raise UncalibratedError("Other spectrum is not calibrated")
 
-    def rm_calibration(self):
+    def rm_calibration(self) -> None:
         """Remove the calibration (if it exists) from this spectrum."""
 
         self.bin_edges_kev = None
