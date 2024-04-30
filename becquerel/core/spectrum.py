@@ -8,7 +8,7 @@ from copy import deepcopy
 import numpy as np
 from uncertainties import UFloat, unumpy
 
-from .. import io, parsers
+from .. import io, parsers, tools
 from . import fitting, plotting
 from .rebin import rebin
 from .utils import EPS, bin_centers_from_edges, handle_datetime, handle_uncs
@@ -982,6 +982,41 @@ class Spectrum:
         else:
             spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **data_arg)
         return spect_obj
+
+    def attenuate(self, material, areal_density_gcm2: float, **kwargs):
+        """Compute a new Spectrum as if it were attenuated by some material.
+
+        Parameters
+        ----------
+        material : str or list of str
+            See tools.xcom.fetch_xcom_data
+        areal_density_gcm2 : float
+            Areal density of attenuating material in g/cm2
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+        assert self.is_calibrated
+        e_min = max(1.0, self.bin_centers_kev[0])
+        e_max = min(1e8, self.bin_centers_kev[-1])
+        xd = tools.fetch_xcom_data(material, e_range_kev=(e_min, e_max))
+        mass_att_coeff = np.interp(
+            x=self.bin_centers_kev,
+            xp=xd["energy"],
+            fp=xd["total_w_coh"],
+        )
+        att = np.exp(-mass_att_coeff * areal_density_gcm2)
+        # the following is not (yet?) possible due to Spectrum.__mul__ limitations:
+        # return self * att
+
+        # instead, copy the pattern from Spectrum._mul_div:
+        if self._counts is not None:
+            data_arg = {"counts": self.counts * att}
+        else:
+            data_arg = {"cps": self.cps * att}
+        return self.__class__(bin_edges_kev=self.bin_edges_kev, **data_arg, **kwargs)
 
     def downsample(self, f, handle_livetime=None):
         """Downsample counts and create a new spectrum.
