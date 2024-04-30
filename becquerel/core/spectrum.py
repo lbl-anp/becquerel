@@ -986,6 +986,9 @@ class Spectrum:
     def attenuate(self, material, areal_density_gcm2: float, **kwargs):
         """Compute a new Spectrum as if it were attenuated by some material.
 
+        Currently uses a lin-lin interpolation of the attenuation coefficient
+        because XCOM's queries are limited to 100 energies.
+
         Parameters
         ----------
         material : str or list of str
@@ -995,8 +998,7 @@ class Spectrum:
 
         Returns
         -------
-        _type_
-            _description_
+        Spectrum
         """
         assert self.is_calibrated
         e_min = max(1.0, self.bin_centers_kev[0])
