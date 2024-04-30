@@ -987,14 +987,17 @@ class Spectrum:
         """Compute a new Spectrum as if it were attenuated by some material.
 
         Currently uses a lin-lin interpolation of the attenuation coefficient
-        because XCOM's queries are limited to 100 energies.
+        (with coherent scattering) because XCOM's queries are limited to 100
+        energies.
 
         Parameters
         ----------
-        material : str or list of str
+        material : str | Iterable[str]
             See tools.xcom.fetch_xcom_data
         areal_density_gcm2 : float
             Areal density of attenuating material in g/cm2
+        **kwargs : dict
+            Additional parameters passed to self.__class__
 
         Returns
         -------
