@@ -995,7 +995,9 @@ class Spectrum:
         material : str | Iterable[str]
             See tools.xcom.fetch_xcom_data
         areal_density_gcm2 : float
-            Areal density of attenuating material in g/cm2
+            Areal density of attenuating material in g/cm2. Negative values are
+            permitted, e.g., for estimating the unattenuated flux from an
+            observed attenuated spectrum.
         **kwargs : dict
             Additional parameters passed to self.__class__
 
