@@ -858,7 +858,7 @@ def test_mul_div_errors(type1, type2, error):
 @pytest.mark.parametrize("spec_type", ["cal", "cal_cps"])
 def test_attenuate(material, areal_density_gcm2, spec_type):
     """Basic tests of Spectrum.attenuate.
-    
+
     Keep the number of parametrized tests low here to avoid too many API calls.
     """
     spec = make_spec(t=spec_type)
