@@ -853,6 +853,33 @@ def test_mul_div_errors(type1, type2, error):
         spec / bad_factor
 
 
+@pytest.mark.parametrize("material", ["Pb", "H2O", ["H2O 0.9", "NaCl 0.1"]])
+@pytest.mark.parametrize("areal_density_gcm2", [10.0, -10.0, 0.0])
+@pytest.mark.parametrize("spec_type", ["cal", "cal_cps"])
+def test_attenuate(material, areal_density_gcm2, spec_type):
+    """Basic tests of Spectrum.attenuate.
+
+    Keep the number of parametrized tests low here to avoid too many API calls.
+    """
+    spec = make_spec(t=spec_type)
+    new = spec.attenuate(material, areal_density_gcm2)
+
+    if spec_type == "cal":
+        transmission = new.counts_vals / spec.counts_vals
+    elif spec_type == "cal_cps":
+        transmission = new.cps_vals / spec.cps_vals
+
+    mask = ~np.isnan(transmission)
+    if areal_density_gcm2 > 0:
+        assert np.all(transmission[mask] < 1)
+    elif areal_density_gcm2 < 0:
+        assert np.all(transmission[mask] > 1)
+    elif areal_density_gcm2 == 0:
+        assert np.all(transmission[mask] == 1)
+    else:
+        raise ValueError(f"Invalid {areal_density_gcm2 = }")
+
+
 # ----------------------------------------------
 #         Test Spectrum.calibrate_like
 # ----------------------------------------------
