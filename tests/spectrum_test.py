@@ -449,6 +449,7 @@ def test_bad_realtime_livetime(spec_data):
 #                 Test deadtime
 # ----------------------------------------------
 
+
 @pytest.mark.parametrize("spec_type", ["counts", "cps"])
 def test_deadtime(spec_data, spec_type):
     """Test deadtime and related properties."""
