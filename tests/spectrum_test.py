@@ -485,6 +485,7 @@ def test_deadtime_err(spec_data, spec_type):
     with pytest.raises(TypeError):
         spec.livetime_fraction
 
+
 # ----------------------------------------------
 #         Test uncertainties in Spectrum
 # ----------------------------------------------
