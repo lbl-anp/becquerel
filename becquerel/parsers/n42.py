@@ -223,6 +223,19 @@ class N42File:
 
 def read(filename, verbose=False, cal_kwargs=None):
     n42_file = N42File(filename)
-    data = n42_file.measurements[0]
-    cal = n42_file.calibrations[0]
+    if len(n42_file.measurements) == 0:
+        raise BecquerelParserError(
+            f"No measurement data was found in {filename}"
+        )
+    if len(n42_file.measurements) > 1:
+        raise BecquerelParserError(
+            "Becquerel does not currently support reading multiple "
+            "measurements from one n42 file"
+        )
+    print(len(n42_file.measurements))
+    meas_key_0 = next(iter(n42_file.measurements))
+    cal_key_0 = next(iter(n42_file.calibrations))
+    m0 = n42_file.measurements[meas_key_0]
+    data = {"counts": m0.counts, "livetime": m0.livetime, "realtime": m0.realtime}
+    cal = n42_file.calibrations[cal_key_0]
     return data, cal
