@@ -560,6 +560,18 @@ class Spectrum:
         else:
             self._bin_edges_raw = np.array(bin_edges_raw, dtype=float)
 
+    @property
+    def deadtime(self) -> float:
+        return self.realtime - self.livetime
+
+    @property
+    def livetime_fraction(self) -> float:
+        return self.livetime / self.realtime
+
+    @property
+    def deadtime_fraction(self) -> float:
+        return self.deadtime / self.realtime
+
     @classmethod
     def from_file(cls, infilename, verbose=False, cal_kwargs=None):
         """Construct a Spectrum object from a filename.
