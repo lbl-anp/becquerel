@@ -460,7 +460,11 @@ def fetch_xcom_data(arg, **kwargs):
 
     Args:
       arg: the atomic number, element symbol, compound string, or mixture
-        (the type of argument will be inferred from its content).
+        (the type of argument will be inferred from its content). Examples:
+          * 82
+          * "Pb"
+          * "H2O"
+          * ["H2O 0.9", "NaCl 0.1"]
       e_range_kev (optional): a length-2 iterable giving the lower and
         upper bounds for a standard grid of energies in keV. Limits must be
         between 1 keV and 1E8 keV, inclusive.
