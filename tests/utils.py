@@ -1,5 +1,7 @@
 """Helpers for testing."""
+
 from pathlib import Path
+
 import requests
 
 TESTS_PATH = Path(__file__).parent.absolute()
@@ -15,7 +17,7 @@ def database_is_up(url):
         URL to query.
     """
     try:
-        return requests.post(url).status_code == requests.codes.ok
+        return requests.post(url, timeout=15).status_code == requests.codes.ok
     except requests.exceptions.ConnectionError:
         return False
 

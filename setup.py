@@ -1,10 +1,10 @@
-#!/usr/bin/env python
 """Becquerel: Tools for radiation spectral analysis."""
 
-import sys
-import site
-from setuptools import setup, find_packages
 import importlib.util
+import site
+import sys
+
+from setuptools import find_packages, setup
 
 # Enables --editable install with --user
 # https://github.com/pypa/pip/issues/7953

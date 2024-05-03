@@ -1,8 +1,9 @@
 """Test DataFrameCache class."""
 
 import pandas as pd
-from becquerel.tools.df_cache import DataFrameCache, CacheError
 import pytest
+
+from becquerel.tools.df_cache import CacheError, DataFrameCache
 
 
 class ExampleCache(DataFrameCache):

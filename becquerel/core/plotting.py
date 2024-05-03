@@ -1,9 +1,10 @@
 """Tools for plotting spectra."""
 
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
 from uncertainties import unumpy
-import warnings
 
 
 class PlottingError(Exception):
@@ -24,9 +25,9 @@ class SpectrumPlotter:
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created using
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
-          title:  costum plot title, default is filename if available
-          xlabel: costum xlabel value
-          ylabel: costum ylabel value
+          title:  custom plot title, default is filename if available
+          xlabel: custom xlabel value
+          ylabel: custom ylabel value
           kwargs: arguments that are directly passed to matplotlib's plot command.
                   In addition it is possible to pass linthresh if ylim='default'
                   and ymode='symlog'
@@ -189,7 +190,7 @@ class SpectrumPlotter:
     @xlabel.setter
     def xlabel(self, label):
         """
-        Sets the xlabel to a costum value.
+        Sets the xlabel to a custom value.
         """
 
         if label is not None:
@@ -206,7 +207,7 @@ class SpectrumPlotter:
     @ylabel.setter
     def ylabel(self, label):
         """
-        Sets the ylabel to a costum value.
+        Sets the ylabel to a custom value.
         """
 
         if label is not None:

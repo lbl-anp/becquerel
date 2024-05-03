@@ -9,9 +9,12 @@ References:
 
 """
 
-import requests
-import pandas as pd
 from collections.abc import Iterable
+from io import StringIO
+
+import pandas as pd
+import requests
+
 from . import element
 
 # Dry air relative weights taken from:
@@ -383,7 +386,7 @@ class _XCOMQuery:
 
     def _request(self):
         """Request data table from the URL."""
-        self._req = requests.post(self._url + self._method, data=self._data)
+        self._req = requests.post(self._url + self._method, data=self._data, timeout=15)
         if not self._req.ok or self._req.reason != "OK" or self._req.status_code != 200:
             raise XCOMRequestError(
                 "XCOM Request failed: reason={}, status_code={}".format(
@@ -398,7 +401,7 @@ class _XCOMQuery:
         self._text = str(self._req.text)
         if len(self._text) == 0:
             raise XCOMRequestError("XCOM returned no text")
-        tables = pd.read_html(self._text, header=0, skiprows=[1, 2])
+        tables = pd.read_html(StringIO(self._text), header=0, skiprows=[1, 2])
         if len(tables) != 1:
             raise XCOMRequestError("More than one HTML table found")
         self.df = tables[0]
@@ -457,7 +460,11 @@ def fetch_xcom_data(arg, **kwargs):
 
     Args:
       arg: the atomic number, element symbol, compound string, or mixture
-        (the type of argument will be inferred from its content).
+        (the type of argument will be inferred from its content). Examples:
+          * 82
+          * "Pb"
+          * "H2O"
+          * ["H2O 0.9", "NaCl 0.1"]
       e_range_kev (optional): a length-2 iterable giving the lower and
         upper bounds for a standard grid of energies in keV. Limits must be
         between 1 keV and 1E8 keV, inclusive.

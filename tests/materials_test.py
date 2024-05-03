@@ -2,17 +2,20 @@
 
 import json
 import os
-from becquerel.tools import (
-    fetch_materials,
-    remove_materials_csv,
-    MaterialsError,
-    MaterialsWarning,
-)
-from becquerel.tools.materials_nist import convert_composition
-import becquerel.tools.materials as materials
-import becquerel.tools.materials_compendium as materials_compendium
+import warnings
+
 import pytest
 from utils import xcom_is_up
+
+import becquerel.tools.materials as materials
+import becquerel.tools.materials_compendium as materials_compendium
+from becquerel.tools import (
+    MaterialsError,
+    MaterialsWarning,
+    fetch_materials,
+    remove_materials_csv,
+)
+from becquerel.tools.materials_nist import convert_composition
 
 
 def _get_warning_messages(record):
@@ -138,12 +141,10 @@ def test_materials_dummy_compendium_pre2022():
     ]
     with open(materials_compendium.FNAME, "w") as f:
         json.dump(data, f, indent=4)
-    with pytest.warns(None) as record:
+    # Check that no warning is raised
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         materials._load_and_compile_materials()
-    assert len(record) == 0, (
-        "Expected no MaterialsWarnings to be raised; "
-        f"got {_get_warning_messages(record)}"
-    )
     # remove the dummy file and point back to original
     os.remove(materials_compendium.FNAME)
     materials_compendium.FNAME = fname_orig
@@ -190,12 +191,10 @@ def test_materials_dummy_compendium_2022():
     }
     with open(materials_compendium.FNAME, "w") as f:
         json.dump(data, f, indent=4)
-    with pytest.warns(None) as record:
+    # Check that no warning is raised
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         materials._load_and_compile_materials()
-    assert len(record) == 0, (
-        "Expected no MaterialsWarnings to be raised; "
-        f"got {_get_warning_messages(record)}"
-    )
     # remove siteVersion and make sure there is an error raised
     del data["siteVersion"]
     with open(materials_compendium.FNAME, "w") as f:

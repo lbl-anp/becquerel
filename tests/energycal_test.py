@@ -1,7 +1,7 @@
 """Test energycal.py"""
 
-import pytest
 import numpy as np
+import pytest
 
 import becquerel as bq
 

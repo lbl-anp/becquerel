@@ -1,8 +1,10 @@
 """Spectral peak search using convolutions."""
 
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
-import warnings
+
 from .spectrum import Spectrum
 
 
@@ -359,7 +361,7 @@ class PeakFinder:
             Right edge of the x-range that should be scanned for
             peaks. Uses max(x-range) if not given.
         min_snr
-            Minium SNR for a peak to be added
+            Minimum SNR for a peak to be added
         max_num
             Maximum number of peaks to be added
         reset

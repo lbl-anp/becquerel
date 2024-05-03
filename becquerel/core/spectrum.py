@@ -1,17 +1,17 @@
 """Base class for spectrum file parsers."""
 
-import os
-from copy import deepcopy
 import datetime
+import os
+import warnings
+from copy import deepcopy
+
 import numpy as np
 from uncertainties import UFloat, unumpy
-from .. import parsers
-from .. import io
-from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
+
+from .. import io, parsers, tools
+from . import fitting, plotting
 from .rebin import rebin
-from . import plotting
-from . import fitting
-import warnings
+from .utils import EPS, bin_centers_from_edges, handle_datetime, handle_uncs
 
 
 class SpectrumError(Exception):
@@ -560,6 +560,18 @@ class Spectrum:
         else:
             self._bin_edges_raw = np.array(bin_edges_raw, dtype=float)
 
+    @property
+    def deadtime(self) -> float:
+        return self.realtime - self.livetime
+
+    @property
+    def livetime_fraction(self) -> float:
+        return self.livetime / self.realtime
+
+    @property
+    def deadtime_fraction(self) -> float:
+        return self.deadtime / self.realtime
+
     @classmethod
     def from_file(cls, infilename, verbose=False, cal_kwargs=None):
         """Construct a Spectrum object from a filename.
@@ -989,6 +1001,48 @@ class Spectrum:
             spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **data_arg)
         return spect_obj
 
+    def attenuate(self, material, areal_density_gcm2: float, **kwargs):
+        """Compute a new Spectrum as if it were attenuated by some material.
+
+        Currently uses a lin-lin interpolation of the attenuation coefficient
+        (with coherent scattering) because XCOM's queries are limited to 100
+        energies.
+
+        Parameters
+        ----------
+        material : str | Iterable[str]
+            See tools.xcom.fetch_xcom_data
+        areal_density_gcm2 : float
+            Areal density of attenuating material in g/cm2. Negative values are
+            permitted, e.g., for estimating the unattenuated flux from an
+            observed attenuated spectrum.
+        **kwargs : dict
+            Additional parameters passed to self.__class__
+
+        Returns
+        -------
+        Spectrum
+        """
+        assert self.is_calibrated
+        e_min = max(1.0, self.bin_centers_kev[0])
+        e_max = min(1e8, self.bin_centers_kev[-1])
+        xd = tools.fetch_xcom_data(material, e_range_kev=(e_min, e_max))
+        mass_att_coeff = np.interp(
+            x=self.bin_centers_kev,
+            xp=xd["energy"],
+            fp=xd["total_w_coh"],
+        )
+        att = np.exp(-mass_att_coeff * areal_density_gcm2)
+        # the following is not (yet?) possible due to Spectrum.__mul__ limitations:
+        # return self * att
+
+        # instead, copy the pattern from Spectrum._mul_div:
+        if self._counts is not None:
+            data_arg = {"counts": self.counts * att}
+        else:
+            data_arg = {"cps": self.cps * att}
+        return self.__class__(bin_edges_kev=self.bin_edges_kev, **data_arg, **kwargs)
+
     def downsample(self, f, handle_livetime=None):
         """Downsample counts and create a new spectrum.
 
@@ -1167,7 +1221,7 @@ class Spectrum:
           cal: a Calibration object
         """
 
-        if hasattr(cal, "ch2kev") and callable(getattr(cal, "ch2kev")):
+        if hasattr(cal, "ch2kev") and callable(cal.ch2kev):
             self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
             warnings.warn(
                 "The use of bq.EnergyCalBase classes is deprecated "
@@ -1395,9 +1449,9 @@ class Spectrum:
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
-          title:  costum plot title
-          xlabel: costum xlabel value
-          ylabel: costum ylabel value
+          title:  custom plot title
+          xlabel: custom xlabel value
+          ylabel: custom ylabel value
           emode:  can be 'band' for adding an erroband or 'bars' for adding
                   error bars, default is 'none'. It herits the color from
                   matplotlib plot and can not be configured. For better
@@ -1439,9 +1493,9 @@ class Spectrum:
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
-          title:  costum plot title
-          xlabel: costum xlabel value
-          ylabel: costum ylabel value
+          title:  custom plot title
+          xlabel: custom xlabel value
+          ylabel: custom ylabel value
           kwargs: arguments that are directly passed to matplotlib's
                   fill_between command. In addition it is possible to pass
                   linthresh if ylim='default' and ymode='symlog'.

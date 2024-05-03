@@ -1,17 +1,18 @@
-import warnings
 import inspect
+import warnings
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numdifftools as nd
 import numpy as np
 import pandas as pd
 import scipy.special
+from iminuit import Minuit
 from lmfit.model import Model
 from lmfit.parameter import Parameters
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-from iminuit import Minuit
+from matplotlib.gridspec import GridSpec
 from uncertainties import ufloat
-import numdifftools as nd
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
@@ -64,9 +65,11 @@ def gausserf(x, ampgauss, amperf, mu, sigma):
 
 
 def expgauss(x, amp=1, mu=0, sigma=1.0, gamma=1.0):
+    sign = np.sign(gamma)
+    gamma = np.fabs(gamma)
     gss = gamma * sigma * sigma
-    arg1 = gamma * (mu + gss / 2.0 - x)
-    arg2 = (mu + gss - x) / (SQRT_TWO * sigma)
+    arg1 = sign * gamma * (mu - x + gss / 2.0)
+    arg2 = sign * (mu + gss - x) / (SQRT_TWO * sigma)
     return amp * (gamma / 2) * np.exp(arg1) * scipy.special.erfc(arg2)
 
 
@@ -124,10 +127,10 @@ def gauss_dbl_exp(
     # l and r tail_func are 0 when we're below/above the Gaussian mean
     # "heavyside convolution"
     mask = x < mu
-    ltail_func[mask] = amp * ltail_ratio * np.exp(ltail_slope * ((x[mask] - mu)))
+    ltail_func[mask] = amp * ltail_ratio * np.exp(ltail_slope * (x[mask] - mu))
     ltail_func[mask] *= -np.expm1(ltail_cutoff * alpha * ((x[mask] - mu) ** 2))
     mask = x > mu
-    rtail_func[mask] = amp * rtail_ratio * np.exp(rtail_slope * ((x[mask] - mu)))
+    rtail_func[mask] = amp * rtail_ratio * np.exp(rtail_slope * (x[mask] - mu))
     rtail_func[mask] *= -np.expm1(rtail_cutoff * alpha * ((x[mask] - mu) ** 2))
     return amp * np.exp(alpha * ((x - mu) ** 2)) + ltail_func + rtail_func
 
@@ -349,19 +352,20 @@ class ExpModel(Model):
 class ExpGaussModel(Model):
     """A model of an Exponentially modified Gaussian distribution
     (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
+    A negative "gamma" will create a left tail, a positive "gamma" a right tail.
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(expgauss, **kwargs)
-        self.set_param_hint(f"{self.prefix}sigma", min=0)
-        self.set_param_hint(f"{self.prefix}gamma", min=0, max=1)
+        self.set_param_hint(f"{self.prefix}sigma", min=0.0)
+        self.set_param_hint(f"{self.prefix}gamma", min=-1.0, max=1.0)
         # TODO: This is obviously wrong but best I can think of
         self.set_param_hint(
             f"{self.prefix}fwhm",
             expr=f"{FWHM_SIG_RATIO} * {self.prefix}sigma",
         )
 
-    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05):
+    def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05, gamma=0.95):
         assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
         assert (
             width_ratio < 1.0 and width_ratio > 0.0
@@ -384,8 +388,9 @@ class ExpGaussModel(Model):
             (f"{self.prefix}mu", "max", x[-1]),
             (f"{self.prefix}sigma", "value", sigma),
             (f"{self.prefix}sigma", "min", 0.0),
-            (f"{self.prefix}gamma", "value", 0.95),
-            (f"{self.prefix}gamma", "min", 0.0),
+            (f"{self.prefix}gamma", "value", gamma),
+            (f"{self.prefix}gamma", "min", -1.0),
+            (f"{self.prefix}gamma", "max", 1.0),
         ]
 
 
@@ -731,7 +736,12 @@ class Fitter:
     def _guess_param_defaults(self, **kwargs):
         params = []
         for comp in self.model.components:
-            p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi)
+            prefix = comp.prefix
+            plen = len(prefix)
+            comp_kwargs = {
+                k[plen:]: v for k, v in kwargs.items() if k.startswith(prefix)
+            }
+            p = comp.guess(self.y_roi, x=self.x_roi, dx=self.dx_roi, **comp_kwargs)
             if isinstance(p, Parameters):
                 p = _parameters_to_bq_guess(p)
             elif p is None:
@@ -1301,7 +1311,7 @@ class Fitter:
             )
         # Components
         fit_ax.set_prop_cycle(color=COLORS)
-        for i, m in enumerate(self.model.components):
+        for m in self.model.components:
             y = m.eval(x=x_plot, **self.best_values)
             if isinstance(y, float):
                 y = np.ones(x_plot.shape) * y

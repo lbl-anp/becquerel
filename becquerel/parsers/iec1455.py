@@ -1,10 +1,12 @@
 """Read in an IEC 1455 file."""
 
 import os
-import warnings
-import dateutil.parser
 import re
+import warnings
+
+import dateutil.parser
 import numpy as np
+
 from ..core import calibration
 from .parsers import BecquerelParserError, BecquerelParserWarning
 
@@ -104,8 +106,8 @@ def read(filename, verbose=False, cal_kwargs=None):
                 )
                 continue
 
-            # strip prefix and tokenize
-            line = line.strip("A004")
+            # strip A004 prefix and tokenize
+            line = line[4:]
             tok = line.split()
 
             # parse records
