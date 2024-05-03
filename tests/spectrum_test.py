@@ -465,6 +465,25 @@ def test_deadtime(spec_data, spec_type):
     assert np.isclose(spec.deadtime, 10.0)
 
 
+@pytest.mark.parametrize("spec_type", ["counts", "cps"])
+def test_deadtime_err(spec_data, spec_type):
+    """Test deadtime and related properties errors with no livetime."""
+
+    if spec_type == "counts":
+        spec = bq.Spectrum(counts=spec_data, realtime=100)
+    elif spec_type == "cps":
+        spec = bq.Spectrum(cps=spec_data, realtime=100)
+    else:
+        raise ValueError(f"Invalid {spec_type = }")
+
+    assert spec.livetime is None
+    with pytest.raises(TypeError):
+        spec.deadtime
+    with pytest.raises(TypeError):
+        spec.deadtime_fraction
+    with pytest.raises(TypeError):
+        spec.livetime_fraction
+
 # ----------------------------------------------
 #         Test uncertainties in Spectrum
 # ----------------------------------------------
