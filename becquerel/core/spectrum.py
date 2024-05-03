@@ -811,9 +811,9 @@ class Spectrum:
             kwargs = {"cps": self.cps + other.cps}
 
         if self.is_calibrated and other.is_calibrated:
-            spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **kwargs)
+            spect_obj = self.__class__(bin_edges_kev=self.bin_edges_kev, **kwargs)
         else:
-            spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **kwargs)
+            spect_obj = self.__class__(bin_edges_raw=self.bin_edges_raw, **kwargs)
         return spect_obj
 
     def __sub__(self, other):
@@ -867,9 +867,9 @@ class Spectrum:
                 )
 
         if self.is_calibrated and other.is_calibrated:
-            spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **kwargs)
+            spect_obj = self.__class__(bin_edges_kev=self.bin_edges_kev, **kwargs)
         else:
-            spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **kwargs)
+            spect_obj = self.__class__(bin_edges_raw=self.bin_edges_raw, **kwargs)
         return spect_obj
 
     def _add_sub_error_checking(self, other):
@@ -990,9 +990,9 @@ class Spectrum:
             data_arg = {"cps": self.cps * multiplier}
 
         if self.is_calibrated:
-            spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **data_arg)
+            spect_obj = self.__class__(bin_edges_kev=self.bin_edges_kev, **data_arg)
         else:
-            spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **data_arg)
+            spect_obj = self.__class__(bin_edges_raw=self.bin_edges_raw, **data_arg)
         return spect_obj
 
     def attenuate(self, material, areal_density_gcm2: float, **kwargs):
@@ -1083,13 +1083,13 @@ class Spectrum:
         new_counts = np.random.binomial(old_counts, 1.0 / f)
 
         if self.is_calibrated:
-            return Spectrum(
+            return self.__class__(
                 counts=new_counts,
                 bin_edges_kev=self.bin_edges_kev,
                 livetime=new_livetime,
             )
         else:
-            return Spectrum(
+            return self.__class__(
                 counts=new_counts,
                 bin_edges_raw=self.bin_edges_raw,
                 livetime=new_livetime,
@@ -1296,7 +1296,7 @@ class Spectrum:
             "bin_edges_kev": combined_bin_edges,
             "livetime": self.livetime,
         }
-        obj = Spectrum(**kwargs)
+        obj = self.__class__(**kwargs)
         return obj
 
     def rebin(
@@ -1355,7 +1355,7 @@ class Spectrum:
             zero_pad_warnings=zero_pad_warnings,
             include_overflows=include_overflows,
         )
-        return Spectrum(
+        return self.__class__(
             counts=out_spec,
             uncs=np.sqrt(out_spec),
             bin_edges_kev=out_edges,
