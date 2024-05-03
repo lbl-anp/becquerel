@@ -459,7 +459,7 @@ def test_deadtime(spec_data, spec_type):
     elif spec_type == "cps":
         spec = bq.Spectrum(cps=spec_data, livetime=90, realtime=100)
     else:
-        raise ValueError(f"Invalid {spec_type = }")
+        raise ValueError(f"Invalid {spec_type=}")
 
     assert np.isclose(spec.livetime_fraction, 0.90)
     assert np.isclose(spec.deadtime_fraction, 0.10)
@@ -475,7 +475,7 @@ def test_deadtime_err(spec_data, spec_type):
     elif spec_type == "cps":
         spec = bq.Spectrum(cps=spec_data, realtime=100)
     else:
-        raise ValueError(f"Invalid {spec_type = }")
+        raise ValueError(f"Invalid {spec_type=}")
 
     assert spec.livetime is None
     with pytest.raises(TypeError):
@@ -918,7 +918,7 @@ def test_attenuate(material, areal_density_gcm2, spec_type):
     elif areal_density_gcm2 == 0:
         assert np.all(transmission[mask] == 1)
     else:
-        raise ValueError(f"Invalid {areal_density_gcm2 = }")
+        raise ValueError(f"Invalid {areal_density_gcm2=}")
 
 
 # ----------------------------------------------
