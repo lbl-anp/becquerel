@@ -1242,3 +1242,28 @@ def test_spectrum_rebin_like():
     spec2_rebin = spec2.rebin_like(spec1)
     assert np.all(np.isclose(spec1.bin_edges_kev, spec2_rebin.bin_edges_kev))
     assert np.isclose(spec2.counts_vals.sum(), spec2_rebin.counts_vals.sum())
+
+
+# ----------------------------------------------
+#           Test Spectrum inheritance
+# ----------------------------------------------
+class DerivedSpectrum(bq.Spectrum):
+    pass
+
+
+derived_spec = DerivedSpectrum(make_data())
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        derived_spec + derived_spec,
+        derived_spec - derived_spec,
+        derived_spec * 2,
+        derived_spec / 2,
+        derived_spec.downsample(f=2),
+        derived_spec.combine_bins(f=2),
+    ],
+)
+def test_spectrum_inheritance(spec):
+    assert isinstance(spec, DerivedSpectrum)
