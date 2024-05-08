@@ -1103,6 +1103,12 @@ class Fitter:
             return self.param_unc(param) / self.param_val(param)
         return None
 
+    def param_val_and_unc(self, param: str) -> ufloat:
+        """Value and fit uncertainty of `param`, as a ufloat."""
+        if self.param_unc(param):
+            return ufloat(self.param_val(param), self.param_unc(param))
+        return None
+
     @property
     def best_values(self):
         """Wrapper for dictionary of best_values."""
