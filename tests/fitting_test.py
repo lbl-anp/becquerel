@@ -296,6 +296,8 @@ class TestFittingHighStatSimData:
         name0 = fitter.param_names[0]
         fitter.param_val(name0)
         fitter.param_unc(name0)
+        fitter.param_rel_unc(name0)
+        fitter.param_val_and_unc(name0)
         with pytest.raises(bq.core.fitting.FittingError):
             fitter.param_val("bad_name")
         with pytest.raises(bq.core.fitting.FittingError):
