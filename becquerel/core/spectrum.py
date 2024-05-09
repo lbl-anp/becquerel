@@ -1295,6 +1295,7 @@ class Spectrum:
             key: combined_counts,
             "bin_edges_kev": combined_bin_edges,
             "livetime": self.livetime,
+            "realtime": self.realtime,
         }
         obj = self.__class__(**kwargs)
         return obj
