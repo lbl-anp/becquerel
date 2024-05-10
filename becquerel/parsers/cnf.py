@@ -10,8 +10,8 @@ The relevant code is in these files:
 """
 
 import datetime
-import os
 import struct
+from pathlib import Path
 
 import numpy as np
 
@@ -82,7 +82,7 @@ def read(filename, verbose=False, cal_kwargs=None):
 
     Parameters
     ----------
-    filename : str
+    filename : str | pathlib.Path
         The filename of the CNF file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
@@ -96,8 +96,9 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
+    filename = Path(filename)
     print(f"Reading CNF file {filename}")
-    _, ext = os.path.splitext(filename)
+    ext = filename.suffix
     if ext.lower() != ".cnf":
         raise BecquerelParserError("File extension is incorrect: " + ext)
 

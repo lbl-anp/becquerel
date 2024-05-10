@@ -1,8 +1,8 @@
 """Read in an IEC 1455 file."""
 
-import os
 import re
 import warnings
+from pathlib import Path
 
 import dateutil.parser
 import numpy as np
@@ -65,7 +65,7 @@ def read(filename, verbose=False, cal_kwargs=None):
 
     Parameters
     ----------
-    filename : str
+    filename : str | pathlib.Path
         The filename of the IEC 1455 file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
@@ -79,8 +79,9 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
+    filename = Path(filename)
     print(f"IEC1455File: Reading file {filename}")
-    _, ext = os.path.splitext(filename)
+    ext = filename.suffix
     if ext.lower() != ".iec":
         raise BecquerelParserError("File extension is incorrect: " + ext)
 

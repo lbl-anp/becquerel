@@ -1,11 +1,10 @@
 """Test Spectrum I/O for different file types."""
 
 import os
+from pathlib import Path
 
 import numpy as np
 import pytest
-from pathlib import Path
-
 from h5_tools_test import TEST_OUTPUTS
 from parsers_test import SAMPLES
 from spectrum_test import make_spec
