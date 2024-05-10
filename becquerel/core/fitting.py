@@ -1221,11 +1221,11 @@ class Fitter:
     def custom_plot(
         self,
         title=None,
-        savefname=None,
         title_fontsize=24,
         title_fontweight="bold",
         residual_type="abs",
-        **kwargs,
+        enable_fit_panel=True,
+        figsize=(18, 9),
     ):
         """Three-panel figure showing fit results.
 
@@ -1236,8 +1236,6 @@ class Fitter:
         ----------
         title : str, optional
             Title of the figure (default: no title)
-        savefname : str, optional
-            Filename to save the figure as (default: not saved)
         title_fontsize : int, optional
             Title font size (default: 24)
         title_fontweight : str, optional
@@ -1247,13 +1245,10 @@ class Fitter:
                 'abs' : data - fit
                 'rel' : (data - fit) / |fit|
                 'sigma' : (data - fit) / (data_uncertainty)
-        **kwargs
-            Additional kwargs. Currently unused.
 
         Returns
         -------
         matplotlib figure
-            Returned only if savefname is None
         """
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
@@ -1262,16 +1257,18 @@ class Fitter:
             dx = np.ones_like(self.x)
         if dx_roi is None:
             dx_roi = np.ones_like(self.x_roi)
-        gs = GridSpec(2, 2, height_ratios=(4, 1))
-        gs.update(
-            left=0.05, right=0.99, wspace=0.03, top=0.94, bottom=0.06, hspace=0.06
-        )
-        fig = plt.figure(figsize=(18, 9))
+        if enable_fit_panel:
+            nrows, ncols = 2, 2
+        else:
+            nrows, ncols = 2, 1
+        gs = GridSpec(nrows, ncols, height_ratios=(4, 1))
+        fig = plt.figure(figsize=figsize)
         fit_ax = fig.add_subplot(gs[0, 0])
         res_ax = fig.add_subplot(gs[1, 0], sharex=fit_ax)
-        txt_ax = fig.add_subplot(gs[:, 1])
-        txt_ax.get_xaxis().set_visible(False)
-        txt_ax.get_yaxis().set_visible(False)
+        if enable_fit_panel:
+            txt_ax = fig.add_subplot(gs[:, 1])
+            txt_ax.get_xaxis().set_visible(False)
+            txt_ax.get_yaxis().set_visible(False)
         # Set fig title
         if title is not None:
             fig.suptitle(
@@ -1381,64 +1378,68 @@ class Fitter:
         # -------------------
         # Fit report (txt_ax)
         # -------------------
-        props = dict(boxstyle="round", facecolor="white", edgecolor="black", alpha=1)
-        props = dict(facecolor="white", edgecolor="none", alpha=0)
-        fp = FontProperties(family="monospace", size=8)
-        if "lmfit" in self.backend:
-            best_fit_values = ""
-            op = self.result.params
-            for p in self.result.params:
-                if op[p].stderr is None:
-                    pass
-                    # TODO: Calculate errors breaks minimization right now
-                    # warnings.warn(
-                    #     "Package numdifftools is required to have "
-                    #     "stderr calculated.", FittingWarning)
-                else:
-                    best_fit_values += "{:15} {: .6e} +/- {:.5e} ({:6.1%})\n".format(
-                        p, op[p].value, op[p].stderr, abs(op[p].stderr / op[p].value)
-                    )
-            best_fit_values += "{:15} {: .6e}\n".format(
-                "Chi Squared:", self.result.chisqr
+        if enable_fit_panel:
+            props = dict(
+                boxstyle="round", facecolor="white", edgecolor="black", alpha=1
             )
-            best_fit_values += "{:15} {: .6e}".format(
-                "Reduced Chi Sq:", self.result.redchi
+            props = dict(facecolor="white", edgecolor="none", alpha=0)
+            fp = FontProperties(family="monospace", size=8)
+            if "lmfit" in self.backend:
+                best_fit_values = ""
+                op = self.result.params
+                for p in self.result.params:
+                    if op[p].stderr is None:
+                        pass
+                        # TODO: Calculate errors breaks minimization right now
+                        # warnings.warn(
+                        #     "Package numdifftools is required to have "
+                        #     "stderr calculated.", FittingWarning)
+                    else:
+                        best_fit_values += (
+                            "{:15} {: .6e} +/- {:.5e} ({:6.1%})\n".format(
+                                p,
+                                op[p].value,
+                                op[p].stderr,
+                                abs(op[p].stderr / op[p].value),
+                            )
+                        )
+                best_fit_values += "{:15} {: .6e}\n".format(
+                    "Chi Squared:", self.result.chisqr
+                )
+                best_fit_values += "{:15} {: .6e}".format(
+                    "Reduced Chi Sq:", self.result.redchi
+                )
+                # Remove first 2 lines of fit report (long model description)
+                s = "\n".join(self.result.fit_report().split("\n")[2:])
+                # Add some more parameter details
+                s += "\n"
+                param_df = self.param_dataframe(sort_by_model=True)
+                for model_name, sdf in param_df.groupby(level="model"):
+                    s += model_name + "\n"
+                    for (_, param_name), param_data in sdf.iterrows():
+                        v = param_data["val"]
+                        e = param_data["unc"]
+                        s += "    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n".format(
+                            param_name, v, e, np.abs(e / v)
+                        )
+            elif "minuit" in self.backend:
+                s = str(self.result) + "\n"
+
+            # Add info about the ROI and units
+            if self.roi:
+                s += "ROI: [{:.3f}, {:.3f}]\n".format(*self.roi)
+            s += "X units: {:s}\n".format(self.xmode if self.xmode else "None")
+            s += "Y units: {:s}\n".format(self.ymode if self.ymode else "None")
+            # Add to empty axis
+            txt_ax.text(
+                x=0.01,
+                y=0.99,
+                s=s,
+                fontproperties=fp,
+                ha="left",
+                va="top",
+                transform=txt_ax.transAxes,
+                bbox=props,
             )
-            # Remove first 2 lines of fit report (long model description)
-            s = "\n".join(self.result.fit_report().split("\n")[2:])
-            # Add some more parameter details
-            s += "\n"
-            param_df = self.param_dataframe(sort_by_model=True)
-            for model_name, sdf in param_df.groupby(level="model"):
-                s += model_name + "\n"
-                for (_, param_name), param_data in sdf.iterrows():
-                    v = param_data["val"]
-                    e = param_data["unc"]
-                    s += "    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n".format(
-                        param_name, v, e, np.abs(e / v)
-                    )
-        elif "minuit" in self.backend:
-            s = str(self.result) + "\n"
 
-        # Add info about the ROI and units
-        if self.roi:
-            s += "ROI: [{:.3f}, {:.3f}]\n".format(*self.roi)
-        s += "X units: {:s}\n".format(self.xmode if self.xmode else "None")
-        s += "Y units: {:s}\n".format(self.ymode if self.ymode else "None")
-        # Add to empty axis
-        txt_ax.text(
-            x=0.01,
-            y=0.99,
-            s=s,
-            fontproperties=fp,
-            ha="left",
-            va="top",
-            transform=txt_ax.transAxes,
-            bbox=props,
-        )
-
-        if savefname is not None:
-            fig.savefig(savefname)
-            plt.close(fig)
-        else:
-            return fig
+        return fig
