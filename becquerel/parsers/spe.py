@@ -32,7 +32,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("SpeFile: Reading file " + filename)
+    print(f"SpeFile: Reading file {filename}")
     _, ext = os.path.splitext(filename)
     if ext.lower() != ".spe":
         raise BecquerelParserError("File extension is incorrect: " + ext)

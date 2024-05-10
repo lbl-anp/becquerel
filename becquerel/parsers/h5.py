@@ -24,7 +24,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("Reading HDF5 file " + filename)
+    print(f"Reading HDF5 file {filename}")
     if not io.h5.is_h5_filename(filename):
         raise BecquerelParserError("File is not an HDF5: " + filename)
 

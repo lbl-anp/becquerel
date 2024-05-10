@@ -79,7 +79,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("IEC1455File: Reading file " + filename)
+    print(f"IEC1455File: Reading file {filename}")
     _, ext = os.path.splitext(filename)
     if ext.lower() != ".iec":
         raise BecquerelParserError("File extension is incorrect: " + ext)

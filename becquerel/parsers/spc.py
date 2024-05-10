@@ -208,7 +208,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("SpcFile: Reading file " + filename)
+    print(f"SpcFile: Reading file {filename}")
     _, ext = os.path.splitext(filename)
     if ext.lower() != ".spc":
         raise BecquerelParserError("File extension is incorrect: " + ext)

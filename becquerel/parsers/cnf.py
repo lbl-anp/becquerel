@@ -96,7 +96,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("Reading CNF file " + filename)
+    print(f"Reading CNF file {filename}")
     _, ext = os.path.splitext(filename)
     if ext.lower() != ".cnf":
         raise BecquerelParserError("File extension is incorrect: " + ext)
