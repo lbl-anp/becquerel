@@ -1245,6 +1245,10 @@ class Fitter:
                 'abs' : data - fit
                 'rel' : (data - fit) / |fit|
                 'sigma' : (data - fit) / (data_uncertainty)
+        enable_fit_panel : bool, optional
+            If True (default), draw an additional panel with fit information
+        figsize : tuple, optional
+            Figure size
 
         Returns
         -------
