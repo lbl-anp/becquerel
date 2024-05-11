@@ -1225,7 +1225,7 @@ class Fitter:
         title_fontweight="bold",
         residual_type="abs",
         enable_fit_panel=True,
-        figsize=(18, 9),
+        figsize=None,
     ):
         """Three-panel figure showing fit results.
 
@@ -1259,8 +1259,10 @@ class Fitter:
             dx_roi = np.ones_like(self.x_roi)
         if enable_fit_panel:
             nrows, ncols = 2, 2
+            figsize = (18, 9) if figsize is None else figsize
         else:
             nrows, ncols = 2, 1
+            figsize = (9, 9) if figsize is None else figsize
         gs = GridSpec(nrows, ncols, height_ratios=(4, 1))
         fig = plt.figure(figsize=figsize)
         fit_ax = fig.add_subplot(gs[0, 0])
