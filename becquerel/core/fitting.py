@@ -1226,6 +1226,7 @@ class Fitter:
         residual_type="abs",
         enable_fit_panel=True,
         figsize=None,
+        **kwargs,
     ):
         """Two- or three-panel figure showing fit results.
 
@@ -1254,6 +1255,12 @@ class Fitter:
         -------
         matplotlib figure
         """
+        if "savefname" in kwargs:
+            raise ValueError(
+                "`savefname` is deprecated. Call `fig.savefig(savefname)` "
+                "after `Fitter.custom_plot()`"
+            )
+
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
         dx, dx_roi = self.dx, self.dx_roi
