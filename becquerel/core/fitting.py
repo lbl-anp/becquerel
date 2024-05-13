@@ -1128,6 +1128,11 @@ class Fitter:
         raise FittingError(f"Unknown backend: {self.backend}")
 
     @property
+    def uncertainties(self) -> dict[str: float]:
+        """Dictionary of uncertainties, keyed on param name."""
+        return {param: self.param_unc(param) for param in self.param_names}
+
+    @property
     def success(self):
         if "lmfit" in self.backend:
             return self.result.success
