@@ -1110,7 +1110,7 @@ class Fitter:
         return None
 
     @property
-    def best_values(self) -> dict[str, float]:
+    def best_values(self) -> dict:
         """Wrapper for dictionary of best_values."""
         if "lmfit" in self.backend:
             return self.result.best_values
@@ -1119,7 +1119,7 @@ class Fitter:
         raise FittingError(f"Unknown backend: {self.backend}")
 
     @property
-    def init_values(self) -> dict[str, float]:
+    def init_values(self) -> dict:
         """Wrapper for dictionary of init_values."""
         if "lmfit" in self.backend:
             return self.result.init_values
