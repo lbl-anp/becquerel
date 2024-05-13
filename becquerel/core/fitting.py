@@ -1195,8 +1195,7 @@ class Fitter:
         elif residual_type == "abs":
             # Absolute residuals
             return y_res
-        else:
-            raise ValueError(f"Unknown residuals type: {residual_type:s}")
+        raise ValueError(f"Unknown residuals type: {residual_type:s}")
 
     def plot(self, npts=1000, **kwargs):
         """Plot the fit result on the current axis.
