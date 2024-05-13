@@ -1227,10 +1227,10 @@ class Fitter:
         enable_fit_panel=True,
         figsize=None,
     ):
-        """Three-panel figure showing fit results.
+        """Two- or three-panel figure showing fit results.
 
         Top-left panel shows the data and the fit. Bottom-left shows the fit
-        residuals. Right prints fit statistics and correlations.
+        residuals. Right (optional) prints fit statistics and correlations.
 
         Parameters
         ----------
@@ -1246,7 +1246,7 @@ class Fitter:
                 'rel' : (data - fit) / |fit|
                 'sigma' : (data - fit) / (data_uncertainty)
         enable_fit_panel : bool, optional
-            If True (default), draw an additional panel with fit information
+            If True (default), draw an additional panel with fit statistics
         figsize : tuple, optional
             Figure size
 
