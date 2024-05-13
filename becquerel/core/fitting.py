@@ -1100,7 +1100,7 @@ class Fitter:
         Relative error of fit parameter `param`
         """
         if self.param_unc(param):
-            return self.param_unc(param) / self.param_val(param)
+            return self.param_unc(param) / np.abs(self.param_val(param))
         return None
 
     def param_val_and_unc(self, param: str) -> ufloat:
