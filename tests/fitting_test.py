@@ -289,6 +289,7 @@ class TestFittingHighStatSimData:
         assert len(fitter.param_names) > 0
         assert len(fitter.init_values) > 0
         assert len(fitter.best_values) > 0
+        assert len(fitter.uncertainties) > 0
         assert fitter.success
         assert bq.fitting._is_count_like(fitter.y_roi)
         assert not bq.fitting._is_count_like(fitter.y_roi * 0.5)
