@@ -1229,9 +1229,6 @@ class Fitter:
 
     def custom_plot(
         self,
-        title=None,
-        title_fontsize=24,
-        title_fontweight="bold",
         residual_type="abs",
         enable_fit_panel=True,
         figsize=None,
@@ -1244,12 +1241,6 @@ class Fitter:
 
         Parameters
         ----------
-        title : str, optional
-            Title of the figure (default: no title)
-        title_fontsize : int, optional
-            Title font size (default: 24)
-        title_fontweight : str, optional
-            Title font weight (default: 'bold')
         residual_type : {'abs', 'rel', 'sigma'}, optional
             Residual type to calculate (default: 'abs')
                 'abs' : data - fit
@@ -1269,6 +1260,11 @@ class Fitter:
                 "`savefname` is deprecated. Call `fig.savefig(savefname)` "
                 "after `Fitter.custom_plot()`"
             )
+        for kw in ("title", "title_fontsize", "title_fontweight"):
+            if kw in kwargs:
+                raise ValueError(
+                    f"`{kw}` is deprecated. Pass title info directly to fig.suptitle()"
+                )
 
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
@@ -1291,11 +1287,6 @@ class Fitter:
             txt_ax = fig.add_subplot(gs[:, 1])
             txt_ax.get_xaxis().set_visible(False)
             txt_ax.get_yaxis().set_visible(False)
-        # Set fig title
-        if title is not None:
-            fig.suptitle(
-                str(title), fontweight=title_fontweight, fontsize=title_fontsize
-            )
 
         # ---------------------------------------
         # Fit plot (keep track of min/max in roi)
