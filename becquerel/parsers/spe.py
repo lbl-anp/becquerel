@@ -1,7 +1,7 @@
 """Read in an Ortec SPE file."""
 
-import os
 import warnings
+from pathlib import Path
 
 import dateutil.parser
 import numpy as np
@@ -18,7 +18,7 @@ def read(filename, verbose=False, cal_kwargs=None):
 
     Parameters
     ----------
-    filename : str
+    filename : str | pathlib.Path
         The filename of the CNF file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
@@ -32,8 +32,9 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("SpeFile: Reading file " + filename)
-    _, ext = os.path.splitext(filename)
+    filename = Path(filename)
+    print(f"SpeFile: Reading file {filename}")
+    ext = filename.suffix
     if ext.lower() != ".spe":
         raise BecquerelParserError("File extension is incorrect: " + ext)
 

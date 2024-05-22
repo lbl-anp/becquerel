@@ -1,9 +1,9 @@
 """Base class for spectrum file parsers."""
 
 import datetime
-import os
 import warnings
 from copy import deepcopy
+from pathlib import Path
 
 import numpy as np
 from uncertainties import UFloat, unumpy
@@ -577,7 +577,7 @@ class Spectrum:
         """Construct a Spectrum object from a filename.
 
         Args:
-          infilename: a string representing the path to a parsable file
+          infilename: a string or Path representing the path to a parsable file
           verbose: (optional) whether to print debugging information.
           cal_kwargs: (optional) kwargs to override the file Calibration.
 
@@ -588,7 +588,9 @@ class Spectrum:
           AssertionError: for a bad filename  # TODO make this an IOError
         """
         # read the data using one of the low-level parsers
-        _, ext = os.path.splitext(infilename)
+
+        infilename = Path(infilename)
+        ext = infilename.suffix
         if io.h5.is_h5_filename(infilename):
             data, cal = parsers.h5.read(
                 infilename,
@@ -624,7 +626,7 @@ class Spectrum:
 
         # create the object and apply the calibration
         spec = cls(**data)
-        spec.attrs["infilename"] = infilename
+        spec.attrs["infilename"] = str(infilename)
         if cal is not None:
             spec.apply_calibration(cal)
         return spec
@@ -634,7 +636,7 @@ class Spectrum:
 
         Parameters
         ----------
-        name : str, h5py.File, h5py.Group
+        name : str, h5py.File, h5py.Group, pathlib.Path
             The filename or an open h5py File or Group.
         """
         # build datasets dict
@@ -1295,6 +1297,7 @@ class Spectrum:
             key: combined_counts,
             "bin_edges_kev": combined_bin_edges,
             "livetime": self.livetime,
+            "realtime": self.realtime,
         }
         obj = self.__class__(**kwargs)
         return obj

@@ -1,6 +1,7 @@
 """Test Spectrum I/O for different file types."""
 
 import os
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -12,12 +13,13 @@ import becquerel as bq
 
 
 @pytest.mark.parametrize("extension", SAMPLES.keys())
-def test_spectrum_from_file(extension):
-    """Test Spectrum.from_file for the given extension."""
+@pytest.mark.parametrize("path_type", [str, Path])
+def test_spectrum_from_file(extension, path_type):
+    """Test Spectrum.from_file for the given extension and path_type."""
     filenames = SAMPLES[extension]
     assert len(filenames) >= 1
     for filename in filenames:
-        spec = bq.Spectrum.from_file(filename)
+        spec = bq.Spectrum.from_file(path_type(filename))
         assert spec.livetime is not None
 
 

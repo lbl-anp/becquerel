@@ -967,7 +967,7 @@ class Fitter:
     def eval(self, x, params=None, **kwargs):
         return self.model.eval(x=x, params=params, **kwargs)
 
-    def calc_area_and_unc(self, component=None, x=None):
+    def calc_area_and_unc(self, component=None, x=None) -> ufloat:
         """Calculate the area (and uncertainty) under the fit (or component thereof).
 
         Parameters
@@ -1056,7 +1056,7 @@ class Fitter:
         # the binwidth, we double the counts per bin but halve the number of bins.
         return ufloat(area, np.sqrt(area_variance))
 
-    def param_val(self, param):
+    def param_val(self, param) -> float:
         """
         Value of fit parameter `param`
         """
@@ -1075,7 +1075,7 @@ class Fitter:
             raise FittingError(f"Unknown param: {param}")
         raise FittingError(f"Unknown backend: {self.backend}")
 
-    def param_unc(self, param):
+    def param_unc(self, param) -> float:
         """
         Fit error of fit parameter `param`
         """
@@ -1095,16 +1095,22 @@ class Fitter:
             raise FittingError(f"Unknown param: {param}")
         raise FittingError(f"Unknown backend: {self.backend}")
 
-    def param_rel_unc(self, param):
+    def param_rel_unc(self, param) -> float:
         """
         Relative error of fit parameter `param`
         """
         if self.param_unc(param):
-            return self.param_unc(param) / self.param_val(param)
+            return self.param_unc(param) / np.abs(self.param_val(param))
+        return None
+
+    def param_val_and_unc(self, param: str) -> ufloat:
+        """Value and fit uncertainty of `param`, as a ufloat."""
+        if self.param_unc(param):
+            return ufloat(self.param_val(param), self.param_unc(param))
         return None
 
     @property
-    def best_values(self):
+    def best_values(self) -> dict:
         """Wrapper for dictionary of best_values."""
         if "lmfit" in self.backend:
             return self.result.best_values
@@ -1113,7 +1119,7 @@ class Fitter:
         raise FittingError(f"Unknown backend: {self.backend}")
 
     @property
-    def init_values(self):
+    def init_values(self) -> dict:
         """Wrapper for dictionary of init_values."""
         if "lmfit" in self.backend:
             return self.result.init_values
@@ -1122,7 +1128,16 @@ class Fitter:
         raise FittingError(f"Unknown backend: {self.backend}")
 
     @property
-    def success(self):
+    def uncertainties(self) -> dict:
+        """Dictionary of uncertainties, keyed on param name."""
+        return {
+            param: self.param_unc(param)
+            for param in self.params
+            if self.params[param].vary
+        }
+
+    @property
+    def success(self) -> bool:
         if "lmfit" in self.backend:
             return self.result.success
         elif "minuit" in self.backend:
@@ -1138,7 +1153,7 @@ class Fitter:
             return self.result.covariance
         raise FittingError(f"Unknown backend: {self.backend}")
 
-    def param_dataframe(self, sort_by_model=False):
+    def param_dataframe(self, sort_by_model: bool = False) -> pd.DataFrame:
         """
         Dataframe of all fit parameters value and fit error
         """
@@ -1160,7 +1175,7 @@ class Fitter:
             )
         return df
 
-    def compute_residuals(self, residual_type="abs"):
+    def compute_residuals(self, residual_type: str = "abs") -> np.ndarray:
         """Compute residuals between the data and the fit.
 
         Parameters
@@ -1189,8 +1204,7 @@ class Fitter:
         elif residual_type == "abs":
             # Absolute residuals
             return y_res
-        else:
-            raise ValueError(f"Unknown residuals type: {residual_type:s}")
+        raise ValueError(f"Unknown residuals type: {residual_type:s}")
 
     def plot(self, npts=1000, **kwargs):
         """Plot the fit result on the current axis.
