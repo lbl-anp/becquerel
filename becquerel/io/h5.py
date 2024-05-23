@@ -44,7 +44,9 @@ def is_h5_filename(name: str):
 class open_h5:
     """Context manager to allow I/O given HDF5 filename, File, or Group."""
 
-    def __init__(self, name: str | h5py.File | h5py.Group, mode=None, **kwargs):
+    def __init__(
+        self, name: str | pathlib.Path | h5py.File | h5py.Group, mode=None, **kwargs
+    ):
         """Initialize the context manager.
 
         Parameters
@@ -56,6 +58,7 @@ class open_h5:
         kwargs : dict
             Additional keyword arguments sent to h5py.File if initializing.
         """
+        name = str(name) if isinstance(name, pathlib.Path) else name
         self._already_h5_obj = isinstance(name, (h5py.File, h5py.Group))
         if not self._already_h5_obj:
             assert is_h5_filename(name), "Filename must end in h5 or hdf5"

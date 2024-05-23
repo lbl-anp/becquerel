@@ -446,6 +446,47 @@ def test_bad_realtime_livetime(spec_data):
 
 
 # ----------------------------------------------
+#                 Test deadtime
+# ----------------------------------------------
+
+
+@pytest.mark.parametrize("spec_type", ["counts", "cps"])
+def test_deadtime(spec_data, spec_type):
+    """Test deadtime and related properties."""
+
+    if spec_type == "counts":
+        spec = bq.Spectrum(counts=spec_data, livetime=90, realtime=100)
+    elif spec_type == "cps":
+        spec = bq.Spectrum(cps=spec_data, livetime=90, realtime=100)
+    else:
+        raise ValueError(f"Invalid {spec_type=}")
+
+    assert np.isclose(spec.livetime_fraction, 0.90)
+    assert np.isclose(spec.deadtime_fraction, 0.10)
+    assert np.isclose(spec.deadtime, 10.0)
+
+
+@pytest.mark.parametrize("spec_type", ["counts", "cps"])
+def test_deadtime_err(spec_data, spec_type):
+    """Test deadtime and related properties errors with no livetime."""
+
+    if spec_type == "counts":
+        spec = bq.Spectrum(counts=spec_data, realtime=100)
+    elif spec_type == "cps":
+        spec = bq.Spectrum(cps=spec_data, realtime=100)
+    else:
+        raise ValueError(f"Invalid {spec_type=}")
+
+    assert spec.livetime is None
+    with pytest.raises(TypeError):
+        spec.deadtime
+    with pytest.raises(TypeError):
+        spec.deadtime_fraction
+    with pytest.raises(TypeError):
+        spec.livetime_fraction
+
+
+# ----------------------------------------------
 #         Test uncertainties in Spectrum
 # ----------------------------------------------
 
@@ -853,6 +894,33 @@ def test_mul_div_errors(type1, type2, error):
         spec / bad_factor
 
 
+@pytest.mark.parametrize("material", ["Pb", "H2O", ["H2O 0.9", "NaCl 0.1"]])
+@pytest.mark.parametrize("areal_density_gcm2", [10.0, -10.0, 0.0])
+@pytest.mark.parametrize("spec_type", ["cal", "cal_cps"])
+def test_attenuate(material, areal_density_gcm2, spec_type):
+    """Basic tests of Spectrum.attenuate.
+
+    Keep the number of parametrized tests low here to avoid too many API calls.
+    """
+    spec = make_spec(t=spec_type)
+    new = spec.attenuate(material, areal_density_gcm2)
+
+    if spec_type == "cal":
+        transmission = new.counts_vals / spec.counts_vals
+    elif spec_type == "cal_cps":
+        transmission = new.cps_vals / spec.cps_vals
+
+    mask = ~np.isnan(transmission)
+    if areal_density_gcm2 > 0:
+        assert np.all(transmission[mask] < 1)
+    elif areal_density_gcm2 < 0:
+        assert np.all(transmission[mask] > 1)
+    elif areal_density_gcm2 == 0:
+        assert np.all(transmission[mask] == 1)
+    else:
+        raise ValueError(f"Invalid {areal_density_gcm2=}")
+
+
 # ----------------------------------------------
 #         Test Spectrum.calibrate_like
 # ----------------------------------------------
@@ -914,6 +982,8 @@ def test_combine_bins(spectype):
     else:
         assert combined.cps_vals[0] == np.sum(spec.cps_vals[:f])
         assert np.sum(combined.cps_vals) == np.sum(spec.cps_vals)
+    assert spec.livetime == combined.livetime
+    assert spec.realtime == combined.realtime
 
 
 @pytest.mark.parametrize("spectype", ["uncal", "cal", "uncal_cps"])
@@ -931,6 +1001,8 @@ def test_combine_bins_padding(spectype):
     else:
         assert combined.cps_vals[0] == np.sum(spec.cps_vals[:f])
         assert np.sum(combined.cps_vals) == np.sum(spec.cps_vals)
+    assert spec.livetime == combined.livetime
+    assert spec.realtime == combined.realtime
 
 
 # calibration methods tested in energycal_test.py
@@ -1174,3 +1246,28 @@ def test_spectrum_rebin_like():
     spec2_rebin = spec2.rebin_like(spec1)
     assert np.all(np.isclose(spec1.bin_edges_kev, spec2_rebin.bin_edges_kev))
     assert np.isclose(spec2.counts_vals.sum(), spec2_rebin.counts_vals.sum())
+
+
+# ----------------------------------------------
+#           Test Spectrum inheritance
+# ----------------------------------------------
+class DerivedSpectrum(bq.Spectrum):
+    pass
+
+
+derived_spec = DerivedSpectrum(make_data())
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        derived_spec + derived_spec,
+        derived_spec - derived_spec,
+        derived_spec * 2,
+        derived_spec / 2,
+        derived_spec.downsample(f=2),
+        derived_spec.combine_bins(f=2),
+    ],
+)
+def test_spectrum_inheritance(spec):
+    assert isinstance(spec, DerivedSpectrum)

@@ -1,7 +1,7 @@
 """Read in an Ortec SPC file."""
 
-import os
 import struct
+from pathlib import Path
 
 import dateutil.parser
 import numpy as np
@@ -208,8 +208,9 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("SpcFile: Reading file " + filename)
-    _, ext = os.path.splitext(filename)
+    filename = Path(filename)
+    print(f"SpcFile: Reading file {filename}")
+    ext = filename.suffix
     if ext.lower() != ".spc":
         raise BecquerelParserError("File extension is incorrect: " + ext)
 
