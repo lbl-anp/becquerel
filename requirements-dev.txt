@@ -5,7 +5,6 @@ pre-commit
 pytest
 pytest-cov
 pytest-rerunfailures
-pytest-ruff
 pytest-xdist
 requests
 ruff
