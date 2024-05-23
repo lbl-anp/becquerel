@@ -11,9 +11,6 @@ fix = true
 show-fixes = true
 preview = false
 
-# include linting of notebooks
-extend-include = ["*.ipynb"]
-
 # format the same as black
 indent-width = 4
 line-length = 88

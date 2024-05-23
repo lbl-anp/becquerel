@@ -54,17 +54,6 @@ repos:
       - id: nbqa-check-ast
         additional_dependencies: [pre-commit-hooks]
         args: [--nbqa-dont-skip-bad-cells]
-      - id: nbqa-pyupgrade
-        additional_dependencies: [pyupgrade==v3.15.0]
-        args: [--py37-plus]
-      - id: nbqa-isort
-        additional_dependencies: [isort==5.13.2]
-        args: [--profile=black, --float-to-top]
-      - id: nbqa-black
-        additional_dependencies: [black==24.1.1]
-      - id: nbqa-pydocstyle
-        additional_dependencies: [pydocstyle==6.3.0]
-        args: ["--ignore=D100,D103"]
-      - id: nbqa-flake8
-        additional_dependencies: [flake8==7.0.0, flake8-bugbear]
-        args: [--max-line-length=88, "--ignore=E203,E722,F821,W503,B001,B015"]
+      - id: nbqa-ruff
+        additional_dependencies: [ruff==v0.4.5]
+        args: ["--ignore=E722,F821,S110"]
