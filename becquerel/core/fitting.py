@@ -1390,10 +1390,13 @@ class Fitter:
         # Fit report (txt_ax)
         # -------------------
         if enable_fit_panel:
-            props = dict(
-                boxstyle="round", facecolor="white", edgecolor="black", alpha=1
-            )
-            props = dict(facecolor="white", edgecolor="none", alpha=0)
+            props = {
+                "boxstyle": "round",
+                "facecolor": "white",
+                "edgecolor": "black",
+                "alpha": 1,
+            }
+            props = {"facecolor": "white", "edgecolor": "none", "alpha": 0}
             fp = FontProperties(family="monospace", size=8)
             if "lmfit" in self.backend:
                 best_fit_values = ""
