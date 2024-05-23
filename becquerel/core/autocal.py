@@ -212,7 +212,7 @@ def find_best_gain(
     if best_gain is None:
         return None
     else:
-        print("found best gain: %f keV/channel" % best_gain)
+        print(f"found best gain: {best_gain:f} keV/channel")
         return {
             "gain": best_gain,
             "channels": best_chans,

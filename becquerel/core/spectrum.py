@@ -179,9 +179,8 @@ class Spectrum:
             if self.livetime is not None:
                 if self.livetime > self.realtime:
                     raise ValueError(
-                        "Livetime ({}) cannot exceed realtime ({})".format(
-                            self.livetime, self.realtime
-                        )
+                        f"Livetime ({self.livetime}) cannot exceed realtime "
+                        f"({self.realtime})"
                     )
 
         self.start_time = handle_datetime(start_time, "start_time", allow_none=True)
@@ -199,9 +198,8 @@ class Spectrum:
         elif self.start_time is not None and self.stop_time is not None:
             if self.start_time > self.stop_time:
                 raise ValueError(
-                    "Stop time ({}) must be after start time ({})".format(
-                        self.start_time, self.stop_time
-                    )
+                    f"Stop time ({self.start_time}) must be after start time "
+                    f"({self.stop_time})"
                 )
             self.realtime = (self.stop_time - self.start_time).total_seconds()
         elif self.start_time is not None and self.realtime is not None:

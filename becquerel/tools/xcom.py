@@ -385,9 +385,8 @@ class _XCOMQuery:
         self._req = requests.post(self._url + self._method, data=self._data, timeout=15)
         if not self._req.ok or self._req.reason != "OK" or self._req.status_code != 200:
             raise XCOMRequestError(
-                "XCOM Request failed: reason={}, status_code={}".format(
-                    self._req.reason, self._req.status_code
-                )
+                f"XCOM Request failed: reason={self._req.reason}, "
+                f"status_code={self._req.status_code}"
             )
         if "Error" in self._req.text:
             raise XCOMRequestError(f"XCOM returned an error:\n{self._req.text}")
@@ -403,9 +402,8 @@ class _XCOMQuery:
         self.df = tables[0]
         if len(self.df.keys()) != 1 + len(COLUMNS_SHORT):
             raise XCOMRequestError(
-                "Found {} columns but expected {}".format(
-                    len(self.df.keys()), 1 + len(COLUMNS_SHORT)
-                )
+                f"Found {len(self.df.keys())} columns but expected "
+                f"{1 + len(COLUMNS_SHORT)}"
             )
         # remove 'edge' column
         self.df = self.df[self.df.keys()[1:]]

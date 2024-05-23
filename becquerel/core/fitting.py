@@ -1410,12 +1410,9 @@ class Fitter:
                         #     "stderr calculated.", FittingWarning)
                     else:
                         best_fit_values += (
-                            "{:15} {: .6e} +/- {:.5e} ({:6.1%})\n".format(
-                                p,
-                                op[p].value,
-                                op[p].stderr,
-                                abs(op[p].stderr / op[p].value),
-                            )
+                            f"{p:15} "
+                            f"{op[p].value: .6e} +/- {op[p].stderr:.5e} "
+                            f"({abs(op[p].stderr / op[p].value):6.1%})\n"
                         )
                 best_fit_values += "{:15} {: .6e}\n".format(
                     "Chi Squared:", self.result.chisqr
@@ -1433,8 +1430,10 @@ class Fitter:
                     for (_, param_name), param_data in sdf.iterrows():
                         v = param_data["val"]
                         e = param_data["unc"]
-                        s += "    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n".format(
-                            param_name, v, e, np.abs(e / v)
+                        s += (
+                            f"    {param_name:24}: "
+                            f"{v: .6e} +/- {e:.5e} "
+                            f"({np.abs(e / v):6.1%})\n"
                         )
             elif "minuit" in self.backend:
                 s = str(self.result) + "\n"

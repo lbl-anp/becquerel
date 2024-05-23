@@ -41,9 +41,8 @@ def _get_request(url):
     req = requests.get(url, timeout=15)
     if not req.ok or req.reason != "OK" or req.status_code != 200:
         raise MaterialsError(
-            "NIST materials request failed: reason={}, status_code={}".format(
-                req.reason, req.status_code
-            )
+            f"NIST materials request failed: reason={req.reason}, "
+            f"status_code={req.status_code}"
         )
     return req
 

@@ -254,9 +254,8 @@ class Isotope(element.Element):
                 if len(self.m) > 1:
                     if not self.m[1:].isdigit():
                         raise IsotopeError(
-                            "Metastable level must be numeric: {} {}".format(
-                                self.m[0], self.m[1:]
-                            )
+                            "Metastable level must be numeric: "
+                            f"{self.m[0]} {self.m[1:]}"
                         )
                     self.M = int(self.m[1:])
                 else:
