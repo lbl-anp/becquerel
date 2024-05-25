@@ -52,7 +52,7 @@ The dependencies `beautifulsoup4`, `lxml` and `html5lib` are necessary for
 
 Developers require additional requirements which are listed in
 `requirements-dev.txt`. We use [`pytest`][2] for unit testing, [`ruff`][3] for
-code formatting and linting, and are planning to support eventually support
+code formatting and linting, and are planning to eventually support
 [`numpydoc`][4] docstrings.
 
 [1]: https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies
