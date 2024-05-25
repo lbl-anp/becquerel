@@ -37,7 +37,7 @@ select = [
   # "ANN",     # flake8-annotations
   "ASYNC",   # flake8-async
   "S",       # flake8-bandit
-  # "BLE",     # flake8-blind-except
+  "BLE",     # flake8-blind-except
   # "FBT",     # flake8-boolean-trap
   "B",       # flake8-bugbear
   "A",       # flake8-builtins
