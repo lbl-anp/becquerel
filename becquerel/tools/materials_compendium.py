@@ -14,15 +14,15 @@ and it is available at:
 """
 
 import json
-import os
 import warnings
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from .materials_error import MaterialsError, MaterialsWarning
 
-FNAME = os.path.join(os.path.split(__file__)[0], "MaterialsCompendium.json")
+FNAME = Path(__file__).parent / "MaterialsCompendium.json"
 
 
 def json_elements_to_weight_fractions(elements):
@@ -47,7 +47,7 @@ def json_elements_to_atom_fractions(elements):
 def fetch_compendium_data():
     """Read material data from the Compendium."""
     # read the file
-    if not os.path.exists(FNAME):
+    if not FNAME.exists():
         warnings.warn(
             'Material data from the "Compendium of Material Composition Data for '
             'Radiation Transport Modeling" cannot be found. If these data are '
@@ -58,7 +58,7 @@ def fetch_compendium_data():
         )
         data = []
     else:
-        with open(FNAME) as f:
+        with FNAME.open() as f:
             data = json.load(f)
 
     # extract relevant data

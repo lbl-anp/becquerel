@@ -1,22 +1,19 @@
-import glob
-import os
 from copy import deepcopy
 
 import lmfit
 import numpy as np
 import pytest
+from parsers_test import SAMPLES_PATH
 
 import becquerel as bq
-
-SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
 
 # TODO: use these for fitting actual data
 SAMPLES = {}
 for extension in [".spe", ".spc", ".cnf"]:
-    filenames = glob.glob(os.path.join(SAMPLES_PATH, "*.*"))
+    filenames = SAMPLES_PATH.glob("*.*")
     filenames_filtered = []
     for filename in filenames:
-        fname, ext = os.path.splitext(filename)
+        ext = filename.suffix
         if ext.lower() == extension:
             filenames_filtered.append(filename)
     SAMPLES[extension] = filenames_filtered

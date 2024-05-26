@@ -1,8 +1,8 @@
 """Load material data for use in attenuation calculations with XCOM."""
 
 import csv
-import os
 import warnings
+from pathlib import Path
 
 import numpy as np
 
@@ -10,7 +10,7 @@ from .materials_compendium import fetch_compendium_data
 from .materials_error import MaterialsError, MaterialsWarning
 from .materials_nist import fetch_compound_data, fetch_element_data
 
-FILENAME = os.path.join(os.path.split(__file__)[0], "materials.csv")
+FILENAME = Path(__file__).parent / "materials.csv"
 
 
 def _load_and_compile_materials():
@@ -133,13 +133,13 @@ def _write_materials_csv(materials):
     materials : dict
         Dictionary of materials.
     """
-    if os.path.exists(FILENAME):
+    if FILENAME.exists():
         warnings.warn(
             f"Materials data CSV already exists at {FILENAME} and will be overwritten",
             MaterialsWarning,
         )
     mat_list = sorted(materials.keys())
-    with open(FILENAME, "w") as f:
+    with FILENAME.open("w") as f:
         print("%name,formula,density,weight fractions,source", file=f)
         for name in mat_list:
             line = ""
@@ -158,10 +158,10 @@ def _read_materials_csv():
     materials
         Dictionary keyed by material names containing the material data.
     """
-    if not os.path.exists(FILENAME):
+    if not FILENAME.exists():
         raise MaterialsError(f"Materials data CSV does not exist at {FILENAME}")
     materials = {}
-    with open(FILENAME) as f:
+    with FILENAME.open() as f:
         lines = f.readlines()
         for tokens in csv.reader(
             lines,
@@ -218,7 +218,7 @@ def fetch_materials(force=False):
     materials
         Dictionary keyed by material names containing the material data.
     """
-    if force or not os.path.exists(FILENAME):
+    if force or not FILENAME.exists():
         materials = force_load_and_write_materials_csv()
     materials = _read_materials_csv()
     return materials
@@ -226,5 +226,5 @@ def fetch_materials(force=False):
 
 def remove_materials_csv():
     """Remove materials.csv if it exists."""
-    if os.path.exists(FILENAME):
-        os.remove(FILENAME)
+    if FILENAME.exists():
+        FILENAME.unlink()

@@ -1,6 +1,6 @@
 """Test HDF5 I/O tools."""
 
-import os
+from pathlib import Path
 
 import h5py
 import numpy as np
@@ -8,9 +8,8 @@ import pytest
 
 from becquerel.io.h5 import ensure_string, is_h5_filename, open_h5, read_h5, write_h5
 
-TEST_OUTPUTS = os.path.join(os.path.split(__file__)[0], "test_outputs")
-if not os.path.exists(TEST_OUTPUTS):
-    os.mkdir(TEST_OUTPUTS)
+TEST_OUTPUTS = Path(__file__).parent / "test_outputs"
+TEST_OUTPUTS.mkdir(exist_ok=True)
 
 DSETS = {
     "dset_1d": np.ones(100, dtype=int),
@@ -56,7 +55,7 @@ def write_test_open_h5_file(fname):
 
 def test_open_h5():
     """Test open_h5 for different inputs."""
-    fname = os.path.join(TEST_OUTPUTS, "io_h5__test_open_h5.h5")
+    fname = TEST_OUTPUTS / "io_h5__test_open_h5.h5"
 
     # filename cases
     write_test_open_h5_file(fname)
@@ -143,7 +142,7 @@ def check_dsets_attrs(dsets1, attrs1, dsets2, attrs2):
 @pytest.mark.parametrize("attrs", [ATTRS])
 def test_write_h5_filename(dsets, attrs):
     """Write data to h5 given its filename."""
-    fname = os.path.join(TEST_OUTPUTS, "io_h5__test_write_h5_filename.h5")
+    fname = TEST_OUTPUTS / "io_h5__test_write_h5_filename.h5"
     write_h5(fname, dsets, attrs)
 
 
@@ -151,7 +150,7 @@ def test_write_h5_filename(dsets, attrs):
 @pytest.mark.parametrize("attrs", [ATTRS])
 def test_write_h5_file(dsets, attrs):
     """Write data to h5 given an open h5py.File."""
-    fname = os.path.join(TEST_OUTPUTS, "io_h5__test_write_h5_file.h5")
+    fname = TEST_OUTPUTS / "io_h5__test_write_h5_file.h5"
     with h5py.File(fname, "w") as file:
         write_h5(file, dsets, attrs)
 
@@ -160,7 +159,7 @@ def test_write_h5_file(dsets, attrs):
 @pytest.mark.parametrize("attrs", [ATTRS])
 def test_write_h5_group(dsets, attrs):
     """Write data to h5 given an h5py.Group."""
-    fname = os.path.join(TEST_OUTPUTS, "io_h5__test_write_h5_group.h5")
+    fname = TEST_OUTPUTS / "io_h5__test_write_h5_group.h5"
     with h5py.File(fname, "w") as file:
         group = file.create_group("test_group")
         write_h5(group, dsets, attrs)
@@ -170,7 +169,7 @@ def test_write_h5_group(dsets, attrs):
 @pytest.mark.parametrize("attrs", [ATTRS])
 def test_read_h5_filename(dsets, attrs):
     """Read data from h5 given its filename."""
-    fname = os.path.join(TEST_OUTPUTS, "io_h5__test_write_h5_filename.h5")
+    fname = TEST_OUTPUTS / "io_h5__test_write_h5_filename.h5"
     dsets2, attrs2, skipped = read_h5(fname)
     check_dsets_attrs(dsets, attrs, dsets2, attrs2)
     assert len(skipped) == 0
@@ -180,7 +179,7 @@ def test_read_h5_filename(dsets, attrs):
 @pytest.mark.parametrize("attrs", [ATTRS])
 def test_read_h5_file(dsets, attrs):
     """Read data from h5 given an open h5py.File."""
-    fname = os.path.join(TEST_OUTPUTS, "io_h5__test_write_h5_file.h5")
+    fname = TEST_OUTPUTS / "io_h5__test_write_h5_file.h5"
     with h5py.File(fname, "r") as file:
         dsets2, attrs2, skipped = read_h5(file)
     check_dsets_attrs(dsets, attrs, dsets2, attrs2)
@@ -191,7 +190,7 @@ def test_read_h5_file(dsets, attrs):
 @pytest.mark.parametrize("attrs", [ATTRS])
 def test_read_h5_group(dsets, attrs):
     """Read data from h5 given an h5py.Group."""
-    fname = os.path.join(TEST_OUTPUTS, "io_h5__test_write_h5_group.h5")
+    fname = TEST_OUTPUTS / "io_h5__test_write_h5_group.h5"
     with h5py.File(fname, "r") as file:
         group = file["test_group"]
         dsets2, attrs2, skipped = read_h5(group)
@@ -203,7 +202,7 @@ def test_read_h5_group(dsets, attrs):
 @pytest.mark.parametrize("attrs", [ATTRS])
 def test_read_h5_ignore_group(dsets, attrs):
     """Read data from h5 and ignore a data group within the group."""
-    fname = os.path.join(TEST_OUTPUTS, "io_h5__write_h5_ignore_group.h5")
+    fname = TEST_OUTPUTS / "io_h5__write_h5_ignore_group.h5"
 
     # write the file with an extra group
     with h5py.File(fname, "w") as file:

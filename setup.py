@@ -3,6 +3,7 @@
 import importlib.util
 import site
 import sys
+from pathlib import Path
 
 from setuptools import find_packages, setup
 
@@ -21,16 +22,16 @@ _spec.loader.exec_module(METADATA)
 site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 # remove package title from description
-with open("README.md") as fh:
+with Path.open("README.md") as fh:
     README = "\n".join(fh.readlines()[2:])
 
-with open("CONTRIBUTING.md") as fh:
+with Path.open("CONTRIBUTING.md") as fh:
     CONTRIBUTING = fh.read()
 
-with open("requirements.txt") as fh:
+with Path.open("requirements.txt") as fh:
     REQUIREMENTS = [_line for _line in fh if _line]
 
-with open("requirements-dev.txt") as fh:
+with Path.open("requirements-dev.txt") as fh:
     REQUIREMENTS_DEV = [line.strip() for line in fh if not line.startswith("-r")]
 
 # make long description from README and CONTRIBUTING
