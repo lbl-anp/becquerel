@@ -95,7 +95,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     energy_channel_pairs = []
     energy_res_pairs = []  # currently unused
     energy_eff_pairs = []  # currently unused
-    with Path.open(filename) as f:
+    with Path(filename).open() as f:
         record = 1
         # loop over lines
         for line in f:

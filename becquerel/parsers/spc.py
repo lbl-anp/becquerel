@@ -217,7 +217,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     # initialize a dictionary of spectrum data to populate as we parse
     data = {}
 
-    with Path.open(filename, "rb") as f:
+    with Path(filename).open("rb") as f:
         # read the file in chunks of 128 bytes
         data_records = []
         binary_data = None

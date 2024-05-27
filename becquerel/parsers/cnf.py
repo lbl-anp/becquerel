@@ -104,7 +104,7 @@ def read(filename, verbose=False, cal_kwargs=None):
 
     # read all of the file into memory
     file_bytes = []
-    with Path.open(filename, "rb") as f:
+    with Path(filename).open("rb") as f:
         byte = f.read(1)
         while byte:
             byte_int = struct.unpack("1B", byte)

@@ -48,7 +48,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     counts = []
     channels = []
     cal_coeff = []
-    with Path.open(filename) as f:
+    with Path(filename).open() as f:
         # read & remove newlines from end of each line
         lines = [line.strip() for line in f]
         i = 0
