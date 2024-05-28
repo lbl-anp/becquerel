@@ -28,13 +28,13 @@ def _load_and_compile_materials():
 
     # perform various checks on the Compendium data
     for j in range(len(data_comp)):
-        name = data_comp["Material"].values[j]
-        rho1 = data_comp["Density"].values[j]
+        name = data_comp["Material"].to_numpy()[j]
+        rho1 = data_comp["Density"].to_numpy()[j]
         rho2 = None
-        if name in data_elem["Element"].values:
-            rho2 = data_elem["Density"][data_elem["Element"] == name].values[0]
-        elif name in data_mat["Material"].values:
-            rho2 = data_mat["Density"][data_mat["Material"] == name].values[0]
+        if name in data_elem["Element"].to_numpy():
+            rho2 = data_elem["Density"][data_elem["Element"] == name].to_numpy()[0]
+        elif name in data_mat["Material"].to_numpy():
+            rho2 = data_mat["Density"][data_mat["Material"] == name].to_numpy()[0]
         if rho2:
             if not np.isclose(rho1, rho2, atol=2e-2):
                 raise MaterialsError(
@@ -43,12 +43,12 @@ def _load_and_compile_materials():
                 )
 
     for j in range(len(data_comp)):
-        name = data_comp["Material"].values[j]
-        if name in data_mat["Material"].values:
-            weight_fracs1 = data_comp["Composition_symbol"].values[j]
+        name = data_comp["Material"].to_numpy()[j]
+        if name in data_mat["Material"].to_numpy():
+            weight_fracs1 = data_comp["Composition_symbol"].to_numpy()[j]
             weight_fracs2 = data_mat["Composition_symbol"][
                 data_mat["Material"] == name
-            ].values[0]
+            ].to_numpy()[0]
             if len(weight_fracs1) != len(weight_fracs2):
                 raise MaterialsError(
                     f"Material {name} has different number of weight fractions "
@@ -73,10 +73,10 @@ def _load_and_compile_materials():
     # make a dictionary of all the materials
     materials = {}
     for j in range(len(data_elem)):
-        name = data_elem["Element"].values[j]
-        formula = data_elem["Symbol"].values[j]
-        density = data_elem["Density"].values[j]
-        weight_fracs = data_elem["Composition_symbol"].values[j]
+        name = data_elem["Element"].to_numpy()[j]
+        formula = data_elem["Symbol"].to_numpy()[j]
+        density = data_elem["Density"].to_numpy()[j]
+        weight_fracs = data_elem["Composition_symbol"].to_numpy()[j]
         materials[name] = {
             "formula": formula,
             "density": density,
@@ -87,10 +87,10 @@ def _load_and_compile_materials():
         materials[formula] = materials[name]
 
     for j in range(len(data_mat)):
-        name = data_mat["Material"].values[j]
+        name = data_mat["Material"].to_numpy()[j]
         formula = "-"
-        density = data_mat["Density"].values[j]
-        weight_fracs = data_mat["Composition_symbol"].values[j]
+        density = data_mat["Density"].to_numpy()[j]
+        weight_fracs = data_mat["Composition_symbol"].to_numpy()[j]
         materials[name] = {
             "formula": formula,
             "density": density,
@@ -99,10 +99,10 @@ def _load_and_compile_materials():
         }
 
     for j in range(len(data_comp)):
-        name = data_comp["Material"].values[j]
-        formula = data_comp["Formula"].values[j]
-        density = data_comp["Density"].values[j]
-        weight_fracs = data_comp["Composition_symbol"].values[j]
+        name = data_comp["Material"].to_numpy()[j]
+        formula = data_comp["Formula"].to_numpy()[j]
+        density = data_comp["Density"].to_numpy()[j]
+        weight_fracs = data_comp["Composition_symbol"].to_numpy()[j]
         if name in materials:
             # replace material formula if compendium has one
             # otherwise do not overwrite the NIST data

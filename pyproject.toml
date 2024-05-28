@@ -67,7 +67,7 @@ select = [
   # "TD",      # flake8-todos
   # "FIX",     # flake8-fixme
   # "ERA",     # eradicate
-  # "PD",      # pandas-vet
+  "PD",      # pandas-vet
   "PGH",     # pygrep-hooks
   # "PL",      # pylint
   "TRY",     # tryceratops
@@ -83,6 +83,7 @@ ignore = [
   "B015",      # Pointless comparison. Did you mean to assign a value? Otherwise, prepend `assert` or remove it.
   "B018",      # Found useless expression. Either assign it to a variable or remove it.
   "B028",      # No explicit `stacklevel` keyword argument found
+  "PD901",     # Avoid using the generic variable name `df` for DataFrames
   "TRY003",    # Avoid specifying long messages outside the exception class
   "NPY002",    # Replace legacy `np.random.poisson` call with `np.random.Generator`
   "PERF203",   # `try`-`except` within a loop incurs performance overhead

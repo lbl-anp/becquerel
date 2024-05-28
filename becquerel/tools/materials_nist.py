@@ -93,7 +93,7 @@ def fetch_element_data():
     df.columns = ["Z", "Symbol", "Element", "Z_over_A", "I_eV", "Density"]
 
     # add composition by Z
-    df["Composition_Z"] = [[f"{z}: 1.000000"] for z in df["Z"].values]
+    df["Composition_Z"] = [[f"{z}: 1.000000"] for z in df["Z"].to_numpy()]
     # add composition by symbol
     df["Composition_symbol"] = [
         convert_composition(comp) for comp in df["Composition_Z"]

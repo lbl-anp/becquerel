@@ -925,7 +925,7 @@ class Fitter:
             self._best_values, self._init_values = {}, {}
             for i in range(self.result.npar):
                 p = self.result.parameters[i]
-                self._best_values[p] = self.result.values[i]
+                self._best_values[p] = self.result.values[i]  # noqa: PD011
                 self._init_values[p] = self.result.init_params[p].value
 
             # Arg order sanity checks
@@ -1163,14 +1163,13 @@ class Fitter:
             df.loc[k, "val"] = self.param_val(k)
             df.loc[k, "unc"] = self.param_unc(k)
         if sort_by_model:
-            df.set_index(
+            df = df.set_index(
                 pd.MultiIndex.from_tuples(
                     # Only split on the first underscore, in case the param name
                     # has an underscore in it
                     [tuple(p.split("_", maxsplit=1)) for p in df.index],
                     names=["model", "param"],
                 ),
-                inplace=True,
             )
         return df
 

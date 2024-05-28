@@ -561,18 +561,18 @@ class _NNDCQuery:
             self._convert_column(
                 "Energy Level", lambda x: _parse_float_uncertainty(x, "")
             )
-            self.df.rename(columns={"Energy Level": "Energy Level (MeV)"}, inplace=True)
+            self.df = self.df.rename(columns={"Energy Level": "Energy Level (MeV)"})
 
         if "Parent Energy Level" in self.keys():
             self._convert_column_uncertainty("Parent Energy Level")
-            self.df.rename(
-                columns={"Parent Energy Level": "Energy Level (MeV)"}, inplace=True
+            self.df = self.df.rename(
+                columns={"Parent Energy Level": "Energy Level (MeV)"}
             )
             self.df["Energy Level (MeV)"] *= 0.001
 
         if "Mass Excess" in self.keys():
             self._convert_column_uncertainty("Mass Excess")
-        self.df.rename(columns={"Mass Excess": "Mass Excess (MeV)"}, inplace=True)
+        self.df = self.df.rename(columns={"Mass Excess": "Mass Excess (MeV)"})
 
         self._convert_column("T1/2 (s)", float)
 
@@ -586,14 +586,14 @@ class _NNDCQuery:
 
         if "Radiation Energy" in self.keys():
             self._convert_column_uncertainty("Radiation Energy")
-            self.df.rename(
-                columns={"Radiation Energy": "Radiation Energy (keV)"}, inplace=True
+            self.df = self.df.rename(
+                columns={"Radiation Energy": "Radiation Energy (keV)"}
             )
 
         if "Endpoint Energy" in self.keys():
             self._convert_column_uncertainty("Endpoint Energy")
-            self.df.rename(
-                columns={"Endpoint Energy": "Endpoint Energy (keV)"}, inplace=True
+            self.df = self.df.rename(
+                columns={"Endpoint Energy": "Endpoint Energy (keV)"}
             )
 
         if "Radiation Intensity (%)" in self.keys():
@@ -601,7 +601,7 @@ class _NNDCQuery:
 
         if "Dose" in self.keys():
             self._convert_column_uncertainty("Dose")
-            self.df.rename(columns={"Dose": "Dose (MeV / Bq / s)"}, inplace=True)
+            self.df = self.df.rename(columns={"Dose": "Dose (MeV / Bq / s)"})
 
     def _convert_column(self, col, function):
         """Convert column from string to another type."""
