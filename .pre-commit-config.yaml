@@ -31,6 +31,7 @@ repos:
     rev: v0.4.5
     hooks:
       - id: ruff
+        args: ["--preview"]
       - id: ruff-format
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
@@ -56,4 +57,4 @@ repos:
         args: [--nbqa-dont-skip-bad-cells]
       - id: nbqa-ruff
         additional_dependencies: [ruff==v0.4.5]
-        args: ["--ignore=E722,F821,S110"]
+        args: ["--ignore=E722,F821,S110", "--preview"]

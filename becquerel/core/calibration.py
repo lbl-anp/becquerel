@@ -149,9 +149,9 @@ def _eval_expression(
         if y_low and y_high:
             msg = msg + msg_low + " and " + msg_high
         elif y_low:
-            msg = msg + msg_low
+            msg += msg_low
         else:
-            msg = msg + msg_high
+            msg += msg_high
         warnings.warn(msg, CalibrationWarning)
     return y
 

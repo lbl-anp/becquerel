@@ -203,9 +203,7 @@ def _is_count_like(y):
     """
     if np.any(y < 0):
         return False
-    if not np.allclose(np.rint(y).astype(int), y):
-        return False
-    return True
+    return np.allclose(np.rint(y).astype(int), y)
 
 
 class ConstantModel(Model):
@@ -806,7 +804,7 @@ class Fitter:
                 self.params,  # self.result.params,
                 x=self.x_roi,
                 weights=self.dx_roi,
-                fit_kws={"reduce_fcn": lambda r: np.sum(r)},
+                fit_kws={"reduce_fcn": np.sum},
                 method="Nelder-Mead",
                 calc_covar=False,
             )  # no, bounds, default would be L-BFGS-B'

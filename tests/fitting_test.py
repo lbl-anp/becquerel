@@ -31,7 +31,7 @@ def sim_data(x_min, x_max, y_func, num_x=200, binning="linear", **params):
         edges = np.linspace(x_min, x_max, num_x, dtype=float)
     elif binning == "sqrt":
         edges = np.linspace(np.sqrt(x_min), np.sqrt(x_max), num_x)
-        edges = edges**2
+        edges **= 2
     x = (edges[1:] + edges[:-1]) * 0.5
     dx = edges[1:] - edges[:-1]
 
