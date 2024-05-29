@@ -81,7 +81,7 @@ def _load_and_compile_materials():
             "formula": formula,
             "density": density,
             "weight_fractions": weight_fracs,
-            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html)"',
+            "source": "NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html)",
         }
         #  add duplicate entry under element symbol for backwards compatibility
         materials[formula] = materials[name]
@@ -95,7 +95,7 @@ def _load_and_compile_materials():
             "formula": formula,
             "density": density,
             "weight_fractions": weight_fracs,
-            "source": '"NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html)"',
+            "source": "NIST (http://physics.nist.gov/PhysRefData/XrayMassCoef/tab2.html)",
         }
 
     for j in range(len(data_comp)):
@@ -113,12 +113,12 @@ def _load_and_compile_materials():
                 "density": density,
                 "weight_fractions": weight_fracs,
                 "source": (
-                    '"Detwiler, Rebecca S., McConn, Ronald J., Grimes, '
+                    "Detwiler, Rebecca S., McConn, Ronald J., Grimes, "
                     "Thomas F., Upton, Scott A., & Engel, Eric J. Compendium of "
                     "Material Composition Data for Radiation Transport Modeling. "
                     "United States. PNNL-15870 Revision 2., "
                     "https://doi.org/10.2172/1782721 "
-                    '(https://compendium.cwmd.pnnl.gov)"'
+                    "(https://compendium.cwmd.pnnl.gov)"
                 ),
             }
 
