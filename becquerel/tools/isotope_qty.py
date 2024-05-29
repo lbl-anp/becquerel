@@ -512,13 +512,8 @@ class IsotopeQuantity:
 
         return self._mul_div(other, div=False)
 
-    def __div__(self, other):
-        """Divide the quantity"""
-
-        return self._mul_div(other, div=True)
-
     def __truediv__(self, other):
-        """Divide the quantity (python 3)"""
+        """Divide the quantity"""
 
         return self._mul_div(other, div=True)
 

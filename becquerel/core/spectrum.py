@@ -942,7 +942,7 @@ class Spectrum:
     # This line adds the right multiplication
     __rmul__ = __mul__
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         """Return a new Spectrum object with counts (or CPS) scaled down.
 
         Args:
@@ -957,9 +957,6 @@ class Spectrum:
         """
 
         return self._mul_div(other, div=True)
-
-    # This line adds true division
-    __truediv__ = __div__
 
     def _mul_div(self, scaling_factor: float, div=False):
         """Multiply or divide a spectrum by a scalar. Handle errors.
