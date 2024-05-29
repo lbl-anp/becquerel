@@ -1,6 +1,7 @@
 -r requirements.txt
 bump2version
 coverage
+liccheck
 pre-commit
 pytest
 pytest-cov
