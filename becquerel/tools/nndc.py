@@ -262,9 +262,7 @@ def _parse_float_uncertainty(x, dx):
     # handle blank or missing data
     if x == "" or x == " ":
         return None
-    if "****" in dx:
-        dx = ""
-    elif dx in ["LT", "GT", "LE", "GE", "AP", "CA", "SY"]:
+    if "****" in dx or dx in ["LT", "GT", "LE", "GE", "AP", "CA", "SY"]:
         dx = ""
     try:
         x2 = float(x)
@@ -408,9 +406,7 @@ class _NNDCQuery:
 
     def __len__(self):
         """Length of any one of the data lists."""
-        if self.df is None:
-            return 0
-        elif len(self.df.keys()) == 0:
+        if self.df is None or len(self.df.keys()) == 0:
             return 0
         else:
             return len(self.df[self.df.keys()[0]])

@@ -240,9 +240,8 @@ def _validate_expression(
         raise CalibrationError(f"Independent variable {ind_var} must be 'x' or 'y'")
     ind_var_appears = False
     for node in ast.walk(ast.parse(expression)):
-        if type(node) is ast.Name:
-            if node.id == ind_var:
-                ind_var_appears = True
+        if type(node) is ast.Name and node.id == ind_var:
+            ind_var_appears = True
     if not ind_var_appears:
         raise CalibrationError(
             f'Independent variable "{ind_var}" must appear in the expression:\n'
@@ -267,12 +266,11 @@ def _validate_expression(
                 "Parameter indices in expression are not contiguous:\n"
                 f"{expression}\n{param_indices}"
             )
-    if params is not None:
-        if len(param_indices) != len(params):
-            raise CalibrationError(
-                "Not enough parameter indices in expression:\n"
-                f"{expression}\n{param_indices}"
-            )
+    if params is not None and len(param_indices) != len(params):
+        raise CalibrationError(
+            "Not enough parameter indices in expression:\n"
+            f"{expression}\n{param_indices}"
+        )
 
     # make sure the expression can be evaluated
     if params is not None:
