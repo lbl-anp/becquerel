@@ -985,13 +985,12 @@ class Spectrum:
                 or np.isnan(scaling_factor)
             ):
                 raise ValueError("Scaling factor must be nonzero and finite")
-        else:
-            if (
-                scaling_factor.nominal_value == 0
-                or np.isinf(scaling_factor.nominal_value)
-                or np.isnan(scaling_factor.nominal_value)
-            ):
-                raise ValueError("Scaling factor must be nonzero and finite")
+        elif (
+            scaling_factor.nominal_value == 0
+            or np.isinf(scaling_factor.nominal_value)
+            or np.isnan(scaling_factor.nominal_value)
+        ):
+            raise ValueError("Scaling factor must be nonzero and finite")
         if div:
             multiplier = 1 / scaling_factor
         else:
@@ -1481,7 +1480,7 @@ class Spectrum:
         color = ax.get_lines()[-1].get_color()
         if emode == "band":
             plotter.errorband(color=color, alpha=alpha * 0.5, label="_nolegend_")
-        elif emode == "bars" or emode == "bar":
+        elif emode in ("bars", "bar"):
             plotter.errorbar(color=color, label="_nolegend_")
         elif emode != "none":
             raise SpectrumError(f"Unknown error mode '{emode}', use 'bars' or 'band'")

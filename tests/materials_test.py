@@ -7,12 +7,12 @@ from pathlib import Path
 import pytest
 from utils import xcom_is_up
 
-import becquerel.tools.materials as materials
-import becquerel.tools.materials_compendium as materials_compendium
 from becquerel.tools import (
     MaterialsError,
     MaterialsWarning,
     fetch_materials,
+    materials,
+    materials_compendium,
     remove_materials_csv,
 )
 from becquerel.tools.materials_nist import convert_composition

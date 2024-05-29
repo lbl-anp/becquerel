@@ -94,18 +94,17 @@ class SpectrumPlotter:
                 self._xmode = "energy"
             else:
                 self._xmode = "channel"
+        elif mode.lower() in ("kev", "energy"):
+            if not self.spec.is_calibrated:
+                raise PlottingError(
+                    "Spectrum is not calibrated, however "
+                    "x axis was requested as energy"
+                )
+            self._xmode = "energy"
+        elif mode.lower() in ("channel", "channels", "chn", "chns"):
+            self._xmode = "channel"
         else:
-            if mode.lower() in ("kev", "energy"):
-                if not self.spec.is_calibrated:
-                    raise PlottingError(
-                        "Spectrum is not calibrated, however "
-                        "x axis was requested as energy"
-                    )
-                self._xmode = "energy"
-            elif mode.lower() in ("channel", "channels", "chn", "chns"):
-                self._xmode = "channel"
-            else:
-                raise PlottingError(f"Unknown x data mode: {mode}")
+            raise PlottingError(f"Unknown x data mode: {mode}")
 
         # Then, set the _xedges and _xlabel based on the _xmode
         xedges, xlabel = self.spec.parse_xmode(self._xmode)

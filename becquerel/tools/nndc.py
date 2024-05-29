@@ -122,7 +122,7 @@ def _parse_headers(headers):
     # reformat column headers if needed
     for j, hd in enumerate(headers):
         # rename so always have T1/2 (s)
-        if hd == "T1/2 (num)" or hd == "T1/2 (seconds)":
+        if hd in ("T1/2 (num)", "T1/2 (seconds)"):
             hd = "T1/2 (s)"
         # for uncertainties, add previous column header to it
         if j > 0 and "Unc" in hd:
@@ -260,7 +260,7 @@ def _parse_float_uncertainty(x, dx):
     if "8 .0E-E5" in x:
         x = x.replace("8 .0E-E5", "8.0E-5")
     # handle blank or missing data
-    if x == "" or x == " ":
+    if x in ("", " "):
         return None
     if "****" in dx or dx in ["LT", "GT", "LE", "GE", "AP", "CA", "SY"]:
         dx = ""

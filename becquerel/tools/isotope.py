@@ -235,35 +235,31 @@ class Isotope(element.Element):
         if arg == "" or arg is None or arg == 0:
             self.m = ""
             self.M = 0
-        else:
-            if isinstance(arg, int):
-                if arg == 1:
-                    self.m = "m"
-                    self.M = 1
-                elif arg >= 2:
-                    self.M = arg
-                    self.m = f"m{self.M}"
-                else:
-                    raise IsotopeError(f"Metastable level must be >= 0: {arg}")
-            elif isinstance(arg, str):
-                self.m = arg.lower()
-                if self.m[0] != "m":
-                    raise IsotopeError(
-                        f'Metastable level must start with "m": {self.m}'
-                    )
-                if len(self.m) > 1:
-                    if not self.m[1:].isdigit():
-                        raise IsotopeError(
-                            "Metastable level must be numeric: "
-                            f"{self.m[0]} {self.m[1:]}"
-                        )
-                    self.M = int(self.m[1:])
-                else:
-                    self.M = 1
+        elif isinstance(arg, int):
+            if arg == 1:
+                self.m = "m"
+                self.M = 1
+            elif arg >= 2:
+                self.M = arg
+                self.m = f"m{self.M}"
             else:
-                raise IsotopeError(
-                    f"Metastable level must be integer or string: {arg} {type(arg)}"
-                )
+                raise IsotopeError(f"Metastable level must be >= 0: {arg}")
+        elif isinstance(arg, str):
+            self.m = arg.lower()
+            if self.m[0] != "m":
+                raise IsotopeError(f'Metastable level must start with "m": {self.m}')
+            if len(self.m) > 1:
+                if not self.m[1:].isdigit():
+                    raise IsotopeError(
+                        f"Metastable level must be numeric: {self.m[0]} {self.m[1:]}"
+                    )
+                self.M = int(self.m[1:])
+            else:
+                self.M = 1
+        else:
+            raise IsotopeError(
+                f"Metastable level must be integer or string: {arg} {type(arg)}"
+            )
 
     def __str__(self):
         """Define behavior of str() on Isotope."""
