@@ -1435,8 +1435,8 @@ class Fitter:
             # Add info about the ROI and units
             if self.roi:
                 s += "ROI: [{:.3f}, {:.3f}]\n".format(*self.roi)
-            s += "X units: {:s}\n".format(self.xmode if self.xmode else "None")
-            s += "Y units: {:s}\n".format(self.ymode if self.ymode else "None")
+            s += "X units: {:s}\n".format(self.xmode or "None")
+            s += "Y units: {:s}\n".format(self.ymode or "None")
             # Add to empty axis
             txt_ax.text(
                 x=0.01,

@@ -74,7 +74,7 @@ select = [
   "FLY",     # flynt
   "NPY",     # NumPy-specific rules
   "PERF",    # Perflint
-  # "FURB",    # refurb
+  "FURB",    # refurb
   "RUF",     # Ruff-specific rules
 ]
 
