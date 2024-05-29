@@ -1,4 +1,4 @@
-""""Energy calibration classes"""
+"""Energy calibration classes"""
 
 import warnings
 from abc import ABCMeta, abstractmethod, abstractproperty
@@ -73,8 +73,8 @@ class EnergyCalBase:
 
         try:
             cond = len(chlist) != len(kevlist)
-        except TypeError:
-            raise BadInput("Inputs must be one dimensional iterables")
+        except TypeError as exc:
+            raise BadInput("Inputs must be one dimensional iterables") from exc
         if cond:
             raise BadInput("Channels and energies must be same length")
 
@@ -86,8 +86,8 @@ class EnergyCalBase:
         for ch, kev in zip(chlist, kevlist):
             try:
                 cal.new_calpoint(ch, kev)
-            except (ValueError, TypeError):
-                raise BadInput("Inputs must be one dimensional iterables")
+            except (ValueError, TypeError) as exc:
+                raise BadInput("Inputs must be one dimensional iterables") from exc
         cal.update_fit()
         return cal
 
@@ -306,7 +306,7 @@ class EnergyCalBase:
         has_points = self.channels.size > 0
 
         if ax is None:
-            fig, ax = plt.subplots(1 + has_points, 1, sharex=True)
+            _, ax = plt.subplots(1 + has_points, 1, sharex=True)
 
         if has_points:
             assert ax.shape == (2,)
@@ -389,8 +389,10 @@ class LinearEnergyCal(EnergyCalBase):
 
         try:
             return self._coeffs["b"]
-        except KeyError:
-            raise EnergyCalError("Slope coefficient not yet supplied or calculated.")
+        except KeyError as exc:
+            raise EnergyCalError(
+                "Slope coefficient not yet supplied or calculated."
+            ) from exc
 
     @property
     def offset(self):
@@ -398,8 +400,10 @@ class LinearEnergyCal(EnergyCalBase):
 
         try:
             return self._coeffs["c"]
-        except KeyError:
-            raise EnergyCalError("Offset coefficient not yet supplied or calculated.")
+        except KeyError as exc:
+            raise EnergyCalError(
+                "Offset coefficient not yet supplied or calculated."
+            ) from exc
 
     def _ch2kev(self, ch):
         """Convert scalar OR np.array of channel(s) to energies.

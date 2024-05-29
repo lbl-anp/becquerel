@@ -1,10 +1,11 @@
 # becquerel
 
-[![tests](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml/badge.svg?branch=)](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml)
-[![Coverage Status](https://coveralls.io/repos/github/lbl-anp/becquerel/badge.svg?branch=main)](https://coveralls.io/github/lbl-anp/becquerel?branch=main)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![PyPI version](https://img.shields.io/pypi/v/becquerel.svg)](https://pypi.org/project/becquerel)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/becquerel.svg)](https://pypi.org/project/becquerel)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![PyPI license](https://img.shields.io/pypi/l/becquerel.svg)](https://pypi.python.org/project/becquerel)
+[![tests](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml/badge.svg?branch=)](https://github.com/lbl-anp/becquerel/actions/workflows/tests.yaml)
+[![Coverage Status](https://coveralls.io/repos/github/lbl-anp/becquerel/badge.svg?branch=main)](https://coveralls.io/github/lbl-anp/becquerel?branch=main)
 
 Becquerel is a Python package for analyzing nuclear spectroscopic
 measurements. The core functionalities are reading and writing different
@@ -50,12 +51,13 @@ The dependencies `beautifulsoup4`, `lxml` and `html5lib` are necessary for
 [`pandas`][1].
 
 Developers require additional requirements which are listed in
-`requirements-dev.txt`. We use [`pytest`][2] for unit testing, [`black`][3] for
-code formatting and are converting to [`numpydoc`][4].
+`requirements-dev.txt`. We use [`pytest`][2] for unit testing, [`ruff`][3] for
+code formatting and linting, and are planning to eventually support
+[`numpydoc`][4] docstrings.
 
 [1]: https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies
 [2]: https://docs.pytest.org/en/latest/
-[3]: https://black.readthedocs.io/en/stable/
+[3]: https://docs.astral.sh/ruff/
 [4]: https://numpydoc.readthedocs.io/en/latest/format.html
 
 ## Copyright Notice

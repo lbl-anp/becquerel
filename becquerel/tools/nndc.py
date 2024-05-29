@@ -152,8 +152,8 @@ def _parse_headers(headers):
     if len(set(headers_new)) != len(headers_new):
         raise NNDCRequestError(
             "Duplicate headers after parsing\n"
-            + f'    Original headers: "{headers}"\n'
-            + f'    Parsed headers:   "{headers_new}"'
+            f'    Original headers: "{headers}"\n'
+            f'    Parsed headers:   "{headers_new}"'
         )
     return headers_new
 
@@ -179,7 +179,7 @@ def _parse_table(text):
         text = text.split("To save this output")[0]
         lines = text.split("\n")
     except Exception as exc:
-        raise NNDCRequestError(f"Unable to parse text:\n{exc}\n{text}")
+        raise NNDCRequestError(f"Unable to parse text:\n{exc}\n{text}") from exc
     table = {}
     headers = None
     for line in lines:
@@ -196,8 +196,8 @@ def _parse_table(text):
             if len(tokens) != len(headers):
                 raise NNDCRequestError(
                     "Too few data in table row\n"
-                    + f'    Headers: "{headers}"\n'
-                    + f'    Row:     "{tokens}"'
+                    f'    Headers: "{headers}"\n'
+                    f'    Row:     "{tokens}"'
                 )
             for header, token in zip(headers, tokens):
                 table[header].append(token)
@@ -208,9 +208,9 @@ def _parse_float_uncertainty(x, dx):
     """Parse a string and its uncertainty into a float or ufloat.
 
     Examples:
-      >>> _parse_float_uncertainty('257.123', '0.005')
+      >>> _parse_float_uncertainty("257.123", "0.005")
       257.123+/-0.005
-      >>> _parse_float_uncertainty('8', '')
+      >>> _parse_float_uncertainty("8", "")
       8.0
 
     Args:
@@ -268,8 +268,8 @@ def _parse_float_uncertainty(x, dx):
         dx = ""
     try:
         x2 = float(x)
-    except ValueError:
-        raise NNDCRequestError(f'Value cannot be parsed as float: "{x}"')
+    except ValueError as exc:
+        raise NNDCRequestError(f'Value cannot be parsed as float: "{x}"') from exc
     if dx == "":
         return x2
     # handle multiple exponents with some uncertainties, e.g., "7E-4E-5"
@@ -281,8 +281,10 @@ def _parse_float_uncertainty(x, dx):
         factor = 1.0
     try:
         dx2 = float(dx) * factor
-    except ValueError:
-        raise NNDCRequestError(f'Uncertainty cannot be parsed as float: "{dx}"')
+    except ValueError as exc:
+        raise NNDCRequestError(
+            f'Uncertainty cannot be parsed as float: "{dx}"'
+        ) from exc
     return uncertainties.ufloat(x2, dx2)
 
 
@@ -303,8 +305,10 @@ def _format_range(x_range):
 
     try:
         x1, x2 = x_range
-    except (TypeError, ValueError):
-        raise NNDCInputError(f'Range keyword arg must have two elements: "{x_range}"')
+    except (TypeError, ValueError) as exc:
+        raise NNDCInputError(
+            f'Range keyword arg must have two elements: "{x_range}"'
+        ) from exc
     try:
         if np.isfinite(x1):
             x1 = f"{x1}"
@@ -465,7 +469,10 @@ class _NNDCQuery:
             if x in kwargs:
                 self._data["spnuc"] = "zanrange"
                 self._data[x + "min"], self._data[x + "max"] = _format_range(
-                    (kwargs[x], kwargs[x])
+                    (
+                        kwargs[x],
+                        kwargs[x],
+                    )
                 )
             # handle *_range, *_any, *_odd, *_even
             elif x + "_range" in kwargs:
@@ -524,7 +531,7 @@ class _NNDCQuery:
         # add string m giving the isomer level name (e.g., '' or 'm' or 'm2')
         self.df["m"] = [""] * len(self)
         # loop over each isotope in the dataframe
-        A_Z = [(a, z) for a, z in zip(self["A"], self["Z"])]
+        A_Z = list(zip(self["A"], self["Z"]))
         A_Z = set(A_Z)
         for a, z in A_Z:
             isotope = (self["A"] == a) & (self["Z"] == z)
@@ -554,18 +561,18 @@ class _NNDCQuery:
             self._convert_column(
                 "Energy Level", lambda x: _parse_float_uncertainty(x, "")
             )
-            self.df.rename(columns={"Energy Level": "Energy Level (MeV)"}, inplace=True)
+            self.df = self.df.rename(columns={"Energy Level": "Energy Level (MeV)"})
 
         if "Parent Energy Level" in self.keys():
             self._convert_column_uncertainty("Parent Energy Level")
-            self.df.rename(
-                columns={"Parent Energy Level": "Energy Level (MeV)"}, inplace=True
+            self.df = self.df.rename(
+                columns={"Parent Energy Level": "Energy Level (MeV)"}
             )
             self.df["Energy Level (MeV)"] *= 0.001
 
         if "Mass Excess" in self.keys():
             self._convert_column_uncertainty("Mass Excess")
-        self.df.rename(columns={"Mass Excess": "Mass Excess (MeV)"}, inplace=True)
+        self.df = self.df.rename(columns={"Mass Excess": "Mass Excess (MeV)"})
 
         self._convert_column("T1/2 (s)", float)
 
@@ -579,14 +586,14 @@ class _NNDCQuery:
 
         if "Radiation Energy" in self.keys():
             self._convert_column_uncertainty("Radiation Energy")
-            self.df.rename(
-                columns={"Radiation Energy": "Radiation Energy (keV)"}, inplace=True
+            self.df = self.df.rename(
+                columns={"Radiation Energy": "Radiation Energy (keV)"}
             )
 
         if "Endpoint Energy" in self.keys():
             self._convert_column_uncertainty("Endpoint Energy")
-            self.df.rename(
-                columns={"Endpoint Energy": "Endpoint Energy (keV)"}, inplace=True
+            self.df = self.df.rename(
+                columns={"Endpoint Energy": "Endpoint Energy (keV)"}
             )
 
         if "Radiation Intensity (%)" in self.keys():
@@ -594,7 +601,7 @@ class _NNDCQuery:
 
         if "Dose" in self.keys():
             self._convert_column_uncertainty("Dose")
-            self.df.rename(columns={"Dose": "Dose (MeV / Bq / s)"}, inplace=True)
+            self.df = self.df.rename(columns={"Dose": "Dose (MeV / Bq / s)"})
 
     def _convert_column(self, col, function):
         """Convert column from string to another type."""
@@ -634,13 +641,8 @@ class _NNDCQuery:
             "Radiation Energy (keV)",
             "Radiation Intensity (%)",
         ]
-        new_cols = []
-        for col in preferred_order:
-            if col in self.keys():
-                new_cols.append(col)
-        for col in self.keys():
-            if col not in new_cols:
-                new_cols.append(col)
+        new_cols = [col for col in preferred_order if col in self.keys()]
+        new_cols += [col for col in self.keys() if col not in new_cols]
         self.df = self.df[new_cols]
 
 
@@ -713,8 +715,8 @@ class _NuclearWalletCardQuery(_NNDCQuery):
                 )
             warnings.warn(
                 'query kwarg "decay" may not be working on NNDC, '
-                + "and the user is advised to check the "
-                + '"Decay Mode" column of the resulting DataFrame'
+                "and the user is advised to check the "
+                '"Decay Mode" column of the resulting DataFrame'
             )
             self._data["dmed"] = "enabled"
             self._data["dmn"] = WALLET_DECAY_MODE[kwargs["decay"].lower()]

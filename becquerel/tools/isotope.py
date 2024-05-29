@@ -84,8 +84,8 @@ def _split_element_mass(arg):
     # ensure element name or symbol is valid
     try:
         element.Element(element_id)
-    except element.ElementError:
-        raise IsotopeError(f"Element name or symbol is invalid: {element_id}")
+    except element.ElementError as exc:
+        raise IsotopeError(f"Element name or symbol is invalid: {element_id}") from exc
     return element_id, mass_isomer
 
 
@@ -115,10 +115,10 @@ def _split_mass_isomer(arg):
             raise IsotopeError(f"Too many ms in mass number: {arg} {tokens}")
         try:
             aa = int(tokens[0])
-        except ValueError:
+        except ValueError as exc:
             raise IsotopeError(
                 f"Mass number cannot be converted to int: {tokens[0]} {arg}"
-            )
+            ) from exc
         mm = "m"
         if len(tokens[1]) > 0:
             if not tokens[1].isdigit():
@@ -129,8 +129,10 @@ def _split_mass_isomer(arg):
     else:
         try:
             aa = int(arg)
-        except ValueError:
-            raise IsotopeError(f"Mass number cannot be converted to int: {arg}")
+        except ValueError as exc:
+            raise IsotopeError(
+                f"Mass number cannot be converted to int: {arg}"
+            ) from exc
     return (aa, mm)
 
 
@@ -157,8 +159,8 @@ class Isotope(element.Element):
     """Basic properties of a nuclear isotope, including isomers.
 
     Also provides string formatting:
-    >>> iso = Isotope('178M2HF')
-    >>> '{:%n(%s)-%a%m Z=%z A=%a}'.format(iso)
+    >>> iso = Isotope("178M2HF")
+    >>> "{:%n(%s)-%a%m Z=%z A=%a}".format(iso)
     'Hafnium(Hf)-178m2 Z=72 A=178'
 
     Properties (read-only):
@@ -206,8 +208,8 @@ class Isotope(element.Element):
         elif len(args) == 2 or len(args) == 3:
             try:
                 super().__init__(args[0])
-            except element.ElementError:
-                raise IsotopeError(f"Unable to create Isotope: {args}")
+            except element.ElementError as exc:
+                raise IsotopeError(f"Unable to create Isotope: {args}") from exc
             self._init_A(args[1])
             if len(args) == 3:
                 self._init_m(args[2])
@@ -221,8 +223,10 @@ class Isotope(element.Element):
         """Initialize with an isotope A."""
         try:
             self.A = int(arg)
-        except ValueError:
-            raise IsotopeError(f"Mass number cannot be converted to integer: {arg}")
+        except ValueError as exc:
+            raise IsotopeError(
+                f"Mass number cannot be converted to integer: {arg}"
+            ) from exc
         if self.A < 1:
             raise IsotopeError(f"Mass number must be >= 1: {self.A}")
 
@@ -250,18 +254,15 @@ class Isotope(element.Element):
                 if len(self.m) > 1:
                     if not self.m[1:].isdigit():
                         raise IsotopeError(
-                            "Metastable level must be numeric: {} {}".format(
-                                self.m[0], self.m[1:]
-                            )
+                            "Metastable level must be numeric: "
+                            f"{self.m[0]} {self.m[1:]}"
                         )
                     self.M = int(self.m[1:])
                 else:
                     self.M = 1
             else:
                 raise IsotopeError(
-                    "Metastable level must be integer or string: {} {}".format(
-                        arg, type(arg)
-                    )
+                    f"Metastable level must be integer or string: {arg} {type(arg)}"
                 )
 
     def __str__(self):

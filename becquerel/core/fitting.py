@@ -1,7 +1,7 @@
 import inspect
 import warnings
 
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numdifftools as nd
 import numpy as np
@@ -17,8 +17,7 @@ from uncertainties import ufloat
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
 COLORS = [
-    matplotlib.colors.to_rgb(c)
-    for c in ["C0", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
+    mpl.colors.to_rgb(c) for c in ["C0", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
 ]
 
 
@@ -520,15 +519,15 @@ class Fitter:
     def __str__(self):
         return (
             "bq.Fitter instance\n"
-            + f"     name: {self.name}\n"
-            + f"    model: {self.model}\n"
-            + f"        x: {self.x}\n"
-            + f"        y: {self.y}\n"
-            + f"    y_unc: {self.y_unc}\n"
-            + f"    xmode: {self.xmode}\n"
-            + f"    ymode: {self.ymode}\n"
-            + f"       dx: {self.dx}\n"
-            + f"      roi: {self.roi}"
+            f"     name: {self.name}\n"
+            f"    model: {self.model}\n"
+            f"        x: {self.x}\n"
+            f"        y: {self.y}\n"
+            f"    y_unc: {self.y_unc}\n"
+            f"    xmode: {self.xmode}\n"
+            f"    ymode: {self.ymode}\n"
+            f"       dx: {self.dx}\n"
+            f"      roi: {self.roi}"
         )
 
     __repr__ = __str__
@@ -554,7 +553,7 @@ class Fitter:
         if self._y_unc is None:
             warnings.warn(
                 "No y uncertainties (y_unc) provided. The fit will not be "
-                + "weighted causing in poor results at low counting statistics.",
+                "weighted causing in poor results at low counting statistics.",
                 FittingWarning,
             )
         return self._y_unc
@@ -571,8 +570,8 @@ class Fitter:
                 min_v = np.min(self._y_unc[self._y_unc > 0.0])
                 warnings.warn(
                     "Negative or zero uncertainty not supported. Changing "
-                    + f"them to {min_v}. If you have Poisson data, "
-                    + "this should be 1."
+                    f"them to {min_v}. If you have Poisson data, "
+                    "this should be 1."
                 )
                 self._y_unc[self._y_unc <= 0.0] = min_v
         else:
@@ -721,8 +720,8 @@ class Fitter:
             if m_instance.prefix in model_prefixes:
                 raise FittingError(
                     "A model prefix is not unique: "
-                    + f"{m_instance.prefix} "
-                    + f"All models: {model_translated}"
+                    f"{m_instance.prefix} "
+                    f"All models: {model_translated}"
                 )
             model_prefixes.add(m_instance.prefix)
             models.append(m_instance)
@@ -745,7 +744,7 @@ class Fitter:
             if isinstance(p, Parameters):
                 p = _parameters_to_bq_guess(p)
             elif p is None:
-                raise TypeError()
+                raise TypeError
             params += p
         return params
 
@@ -817,8 +816,8 @@ class Fitter:
         elif self.backend in ["iminuit", "minuit"]:
             raise NotImplementedError(
                 f"Backend {self.backend} with least-squares loss not yet "
-                + f"supported. Use {self.backend}-pml for Poisson loss or "
-                + "lmfit for least-squares."
+                f"supported. Use {self.backend}-pml for Poisson loss or "
+                "lmfit for least-squares."
             )
 
         elif self.backend in ["iminuit-pml", "minuit-pml"]:
@@ -926,7 +925,7 @@ class Fitter:
             self._best_values, self._init_values = {}, {}
             for i in range(self.result.npar):
                 p = self.result.parameters[i]
-                self._best_values[p] = self.result.values[i]
+                self._best_values[p] = self.result.values[i]  # noqa: PD011
                 self._init_values[p] = self.result.init_params[p].value
 
             # Arg order sanity checks
@@ -1002,7 +1001,7 @@ class Fitter:
 
         def _calc_area(param_vec, **kwargs):
             """Internal function to compute the area given the fit values."""
-            param_dict = {name: val for (name, val) in zip(kwargs["names"], param_vec)}
+            param_dict = dict(zip(kwargs["names"], param_vec))
             return kwargs["model"].eval(x=kwargs["xvals"], **param_dict).sum()
 
         # Handle input defaults
@@ -1164,14 +1163,13 @@ class Fitter:
             df.loc[k, "val"] = self.param_val(k)
             df.loc[k, "unc"] = self.param_unc(k)
         if sort_by_model:
-            df.set_index(
+            df = df.set_index(
                 pd.MultiIndex.from_tuples(
                     # Only split on the first underscore, in case the param name
                     # has an underscore in it
                     [tuple(p.split("_", maxsplit=1)) for p in df.index],
                     names=["model", "param"],
                 ),
-                inplace=True,
             )
         return df
 
@@ -1365,7 +1363,7 @@ class Fitter:
         # Residuals
         # ---------
         y_eval = self.eval(self.x_roi, **self.best_values) * dx_roi
-        res_kwargs = dict(fmt="o", color="k", markersize=5, label="residuals")
+        res_kwargs = {"fmt": "o", "color": "k", "markersize": 5, "label": "residuals"}
 
         # Y-values of the residual plot, depending on residual_type
         y_plot = self.compute_residuals(residual_type)
@@ -1391,10 +1389,13 @@ class Fitter:
         # Fit report (txt_ax)
         # -------------------
         if enable_fit_panel:
-            props = dict(
-                boxstyle="round", facecolor="white", edgecolor="black", alpha=1
-            )
-            props = dict(facecolor="white", edgecolor="none", alpha=0)
+            props = {
+                "boxstyle": "round",
+                "facecolor": "white",
+                "edgecolor": "black",
+                "alpha": 1,
+            }
+            props = {"facecolor": "white", "edgecolor": "none", "alpha": 0}
             fp = FontProperties(family="monospace", size=8)
             if "lmfit" in self.backend:
                 best_fit_values = ""
@@ -1408,12 +1409,9 @@ class Fitter:
                         #     "stderr calculated.", FittingWarning)
                     else:
                         best_fit_values += (
-                            "{:15} {: .6e} +/- {:.5e} ({:6.1%})\n".format(
-                                p,
-                                op[p].value,
-                                op[p].stderr,
-                                abs(op[p].stderr / op[p].value),
-                            )
+                            f"{p:15} "
+                            f"{op[p].value: .6e} +/- {op[p].stderr:.5e} "
+                            f"({abs(op[p].stderr / op[p].value):6.1%})\n"
                         )
                 best_fit_values += "{:15} {: .6e}\n".format(
                     "Chi Squared:", self.result.chisqr
@@ -1431,8 +1429,10 @@ class Fitter:
                     for (_, param_name), param_data in sdf.iterrows():
                         v = param_data["val"]
                         e = param_data["unc"]
-                        s += "    {:24}: {: .6e} +/- {:.5e} ({:6.1%})\n".format(
-                            param_name, v, e, np.abs(e / v)
+                        s += (
+                            f"    {param_name:24}: "
+                            f"{v: .6e} +/- {e:.5e} "
+                            f"({np.abs(e / v):6.1%})\n"
                         )
             elif "minuit" in self.backend:
                 s = str(self.result) + "\n"

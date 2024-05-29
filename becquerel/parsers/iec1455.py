@@ -95,7 +95,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     energy_channel_pairs = []
     energy_res_pairs = []  # currently unused
     energy_eff_pairs = []  # currently unused
-    with open(filename) as f:
+    with Path(filename).open() as f:
         record = 1
         # loop over lines
         for line in f:
@@ -154,14 +154,12 @@ def read(filename, verbose=False, cal_kwargs=None):
                 # fix nasty formatting of Interwinner export
                 line = re.sub(r"(e[+-][0-9]{2})", r"\1 ", line.lower())
                 tok = line.split()
-                for coeff in tok:
-                    cal_coeff.append(float(coeff))
+                cal_coeff += [float(coeff) for coeff in tok]
             elif record == 5:
                 # fix nasty formatting of Interwinner export
                 line = re.sub(r"(e[+-][0-9]{2})", r"\1 ", line.lower())
                 tok = line.split()
-                for coeff in tok:
-                    fwhm_coeff.append(float(coeff))
+                fwhm_coeff += [float(coeff) for coeff in tok]
             elif record >= 6 and record <= 9:
                 line = line.strip()
                 if len(line) > 0:
@@ -176,8 +174,7 @@ def read(filename, verbose=False, cal_kwargs=None):
             elif record >= 35 and record <= 46:
                 energy_eff_pairs += _read_nonzero_number_pairs(tok)
             elif record >= 59:
-                for c in tok[1:]:  # skip channel index
-                    counts.append(int(c))
+                counts += [int(c) for c in tok[1:]]  # skip channel index
 
             # increment record number
             record += 1

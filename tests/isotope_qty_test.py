@@ -347,7 +347,7 @@ def test_isotopequantity_eq(iq):
     assert iq == iq3
 
 
-@pytest.mark.parametrize("f", [2, 0.5, 3.14])
+@pytest.mark.parametrize("f", [2, 0.5, 3.7])
 def test_isotopequantity_mul_div(iq, f):
     """Test IsotopeQuantity multiplication and division magic methods"""
 
