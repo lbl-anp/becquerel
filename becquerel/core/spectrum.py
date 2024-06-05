@@ -176,12 +176,11 @@ class Spectrum:
 
         if realtime is not None:
             self.realtime = float(realtime)
-            if self.livetime is not None:
-                if self.livetime > self.realtime:
-                    raise ValueError(
-                        f"Livetime ({self.livetime}) cannot exceed realtime "
-                        f"({self.realtime})"
-                    )
+            if self.livetime is not None and self.livetime > self.realtime:
+                raise ValueError(
+                    f"Livetime ({self.livetime}) cannot exceed realtime "
+                    f"({self.realtime})"
+                )
 
         self.start_time = handle_datetime(start_time, "start_time", allow_none=True)
         self.stop_time = handle_datetime(stop_time, "stop_time", allow_none=True)
@@ -903,20 +902,26 @@ class Spectrum:
                 "calibrated spectrum. If both have the same calibration, "
                 'please use the "calibrate_like" method'
             )
-        if self.is_calibrated and other.is_calibrated:
-            if not np.all(self.bin_edges_kev == other.bin_edges_kev):
-                raise NotImplementedError(
-                    "Addition/subtraction for arbitrary calibrated spectra "
-                    "not implemented"
-                )
-                # TODO: if both spectra are calibrated but with different
-                #   calibrations, should one be rebinned to match?
-        if not self.is_calibrated and not other.is_calibrated:
-            if not np.all(self.bin_edges_raw == other.bin_edges_raw):
-                raise NotImplementedError(
-                    "Addition/subtraction for arbitrary uncalibrated "
-                    "spectra not implemented"
-                )
+        if (
+            self.is_calibrated
+            and other.is_calibrated
+            and not np.all(self.bin_edges_kev == other.bin_edges_kev)
+        ):
+            raise NotImplementedError(
+                "Addition/subtraction for arbitrary calibrated spectra "
+                "not implemented"
+            )
+            # TODO: if both spectra are calibrated but with different
+            #   calibrations, should one be rebinned to match?
+        if (
+            not self.is_calibrated
+            and not other.is_calibrated
+            and not np.all(self.bin_edges_raw == other.bin_edges_raw)
+        ):
+            raise NotImplementedError(
+                "Addition/subtraction for arbitrary uncalibrated "
+                "spectra not implemented"
+            )
 
     def __mul__(self, other):
         """Return a new Spectrum object with counts (or CPS) scaled up.
@@ -1146,10 +1151,7 @@ class Spectrum:
         # first non-uniform bin.
         iterator = iter(bin_widths)
         x0 = next(iterator, None)
-        for x in iterator:
-            if abs(x / x0 - 1.0) > rtol:
-                return False
-        return True
+        return all(abs(x / x0 - 1.0) <= rtol for x in iterator)
 
     def find_bin_index(self, x: float, use_kev=None) -> int:
         """Find the Spectrum bin index or indices containing x-axis value(s) x.
@@ -1348,13 +1350,16 @@ class Spectrum:
                 "Cannot rebin spectrum without energy calibration"
             )  # TODO: why not?
         in_spec = self.counts_vals
-        if method.lower() == "listmode":
-            if (self._counts is None) and (self.livetime is not None):
-                warnings.warn(
-                    "Rebinning by listmode method without explicit counts "
-                    "provided in Spectrum object",
-                    SpectrumWarning,
-                )
+        if (
+            method.lower() == "listmode"
+            and (self._counts is None)
+            and (self.livetime is not None)
+        ):
+            warnings.warn(
+                "Rebinning by listmode method without explicit counts "
+                "provided in Spectrum object",
+                SpectrumWarning,
+            )
         out_spec = rebin(
             in_spec,
             self.bin_edges_kev,

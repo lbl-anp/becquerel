@@ -392,7 +392,7 @@ def read(filename, verbose=False, cal_kwargs=None):
         raise BecquerelParserError("Calibration parameters not found") from exc
 
     # clean up null characters in any strings
-    for key in data.keys():
+    for key in data:
         if isinstance(data[key], str):
             data[key] = data[key].replace("\x00", " ")
             data[key] = data[key].replace("\x01", " ")

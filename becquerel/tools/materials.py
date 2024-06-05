@@ -35,12 +35,11 @@ def _load_and_compile_materials():
             rho2 = data_elem["Density"][data_elem["Element"] == name].to_numpy()[0]
         elif name in data_mat["Material"].to_numpy():
             rho2 = data_mat["Density"][data_mat["Material"] == name].to_numpy()[0]
-        if rho2:
-            if not np.isclose(rho1, rho2, atol=2e-2):
-                raise MaterialsError(
-                    f"Material {name} densities do not match between different "
-                    f"data sources:  {rho1:.6f}  {rho2:.6f}"
-                )
+        if rho2 and not np.isclose(rho1, rho2, atol=2e-2):
+            raise MaterialsError(
+                f"Material {name} densities do not match between different "
+                f"data sources:  {rho1:.6f}  {rho2:.6f}"
+            )
 
     for j in range(len(data_comp)):
         name = data_comp["Material"].to_numpy()[j]

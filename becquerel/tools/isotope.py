@@ -370,9 +370,8 @@ class Isotope(element.Element):
 
         df = self._wallet_card()
         data = df["Abundance (%)"].tolist()
-        if not isinstance(data[0], uncertainties.core.Variable):
-            if np.isnan(data[0]):
-                return None
+        if not isinstance(data[0], uncertainties.core.Variable) and np.isnan(data[0]):
+            return None
         return data[0]
 
     @property
@@ -411,9 +410,8 @@ class Isotope(element.Element):
 
         df = self._wallet_card()
         data = df["Mass Excess (MeV)"].tolist()
-        if not isinstance(data[0], uncertainties.core.Variable):
-            if np.isnan(data[0]):
-                return None
+        if not isinstance(data[0], uncertainties.core.Variable) and np.isnan(data[0]):
+            return None
         return data[0]
 
     @property

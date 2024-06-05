@@ -58,7 +58,7 @@ select = [
   "RSE",     # flake8-raise
   # "RET",     # flake8-return
   # "SLF",     # flake8-self
-  # "SIM",     # flake8-simplify
+  "SIM",     # flake8-simplify
   # "TID",     # flake8-tidy-imports
   "TCH",     # flake8-type-checking
   "INT",     # flake8-gettext
@@ -83,6 +83,9 @@ ignore = [
   "B015",      # Pointless comparison. Did you mean to assign a value? Otherwise, prepend `assert` or remove it.
   "B018",      # Found useless expression. Either assign it to a variable or remove it.
   "B028",      # No explicit `stacklevel` keyword argument found
+  "SIM105",    # Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+  "SIM108",    # Use ternary operator instead of `if`-`else`-block
+  "SIM300",    # Yoda conditions are discouraged
   "PD901",     # Avoid using the generic variable name `df` for DataFrames
   "TRY003",    # Avoid specifying long messages outside the exception class
   "NPY002",    # Replace legacy `np.random.poisson` call with `np.random.Generator`
