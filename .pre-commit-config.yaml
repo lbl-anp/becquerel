@@ -28,7 +28,7 @@ repos:
       - id: sort-simple-yaml
       - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.5
+    rev: v0.4.7
     hooks:
       - id: ruff
       - id: ruff-format
@@ -41,7 +41,7 @@ repos:
             '--ignore-regex=^\s*"image\/png":\s.*', # ignore jupyter notebook images
           ]
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.40.0
+    rev: v0.41.0
     hooks:
       - id: markdownlint-fix
   - repo: https://github.com/pre-commit/mirrors-prettier
