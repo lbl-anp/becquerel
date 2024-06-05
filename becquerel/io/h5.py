@@ -101,7 +101,7 @@ def write_h5(name: str | h5py.File | h5py.Group, dsets: dict, attrs: dict) -> No
     """
     with open_h5(name, "w") as file:
         # write the datasets
-        for key in dsets.keys():
+        for key in dsets:
             try:
                 file.create_dataset(
                     key,
@@ -137,7 +137,7 @@ def read_h5(name: str | h5py.File | h5py.Group) -> tuple[dict, dict, list]:
     skipped = []
     with open_h5(name, "r") as file:
         # read the datasets
-        for key in file.keys():
+        for key in file:
             # skip any non-datasets
             if not isinstance(file[key], h5py.Dataset):
                 skipped.append(str(key))

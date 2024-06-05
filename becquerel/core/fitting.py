@@ -693,7 +693,7 @@ class Fitter:
         raise FittingError(f"Unknown model type: {m}")
 
     def _make_model(self, model):
-        if isinstance(model, str) or isinstance(model, Model):
+        if isinstance(model, (str, Model)):
             model = [model]
         # Convert the model(s) to a list of Model classes / Model instancess
         self._model_cls_cnt = {}
@@ -750,10 +750,9 @@ class Fitter:
 
     def guess_param_defaults(self, update=False, **kwargs):
         defaults = self._guess_param_defaults(**kwargs)
-        if update:
-            if defaults is not None:
-                for dp in defaults:
-                    self.set_param(*dp)
+        if update and defaults is not None:
+            for dp in defaults:
+                self.set_param(*dp)
         return defaults
 
     def fit(self, backend="lmfit", guess=None, limits=None):
@@ -871,9 +870,7 @@ class Fitter:
                         min_vals[lim[0]] = lim[2]
                     elif lim[1] == "max":
                         max_vals[lim[0]] = lim[2]
-                limits_i = {
-                    p: (min_vals.get(p, None), max_vals.get(p, None)) for p in free_vars
-                }
+                limits_i = {p: (min_vals.get(p), max_vals.get(p)) for p in free_vars}
             except NotImplementedError:
                 # If the model/component does not have a guess() method
                 limits_i = {}

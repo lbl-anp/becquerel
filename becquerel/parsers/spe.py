@@ -97,9 +97,8 @@ def read(filename, verbose=False, cal_kwargs=None):
                 while i < len(lines) and not lines[i].startswith("$"):
                     values.append(lines[i])
                     i += 1
-                if i < len(lines):
-                    if lines[i].startswith("$"):
-                        i -= 1
+                if i < len(lines) and lines[i].startswith("$"):
+                    i -= 1
                 if len(values) == 1:
                     values = values[0]
                 data[key] = values

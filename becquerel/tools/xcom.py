@@ -178,9 +178,7 @@ class _XCOMQuery:
 
     def __len__(self):
         """Pass-through to use DataFrame len()."""
-        if self.df is None:
-            return 0
-        elif len(self.df.keys()) == 0:
+        if self.df is None or len(self.df.keys()) == 0:
             return 0
         else:
             return len(self.df[self.df.keys()[0]])
