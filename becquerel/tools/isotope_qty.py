@@ -164,23 +164,23 @@ class IsotopeQuantity:
         # dictionary with functions that define how to calculate all quantities
         # in a circular manner
         if self.is_stable:
-            conversions = dict(
-                atoms=lambda: ref_quantities["g"] / self.isotope.A * N_AV,
-                g=lambda: ref_quantities["atoms"] * self.isotope.A / N_AV,
-                bq=lambda: 0,
-                uci=lambda: 0,
-            )
+            conversions = {
+                "atoms": lambda: ref_quantities["g"] / self.isotope.A * N_AV,
+                "g": lambda: ref_quantities["atoms"] * self.isotope.A / N_AV,
+                "bq": lambda: 0,
+                "uci": lambda: 0,
+            }
         else:
-            conversions = dict(
-                atoms=lambda: ref_quantities["g"] / self.isotope.A * N_AV,
-                bq=lambda: ref_quantities["atoms"] * self.decay_const,
-                uci=lambda: ref_quantities["bq"] / UCI_TO_BQ,
-                g=lambda: ref_quantities["uci"]
+            conversions = {
+                "atoms": lambda: ref_quantities["g"] / self.isotope.A * N_AV,
+                "bq": lambda: ref_quantities["atoms"] * self.decay_const,
+                "uci": lambda: ref_quantities["bq"] / UCI_TO_BQ,
+                "g": lambda: ref_quantities["uci"]
                 * UCI_TO_BQ
                 / self.decay_const
                 / N_AV
                 * self.isotope.A,
-            )
+            }
 
         # rotates the order of the list so that the provided kwarg is at [0]
         order = ["atoms", "bq", "uci", "g"]
@@ -238,9 +238,7 @@ class IsotopeQuantity:
         duration = (stop_time - obj.ref_date).total_seconds()
         if duration < 0:
             raise ValueError(
-                "Start time must precede stop time: {}, {}".format(
-                    start_time, stop_time
-                )
+                f"Start time must precede stop time: {start_time}, {stop_time}"
             )
         atoms = n_decays / (-np.expm1(-obj.decay_const * duration))
 
@@ -506,9 +504,7 @@ class IsotopeQuantity:
         if self.isotope.is_stable:
             s = f"{self.g_at(self.ref_date)} g of {self.isotope}"
         else:
-            s = "{} Bq of {} (at {})".format(
-                self.bq_at(self.ref_date), self.isotope, self.ref_date
-            )
+            s = f"{self.bq_at(self.ref_date)} Bq of {self.isotope} (at {self.ref_date})"
         return s
 
     def __mul__(self, other):
@@ -516,13 +512,8 @@ class IsotopeQuantity:
 
         return self._mul_div(other, div=False)
 
-    def __div__(self, other):
-        """Divide the quantity"""
-
-        return self._mul_div(other, div=True)
-
     def __truediv__(self, other):
-        """Divide the quantity (python 3)"""
+        """Divide the quantity"""
 
         return self._mul_div(other, div=True)
 
@@ -605,9 +596,7 @@ class NeutronIrradiation:
         )
         if self.stop_time < self.start_time:
             raise ValueError(
-                "Timestamps out of order: {}, {}".format(
-                    self.start_time, self.stop_time
-                )
+                f"Timestamps out of order: {self.start_time}, {self.stop_time}"
             )
         self.duration = (self.stop_time - self.start_time).total_seconds()
 
@@ -632,9 +621,7 @@ class NeutronIrradiation:
         if self.duration == 0:
             return f"{self.n_cm2} neutrons/cm2 at {self.start_time}"
         else:
-            return "{} n/cm2/s from {} to {}".format(
-                self.n_cm2_s, self.start_time, self.stop_time
-            )
+            return f"{self.n_cm2_s} n/cm2/s from {self.start_time} to {self.stop_time}"
 
     def activate(self, barns, initial, activated, stability=1e18):
         """
@@ -688,8 +675,8 @@ class NeutronIrradiation:
             activated, IsotopeQuantity
         ):
             raise NeutronIrradiationError(
-                "Two IsotopeQuantity's in args, nothing left to calculate!"
-                + f"Args: {initial}, {activated}"
+                "Two IsotopeQuantity's in args, nothing left to calculate! "
+                f"Args: {initial}, {activated}"
             )
         elif isinstance(initial, IsotopeQuantity) and isinstance(activated, Isotope):
             forward = True
@@ -698,12 +685,12 @@ class NeutronIrradiation:
         elif isinstance(initial, Isotope) and isinstance(activated, Isotope):
             raise NeutronIrradiationError(
                 "No IsotopeQuantity specified, not enough data. "
-                + f"Args: {initial}, {activated}"
+                f"Args: {initial}, {activated}"
             )
         else:
             raise TypeError(
                 "Input args should be Isotope or IsotopeQuantity objects: "
-                + f"{initial}, {activated}"
+                f"{initial}, {activated}"
             )
 
         if not initial.half_life > stability:

@@ -1,7 +1,6 @@
 """Test becquerel spectrum file parsers."""
 
-import glob
-import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,13 +8,13 @@ import pytest
 
 import becquerel as bq
 
-SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
+SAMPLES_PATH = Path(__file__).parent / "samples"
 SAMPLES = {}
 for extension in [".spe", ".spc", ".cnf", ".h5", ".iec"]:
-    filenames = glob.glob(os.path.join(SAMPLES_PATH + "*", "*.*"))
+    filenames = SAMPLES_PATH.glob("*.*")
     filenames_filtered = []
     for filename in filenames:
-        fname, ext = os.path.splitext(filename)
+        fname, ext = filename.with_suffix(""), filename.suffix
         if ext.lower() == extension:
             filenames_filtered.append(filename)
     SAMPLES[extension] = filenames_filtered
@@ -29,9 +28,7 @@ class TestParsers:
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
         for filename in filenames:
-            fname, ext = os.path.splitext(filename)
-            path, fname = os.path.split(fname)
-            print("")
+            print()
             print(filename)
             data, cal = read_fn(filename)
             print(data, cal)
@@ -74,16 +71,15 @@ class TestParsersSpectrumPlot:
         """Run the test for the given class and file extension."""
         try:
             plt.figure()
-        except Exception:
+        except Exception:  # noqa: BLE001 (blind exception)
             # TclError on CI bc no display. skip the test
             return
         plt.title(f"Testing {extension}")
         filenames = SAMPLES.get(extension, [])
         assert len(filenames) >= 1
         for filename in filenames:
-            fname, ext = os.path.splitext(filename)
-            path, fname = os.path.split(fname)
-            print("")
+            fname, ext = filename.name, filename.suffix
+            print()
             print(filename)
             data, cal = read_fn(filename)
             spec = bq.Spectrum(**data)
@@ -99,9 +95,9 @@ class TestParsersSpectrumPlot:
             plt.ylabel("Counts/keV/sec")
             plt.xlim(0, 2800)
             if write:
-                writename = os.path.join(".", fname + "_copy" + ext)
+                writename = Path.cwd() / (fname + "_copy" + ext)
                 spec.write(writename)
-                os.remove(writename)
+                writename.unlink()
         plt.legend(prop={"size": 8})
         plt.show()
 

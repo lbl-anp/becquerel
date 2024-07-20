@@ -1,6 +1,6 @@
 """Test Spectrum I/O for different file types."""
 
-import os
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -12,12 +12,13 @@ import becquerel as bq
 
 
 @pytest.mark.parametrize("extension", SAMPLES.keys())
-def test_spectrum_from_file(extension):
-    """Test Spectrum.from_file for the given extension."""
+@pytest.mark.parametrize("path_type", [str, Path])
+def test_spectrum_from_file(extension, path_type):
+    """Test Spectrum.from_file for the given extension and path_type."""
     filenames = SAMPLES[extension]
     assert len(filenames) >= 1
     for filename in filenames:
-        spec = bq.Spectrum.from_file(filename)
+        spec = bq.Spectrum.from_file(path_type(filename))
         assert spec.livetime is not None
 
 
@@ -42,7 +43,7 @@ def test_spectrum_from_file_raises():
 def test_write_h5(kind):
     """Test writing different Spectrums to HDF5 files."""
     spec = make_spec(kind, lt=600.0)
-    fname = os.path.join(TEST_OUTPUTS, "spectrum_io__test_write_h5__" + kind + ".h5")
+    fname = TEST_OUTPUTS / ("spectrum_io__test_write_h5__" + kind + ".h5")
     spec.write(fname)
 
 
@@ -60,7 +61,7 @@ def test_write_h5(kind):
 )
 def test_from_file_h5(kind):
     """Test Spectrum.from_file works for HDF5 files."""
-    fname = os.path.join(TEST_OUTPUTS, "spectrum_io__test_write_h5__" + kind + ".h5")
+    fname = TEST_OUTPUTS / ("spectrum_io__test_write_h5__" + kind + ".h5")
     spec = bq.Spectrum.from_file(fname)
     assert spec.livetime is not None
     if kind == "applied_energy_cal":
@@ -74,10 +75,8 @@ def test_spectrum_samples_write_read_h5(extension):
     assert len(filenames) >= 1
     for filename in filenames:
         spec = bq.Spectrum.from_file(filename)
-        fname2 = os.path.splitext(filename)[0] + ".h5"
-        fname2 = os.path.join(
-            TEST_OUTPUTS, "spectrum_io__sample_write_h5__" + os.path.split(fname2)[1]
-        )
+        fname2 = Path(filename).with_suffix(".h5")
+        fname2 = TEST_OUTPUTS / ("spectrum_io__sample_write_h5__" + fname2.name)
         spec.write(fname2)
         spec = bq.Spectrum.from_file(fname2)
         assert spec.livetime is not None
@@ -85,9 +84,7 @@ def test_spectrum_samples_write_read_h5(extension):
 
 def test_from_file_cal_kwargs():
     """Test Spectrum.from_file overrides calibration with cal_kwargs."""
-    fname = os.path.join(
-        TEST_OUTPUTS, "spectrum_io__test_write_h5__applied_energy_cal.h5"
-    )
+    fname = TEST_OUTPUTS / "spectrum_io__test_write_h5__applied_energy_cal.h5"
     domain = [-100, 10000]
     rng = [-10, 1000]
     params = [0.6]

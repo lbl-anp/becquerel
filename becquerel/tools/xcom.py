@@ -178,9 +178,7 @@ class _XCOMQuery:
 
     def __len__(self):
         """Pass-through to use DataFrame len()."""
-        if self.df is None:
-            return 0
-        elif len(self.df.keys()) == 0:
+        if self.df is None or len(self.df.keys()) == 0:
             return 0
         else:
             return len(self.df[self.df.keys()[0]])
@@ -216,8 +214,8 @@ class _XCOMQuery:
         elif isinstance(arg, Iterable):
             return {"mixture": arg}
         raise XCOMInputError(
-            f"Cannot determine if argument {arg}"
-            + " is a symbol, Z, compound, or mixture"
+            f"Cannot determine if argument {arg} "
+            "is a symbol, Z, compound, or mixture"
         )
 
     @staticmethod
@@ -241,25 +239,21 @@ class _XCOMQuery:
         for formula in formulae:
             try:
                 compound, weight = formula.split()
-            except AttributeError:
+            except AttributeError as exc:
                 raise XCOMInputError(
-                    'Mixture formulae "{}" line "{}" must be a string'.format(
-                        formulae, formula
-                    )
-                )
-            except ValueError:
+                    f'Mixture formulae "{formulae}" line "{formula}" must be a string'
+                ) from exc
+            except ValueError as exc:
                 raise XCOMInputError(
-                    'Mixture formulae "{}" line "{}" must split into 2'.format(
-                        formulae, formula
-                    )
-                )
+                    f'Mixture formulae "{formulae}" line "{formula}" must split into 2'
+                ) from exc
             _XCOMQuery._check_compound(compound)
             try:
                 float(weight)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as exc:
                 raise XCOMInputError(
                     f'Mixture formulae "{formulae}" has bad weight "{weight}"'
-                )
+                ) from exc
 
     def update(self, **kwargs):
         """Update the search criteria.
@@ -389,9 +383,8 @@ class _XCOMQuery:
         self._req = requests.post(self._url + self._method, data=self._data, timeout=15)
         if not self._req.ok or self._req.reason != "OK" or self._req.status_code != 200:
             raise XCOMRequestError(
-                "XCOM Request failed: reason={}, status_code={}".format(
-                    self._req.reason, self._req.status_code
-                )
+                f"XCOM Request failed: reason={self._req.reason}, "
+                f"status_code={self._req.status_code}"
             )
         if "Error" in self._req.text:
             raise XCOMRequestError(f"XCOM returned an error:\n{self._req.text}")
@@ -407,9 +400,8 @@ class _XCOMQuery:
         self.df = tables[0]
         if len(self.df.keys()) != 1 + len(COLUMNS_SHORT):
             raise XCOMRequestError(
-                "Found {} columns but expected {}".format(
-                    len(self.df.keys()), 1 + len(COLUMNS_SHORT)
-                )
+                f"Found {len(self.df.keys())} columns but expected "
+                f"{1 + len(COLUMNS_SHORT)}"
             )
         # remove 'edge' column
         self.df = self.df[self.df.keys()[1:]]

@@ -982,6 +982,8 @@ def test_combine_bins(spectype):
     else:
         assert combined.cps_vals[0] == np.sum(spec.cps_vals[:f])
         assert np.sum(combined.cps_vals) == np.sum(spec.cps_vals)
+    assert spec.livetime == combined.livetime
+    assert spec.realtime == combined.realtime
 
 
 @pytest.mark.parametrize("spectype", ["uncal", "cal", "uncal_cps"])
@@ -999,6 +1001,8 @@ def test_combine_bins_padding(spectype):
     else:
         assert combined.cps_vals[0] == np.sum(spec.cps_vals[:f])
         assert np.sum(combined.cps_vals) == np.sum(spec.cps_vals)
+    assert spec.livetime == combined.livetime
+    assert spec.realtime == combined.realtime
 
 
 # calibration methods tested in energycal_test.py
@@ -1205,12 +1209,12 @@ def include_overflows(request):
 def test_spectrum_rebin_success(
     rebin_spectrum_success, rebin_new_edges, rebin_method, include_overflows
 ):
-    kwargs = dict(
-        out_edges=rebin_new_edges,
-        method=rebin_method,
-        zero_pad_warnings=False,
-        include_overflows=include_overflows,
-    )
+    kwargs = {
+        "out_edges": rebin_new_edges,
+        "method": rebin_method,
+        "zero_pad_warnings": False,
+        "include_overflows": include_overflows,
+    }
     if (rebin_spectrum_success._counts is None) and (rebin_method == "listmode"):
         with pytest.warns(bq.SpectrumWarning):
             spec = rebin_spectrum_success.rebin(**kwargs)

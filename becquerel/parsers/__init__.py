@@ -6,10 +6,10 @@ from .parsers import BecquerelParserError, BecquerelParserWarning
 __all__ = [
     "BecquerelParserError",
     "BecquerelParserWarning",
-    "h5",
     "cnf",
+    "h5",
+    "iec1455",
+    "n42",
     "spc",
     "spe",
-    "n42",
-    "iec1455",
 ]

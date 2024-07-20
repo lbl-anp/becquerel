@@ -10,8 +10,8 @@ The relevant code is in these files:
 """
 
 import datetime
-import os
 import struct
+from pathlib import Path
 
 import numpy as np
 
@@ -56,7 +56,7 @@ def _from_pdp11(data, index):
     exb = ((data[index + 1] & 0x7F) << 1) + ((data[index] & 0x80) >> 7)
     if exb == 0:
         if sign == -1:
-            return np.NaN
+            return np.nan
         else:
             return 0.0
     h = (
@@ -82,7 +82,7 @@ def read(filename, verbose=False, cal_kwargs=None):
 
     Parameters
     ----------
-    filename : str
+    filename : str | pathlib.Path
         The filename of the CNF file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
@@ -96,14 +96,15 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("Reading CNF file " + filename)
-    _, ext = os.path.splitext(filename)
+    filename = Path(filename)
+    print(f"Reading CNF file {filename}")
+    ext = filename.suffix
     if ext.lower() != ".cnf":
         raise BecquerelParserError("File extension is incorrect: " + ext)
 
     # read all of the file into memory
     file_bytes = []
-    with open(filename, "rb") as f:
+    with Path(filename).open("rb") as f:
         byte = f.read(1)
         while byte:
             byte_int = struct.unpack("1B", byte)
@@ -277,7 +278,7 @@ def read(filename, verbose=False, cal_kwargs=None):
         raise BecquerelParserError("Channel data not found")
     channels = np.array([], dtype=float)
     counts = np.array([], dtype=float)
-    for i in range(0, 2):
+    for i in range(2):
         y = _from_little_endian(file_bytes, offset_chan + 512 + 4 * i, 4)
         if y == int(realtime) or y == int(livetime):
             y = 0
@@ -295,7 +296,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     data["counts"] = counts
 
     # clean up null characters in any strings
-    for key in data.keys():
+    for key in data:
         if isinstance(data[key], str):
             data[key] = data[key].replace("\x00", " ")
             data[key] = data[key].replace("\x01", " ")

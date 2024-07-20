@@ -27,41 +27,13 @@ repos:
       - id: requirements-txt-fixer
       - id: sort-simple-yaml
       - id: trailing-whitespace
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.2
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.7
     hooks:
-      - id: pyupgrade
-        args: [--py38-plus]
-  - repo: https://github.com/asottile/yesqa
-    rev: v1.5.0
-    hooks:
-      - id: yesqa
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: [--profile, black, --float-to-top, --color]
-  - repo: https://github.com/psf/black
-    rev: 24.3.0
-    hooks:
-      - id: black
-  - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.1
-    hooks:
-      - id: autoflake
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-        additional_dependencies: [flake8-bugbear]
-        args: ["--ignore=W503,B015,B028"]
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.8
-    hooks:
-      - id: bandit
-        args: [--skip, "B101"]
+      - id: ruff
+      - id: ruff-format
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
       - id: codespell
         args: [
@@ -69,7 +41,7 @@ repos:
             '--ignore-regex=^\s*"image\/png":\s.*', # ignore jupyter notebook images
           ]
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.39.0
+    rev: v0.41.0
     hooks:
       - id: markdownlint-fix
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -82,17 +54,12 @@ repos:
       - id: nbqa-check-ast
         additional_dependencies: [pre-commit-hooks]
         args: [--nbqa-dont-skip-bad-cells]
-      - id: nbqa-pyupgrade
-        additional_dependencies: [pyupgrade==v3.15.0]
-        args: [--py37-plus]
-      - id: nbqa-isort
-        additional_dependencies: [isort==5.13.2]
-        args: [--profile=black, --float-to-top]
-      - id: nbqa-black
-        additional_dependencies: [black==24.1.1]
-      - id: nbqa-pydocstyle
-        additional_dependencies: [pydocstyle==6.3.0]
-        args: ["--ignore=D100,D103"]
-      - id: nbqa-flake8
-        additional_dependencies: [flake8==7.0.0, flake8-bugbear]
-        args: [--max-line-length=88, "--ignore=E203,E722,F821,W503,B001,B015"]
+      - id: nbqa-ruff
+        additional_dependencies: [ruff==v0.4.5]
+        args: ["--ignore=E722,F821,S110"]
+  - repo: https://github.com/dhatim/python-license-check
+    rev: 0.9.2
+    hooks:
+      - id: liccheck
+        language: system
+        args: ["-s=.liccheck.ini", "-r=requirements.txt"]

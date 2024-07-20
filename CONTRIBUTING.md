@@ -7,7 +7,6 @@ Please follow these guidelines when contributing to this project.
 ## Developer Instructions
 
 ```bash
-pip install -r requirements.txt
 pip install -r requirements-dev.txt
 python setup.py develop
 
@@ -28,6 +27,12 @@ new code, and it can also be run at any time using the following command:
 
 ```bash
 pre-commit run --all
+```
+
+or run on any files not yet committed to the repository using
+
+```bash
+pre-commit run --files <filename1> <filename2> ...
 ```
 
 ### Running the tests

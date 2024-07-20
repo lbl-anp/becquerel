@@ -1,19 +1,17 @@
 """Test PeakFinder and AutoCalibrator classes."""
 
-import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from parsers_test import SAMPLES_PATH
 
 import becquerel as bq
 
 # read in spectra
-SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
-filename1 = os.path.join(SAMPLES_PATH, "sim_spec.spe")
-filename2 = os.path.join(SAMPLES_PATH, "Mendocino_07-10-13_Acq-10-10-13.Spe")
-filename3 = os.path.join(SAMPLES_PATH, "nai_detector.spe")
-filename4 = os.path.join(SAMPLES_PATH, "SGM102432.spe")
+filename1 = SAMPLES_PATH / "sim_spec.spe"
+filename2 = SAMPLES_PATH / "Mendocino_07-10-13_Acq-10-10-13.Spe"
+filename3 = SAMPLES_PATH / "nai_detector.spe"
+filename4 = SAMPLES_PATH / "SGM102432.spe"
 
 spec1 = bq.Spectrum.from_file(filename1)
 spec2 = bq.Spectrum.from_file(filename2)

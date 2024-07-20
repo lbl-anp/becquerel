@@ -1,7 +1,7 @@
 """Read in an Ortec SPC file."""
 
-import os
 import struct
+from pathlib import Path
 
 import dateutil.parser
 import numpy as np
@@ -208,15 +208,16 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("SpcFile: Reading file " + filename)
-    _, ext = os.path.splitext(filename)
+    filename = Path(filename)
+    print(f"SpcFile: Reading file {filename}")
+    ext = filename.suffix
     if ext.lower() != ".spc":
         raise BecquerelParserError("File extension is incorrect: " + ext)
 
     # initialize a dictionary of spectrum data to populate as we parse
     data = {}
 
-    with open(filename, "rb") as f:
+    with Path(filename).open("rb") as f:
         # read the file in chunks of 128 bytes
         data_records = []
         binary_data = None
@@ -225,8 +226,10 @@ def read(filename, verbose=False, cal_kwargs=None):
                 data_records.append(binary_data)
             try:
                 binary_data = f.read(128)
-            except OSError:
-                raise BecquerelParserError("Unable to read 128 bytes from file")
+            except OSError as exc:
+                raise BecquerelParserError(
+                    "Unable to read 128 bytes from file"
+                ) from exc
             if len(binary_data) < 128:
                 break
         if verbose:
@@ -249,18 +252,18 @@ def read(filename, verbose=False, cal_kwargs=None):
                 for data_format in record_format:
                     fmt += data_format[1]
                 if verbose:
-                    print("")
-                    print("")
+                    print()
+                    print()
                     print("-" * 60)
-                    print("")
+                    print()
                     print(record_format)
                     print(fmt)
-                    print("")
+                    print()
                 binary_data = struct.unpack(fmt, binary_data)
                 if verbose:
-                    print("")
+                    print()
                     print(binary_data)
-                    print("")
+                    print()
                 for j, data_format in enumerate(record_format):
                     if isinstance(binary_data[j], bytes):
                         data[data_format[0]] = binary_data[j].decode("ascii")
@@ -297,18 +300,18 @@ def read(filename, verbose=False, cal_kwargs=None):
             for data_format in record_format:
                 fmt += data_format[1]
             if verbose:
-                print("")
-                print("")
+                print()
+                print()
                 print("-" * 60)
-                print("")
+                print()
                 print(record_format)
                 print(fmt)
-                print("")
+                print()
             binary_data = struct.unpack(fmt, binary_data)
             if verbose:
-                print("")
+                print()
                 print(binary_data)
-                print("")
+                print()
             for j, data_format in enumerate(record_format):
                 if isinstance(binary_data[j], bytes):
                     data[data_format[0]] = binary_data[j].decode("ascii")
@@ -385,11 +388,11 @@ def read(filename, verbose=False, cal_kwargs=None):
             float(data["Calibration parameter 1"]),
             float(data["Calibration parameter 2"]),
         ]
-    except KeyError:
-        raise BecquerelParserError("Calibration parameters not found")
+    except KeyError as exc:
+        raise BecquerelParserError("Calibration parameters not found") from exc
 
     # clean up null characters in any strings
-    for key in data.keys():
+    for key in data:
         if isinstance(data[key], str):
             data[key] = data[key].replace("\x00", " ")
             data[key] = data[key].replace("\x01", " ")

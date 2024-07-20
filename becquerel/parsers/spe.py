@@ -1,7 +1,7 @@
 """Read in an Ortec SPE file."""
 
-import os
 import warnings
+from pathlib import Path
 
 import dateutil.parser
 import numpy as np
@@ -18,7 +18,7 @@ def read(filename, verbose=False, cal_kwargs=None):
 
     Parameters
     ----------
-    filename : str
+    filename : str | pathlib.Path
         The filename of the CNF file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
@@ -32,8 +32,9 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("SpeFile: Reading file " + filename)
-    _, ext = os.path.splitext(filename)
+    filename = Path(filename)
+    print(f"SpeFile: Reading file {filename}")
+    ext = filename.suffix
     if ext.lower() != ".spe":
         raise BecquerelParserError("File extension is incorrect: " + ext)
 
@@ -47,9 +48,9 @@ def read(filename, verbose=False, cal_kwargs=None):
     counts = []
     channels = []
     cal_coeff = []
-    with open(filename) as f:
+    with Path(filename).open() as f:
         # read & remove newlines from end of each line
-        lines = [line.strip() for line in f.readlines()]
+        lines = [line.strip() for line in f]
         i = 0
         while i < len(lines):
             # check whether we have reached a keyword and parse accordingly
@@ -85,8 +86,8 @@ def read(filename, verbose=False, cal_kwargs=None):
                 i += 1
                 n_coeff = int(lines[i])
                 i += 1
-                for j in range(n_coeff):
-                    cal_coeff.append(float(lines[i].split(" ")[j]))
+                tokens = lines[i].split(" ")
+                cal_coeff += [float(token) for token in tokens[:n_coeff]]
                 if verbose:
                     print(cal_coeff)
             elif lines[i].startswith("$"):
@@ -96,9 +97,8 @@ def read(filename, verbose=False, cal_kwargs=None):
                 while i < len(lines) and not lines[i].startswith("$"):
                     values.append(lines[i])
                     i += 1
-                if i < len(lines):
-                    if lines[i].startswith("$"):
-                        i -= 1
+                if i < len(lines) and lines[i].startswith("$"):
+                    i -= 1
                 if len(values) == 1:
                     values = values[0]
                 data[key] = values

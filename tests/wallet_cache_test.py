@@ -5,7 +5,7 @@ import pytest
 import uncertainties
 from utils import nndc_is_up
 
-import becquerel.tools.wallet_cache as wallet_cache
+from becquerel.tools import wallet_cache
 
 
 @pytest.mark.parametrize(
