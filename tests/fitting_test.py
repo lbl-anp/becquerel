@@ -1,20 +1,19 @@
-import os
-import glob
-import pytest
 from copy import deepcopy
-import numpy as np
-import becquerel as bq
-import lmfit
 
-SAMPLES_PATH = os.path.join(os.path.dirname(__file__), "samples")
+import lmfit
+import numpy as np
+import pytest
+from parsers_test import SAMPLES_PATH
+
+import becquerel as bq
 
 # TODO: use these for fitting actual data
 SAMPLES = {}
 for extension in [".spe", ".spc", ".cnf"]:
-    filenames = glob.glob(os.path.join(SAMPLES_PATH, "*.*"))
+    filenames = SAMPLES_PATH.glob("*.*")
     filenames_filtered = []
     for filename in filenames:
-        fname, ext = os.path.splitext(filename)
+        ext = filename.suffix
         if ext.lower() == extension:
             filenames_filtered.append(filename)
     SAMPLES[extension] = filenames_filtered
@@ -287,6 +286,7 @@ class TestFittingHighStatSimData:
         assert len(fitter.param_names) > 0
         assert len(fitter.init_values) > 0
         assert len(fitter.best_values) > 0
+        assert len(fitter.uncertainties) > 0
         assert fitter.success
         assert bq.fitting._is_count_like(fitter.y_roi)
         assert not bq.fitting._is_count_like(fitter.y_roi * 0.5)
@@ -294,13 +294,15 @@ class TestFittingHighStatSimData:
         name0 = fitter.param_names[0]
         fitter.param_val(name0)
         fitter.param_unc(name0)
+        fitter.param_rel_unc(name0)
+        fitter.param_val_and_unc(name0)
         with pytest.raises(bq.core.fitting.FittingError):
             fitter.param_val("bad_name")
         with pytest.raises(bq.core.fitting.FittingError):
             fitter.param_unc("bad_name")
         if "gauss_amp" in fitter.param_names:
             u = fitter.param_rel_unc("gauss_amp")
-            assert u is None or u < 0.01
+            assert u is None or (u < 0.01 and u >= 0)
 
     @pytest.mark.filterwarnings("ignore")
     def test_no_roi(self, sim_high_stat):

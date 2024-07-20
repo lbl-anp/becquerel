@@ -1,11 +1,13 @@
 """General utility functions to be shared among core modules."""
 
 import datetime
-from dateutil.parser import parse as dateutil_parse
-from dateutil.parser import ParserError
-from uncertainties import UFloat, unumpy
 import warnings
+from numbers import Number
+
 import numpy as np
+from dateutil.parser import ParserError
+from dateutil.parser import parse as dateutil_parse
+from uncertainties import UFloat, unumpy
 
 EPS = np.finfo(float).eps
 
@@ -68,7 +70,7 @@ def handle_uncs(x_array, x_uncs, default_unc_func):
     elif ufloats:
         raise UncertaintiesError(
             "Specify uncertainties with UFloats or "
-            + "by separate argument, but not both"
+            "by separate argument, but not both"
         )
     elif x_uncs is not None:
         return unumpy.uarray(x_array, x_uncs)
@@ -101,6 +103,8 @@ def handle_datetime(input_time, error_name="datetime arg", allow_none=False):
             "datetime.date passed in with no time; defaulting to 0:00 on date"
         )
         return datetime.datetime(input_time.year, input_time.month, input_time.day)
+    elif isinstance(input_time, Number):
+        return datetime.datetime.utcfromtimestamp(input_time)
     elif isinstance(input_time, str):
         try:
             return dateutil_parse(input_time)

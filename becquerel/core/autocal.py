@@ -1,11 +1,12 @@
 """Automatic calibration by associating peaks with energies."""
 
 from itertools import combinations
+
 import matplotlib.pyplot as plt
 import numpy as np
-from .peakfinder import PeakFinder
-from .calibration import Calibration
 
+from .calibration import Calibration
+from .peakfinder import PeakFinder
 
 MAJOR_BACKGROUND_LINES = [
     1460.82,
@@ -140,7 +141,7 @@ def find_best_gain(
     snrs = np.array(snrs)
     n_req = len(required_energies)
     # make sure the required and optional sets do not overlap
-    optional = sorted(list(set(optional) - set(required_energies)))
+    optional = sorted(set(optional) - set(required_energies))
     n_opt = len(optional)
     n_set = n_req + n_opt
     best_fom = None
@@ -186,9 +187,9 @@ def find_best_gain(
                         "Valid calibration found:\n"
                         f"FOM: {fom:15.9f}"
                         f"  gain: {gain:6.3f}"
-                        f"  ergs: {str(comb_erg):50s}"
-                        f"  de: {str(de):50s}"
-                        f"  chans: {str(comb_chan):40s}"
+                        f"  ergs: {comb_erg!s:50s}"
+                        f"  de: {de!s:50s}"
+                        f"  chans: {comb_chan!s:40s}"
                     )
                 if best_fom is None:
                     best_fom = fom + 1.0
@@ -203,15 +204,15 @@ def find_best_gain(
                             "Best calibration so far:\n"
                             f"FOM: {best_fom:15.9f}"
                             f"  gain: {best_gain:6.3f}"
-                            f"  ergs: {str(best_ergs):50s}"
-                            f"  de: {str(de):50s}"
-                            f"  chans: {str(best_chans):40s}"
+                            f"  ergs: {best_ergs!s:50s}"
+                            f"  de: {de!s:50s}"
+                            f"  chans: {best_chans!s:40s}"
                         )
         n_set -= 1
     if best_gain is None:
         return None
     else:
-        print("found best gain: %f keV/channel" % best_gain)
+        print(f"found best gain: {best_gain:f} keV/channel")
         return {
             "gain": best_gain,
             "channels": best_chans,

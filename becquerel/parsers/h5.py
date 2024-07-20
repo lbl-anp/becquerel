@@ -10,7 +10,7 @@ def read(filename, verbose=False, cal_kwargs=None):
 
     Parameters
     ----------
-    filename : str
+    filename : str | pathlib.Path
         The filename of the HDF5 file to read.
     verbose : bool (optional)
         Whether to print out debugging information. By default False.
@@ -24,9 +24,9 @@ def read(filename, verbose=False, cal_kwargs=None):
     cal : Calibration
         Energy calibration stored in the file.
     """
-    print("Reading HDF5 file " + filename)
+    print(f"Reading HDF5 file {filename}")
     if not io.h5.is_h5_filename(filename):
-        raise BecquerelParserError("File is not an HDF5: " + filename)
+        raise BecquerelParserError(f"File is not an HDF5: {filename}")
 
     # group datasets and attributes into one dictionary
     dsets, attrs, skipped = io.h5.read_h5(filename)

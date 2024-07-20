@@ -14,13 +14,15 @@ and it is available at:
 """
 
 import json
-import os
 import warnings
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from .materials_error import MaterialsWarning, MaterialsError
 
-FNAME = os.path.join(os.path.split(__file__)[0], "MaterialsCompendium.json")
+from .materials_error import MaterialsError, MaterialsWarning
+
+FNAME = Path(__file__).parent / "MaterialsCompendium.json"
 
 
 def json_elements_to_weight_fractions(elements):
@@ -45,7 +47,7 @@ def json_elements_to_atom_fractions(elements):
 def fetch_compendium_data():
     """Read material data from the Compendium."""
     # read the file
-    if not os.path.exists(FNAME):
+    if not FNAME.exists():
         warnings.warn(
             'Material data from the "Compendium of Material Composition Data for '
             'Radiation Transport Modeling" cannot be found. If these data are '
@@ -56,7 +58,7 @@ def fetch_compendium_data():
         )
         data = []
     else:
-        with open(FNAME, "r") as f:
+        with FNAME.open() as f:
             data = json.load(f)
 
     # extract relevant data
@@ -64,7 +66,7 @@ def fetch_compendium_data():
         print("Pre-March 2022 JSON detected")
     elif isinstance(data, dict):
         print("Post-March 2022 JSON detected")
-        if "siteVersion" not in data.keys() or "data" not in data.keys():
+        if "siteVersion" not in data or "data" not in data:
             raise MaterialsError(
                 "Attempt to read Compendium JSON failed; "
                 "dictionary must have keys 'siteVersion' "
@@ -78,7 +80,7 @@ def fetch_compendium_data():
             "object must be a list or dict but is a " + str(type(data))
         )
     names = [datum["Name"] for datum in data]
-    formulae = [datum["Formula"] if "Formula" in datum else "-" for datum in data]
+    formulae = [datum.get("Formula", "-") for datum in data]
     densities = [datum["Density"] for datum in data]
     weight_fracs = [
         json_elements_to_weight_fractions(datum["Elements"]) for datum in data

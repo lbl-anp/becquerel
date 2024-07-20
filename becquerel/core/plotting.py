@@ -1,9 +1,10 @@
 """Tools for plotting spectra."""
 
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
 from uncertainties import unumpy
-import warnings
 
 
 class PlottingError(Exception):
@@ -24,9 +25,9 @@ class SpectrumPlotter:
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created using
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
-          title:  costum plot title, default is filename if available
-          xlabel: costum xlabel value
-          ylabel: costum ylabel value
+          title:  custom plot title, default is filename if available
+          xlabel: custom xlabel value
+          ylabel: custom ylabel value
           kwargs: arguments that are directly passed to matplotlib's plot command.
                   In addition it is possible to pass linthresh if ylim='default'
                   and ymode='symlog'
@@ -93,18 +94,17 @@ class SpectrumPlotter:
                 self._xmode = "energy"
             else:
                 self._xmode = "channel"
+        elif mode.lower() in ("kev", "energy"):
+            if not self.spec.is_calibrated:
+                raise PlottingError(
+                    "Spectrum is not calibrated, however "
+                    "x axis was requested as energy"
+                )
+            self._xmode = "energy"
+        elif mode.lower() in ("channel", "channels", "chn", "chns"):
+            self._xmode = "channel"
         else:
-            if mode.lower() in ("kev", "energy"):
-                if not self.spec.is_calibrated:
-                    raise PlottingError(
-                        "Spectrum is not calibrated, however"
-                        " x axis was requested as energy"
-                    )
-                self._xmode = "energy"
-            elif mode.lower() in ("channel", "channels", "chn", "chns"):
-                self._xmode = "channel"
-            else:
-                raise PlottingError(f"Unknown x data mode: {mode}")
+            raise PlottingError(f"Unknown x data mode: {mode}")
 
         # Then, set the _xedges and _xlabel based on the _xmode
         xedges, xlabel = self.spec.parse_xmode(self._xmode)
@@ -189,7 +189,7 @@ class SpectrumPlotter:
     @xlabel.setter
     def xlabel(self, label):
         """
-        Sets the xlabel to a costum value.
+        Sets the xlabel to a custom value.
         """
 
         if label is not None:
@@ -206,7 +206,7 @@ class SpectrumPlotter:
     @ylabel.setter
     def ylabel(self, label):
         """
-        Sets the ylabel to a costum value.
+        Sets the ylabel to a custom value.
         """
 
         if label is not None:
@@ -274,7 +274,7 @@ class SpectrumPlotter:
         if hasattr(fmt, "__len__") and len(fmt) > 0:
             self.fmt = fmt
 
-        if not hasattr(self.fmt, "__len__") or not len(self.fmt) in [0, 1]:
+        if not hasattr(self.fmt, "__len__") or len(self.fmt) not in [0, 1]:
             raise PlottingError("Wrong number of positional argument")
 
         xcorners, ycorners = self._prepare_plot(**kwargs)

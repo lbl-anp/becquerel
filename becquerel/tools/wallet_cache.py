@@ -1,10 +1,10 @@
 """A cache of all NNDC wallet card data."""
 
-from future.builtins import super
 import pandas as pd
 import uncertainties
-from . import nndc
-from . import df_cache
+from future.builtins import super
+
+from . import df_cache, nndc
 
 
 def convert_float_ufloat(x):

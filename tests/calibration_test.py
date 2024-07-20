@@ -1,21 +1,21 @@
 """Test Calibration class."""
 
-import os
 import matplotlib.pyplot as plt
 import numpy as np
-from becquerel.io import h5
-from becquerel.core.calibration import (
-    _validate_domain_range,
-    _eval_expression,
-    _param_indices,
-    _validate_expression,
-    _fit_expression,
-    CalibrationError,
-    CalibrationWarning,
-    Calibration,
-)
 import pytest
 from h5_tools_test import TEST_OUTPUTS
+
+from becquerel.core.calibration import (
+    Calibration,
+    CalibrationError,
+    CalibrationWarning,
+    _eval_expression,
+    _fit_expression,
+    _param_indices,
+    _validate_domain_range,
+    _validate_expression,
+)
+from becquerel.io import h5
 
 
 def test_validate_domain_range():
@@ -310,7 +310,7 @@ def make_calibration(name, args):
 @pytest.mark.parametrize("name, args", name_args)
 def test_calibration(name, args):
     """Test the Calibration class."""
-    fname = os.path.join(TEST_OUTPUTS, f"calibration__init__{name}.h5")
+    fname = TEST_OUTPUTS / f"calibration__init__{name}.h5"
     # test __init__()
     cal = make_calibration(name, args)
     # test protections on setting parameters
@@ -336,7 +336,7 @@ def test_calibration(name, args):
 @pytest.mark.parametrize("name, args", name_args)
 def test_calibration_set_add_points(name, args):
     """Test Calibration.set_points and add_points methods."""
-    fname = os.path.join(TEST_OUTPUTS, f"calibration__add_points__{name}.h5")
+    fname = TEST_OUTPUTS / f"calibration__add_points__{name}.h5"
     cal = make_calibration(name, args)
     # test set_points
     cal.set_points()
@@ -446,7 +446,7 @@ def test_calibration_fit_from_points(name, args):
     plt.xlim(0)
     plt.ylim(0)
     plt.legend()
-    plt.savefig(os.path.join(TEST_OUTPUTS, f"calibration__fit__{name}.png"))
+    plt.savefig(TEST_OUTPUTS / f"calibration__fit__{name}.png")
 
     # Test statistics
     assert len(cal1.fit_y) > 0
@@ -501,7 +501,7 @@ def test_calibration_domain_range():
 
 def test_calibration_inverse():
     """Test calibrations with and without inverse expression."""
-    fname = os.path.join(TEST_OUTPUTS, "calibration__inverse.h5")
+    fname = TEST_OUTPUTS / "calibration__inverse.h5"
 
     # cal1 has an explicit inverse expression, cal2 does not
     cal1 = Calibration(
@@ -618,7 +618,7 @@ def test_calibration_interpolation():
 
 def test_calibration_read_failures():
     """Test miscellaneous HDF5 reading failures."""
-    fname = os.path.join(TEST_OUTPUTS, "calibration__read_failures.h5")
+    fname = TEST_OUTPUTS / "calibration__read_failures.h5"
     cal = Calibration.from_linear([2.0, 3.0])
     cal.add_points([0, 1000, 2000], [0, 1000, 2000])
 

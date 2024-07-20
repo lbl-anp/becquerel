@@ -7,10 +7,12 @@ References:
 
 """
 
-import requests
-import pandas as pd
-from io import StringIO
 from collections.abc import Iterable
+from io import StringIO
+
+import pandas as pd
+import requests
+
 from .element import element_symbol
 from .materials_error import MaterialsError
 
@@ -36,12 +38,11 @@ def _get_request(url):
 
     """
 
-    req = requests.get(url)
+    req = requests.get(url, timeout=15)
     if not req.ok or req.reason != "OK" or req.status_code != 200:
         raise MaterialsError(
-            "NIST materials request failed: reason={}, status_code={}".format(
-                req.reason, req.status_code
-            )
+            f"NIST materials request failed: reason={req.reason}, "
+            f"status_code={req.status_code}"
         )
     return req
 
@@ -92,7 +93,7 @@ def fetch_element_data():
     df.columns = ["Z", "Symbol", "Element", "Z_over_A", "I_eV", "Density"]
 
     # add composition by Z
-    df["Composition_Z"] = [[f"{z}: 1.000000"] for z in df["Z"].values]
+    df["Composition_Z"] = [[f"{z}: 1.000000"] for z in df["Z"].to_numpy()]
     # add composition by symbol
     df["Composition_symbol"] = [
         convert_composition(comp) for comp in df["Composition_Z"]
@@ -124,12 +125,12 @@ def convert_composition(comp):
             raise MaterialsError(f"Line must be a string type: {line} {type(line)}")
         try:
             z, weight = line.split(":")
-        except ValueError:
-            raise MaterialsError(f"Unable to split compound line: {line}")
+        except ValueError as exc:
+            raise MaterialsError(f"Unable to split compound line: {line}") from exc
         try:
             z = int(z)
-        except ValueError:
-            raise MaterialsError(f"Unable to convert Z {z} to integer: {line}")
+        except ValueError as exc:
+            raise MaterialsError(f"Unable to convert Z {z} to integer: {line}") from exc
         if z < 1 or z > MAX_Z:
             raise MaterialsError(f"Z {z} out of range [1, {line}]: {MAX_Z}")
         comp_sym.append(element_symbol(z) + " " + weight.strip())

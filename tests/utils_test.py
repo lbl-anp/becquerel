@@ -1,8 +1,9 @@
 import datetime
-import pytest
-import numpy as np
-import becquerel as bq
 
+import numpy as np
+import pytest
+
+import becquerel as bq
 
 # ----------------------------------------------
 #         Test utils
@@ -36,6 +37,7 @@ def test_sqrt_bins():
         datetime.datetime(year=2023, month=6, day=14, hour=0, minute=0, second=0),
         "2023_06_14_00_00_00",
         "2023-06-14T00:00:00.000Z-0000",  # ISO 8601, with timezone
+        1686700800.0,  # UNIX timestamp
     ],
 )
 def test_handle_datetime(timestamp):
@@ -51,10 +53,7 @@ def test_handle_datetime_None():
 
 @pytest.mark.parametrize(
     "arg,error_type",
-    [
-        ("2023_06_14-08_01_02", ValueError),
-        (2022, TypeError),
-    ],
+    [("2023_06_14-08_01_02", ValueError)],
 )
 def test_handle_datetime_err(arg, error_type):
     with pytest.raises(error_type):

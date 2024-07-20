@@ -1,6 +1,5 @@
 """becquerel package metadata."""
 
-__name__ = "becquerel"
 __author__ = "The Becquerel Development Team"
 __maintainer__ = __author__
 __email__ = "becquerel-dev@lbl.gov"
@@ -20,6 +19,7 @@ __classifiers__ = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
 ]

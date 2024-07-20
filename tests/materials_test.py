@@ -1,18 +1,21 @@
 """Test NIST material data queries."""
 
 import json
-import os
-from becquerel.tools import (
-    fetch_materials,
-    remove_materials_csv,
-    MaterialsError,
-    MaterialsWarning,
-)
-from becquerel.tools.materials_nist import convert_composition
-import becquerel.tools.materials as materials
-import becquerel.tools.materials_compendium as materials_compendium
+import warnings
+from pathlib import Path
+
 import pytest
 from utils import xcom_is_up
+
+from becquerel.tools import (
+    MaterialsError,
+    MaterialsWarning,
+    fetch_materials,
+    materials,
+    materials_compendium,
+    remove_materials_csv,
+)
+from becquerel.tools.materials_nist import convert_composition
 
 
 def _get_warning_messages(record):
@@ -61,17 +64,17 @@ class TestConvertComposition:
 def test_materials():
     """Test fetch_materials."""
     fetch_materials()
-    assert os.path.exists(materials.FILENAME)
+    assert materials.FILENAME.exists()
 
 
 @pytest.mark.webtest
 @pytest.mark.skipif(not xcom_is_up(), reason="XCOM is down.")
 def test_materials_force():
     """Test fetch_materials with force=True."""
-    assert os.path.exists(materials.FILENAME)
+    assert materials.FILENAME.exists()
     with pytest.warns(MaterialsWarning) as record:
         fetch_materials(force=True)
-    if not os.path.exists(materials_compendium.FNAME):
+    if not materials_compendium.FNAME.exists():
         assert len(record) == 2, (
             "Expected two MaterialsWarnings to be raised; "
             f"got {_get_warning_messages(record)}"
@@ -81,22 +84,22 @@ def test_materials_force():
             "Expected one MaterialsWarning to be raised; "
             f"got {_get_warning_messages(record)}"
         )
-    assert os.path.exists(materials.FILENAME)
+    assert materials.FILENAME.exists()
 
 
 def test_materials_dummy_csv():
     """Test fetch_materials with a dummy materials.csv file."""
     # point to and generate a dummy CSV file
     fname_orig = materials.FILENAME
-    materials.FILENAME = fname_orig[:-4] + "_dummy.csv"
-    if os.path.exists(materials.FILENAME):
-        os.remove(materials.FILENAME)
-    with open(materials.FILENAME, "w") as f:
+    materials.FILENAME = Path(str(fname_orig)[:-4] + "_dummy.csv")
+    if materials.FILENAME.exists():
+        materials.FILENAME.unlink()
+    with materials.FILENAME.open("w") as f:
         print("%name,formula,density,weight fractions,source", file=f)
         print('Dummy,-,1.0,"H 0.5;O 0.5","dummy entry"', file=f)
     fetch_materials()
     # remove the dummy file and point back to original
-    os.remove(materials.FILENAME)
+    materials.FILENAME.unlink()
     materials.FILENAME = fname_orig
 
 
@@ -109,7 +112,7 @@ def test_materials_dummy_compendium_pre2022():
     """
     # point to an generate a dummy JSON file
     fname_orig = materials_compendium.FNAME
-    materials_compendium.FNAME = fname_orig[:-5] + "_dummy.json"
+    materials_compendium.FNAME = Path(str(fname_orig)[:-5] + "_dummy.json")
     data = [
         {
             "Density": 8.4e-5,
@@ -136,16 +139,14 @@ def test_materials_dummy_compendium_pre2022():
             "Name": "Nitrogen",
         },
     ]
-    with open(materials_compendium.FNAME, "w") as f:
+    with materials_compendium.FNAME.open("w") as f:
         json.dump(data, f, indent=4)
-    with pytest.warns(None) as record:
+    # Check that no warning is raised
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         materials._load_and_compile_materials()
-    assert len(record) == 0, (
-        "Expected no MaterialsWarnings to be raised; "
-        f"got {_get_warning_messages(record)}"
-    )
     # remove the dummy file and point back to original
-    os.remove(materials_compendium.FNAME)
+    materials_compendium.FNAME.unlink()
     materials_compendium.FNAME = fname_orig
 
 
@@ -158,7 +159,7 @@ def test_materials_dummy_compendium_2022():
     """
     # point to an generate a dummy JSON file
     fname_orig = materials_compendium.FNAME
-    materials_compendium.FNAME = fname_orig[:-5] + "_dummy.json"
+    materials_compendium.FNAME = Path(str(fname_orig)[:-5] + "_dummy.json")
     data = {
         "siteVersion": "0.0.0",
         "data": [
@@ -188,22 +189,20 @@ def test_materials_dummy_compendium_2022():
             },
         ],
     }
-    with open(materials_compendium.FNAME, "w") as f:
+    with materials_compendium.FNAME.open("w") as f:
         json.dump(data, f, indent=4)
-    with pytest.warns(None) as record:
+    # Check that no warning is raised
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         materials._load_and_compile_materials()
-    assert len(record) == 0, (
-        "Expected no MaterialsWarnings to be raised; "
-        f"got {_get_warning_messages(record)}"
-    )
     # remove siteVersion and make sure there is an error raised
     del data["siteVersion"]
-    with open(materials_compendium.FNAME, "w") as f:
+    with materials_compendium.FNAME.open("w") as f:
         json.dump(data, f, indent=4)
     with pytest.raises(MaterialsError):
         materials._load_and_compile_materials()
     # remove the dummy file and point back to original
-    os.remove(materials_compendium.FNAME)
+    materials_compendium.FNAME.unlink()
     materials_compendium.FNAME = fname_orig
 
 
@@ -216,14 +215,14 @@ def test_materials_dummy_compendium_error():
     """
     # point to an generate a dummy JSON file
     fname_orig = materials_compendium.FNAME
-    materials_compendium.FNAME = fname_orig[:-5] + "_dummy.json"
+    materials_compendium.FNAME = Path(str(fname_orig)[:-5] + "_dummy.json")
     data = None
-    with open(materials_compendium.FNAME, "w") as f:
+    with materials_compendium.FNAME.open("w") as f:
         json.dump(data, f, indent=4)
     with pytest.raises(MaterialsError):
         materials._load_and_compile_materials()
     # remove the dummy file and point back to original
-    os.remove(materials_compendium.FNAME)
+    materials_compendium.FNAME.unlink()
     materials_compendium.FNAME = fname_orig
 
 
@@ -233,9 +232,9 @@ def test_materials_no_compendium():
     """Test fetch_materials with no Compendium JSON file."""
     # point to a dummy JSON file that does not exist
     fname_orig = materials_compendium.FNAME
-    materials_compendium.FNAME = fname_orig[:-5] + "_dummy.json"
-    if os.path.exists(materials_compendium.FNAME):
-        os.remove(materials_compendium.FNAME)
+    materials_compendium.FNAME = Path(str(fname_orig)[:-5] + "_dummy.json")
+    if materials_compendium.FNAME.exists():
+        materials_compendium.FNAME.unlink()
     with pytest.warns(MaterialsWarning) as record:
         materials_compendium.fetch_compendium_data()
     assert len(record) == 1, (
@@ -250,15 +249,15 @@ def test_remove_materials_csv():
     """Test remove_materials_csv."""
     # point to and generate a dummy CSV file
     fname_orig = materials.FILENAME
-    materials.FILENAME = fname_orig[:-4] + "_dummy.csv"
-    if os.path.exists(materials.FILENAME):
-        os.remove(materials.FILENAME)
-    with open(materials.FILENAME, "w") as f:
-        print("", file=f)
+    materials.FILENAME = Path(str(fname_orig)[:-4] + "_dummy.csv")
+    if materials.FILENAME.exists():
+        materials.FILENAME.unlink()
+    with materials.FILENAME.open("w") as f:
+        print(file=f)
     remove_materials_csv()
-    assert not os.path.exists(materials.FILENAME)
+    assert not materials.FILENAME.exists()
     # make sure remove works if the file does not exist
     remove_materials_csv()
-    assert not os.path.exists(materials.FILENAME)
+    assert not materials.FILENAME.exists()
     # point back to original file
     materials.FILENAME = fname_orig

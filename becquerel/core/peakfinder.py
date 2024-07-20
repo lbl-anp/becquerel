@@ -1,8 +1,10 @@
 """Spectral peak search using convolutions."""
 
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
-import warnings
+
 from .spectrum import Spectrum
 
 
@@ -195,9 +197,8 @@ class PeakFinder:
         """Sort peaks by the provided array."""
         if len(arr) != len(self.centroids):
             raise PeakFinderError(
-                "Sorting array has length {} but must have length {}".format(
-                    len(arr), len(self.centroids)
-                )
+                f"Sorting array has length {len(arr)} "
+                f"but must have length {len(self.centroids)}"
             )
         self.centroids = np.array(self.centroids)
         self.snrs = np.array(self.snrs)
@@ -329,9 +330,8 @@ class PeakFinder:
             raise PeakFinderError(f"Minimum SNR {min_snr:.3f} must be > 0")
         if self.snr.max() < min_snr:
             raise PeakFinderError(
-                "SNR threshold is {:.3f} but maximum SNR is {:.3f}".format(
-                    min_snr, self.snr.max()
-                )
+                f"SNR threshold is {min_snr:.3f} "
+                f"but maximum SNR is {self.snr.max():.3f}"
             )
         x0 = frac_range[0] * xpeak
         x1 = frac_range[1] * xpeak
@@ -359,7 +359,7 @@ class PeakFinder:
             Right edge of the x-range that should be scanned for
             peaks. Uses max(x-range) if not given.
         min_snr
-            Minium SNR for a peak to be added
+            Minimum SNR for a peak to be added
         max_num
             Maximum number of peaks to be added
         reset
@@ -391,9 +391,8 @@ class PeakFinder:
             raise PeakFinderError(f"Minimum SNR {min_snr:.3f} must be > 0")
         if self.snr.max() < min_snr:
             raise PeakFinderError(
-                "SNR threshold is {:.3f} but maximum SNR is {:.3f}".format(
-                    min_snr, self.snr.max()
-                )
+                f"SNR threshold is {min_snr:.3f} "
+                f"but maximum SNR is {self.snr.max():.3f}"
             )
         max_num = int(max_num)
         if max_num < 1:

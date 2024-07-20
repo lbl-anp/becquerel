@@ -7,7 +7,6 @@ Please follow these guidelines when contributing to this project.
 ## Developer Instructions
 
 ```bash
-pip install -r requirements.txt
 pip install -r requirements-dev.txt
 python setup.py develop
 
@@ -19,7 +18,22 @@ pre-commit install
 from the installation directory, and the installed package will always use
 the current version of code.)
 
-We use [`pre-commit`](https://pre-commit.com/) to automatically run black.
+## Linting, formatting, and other checks
+
+We use [`pre-commit`](https://pre-commit.com/) to automatically run various
+checks and formatting tools in the CI.
+If `pre-commit` is installed, it will automatically run when committing
+new code, and it can also be run at any time using the following command:
+
+```bash
+pre-commit run --all
+```
+
+or run on any files not yet committed to the repository using
+
+```bash
+pre-commit run --files <filename1> <filename2> ...
+```
 
 ### Running the tests
 
@@ -48,21 +62,14 @@ pytest --cov-report html:htmlcov
 
 ## Code Style Guide
 
-Use [google standards](https://google.github.io/styleguide/pyguide.html)
-
-## Linter
-
-The code style/formatting will be checked with
-[`black`](https://black.readthedocs.io/en/stable/) and
-[`flake8`](https://flake8.pycqa.org/en/latest/) in the CI
+Use [google standards](https://google.github.io/styleguide/pyguide.html).
 
 ## Checklist for code contributions
 
 - [ ] Branch off of `main`
 - [ ] Develop the feature or fix
 - [ ] Write tests to cover all use cases
+- [ ] Ensure all checks pass (`pre-commit`)
 - [ ] Ensure all tests pass (`pytest`)
 - [ ] Ensure test coverage is >95%
-- [ ] Autoformat (`black .`)
-- [ ] Spellcheck your code and docstrings
 - [ ] Push branch to GitHub and create a pull request to `main`
