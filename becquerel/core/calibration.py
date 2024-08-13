@@ -3,13 +3,15 @@
 import ast
 import copy
 import warnings
+
 import asteval
 import black
 import blib2to3
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import scipy.optimize
-import matplotlib.pyplot as plt
+
 from .. import io
 
 # the default domain (x) and range (y) ranges over which a calibration is valid
@@ -51,15 +53,15 @@ def _validate_domain_range(domain, rng):
     # must be length-2 iterables
     try:
         len(domain)
-    except TypeError:
-        raise CalibrationError(f"Domain must be length-2 iterable: {domain}")
+    except TypeError as exc:
+        raise CalibrationError(f"Domain must be length-2 iterable: {domain}") from exc
     domain = np.asarray(domain)
     if not (len(domain) == 2 and domain.ndim == 1):
         raise CalibrationError(f"Domain must be length-2 iterable: {domain}")
     try:
         len(rng)
-    except TypeError:
-        raise CalibrationError(f"Range must be length-2 iterable: {rng}")
+    except TypeError as exc:
+        raise CalibrationError(f"Range must be length-2 iterable: {rng}") from exc
     rng = np.asarray(rng)
     if not (len(rng) == 2 and rng.ndim == 1):
         raise CalibrationError(f"Range must contain two values: {rng}")
@@ -228,19 +230,18 @@ def _validate_expression(
     # apply black formatting for consistency and error checking
     try:
         expression = black.format_str(expression, mode=black.FileMode())
-    except (black.InvalidInput, blib2to3.pgen2.tokenize.TokenError):
+    except (black.InvalidInput, blib2to3.pgen2.tokenize.TokenError) as exc:
         raise CalibrationError(
             f"Error while running black on expression:\n{expression}"
-        )
+        ) from exc
 
     # make sure `ind_var` appears in the formula
     if ind_var not in ["x", "y"]:
         raise CalibrationError(f"Independent variable {ind_var} must be 'x' or 'y'")
     ind_var_appears = False
     for node in ast.walk(ast.parse(expression)):
-        if type(node) is ast.Name:
-            if node.id == ind_var:
-                ind_var_appears = True
+        if type(node) is ast.Name and node.id == ind_var:
+            ind_var_appears = True
     if not ind_var_appears:
         raise CalibrationError(
             f'Independent variable "{ind_var}" must appear in the expression:\n'
@@ -250,10 +251,10 @@ def _validate_expression(
     # make sure each parameter appears at least once
     try:
         param_indices = _param_indices(expression)
-    except ValueError:
+    except ValueError as exc:
         raise CalibrationError(
             f"Unable to extract indices to parameters:\n{expression}"
-        )
+        ) from exc
     if len(param_indices) > 0:
         if param_indices.min() != 0:
             raise CalibrationError(
@@ -265,12 +266,11 @@ def _validate_expression(
                 "Parameter indices in expression are not contiguous:\n"
                 f"{expression}\n{param_indices}"
             )
-    if params is not None:
-        if len(param_indices) != len(params):
-            raise CalibrationError(
-                "Not enough parameter indices in expression:\n"
-                f"{expression}\n{param_indices}"
-            )
+    if params is not None and len(param_indices) != len(params):
+        raise CalibrationError(
+            "Not enough parameter indices in expression:\n"
+            f"{expression}\n{param_indices}"
+        )
 
     # make sure the expression can be evaluated
     if params is not None:
@@ -286,11 +286,11 @@ def _validate_expression(
                     domain=domain,
                     rng=rng,
                 )
-            except CalibrationError:
+            except CalibrationError as exc:
                 raise CalibrationError(
                     f"Cannot evaluate expression for float {ind_var} = {x_val}:\n"
                     f"{expression}\n{safe_eval.symtable['x']}"
-                )
+                ) from exc
         try:
             _eval_expression(
                 expression,
@@ -301,11 +301,11 @@ def _validate_expression(
                 domain=domain,
                 rng=rng,
             )
-        except CalibrationError:
+        except CalibrationError as exc:
             raise CalibrationError(
                 f"Cannot evaluate expression for array {ind_var} = {x_arr}:\n"
                 f"{expression}\n{safe_eval.symtable['x']}"
-            )
+            ) from exc
 
     return expression.strip()
 
@@ -626,7 +626,7 @@ class Calibration:
         if len(self.attrs) > 0:
             for key in self.attrs:
                 result += ", "
-                result += f"{key}={repr(self.attrs[key])}"
+                result += f"{key}={self.attrs[key]!r}"
         result += ")"
         return result
 
@@ -868,7 +868,11 @@ class Calibration:
                     else:
                         x0j = None
                     result = scipy.optimize.root_scalar(
-                        lambda _x: self(_x) - y[j], x0=x0j, bracket=bracket, **kwargs
+                        lambda _x, _y: self(_x) - _y,
+                        args=(y[j],),
+                        x0=x0j,
+                        bracket=bracket,
+                        **kwargs,
                     )
                     x[j] = result.root
         else:
@@ -901,7 +905,7 @@ class Calibration:
         -------
         calibration : becquerel.Calibration
         """
-        dsets, attrs, skipped = io.h5.read_h5(name)
+        dsets, attrs, _ = io.h5.read_h5(name)
         if "params" not in dsets:
             raise CalibrationError('Expected dataset "params"')
         if "expression" not in dsets:
@@ -1034,7 +1038,7 @@ class Calibration:
         aux_params=None,
         domain=None,
         rng=None,
-        fit_kwargs={},
+        fit_kwargs=None,
         **attrs,
     ):
         """Create a Calibration with the expression and fit the points.
@@ -1066,7 +1070,7 @@ class Calibration:
         rng : array_like
             The range of the function. Expression outputs will be clipped to
             this interval. Must be finite. By default DEFAULT_RANGE.
-        fit_kwargs : dict
+        fit_kwargs : None or dict
             Kwargs to pass to the minimization routine.
         attrs : dict
             Other information to be stored with the calibration.
@@ -1080,6 +1084,8 @@ class Calibration:
         points_x, points_y, weights = _check_points(
             points_x, points_y, weights=weights, domain=domain, rng=rng
         )
+        if fit_kwargs is None:
+            fit_kwargs = {}
         params = _fit_expression(
             expression,
             points_x,
@@ -1229,7 +1235,7 @@ class Calibration:
         has_points = self.points_x.size > 0
 
         if ax is None:
-            fig, ax = plt.subplots(1 + has_points, 1, sharex=True)
+            _, ax = plt.subplots(1 + has_points, 1, sharex=True)
 
         if has_points:
             assert ax.shape == (2,)

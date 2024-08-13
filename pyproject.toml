@@ -1,16 +1,123 @@
-[tool.black]
-target-version = ['py36', 'py37', 'py38', 'py39']
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.eggs
-  | \.git
-  | \.pytest_cache
-  | htmlcov
-  | figures
-  | build
-  | dist
-  # Specific to this package
-  | becquerel.egg-info
-)/
-'''
+
+# all of ruff's settings
+# https://docs.astral.sh/ruff/settings/
+# all of ruff's rules:
+# https://docs.astral.sh/ruff/rules/
+
+[tool.ruff]
+namespace-packages = ["becquerel"]
+target-version = "py38"
+fix = true
+show-fixes = true
+preview = false
+
+# format the same as black
+indent-width = 4
+line-length = 88
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+line-ending = "auto"
+skip-magic-trailing-comma = false
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint]
+select = [
+  "F",       # pyflakes
+  "E",       # pycodestyle errors
+  "W",       # pycodestyle warnings
+  # "C",       # mccabe
+  "I",       # isort
+  # "N",       # pep8-naming
+  # "D",       # pydocstyle
+  "UP",      # pyupgrade
+  "YTT",     # flake8-2020
+  # "ANN",     # flake8-annotations
+  "ASYNC",   # flake8-async
+  "S",       # flake8-bandit
+  "BLE",     # flake8-blind-except
+  # "FBT",     # flake8-boolean-trap
+  "B",       # flake8-bugbear
+  "A",       # flake8-builtins
+  # "COM",     # flake8-commas
+  "C4",      # flake8-comprehensions
+  # "DTZ",     # flake8-datetimez
+  "T10",     # flake8-debugger
+  # "EM",      # flake8-errmsg
+  "EXE",     # flake8-executable
+  "FA",      # flake8-future-annotations
+  "ISC",     # flake8-implicit-str-concat
+  "ICN",     # flake8-import-conventions
+  "PIE",     # flake8-pie
+  # "T20",     # flake8-print
+  "PYI",     # flake8-pyi
+  # "PT",      # flake8-pytest-style
+  "Q",       # flake8-quotes
+  "RSE",     # flake8-raise
+  # "RET",     # flake8-return
+  # "SLF",     # flake8-self
+  "SIM",     # flake8-simplify
+  # "TID",     # flake8-tidy-imports
+  "TCH",     # flake8-type-checking
+  "INT",     # flake8-gettext
+  # "ARG",     # flake8-unused-arguments
+  "PTH",     # flake8-use-pathlib
+  # "TD",      # flake8-todos
+  # "FIX",     # flake8-fixme
+  # "ERA",     # eradicate
+  "PD",      # pandas-vet
+  "PGH",     # pygrep-hooks
+  "PL",      # pylint
+  "TRY",     # tryceratops
+  "FLY",     # flynt
+  "NPY",     # NumPy-specific rules
+  "PERF",    # Perflint
+  # "FURB",    # refurb
+  "RUF",     # Ruff-specific rules
+]
+
+ignore = [
+  "S101",      # Use of `assert` detected
+  "B015",      # Pointless comparison. Did you mean to assign a value? Otherwise, prepend `assert` or remove it.
+  "B018",      # Found useless expression. Either assign it to a variable or remove it.
+  "B028",      # No explicit `stacklevel` keyword argument found
+  "SIM105",    # Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+  "SIM108",    # Use ternary operator instead of `if`-`else`-block
+  "SIM300",    # Yoda conditions are discouraged
+  "PD901",     # Avoid using the generic variable name `df` for DataFrames
+  "PLW2901",   # `for` loop variable overwritten by assignment target
+  "PLR2004",   # Magic value used in comparison, consider replacing with a constant variable
+  "TRY003",    # Avoid specifying long messages outside the exception class
+  "NPY002",    # Replace legacy `np.random.poisson` call with `np.random.Generator`
+  "PERF203",   # `try`-`except` within a loop incurs performance overhead
+  "FURB101",   # `open` and `read` should be replaced by `Path("CONTRIBUTING.md").read_text()`
+  "FURB113",   # Use `s.extend(...)` instead of repeatedly calling `s.append()`
+  "RUF012",    # Mutable class attributes should be annotated with `typing.ClassVar`
+]
+
+exclude = []
+
+unfixable = []
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+
+[tool.ruff.lint.isort]
+lines-after-imports = -1
+known-first-party = ["becquerel"]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 88
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pylint]
+max-args = 15
+max-branches = 60
+max-locals = 25
+max-nested-blocks = 15
+max-returns = 20
+max-statements = 150

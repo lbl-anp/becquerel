@@ -1,12 +1,11 @@
 """becquerel package metadata."""
 
-__name__ = "becquerel"
 __author__ = "The Becquerel Development Team"
 __maintainer__ = __author__
 __email__ = "becquerel-dev@lbl.gov"
 __description__ = "Tools for radiation spectral analysis."
 __url__ = "https://github.com/lbl-anp/becquerel"
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 # classifiers from list at https://pypi.org/classifiers/
 __classifiers__ = [
     "Development Status :: 4 - Beta",
@@ -16,10 +15,11 @@ __classifiers__ = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
 ]

@@ -1,17 +1,17 @@
 """Base class for spectrum file parsers."""
 
-import os
-from copy import deepcopy
 import datetime
+import warnings
+from copy import deepcopy
+from pathlib import Path
+
 import numpy as np
 from uncertainties import UFloat, unumpy
-from .. import parsers
-from .. import io
-from .utils import handle_uncs, handle_datetime, bin_centers_from_edges, EPS
+
+from .. import io, parsers, tools
+from . import fitting, plotting
 from .rebin import rebin
-from . import plotting
-from . import fitting
-import warnings
+from .utils import EPS, bin_centers_from_edges, handle_datetime, handle_uncs
 
 
 class SpectrumError(Exception):
@@ -176,13 +176,11 @@ class Spectrum:
 
         if realtime is not None:
             self.realtime = float(realtime)
-            if self.livetime is not None:
-                if self.livetime > self.realtime:
-                    raise ValueError(
-                        "Livetime ({}) cannot exceed realtime ({})".format(
-                            self.livetime, self.realtime
-                        )
-                    )
+            if self.livetime is not None and self.livetime > self.realtime:
+                raise ValueError(
+                    f"Livetime ({self.livetime}) cannot exceed realtime "
+                    f"({self.realtime})"
+                )
 
         self.start_time = handle_datetime(start_time, "start_time", allow_none=True)
         self.stop_time = handle_datetime(stop_time, "stop_time", allow_none=True)
@@ -194,14 +192,13 @@ class Spectrum:
         ):
             raise SpectrumError(
                 "Specify no more than 2 out of 3 args: "
-                + "realtime, stop_time, start_time"
+                "realtime, stop_time, start_time"
             )
         elif self.start_time is not None and self.stop_time is not None:
             if self.start_time > self.stop_time:
                 raise ValueError(
-                    "Stop time ({}) must be after start time ({})".format(
-                        self.start_time, self.stop_time
-                    )
+                    f"Stop time ({self.start_time}) must be after start time "
+                    f"({self.stop_time})"
                 )
             self.realtime = (self.stop_time - self.start_time).total_seconds()
         elif self.start_time is not None and self.realtime is not None:
@@ -217,11 +214,18 @@ class Spectrum:
         self.__array_ufunc__ = None
         self.__array_priority__ = 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         lines = ["becquerel.Spectrum"]
-        ltups = []
-        for k in ["start_time", "stop_time", "realtime", "livetime", "is_calibrated"]:
-            ltups.append((k, getattr(self, k)))
+        ltups = [
+            (k, getattr(self, k))
+            for k in [
+                "start_time",
+                "stop_time",
+                "realtime",
+                "livetime",
+                "is_calibrated",
+            ]
+        ]
         ltups.append(("num_bins", len(self.bin_indices)))
         if self._counts is None:
             ltups.append(("gross_counts", None))
@@ -235,14 +239,13 @@ class Spectrum:
             ltups.append(("filename", self.attrs["infilename"]))
         else:
             ltups.append(("filename", None))
-        for lt in ltups:
-            lines.append("    {:15} {}".format(f"{lt[0]}:", lt[1]))
+        lines += [f"    {lt[0] + ':':15s} {lt[1]}" for lt in ltups]
         return "\n".join(lines)
 
     __repr__ = __str__
 
     @property
-    def counts(self):
+    def counts(self) -> np.ndarray:
         """Counts in each bin, with uncertainty.
 
         If cps is defined, counts is calculated from cps and livetime.
@@ -260,13 +263,13 @@ class Spectrum:
         else:
             try:
                 return self.cps * self.livetime
-            except TypeError:
+            except TypeError as exc:
                 raise SpectrumError(
                     "Unknown livetime; cannot calculate counts from CPS"
-                )
+                ) from exc
 
     @property
-    def counts_vals(self):
+    def counts_vals(self) -> np.ndarray:
         """Counts in each bin, no uncertainties.
 
         Returns:
@@ -276,7 +279,7 @@ class Spectrum:
         return unumpy.nominal_values(self.counts)
 
     @property
-    def counts_uncs(self):
+    def counts_uncs(self) -> np.ndarray:
         """Uncertainties on the counts in each bin.
 
         Returns:
@@ -286,7 +289,7 @@ class Spectrum:
         return unumpy.std_devs(self.counts)
 
     @property
-    def cps(self):
+    def cps(self) -> np.ndarray:
         """Counts per second in each bin, with uncertainty.
 
         If counts is defined, cps is calculated from counts and livetime.
@@ -304,13 +307,13 @@ class Spectrum:
         else:
             try:
                 return self.counts / self.livetime
-            except TypeError:
+            except TypeError as exc:
                 raise SpectrumError(
                     "Unknown livetime; cannot calculate CPS from counts"
-                )
+                ) from exc
 
     @property
-    def cps_vals(self):
+    def cps_vals(self) -> np.ndarray:
         """Counts per second in each bin, no uncertainties.
 
         Returns:
@@ -320,7 +323,7 @@ class Spectrum:
         return unumpy.nominal_values(self.cps)
 
     @property
-    def cps_uncs(self):
+    def cps_uncs(self) -> np.ndarray:
         """Uncertainties on the counts per second in each bin.
 
         Returns:
@@ -330,7 +333,7 @@ class Spectrum:
         return unumpy.std_devs(self.cps)
 
     @property
-    def cpskev(self):
+    def cpskev(self) -> np.ndarray:
         """Counts per second per keV in each bin, with uncertainty.
 
         Raises:
@@ -344,7 +347,7 @@ class Spectrum:
         return self.cps / self.bin_widths_kev
 
     @property
-    def cpskev_vals(self):
+    def cpskev_vals(self) -> np.ndarray:
         """Counts per second per keV in each bin, no uncertainties.
 
         Returns:
@@ -354,7 +357,7 @@ class Spectrum:
         return unumpy.nominal_values(self.cpskev)
 
     @property
-    def cpskev_uncs(self):
+    def cpskev_uncs(self) -> np.ndarray:
         """Uncertainties on the counts per second per keV in each bin.
 
         Returns:
@@ -364,7 +367,7 @@ class Spectrum:
         return unumpy.std_devs(self.cpskev)
 
     @property
-    def bin_indices(self):
+    def bin_indices(self) -> np.ndarray:
         """Bin indices.
 
         Returns:
@@ -374,7 +377,7 @@ class Spectrum:
         return np.arange(len(self), dtype=int)
 
     @property
-    def channels(self):
+    def channels(self) -> np.ndarray:
         """Alias for bin_indices. Raises a DeprecationWarning, as it will be
         removed in a future release.
 
@@ -390,7 +393,7 @@ class Spectrum:
         return np.arange(len(self), dtype=int)
 
     @property
-    def bin_centers_raw(self):
+    def bin_centers_raw(self) -> np.ndarray:
         """Convenience function for accessing the raw values of bin centers.
 
         Returns:
@@ -400,7 +403,7 @@ class Spectrum:
         return bin_centers_from_edges(self.bin_edges_raw)
 
     @property
-    def bin_widths_raw(self):
+    def bin_widths_raw(self) -> np.ndarray:
         """The width of each bin, in raw values.
 
         Returns:
@@ -410,7 +413,7 @@ class Spectrum:
         return np.diff(self.bin_edges_raw)
 
     @property
-    def bin_centers_kev(self):
+    def bin_centers_kev(self) -> np.ndarray:
         """Convenience function for accessing the energies of bin centers.
 
         Returns:
@@ -426,7 +429,7 @@ class Spectrum:
             return bin_centers_from_edges(self.bin_edges_kev)
 
     @property
-    def energies_kev(self):
+    def energies_kev(self) -> np.ndarray:
         """Convenience function for accessing the energies of bin centers.
 
         Returns:
@@ -450,7 +453,7 @@ class Spectrum:
             return bin_centers_from_edges(self.bin_edges_kev)
 
     @property
-    def bin_widths_kev(self):
+    def bin_widths_kev(self) -> np.ndarray:
         """The width of each bin, in keV.
 
         Returns:
@@ -466,7 +469,7 @@ class Spectrum:
             return np.diff(self.bin_edges_kev)
 
     @property
-    def bin_widths(self):
+    def bin_widths(self) -> np.ndarray:
         """The width of each bin, in keV.
 
         Returns:
@@ -491,7 +494,7 @@ class Spectrum:
             return np.diff(self.bin_edges_kev)
 
     @property
-    def is_calibrated(self):
+    def is_calibrated(self) -> bool:
         """Is the spectrum calibrated?
 
         Returns:
@@ -501,7 +504,7 @@ class Spectrum:
         return self.bin_edges_kev is not None
 
     @property
-    def bin_edges_kev(self):
+    def bin_edges_kev(self) -> np.ndarray:
         """Get the bin edge energies of a spectrum
 
         Returns:
@@ -531,7 +534,7 @@ class Spectrum:
             self._bin_edges_kev = np.array(bin_edges_kev, dtype=float)
 
     @property
-    def bin_edges_raw(self):
+    def bin_edges_raw(self) -> np.ndarray:
         """Get the raw bin edges of a spectrum
 
         Returns:
@@ -560,12 +563,24 @@ class Spectrum:
         else:
             self._bin_edges_raw = np.array(bin_edges_raw, dtype=float)
 
+    @property
+    def deadtime(self) -> float:
+        return self.realtime - self.livetime
+
+    @property
+    def livetime_fraction(self) -> float:
+        return self.livetime / self.realtime
+
+    @property
+    def deadtime_fraction(self) -> float:
+        return self.deadtime / self.realtime
+
     @classmethod
     def from_file(cls, infilename, verbose=False, cal_kwargs=None):
         """Construct a Spectrum object from a filename.
 
         Args:
-          infilename: a string representing the path to a parsable file
+          infilename: a string or Path representing the path to a parsable file
           verbose: (optional) whether to print debugging information.
           cal_kwargs: (optional) kwargs to override the file Calibration.
 
@@ -576,7 +591,9 @@ class Spectrum:
           AssertionError: for a bad filename  # TODO make this an IOError
         """
         # read the data using one of the low-level parsers
-        _, ext = os.path.splitext(infilename)
+
+        infilename = Path(infilename)
+        ext = infilename.suffix
         if io.h5.is_h5_filename(infilename):
             data, cal = parsers.h5.read(
                 infilename,
@@ -612,7 +629,7 @@ class Spectrum:
 
         # create the object and apply the calibration
         spec = cls(**data)
-        spec.attrs["infilename"] = infilename
+        spec.attrs["infilename"] = str(infilename)
         if cal is not None:
             spec.apply_calibration(cal)
         return spec
@@ -622,7 +639,7 @@ class Spectrum:
 
         Parameters
         ----------
-        name : str, h5py.File, h5py.Group
+        name : str, h5py.File, h5py.Group, pathlib.Path
             The filename or an open h5py File or Group.
         """
         # build datasets dict
@@ -742,7 +759,7 @@ class Spectrum:
 
         return deepcopy(self)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """The number of bins in the spectrum.
 
         Returns:
@@ -781,8 +798,8 @@ class Spectrum:
         if (self._counts is None) ^ (other._counts is None):
             raise SpectrumError(
                 "Addition of counts-based and CPS-based spectra is "
-                + "ambiguous, use Spectrum(counts=specA.counts+specB.counts) "
-                + "or Spectrum(cps=specA.cps+specB.cps) instead."
+                "ambiguous, use Spectrum(counts=specA.counts+specB.counts) "
+                "or Spectrum(cps=specA.cps+specB.cps) instead."
             )
 
         if self._counts is not None and other._counts is not None:
@@ -792,16 +809,16 @@ class Spectrum:
             else:
                 warnings.warn(
                     "Addition of counts with missing livetimes, "
-                    + "livetime was set to None.",
+                    "livetime was set to None.",
                     SpectrumWarning,
                 )
         else:
             kwargs = {"cps": self.cps + other.cps}
 
         if self.is_calibrated and other.is_calibrated:
-            spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **kwargs)
+            spect_obj = self.__class__(bin_edges_kev=self.bin_edges_kev, **kwargs)
         else:
-            spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **kwargs)
+            spect_obj = self.__class__(bin_edges_raw=self.bin_edges_raw, **kwargs)
         return spect_obj
 
     def __sub__(self, other):
@@ -836,7 +853,7 @@ class Spectrum:
             if (self._cps is None) or (other._cps is None):
                 warnings.warn(
                     "Subtraction of counts-based specta, spectra "
-                    + "have been converted to CPS",
+                    "have been converted to CPS",
                     SpectrumWarning,
                 )
         except SpectrumError:
@@ -845,19 +862,19 @@ class Spectrum:
                 kwargs["uncs"] = [np.nan] * len(self)
                 warnings.warn(
                     "Subtraction of counts-based spectra, "
-                    + "livetimes have been ignored.",
+                    "livetimes have been ignored.",
                     SpectrumWarning,
                 )
-            except SpectrumError:
+            except SpectrumError as exc:
                 raise SpectrumError(
                     "Subtraction of counts and CPS-based spectra without"
-                    + "livetimes not possible"
-                )
+                    "livetimes not possible"
+                ) from exc
 
         if self.is_calibrated and other.is_calibrated:
-            spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **kwargs)
+            spect_obj = self.__class__(bin_edges_kev=self.bin_edges_kev, **kwargs)
         else:
-            spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **kwargs)
+            spect_obj = self.__class__(bin_edges_raw=self.bin_edges_raw, **kwargs)
         return spect_obj
 
     def _add_sub_error_checking(self, other):
@@ -882,23 +899,29 @@ class Spectrum:
         if self.is_calibrated ^ other.is_calibrated:
             raise SpectrumError(
                 "Cannot add/subtract uncalibrated spectrum to/from a "
-                + "calibrated spectrum. If both have the same calibration, "
-                + 'please use the "calibrate_like" method'
+                "calibrated spectrum. If both have the same calibration, "
+                'please use the "calibrate_like" method'
             )
-        if self.is_calibrated and other.is_calibrated:
-            if not np.all(self.bin_edges_kev == other.bin_edges_kev):
-                raise NotImplementedError(
-                    "Addition/subtraction for arbitrary calibrated spectra "
-                    + "not implemented"
-                )
-                # TODO: if both spectra are calibrated but with different
-                #   calibrations, should one be rebinned to match?
-        if not self.is_calibrated and not other.is_calibrated:
-            if not np.all(self.bin_edges_raw == other.bin_edges_raw):
-                raise NotImplementedError(
-                    "Addition/subtraction for arbitrary uncalibrated "
-                    + "spectra not implemented"
-                )
+        if (
+            self.is_calibrated
+            and other.is_calibrated
+            and not np.all(self.bin_edges_kev == other.bin_edges_kev)
+        ):
+            raise NotImplementedError(
+                "Addition/subtraction for arbitrary calibrated spectra "
+                "not implemented"
+            )
+            # TODO: if both spectra are calibrated but with different
+            #   calibrations, should one be rebinned to match?
+        if (
+            not self.is_calibrated
+            and not other.is_calibrated
+            and not np.all(self.bin_edges_raw == other.bin_edges_raw)
+        ):
+            raise NotImplementedError(
+                "Addition/subtraction for arbitrary uncalibrated "
+                "spectra not implemented"
+            )
 
     def __mul__(self, other):
         """Return a new Spectrum object with counts (or CPS) scaled up.
@@ -919,7 +942,7 @@ class Spectrum:
     # This line adds the right multiplication
     __rmul__ = __mul__
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         """Return a new Spectrum object with counts (or CPS) scaled down.
 
         Args:
@@ -935,10 +958,7 @@ class Spectrum:
 
         return self._mul_div(other, div=True)
 
-    # This line adds true division
-    __truediv__ = __div__
-
-    def _mul_div(self, scaling_factor, div=False):
+    def _mul_div(self, scaling_factor: float, div=False):
         """Multiply or divide a spectrum by a scalar. Handle errors.
 
         Raises:
@@ -952,21 +972,22 @@ class Spectrum:
         if not isinstance(scaling_factor, UFloat):
             try:
                 scaling_factor = float(scaling_factor)
-            except (TypeError, ValueError):
-                raise TypeError("Spectrum must be multiplied/divided by a scalar")
+            except (TypeError, ValueError) as exc:
+                raise TypeError(
+                    "Spectrum must be multiplied/divided by a scalar"
+                ) from exc
             if (
                 scaling_factor == 0
                 or np.isinf(scaling_factor)
                 or np.isnan(scaling_factor)
             ):
                 raise ValueError("Scaling factor must be nonzero and finite")
-        else:
-            if (
-                scaling_factor.nominal_value == 0
-                or np.isinf(scaling_factor.nominal_value)
-                or np.isnan(scaling_factor.nominal_value)
-            ):
-                raise ValueError("Scaling factor must be nonzero and finite")
+        elif (
+            scaling_factor.nominal_value == 0
+            or np.isinf(scaling_factor.nominal_value)
+            or np.isnan(scaling_factor.nominal_value)
+        ):
+            raise ValueError("Scaling factor must be nonzero and finite")
         if div:
             multiplier = 1 / scaling_factor
         else:
@@ -978,12 +999,54 @@ class Spectrum:
             data_arg = {"cps": self.cps * multiplier}
 
         if self.is_calibrated:
-            spect_obj = Spectrum(bin_edges_kev=self.bin_edges_kev, **data_arg)
+            spect_obj = self.__class__(bin_edges_kev=self.bin_edges_kev, **data_arg)
         else:
-            spect_obj = Spectrum(bin_edges_raw=self.bin_edges_raw, **data_arg)
+            spect_obj = self.__class__(bin_edges_raw=self.bin_edges_raw, **data_arg)
         return spect_obj
 
-    def downsample(self, f, handle_livetime=None):
+    def attenuate(self, material, areal_density_gcm2: float, **kwargs):
+        """Compute a new Spectrum as if it were attenuated by some material.
+
+        Currently uses a lin-lin interpolation of the attenuation coefficient
+        (with coherent scattering) because XCOM's queries are limited to 100
+        energies.
+
+        Parameters
+        ----------
+        material : str | Iterable[str]
+            See tools.xcom.fetch_xcom_data
+        areal_density_gcm2 : float
+            Areal density of attenuating material in g/cm2. Negative values are
+            permitted, e.g., for estimating the unattenuated flux from an
+            observed attenuated spectrum.
+        **kwargs : dict
+            Additional parameters passed to self.__class__
+
+        Returns
+        -------
+        Spectrum
+        """
+        assert self.is_calibrated
+        e_min = max(1.0, self.bin_centers_kev[0])
+        e_max = min(1e8, self.bin_centers_kev[-1])
+        xd = tools.fetch_xcom_data(material, e_range_kev=(e_min, e_max))
+        mass_att_coeff = np.interp(
+            x=self.bin_centers_kev,
+            xp=xd["energy"],
+            fp=xd["total_w_coh"],
+        )
+        att = np.exp(-mass_att_coeff * areal_density_gcm2)
+        # the following is not (yet?) possible due to Spectrum.__mul__ limitations:
+        # return self * att
+
+        # instead, copy the pattern from Spectrum._mul_div:
+        if self._counts is not None:
+            data_arg = {"counts": self.counts * att}
+        else:
+            data_arg = {"cps": self.cps * att}
+        return self.__class__(bin_edges_kev=self.bin_edges_kev, **data_arg, **kwargs)
+
+    def downsample(self, f: float, handle_livetime=None):
         """Downsample counts and create a new spectrum.
 
         The spectrum is resampled from a binomial distribution. Each count in
@@ -1029,19 +1092,19 @@ class Spectrum:
         new_counts = np.random.binomial(old_counts, 1.0 / f)
 
         if self.is_calibrated:
-            return Spectrum(
+            return self.__class__(
                 counts=new_counts,
                 bin_edges_kev=self.bin_edges_kev,
                 livetime=new_livetime,
             )
         else:
-            return Spectrum(
+            return self.__class__(
                 counts=new_counts,
                 bin_edges_raw=self.bin_edges_raw,
                 livetime=new_livetime,
             )
 
-    def has_uniform_bins(self, use_kev=None, rtol=None):
+    def has_uniform_bins(self, use_kev=None, rtol=None) -> bool:
         """Test whether the Spectrum has uniform binning.
 
         This is possibly the best way to test for uniform binning within float
@@ -1084,12 +1147,9 @@ class Spectrum:
         # first non-uniform bin.
         iterator = iter(bin_widths)
         x0 = next(iterator, None)
-        for x in iterator:
-            if abs(x / x0 - 1.0) > rtol:
-                return False
-        return True
+        return all(abs(x / x0 - 1.0) <= rtol for x in iterator)
 
-    def find_bin_index(self, x, use_kev=None):
+    def find_bin_index(self, x: float, use_kev=None) -> int:
         """Find the Spectrum bin index or indices containing x-axis value(s) x.
 
         One might think that if the Spectrum has uniform binning, we could just
@@ -1120,7 +1180,7 @@ class Spectrum:
                 "Cannot access energy bins with an uncalibrated Spectrum."
             )
 
-        bin_edges, bin_widths, _ = self.get_bin_properties(use_kev)
+        bin_edges, _, _ = self.get_bin_properties(use_kev)
         x = np.asarray(x)
 
         if np.any(x < bin_edges[0]):
@@ -1154,14 +1214,14 @@ class Spectrum:
         else:
             return self.bin_edges_raw, self.bin_widths_raw, self.bin_centers_raw
 
-    def apply_calibration(self, cal):
+    def apply_calibration(self, cal) -> None:
         """Use a Calibration to generate bin edge energies for this spectrum.
 
         Args:
           cal: a Calibration object
         """
 
-        if hasattr(cal, "ch2kev") and callable(getattr(cal, "ch2kev")):
+        if hasattr(cal, "ch2kev") and callable(cal.ch2kev):
             self.bin_edges_kev = cal.ch2kev(self.bin_edges_raw)
             warnings.warn(
                 "The use of bq.EnergyCalBase classes is deprecated "
@@ -1173,7 +1233,7 @@ class Spectrum:
             self.bin_edges_kev = cal(self.bin_edges_raw)
         self.energy_cal = cal
 
-    def calibrate_like(self, other):
+    def calibrate_like(self, other) -> None:
         """Apply another Spectrum object's calibration (bin edges vector).
 
         Bin edges are copied, so the two spectra do not have the same object
@@ -1192,13 +1252,13 @@ class Spectrum:
         else:
             raise UncalibratedError("Other spectrum is not calibrated")
 
-    def rm_calibration(self):
+    def rm_calibration(self) -> None:
         """Remove the calibration (if it exists) from this spectrum."""
 
         self.bin_edges_kev = None
         self.energy_cal = None
 
-    def combine_bins(self, f):
+    def combine_bins(self, f: int):
         """Make a new Spectrum with counts combined into bigger bins.
 
         If f is not a factor of the number of bins, the counts from the first
@@ -1241,8 +1301,9 @@ class Spectrum:
             key: combined_counts,
             "bin_edges_kev": combined_bin_edges,
             "livetime": self.livetime,
+            "realtime": self.realtime,
         }
-        obj = Spectrum(**kwargs)
+        obj = self.__class__(**kwargs)
         return obj
 
     def rebin(
@@ -1285,13 +1346,16 @@ class Spectrum:
                 "Cannot rebin spectrum without energy calibration"
             )  # TODO: why not?
         in_spec = self.counts_vals
-        if method.lower() == "listmode":
-            if (self._counts is None) and (self.livetime is not None):
-                warnings.warn(
-                    "Rebinning by listmode method without explicit counts "
-                    + "provided in Spectrum object",
-                    SpectrumWarning,
-                )
+        if (
+            method.lower() == "listmode"
+            and (self._counts is None)
+            and (self.livetime is not None)
+        ):
+            warnings.warn(
+                "Rebinning by listmode method without explicit counts "
+                "provided in Spectrum object",
+                SpectrumWarning,
+            )
         out_spec = rebin(
             in_spec,
             self.bin_edges_kev,
@@ -1301,7 +1365,7 @@ class Spectrum:
             zero_pad_warnings=zero_pad_warnings,
             include_overflows=include_overflows,
         )
-        return Spectrum(
+        return self.__class__(
             counts=out_spec,
             uncs=np.sqrt(out_spec),
             bin_edges_kev=out_edges,
@@ -1314,7 +1378,7 @@ class Spectrum:
         )
         # TODO: raw here too?
 
-    def parse_xmode(self, xmode):
+    def parse_xmode(self, xmode: str) -> tuple:
         """Parse the x-axis mode to get the associated data and plot label.
 
         Parameters
@@ -1342,7 +1406,7 @@ class Spectrum:
             raise ValueError(f"Unsupported xmode: {xmode:s}")
         return xedges, xlabel
 
-    def parse_ymode(self, ymode):
+    def parse_ymode(self, ymode: str) -> tuple:
         """Parse the y-axis mode to get the associated data and plot label.
 
         Parameters
@@ -1389,9 +1453,9 @@ class Spectrum:
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
-          title:  costum plot title
-          xlabel: costum xlabel value
-          ylabel: costum ylabel value
+          title:  custom plot title
+          xlabel: custom xlabel value
+          ylabel: custom ylabel value
           emode:  can be 'band' for adding an erroband or 'bars' for adding
                   error bars, default is 'none'. It herits the color from
                   matplotlib plot and can not be configured. For better
@@ -1413,12 +1477,10 @@ class Spectrum:
         color = ax.get_lines()[-1].get_color()
         if emode == "band":
             plotter.errorband(color=color, alpha=alpha * 0.5, label="_nolegend_")
-        elif emode == "bars" or emode == "bar":
+        elif emode in ("bars", "bar"):
             plotter.errorbar(color=color, label="_nolegend_")
         elif emode != "none":
-            raise SpectrumError(
-                "Unknown error mode '{}', use 'bars' " "or 'band'".format(emode)
-            )
+            raise SpectrumError(f"Unknown error mode '{emode}', use 'bars' or 'band'")
         return ax
 
     def fill_between(self, **kwargs):
@@ -1433,9 +1495,9 @@ class Spectrum:
           ylim:   set y axes limits, if set to 'default' use special scales
           ax:     matplotlib axes object, if not provided one is created
           yscale: matplotlib scale: 'linear', 'log', 'logit', 'symlog'
-          title:  costum plot title
-          xlabel: costum xlabel value
-          ylabel: costum ylabel value
+          title:  custom plot title
+          xlabel: custom xlabel value
+          ylabel: custom ylabel value
           kwargs: arguments that are directly passed to matplotlib's
                   fill_between command. In addition it is possible to pass
                   linthresh if ylim='default' and ymode='symlog'.
@@ -1450,13 +1512,13 @@ class Spectrum:
     def fit(
         self,
         model,
-        xmode,
-        ymode,
+        xmode: str,
+        ymode: str,
         dx=None,
         roi=None,
         mask=None,
-        perform_fit=True,
-        backend="lmfit",
+        perform_fit: bool = True,
+        backend: str = "lmfit",
         **kwargs,
     ):
         """Create a Fitter object based on this Spectrum and perform the fit.
@@ -1488,8 +1550,8 @@ class Spectrum:
         Fitter
         """
 
-        xedges, xlabel = self.parse_xmode(xmode)
-        ydata, yuncs, ylabel = self.parse_ymode(ymode)
+        xedges, _ = self.parse_xmode(xmode)
+        ydata, yuncs, _ = self.parse_ymode(ymode)
 
         xcenters = bin_centers_from_edges(xedges)
 

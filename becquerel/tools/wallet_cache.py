@@ -1,10 +1,10 @@
 """A cache of all NNDC wallet card data."""
 
-from future.builtins import super
 import pandas as pd
 import uncertainties
-from . import nndc
-from . import df_cache
+from future.builtins import super
+
+from . import df_cache, nndc
 
 
 def convert_float_ufloat(x):
@@ -57,11 +57,12 @@ class WalletCardCache(df_cache.DataFrameCache):
     def fetch(self):
         """Fetch wallet card data from NNDC for all isotopes."""
 
-        self.df = pd.DataFrame()
+        dfs = []
         z_edges = (0, 40, 80, 120)
         for z0, z1 in zip(z_edges[:-1], z_edges[1:]):
             df_chunk = nndc.fetch_wallet_card(z_range=(z0, z1 - 1))
-            self.df = self.df.append(df_chunk)
+            dfs.append(df_chunk)
+        self.df = pd.concat(dfs)
         self.loaded = True
 
 
