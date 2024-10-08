@@ -9,6 +9,7 @@ References:
 
 """
 
+import warnings
 from collections.abc import Iterable
 from io import StringIO
 
@@ -101,6 +102,10 @@ COLUMNS_LONG = {
     "total_w_coh": "Total Attenuation with Coherent Scattering",
     "total_wo_coh": "Total Attenuation without Coherent Scattering",
 }
+
+
+class XCOMWarning(UserWarning):
+    """Warning related to XCOM tools."""
 
 
 class XCOMError(Exception):
@@ -377,6 +382,15 @@ class _XCOMQuery:
             self._data["Energies"] = ";".join(
                 [f"{erg / 1000.0:.6f}" for erg in kwargs["energies_kev"]]
             )
+            warnings.warn(
+                "A kludge is being applied to the `energies` input to XCOM "
+                "to account for an apparent bug where the first energy in the "
+                "list gets discarded. If XCOM tests being failing again or "
+                "XCOM returns unexpected results, this kludge may need to be "
+                "removed.",
+                XCOMWarning,
+            )
+            self._data["Energies"] = "0.001000;" + self._data["Energies"]
 
     def _request(self):
         """Request data table from the URL."""
