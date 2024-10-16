@@ -16,7 +16,7 @@ from .. import io
 
 # the default domain (x) and range (y) ranges over which a calibration is valid
 DEFAULT_DOMAIN = (-1e6, 1e6)
-DEFAULT_RANGE = (-1e6, 1e6)
+DEFAULT_RANGE = (-1e9, 1e9)
 
 safe_eval = asteval.Interpreter(use_numpy=False)
 safe_eval.symtable["np"] = np
