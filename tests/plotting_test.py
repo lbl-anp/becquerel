@@ -551,12 +551,14 @@ def test_errorband(uncal_spec):
     colls = 0
     lines = 0
     for i in ax.get_children():
-        if type(i) is mpl.collections.PolyCollection:
-            colls = colls + 1
-        elif type(i) is mpl.lines.Line2D:
+        try:
+            if type(i) is mpl.collections.FillBetweenPolyCollection:
+                colls = colls + 1
+        except AttributeError:
+            if type(i) is mpl.collections.PolyCollection:
+                colls = colls + 1
+        if type(i) is mpl.lines.Line2D:
             lines = lines + 1
-        elif type(i) is mpl.collections.FillBetweenPolyCollection:
-            colls = colls + 1
     assert colls == 1
     assert lines == 1
     plt.close("all")
