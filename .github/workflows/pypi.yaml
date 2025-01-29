@@ -17,8 +17,8 @@ jobs:
   pypi_deploy:
     strategy:
       matrix:
-        os: ["ubuntu-20.04"]
         python-version: ["3.9"]
+        os: ["ubuntu-latest"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
