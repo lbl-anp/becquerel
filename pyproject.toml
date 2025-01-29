@@ -6,7 +6,7 @@
 
 [tool.ruff]
 namespace-packages = ["becquerel"]
-target-version = "py38"
+target-version = "py39"
 fix = true
 show-fixes = true
 preview = false
