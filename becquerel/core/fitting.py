@@ -1253,6 +1253,8 @@ class Fitter:
             Residual plot parameters
         legend_kwargs : dict, optional
             Legend parameters
+        **kwargs
+            Legacy kwargs, only used for deprecation errors.
 
         Returns
         -------
