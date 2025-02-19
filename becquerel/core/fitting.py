@@ -1226,6 +1226,7 @@ class Fitter:
         residual_type="abs",
         enable_fit_panel=True,
         figsize=None,
+        legend_kwargs=None,
         **kwargs,
     ):
         """Two- or three-panel figure showing fit results.
@@ -1244,6 +1245,8 @@ class Fitter:
             If True (default), draw an additional panel with fit statistics
         figsize : tuple, optional
             Figure size
+        legend_kwargs : TODO
+            TODO
 
         Returns
         -------
@@ -1259,6 +1262,7 @@ class Fitter:
                 raise ValueError(
                     f"`{kw}` is deprecated. Pass title info directly to fig.suptitle()"
                 )
+        legend_kwargs = {} if legend_kwargs is None else legend_kwargs
 
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
@@ -1348,7 +1352,9 @@ class Fitter:
                 c - f / 2.0, c + f / 2.0, color="#ff7f00", alpha=0.2, label=label
             )
         # Misc
-        fit_ax.legend(loc="upper right")
+        legend_kwargs.setdefault("loc", "upper right")
+        legend_kwargs.setdefault("frameon", False)
+        fit_ax.legend(**legend_kwargs)
         # Set viewing window to only include the roi (not entire spectrum)
         xpad = (self.x_roi[-1] - self.x_roi[0]) * 0.05
         ypad = (ymax - ymin) * 0.05
