@@ -1374,10 +1374,10 @@ class Fitter:
 
         # Detailed ylabel
         ylabel = self.ymode
-        if np.allclose(dx, dx[0]):
-            ylabel += f" / {dx[0]:.2f}"
-            if self.xmode == "energy":
-                ylabel += " keV"
+        # if np.allclose(dx, dx[0]):
+        #     ylabel += f" / {dx[0]:.2f}"
+        #     if self.xmode == "energy":
+        #         ylabel += " keV"
         fit_ax.set_ylabel(ylabel)
 
         # ---------
