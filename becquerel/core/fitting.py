@@ -1307,12 +1307,7 @@ class Fitter:
         data_kwargs.setdefault("markersize", 5)
         data_kwargs.setdefault("alpha", 0.1)
         data_kwargs.setdefault("label", "data")
-        fit_ax.errorbar(
-            self.x,
-            self.y / dx,
-            yerr=self.y_unc,
-            **data_kwargs
-        )
+        fit_ax.errorbar(self.x, self.y / dx, yerr=self.y_unc, **data_kwargs)
         # Init fit
         y = self.eval(x_plot, **self.init_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
