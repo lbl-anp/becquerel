@@ -1227,6 +1227,7 @@ class Fitter:
         enable_fit_panel=True,
         figsize=None,
         data_kwargs=None,
+        res_kwargs=None,
         legend_kwargs=None,
         **kwargs,
     ):
@@ -1248,6 +1249,8 @@ class Fitter:
             Figure size
         data_kwargs : TODO
             TODO
+        res_kwargs : TODO
+            TODO
         legend_kwargs : TODO
             TODO
 
@@ -1265,7 +1268,9 @@ class Fitter:
                 raise ValueError(
                     f"`{kw}` is deprecated. Pass title info directly to fig.suptitle()"
                 )
+        data_kwargs = {} if data_kwargs is None else data_kwargs
         legend_kwargs = {} if legend_kwargs is None else legend_kwargs
+        res_kwargs = {} if res_kwargs is None else res_kwargs
 
         ymin, ymax = self.y_roi.min(), self.y_roi.max()
         # Prepare plots
@@ -1364,13 +1369,19 @@ class Fitter:
         ypad = (ymax - ymin) * 0.05
         fit_ax.set_xlim([self.x_roi[0] - xpad, self.x_roi[-1] + xpad])
         fit_ax.set_ylim([ymin - ypad, ymax + ypad])
-        fit_ax.set_ylabel(self.ymode)
+
+        # Detailed ylabel
+        ylabel = self.ymode
+        if np.allclose(dx, dx[0]):
+            ylabel += f" / {dx[0]:.2f}"
+            if self.xmode == "energy":
+                ylabel += " keV"
+        fit_ax.set_ylabel(ylabel)
 
         # ---------
         # Residuals
         # ---------
         y_eval = self.eval(self.x_roi, **self.best_values) * dx_roi
-        res_kwargs = {"fmt": "o", "color": "k", "markersize": 5, "label": "residuals"}
 
         # Y-values of the residual plot, depending on residual_type
         y_plot = self.compute_residuals(residual_type)
@@ -1387,6 +1398,10 @@ class Fitter:
             ylabel = "Residuals"
         else:
             raise ValueError(f"Unknown residuals option: {residual_type:s}")
+        res_kwargs.setdefault("fmt", "o")
+        res_kwargs.setdefault("color", "k")
+        res_kwargs.setdefault("markersize", 5)
+        res_kwargs.setdefault("label", "residuals")
         res_ax.errorbar(x=self.x_roi, y=y_plot, yerr=yerr_plot, **res_kwargs)
         res_ax.axhline(0.0, linestyle="dashed", c="k", linewidth=1.0)
         res_ax.set_ylabel(ylabel)
