@@ -1226,6 +1226,7 @@ class Fitter:
         residual_type="abs",
         enable_fit_panel=True,
         figsize=None,
+        data_kwargs=None,
         legend_kwargs=None,
         **kwargs,
     ):
@@ -1245,6 +1246,8 @@ class Fitter:
             If True (default), draw an additional panel with fit statistics
         figsize : tuple, optional
             Figure size
+        data_kwargs : TODO
+            TODO
         legend_kwargs : TODO
             TODO
 
@@ -1292,20 +1295,21 @@ class Fitter:
         # Smooth roi x values
         x_plot = np.linspace(self.x_roi[0], self.x_roi[-1], 1000)
         # All data (not only roi)
+        data_kwargs.setdefault("c", "k")
+        data_kwargs.setdefault("fmt", "o")
+        data_kwargs.setdefault("markersize", 5)
+        data_kwargs.setdefault("alpha", 0.1)
+        data_kwargs.setdefault("label", "data")
         fit_ax.errorbar(
             self.x,
             self.y / dx,
             yerr=self.y_unc,
-            c="k",
-            fmt="o",
-            markersize=5,
-            alpha=0.1,
-            label="data",
+            **data_kwargs
         )
         # Init fit
         y = self.eval(x_plot, **self.init_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
-        fit_ax.plot(x_plot, y, "k--", label="init")
+        fit_ax.plot(x_plot, y, "k--", label="init", alpha=0.5)
         # Best fit
         y = self.eval(x_plot, **self.best_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
