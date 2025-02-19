@@ -1247,12 +1247,12 @@ class Fitter:
             If True (default), draw an additional panel with fit statistics
         figsize : tuple, optional
             Figure size
-        data_kwargs : TODO
-            TODO
-        res_kwargs : TODO
-            TODO
-        legend_kwargs : TODO
-            TODO
+        data_kwargs : dict, optional
+            Data plot parameters
+        res_kwargs : dict, optional
+            Residual plot parameters
+        legend_kwargs : dict, optional
+            Legend parameters
 
         Returns
         -------
