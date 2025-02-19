@@ -1,8 +1,9 @@
 """Read in an N42 xml file."""
 
-from pathlib import Path
-from typing import Union
+from __future__ import annotations
+
 from dataclasses import dataclass
+from pathlib import Path
 
 # import struct
 # import dateutil.parser
@@ -11,7 +12,6 @@ from lxml import etree
 
 from ..core.calibration import Calibration
 from .parsers import BecquerelParserError
-
 
 _THIS_DIR = Path(__file__).resolve().parent
 _SCHEMA = etree.XMLSchema(etree.parse(str(_THIS_DIR / "n42.xsd")))
@@ -147,7 +147,7 @@ class N42RadMeasurement:
 
 
 class N42File:
-    def __init__(self, path: Union[str, Path]) -> None:
+    def __init__(self, path: str | Path) -> None:
         self.path = path if isinstance(path, Path) else Path(path)
         _ext = self.path.suffix.lower()
         if _ext not in (".n42", ".xml"):
@@ -159,7 +159,7 @@ class N42File:
         try:
             _SCHEMA.validate(self.tree)
         except Exception:
-            raise BecquerelParserError("TODO")
+            raise BecquerelParserError(f"Schema validation error with {self.path = }")
         # N42 requires that this be the top level key
         if self.root.tag != _ns("RadInstrumentData"):
             raise BecquerelParserError(f"Invalid N42 root tag: {self.root.tag}")
@@ -212,7 +212,7 @@ class N42File:
             )
             calib = meas["Spectrum"]["energyCalibrationReference"]
             compression = meas["Spectrum"]["ChannelData"]["compressionCode"]
-            # TODO: can you have multiple spectra per measurement?
+            # TODO: can you have multiple spectra per measurement? Yes!
             counts = _parse_channel_data(
                 meas["Spectrum"]["ChannelData"]["value"], compression
             )
@@ -221,21 +221,34 @@ class N42File:
         print(self.measurements)
 
 
-def read(filename, verbose=False, cal_kwargs=None):
+def read(filename: str | Path, verbose=False, cal_kwargs=None):
+    """Parse the becquerel Spectrum N42 file and return a dictionary of data.
+
+    Parameters
+    ----------
+    filename : str | Path
+        The filename of the N42 file to read.
+    verbose : bool, optional
+        Whether to print out debugging information. By default False.
+        TODO: not currently used
+    cal_kwargs : dict or None, optional
+        Kwargs to override the Calibration parameters read from file.
+        TODO: not currently used
+
+    Returns
+    -------
+    data : dict
+        Dictionary of data that can be used to instantiate a Spectrum.
+    cal : Calibration
+        Energy calibration stored in the file.
+    """
     n42_file = N42File(filename)
     if len(n42_file.measurements) == 0:
-        raise BecquerelParserError(
-            f"No measurement data was found in {filename}"
-        )
-    if len(n42_file.measurements) > 1:
-        raise BecquerelParserError(
-            "Becquerel does not currently support reading multiple "
-            "measurements from one n42 file"
-        )
-    print(len(n42_file.measurements))
-    meas_key_0 = next(iter(n42_file.measurements))
-    cal_key_0 = next(iter(n42_file.calibrations))
-    m0 = n42_file.measurements[meas_key_0]
-    data = {"counts": m0.counts, "livetime": m0.livetime, "realtime": m0.realtime}
-    cal = n42_file.calibrations[cal_key_0]
-    return data, cal
+        raise BecquerelParserError(f"No measurement data was found in {filename}")
+    if len(n42_file.calibrations) == 0:
+        raise BecquerelParserError(f"No calibration was found in {filename}")
+    data = {
+        k: {"counts": v.counts, "livetime": v.livetime, "realtime": v.realtime}
+        for k, v in n42_file.measurements.items()
+    }
+    return data, n42_file.calibrations
