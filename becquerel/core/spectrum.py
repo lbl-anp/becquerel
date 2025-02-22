@@ -229,10 +229,7 @@ class Spectrum:
         ltups.append(("num_bins", len(self.bin_indices)))
         ltups.append(("gross_counts", self.gross_counts))
         ltups.append(("gross_cps", self.gross_cps))
-        if "infilename" in self.attrs:
-            ltups.append(("filename", self.attrs["infilename"]))
-        else:
-            ltups.append(("filename", None))
+        ltups.append(("filename", self.attrs.get("infilename", None)))
         lines += [f"    {lt[0] + ':':15s} {lt[1]}" for lt in ltups]
         return "\n".join(lines)
 
