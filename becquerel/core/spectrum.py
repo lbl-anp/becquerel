@@ -766,10 +766,16 @@ class Spectrum:
         for k in ["start_time", "stop_time", "realtime", "livetime", "is_calibrated"]:
             if getattr(self, k) != getattr(other, k):
                 return False
-        if not np.array_equal(self.counts_vals, other.counts_vals):
-            return False
-        if not np.array_equal(self.counts_uncs, other.counts_uncs):
-            return False
+        if self._counts is None:
+            if not np.array_equal(self.cps_vals, other.cps_vals):
+                return False
+            if not np.array_equal(self.cps_uncs, other.cps_uncs, equal_nan=True):
+                return False
+        if self._counts is not None:
+            if not np.array_equal(self.counts_vals, other.counts_vals):
+                return False
+            if not np.array_equal(self.counts_uncs, other.counts_uncs, equal_nan=True):
+                return False
         if self.is_calibrated and not np.array_equal(
             self.bin_edges_kev, other.bin_edges_kev
         ):
