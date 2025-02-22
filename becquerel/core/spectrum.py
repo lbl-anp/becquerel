@@ -761,7 +761,7 @@ class Spectrum:
 
     def __eq__(self, other: object) -> bool:
         """Test if two Spectrum objects have the same spectral data."""
-        if not isinstance(other, Spectrum):
+        if not self.__class__ == other.__class__:
             return False
         return self.__dict__ == other.__dict__
 
