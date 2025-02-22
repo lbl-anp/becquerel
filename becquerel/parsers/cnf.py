@@ -296,9 +296,9 @@ def read(filename, verbose=False, cal_kwargs=None):
     data["counts"] = counts
 
     # clean up null characters in any strings
-    for key in data:
+    for key, value in data.items():
         if isinstance(data[key], str):
-            data[key] = data[key].replace("\x00", " ")
+            data[key] = value.replace("\x00", " ")
             data[key] = data[key].replace("\x01", " ")
             data[key] = data[key].strip()
 

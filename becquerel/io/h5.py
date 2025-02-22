@@ -101,16 +101,16 @@ def write_h5(name: str | h5py.File | h5py.Group, dsets: dict, attrs: dict) -> No
     """
     with open_h5(name, "w") as file:
         # write the datasets
-        for key in dsets:
+        for key, value in dsets.items():
             try:
                 file.create_dataset(
                     key,
-                    data=dsets[key],
+                    data=value,
                     compression="gzip",
                     compression_opts=9,
                 )
             except TypeError:
-                file.create_dataset(key, data=dsets[key])
+                file.create_dataset(key, data=value)
         # write the attributes
         file.attrs.update(attrs)
 
