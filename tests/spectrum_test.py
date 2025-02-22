@@ -641,7 +641,7 @@ def test_cpskev_errors(spec_data):
         spec.cpskev
 
 
-@pytest.mark.parametrize("spectype", ["uncal", "cal", "uncal_cps"])
+@pytest.mark.parametrize("spectype", ["uncal", "cal", "uncal_cps", "cal_cps"])
 def test_eq(spectype):
     spec0 = make_spec(spectype)
     spec1 = spec0.copy()
@@ -651,7 +651,10 @@ def test_eq(spectype):
     spec1.filename = "tmp1.h5"
     assert spec0 == spec1
 
-    spec1.bin_edges_kev /= 2
+    if spectype.startswith("cal"):
+        spec1.bin_edges_kev = spec1.bin_edges_kev / 2.0
+    elif spectype.startswith("uncal"):
+        spec1.bin_edges_raw = spec1.bin_edges_raw / 2.0
     assert spec0 != spec1
 
 
