@@ -44,10 +44,6 @@ repos:
     rev: v0.44.0
     hooks:
       - id: markdownlint-fix
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.9.1
     hooks:
