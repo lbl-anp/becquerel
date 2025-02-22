@@ -4,6 +4,7 @@ import datetime
 import warnings
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from uncertainties import UFloat, unumpy
@@ -758,6 +759,23 @@ class Spectrum:
         """
 
         return deepcopy(self)
+
+    def __eq__(self, other: Any) -> bool:
+        """Test if two Spectrum objects have the same spectral data."""
+        if not isinstance(other, Spectrum):
+            return False
+        for k in ["start_time", "stop_time", "realtime", "livetime", "is_calibrated"]:
+            if getattr(self, k) != getattr(other, k):
+                return False
+        if not np.array_equal(self.counts_vals, other.counts_vals):
+            return False
+        if not np.array_equal(self.counts_uncs, other.counts_uncs):
+            return False
+        if self.is_calibrated and not np.array_equal(self.bin_edges_kev, other.bin_edges_kev):
+            return False
+        if not self.is_calibrated and not np.array_equal(self.bin_edges_raw, other.bin_edges_raw):
+            return False
+        return True
 
     def __len__(self) -> int:
         """The number of bins in the spectrum.
