@@ -289,6 +289,16 @@ class Spectrum:
         return unumpy.std_devs(self.counts)
 
     @property
+    def gross_counts(self) -> UFloat:
+        """Total counts in the Spectrum.
+
+        Returns
+        -------
+        UFloat
+        """
+        return self.counts.sum() if self._counts is not None else None
+
+    @property
     def cps(self) -> np.ndarray:
         """Counts per second in each bin, with uncertainty.
 
@@ -331,6 +341,19 @@ class Spectrum:
         """
 
         return unumpy.std_devs(self.cps)
+
+    @property
+    def gross_cps(self) -> UFloat:
+        """Total count rate in the Spectrum.
+
+        Returns
+        -------
+        UFloat
+        """
+        try:
+            return self.cps.sum()
+        except SpectrumError:
+            return None
 
     @property
     def cpskev(self) -> np.ndarray:
