@@ -1,4 +1,4 @@
-"""HDF5 I/O tools."""
+"""HDF5 I/O tools."""  # noqa: A005 Module `io` shadows a Python standard-library module
 
 from . import h5
 
