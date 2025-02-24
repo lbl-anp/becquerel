@@ -203,9 +203,7 @@ def _is_count_like(y):
     """
     if np.any(y < 0):
         return False
-    if not np.allclose(np.rint(y).astype(int), y):
-        return False
-    return True
+    return np.allclose(np.rint(y).astype(int), y)
 
 
 class ConstantModel(Model):
@@ -248,9 +246,9 @@ class GaussModel(Model):
 
     def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05):
         assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
-        assert (
-            width_ratio < 1.0 and width_ratio > 0.0
-        ), f"Width ratio must be between 0.0 and 1.0: {width_ratio}"
+        assert width_ratio < 1.0 and width_ratio > 0.0, (
+            f"Width ratio must be between 0.0 and 1.0: {width_ratio}"
+        )
 
         if x is None:
             x = np.arange(0, len(y))
@@ -301,9 +299,9 @@ class GaussErfModel(Model):
         self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05, amp_ratio=0.9
     ):
         assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
-        assert (
-            width_ratio < 1.0 and width_ratio > 0.0
-        ), f"Width ratio must be between 0.0 and 1.0: {width_ratio}"
+        assert width_ratio < 1.0 and width_ratio > 0.0, (
+            f"Width ratio must be between 0.0 and 1.0: {width_ratio}"
+        )
         if x is None:
             x = np.arange(0, len(y))
         if dx is None:
@@ -366,9 +364,9 @@ class ExpGaussModel(Model):
 
     def guess(self, y, x=None, dx=None, center_ratio=0.5, width_ratio=0.05, gamma=0.95):
         assert center_ratio < 1, f"Center mask ratio cannot exceed 1: {center_ratio}"
-        assert (
-            width_ratio < 1.0 and width_ratio > 0.0
-        ), f"Width ratio must be between 0.0 and 1.0:: {width_ratio}"
+        assert width_ratio < 1.0 and width_ratio > 0.0, (
+            f"Width ratio must be between 0.0 and 1.0:: {width_ratio}"
+        )
         if x is None:
             x = np.arange(0, len(y))
         if dx is None:
@@ -639,9 +637,9 @@ class Fitter:
             self._x = np.arange(len(self.y))
         else:
             self._x = np.asarray(x)
-            assert len(self.x) == len(
-                self.y
-            ), f"Fitting x (len {len(self.x)}) does not match y (len {len(self.y)})"
+            assert len(self.x) == len(self.y), (
+                f"Fitting x (len {len(self.x)}) does not match y (len {len(self.y)})"
+            )
         # Handle y uncertainties
         self.y_unc = y_unc
         # set deltax (bin width)
