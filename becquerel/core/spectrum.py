@@ -191,8 +191,7 @@ class Spectrum:
             and self.start_time is not None
         ):
             raise SpectrumError(
-                "Specify no more than 2 out of 3 args: "
-                "realtime, stop_time, start_time"
+                "Specify no more than 2 out of 3 args: realtime, stop_time, start_time"
             )
         elif self.start_time is not None and self.stop_time is not None:
             if self.start_time > self.stop_time:
@@ -206,8 +205,8 @@ class Spectrum:
         elif self.realtime is not None and self.stop_time is not None:
             self.start_time = self.stop_time - datetime.timedelta(seconds=self.realtime)
 
-        for key in kwargs:
-            self.attrs[key] = kwargs[key]
+        for key, value in kwargs.items():
+            self.attrs[key] = value
 
         # These two lines make sure operators between a Spectrum
         # and a numpy arrays are forbidden and cause a TypeError
@@ -875,8 +874,7 @@ class Spectrum:
                 kwargs = {"counts": self.counts_vals - other.counts_vals}
                 kwargs["uncs"] = [np.nan] * len(self)
                 warnings.warn(
-                    "Subtraction of counts-based spectra, "
-                    "livetimes have been ignored.",
+                    "Subtraction of counts-based spectra, livetimes have been ignored.",
                     SpectrumWarning,
                 )
             except SpectrumError as exc:
@@ -922,8 +920,7 @@ class Spectrum:
             and not np.all(self.bin_edges_kev == other.bin_edges_kev)
         ):
             raise NotImplementedError(
-                "Addition/subtraction for arbitrary calibrated spectra "
-                "not implemented"
+                "Addition/subtraction for arbitrary calibrated spectra not implemented"
             )
             # TODO: if both spectra are calibrated but with different
             #   calibrations, should one be rebinned to match?

@@ -495,16 +495,16 @@ def test_lmfit_and_bq_models(method):
         "bq": {"line_m": -10.0, "line_b": 1e4},
         "mixed": {"line_slope": -10.0, "line_intercept": 1e4},
     }
-    for k in models:
+    for k, val in models.items():
         params = {**peak_params, **line_params[k]}
         data = sim_data(
-            y_func=models[k].eval,
+            y_func=val.eval,
             x_min=0,
             x_max=200,
             **params,
         )
 
-        fitter = bq.Fitter(models[k], **data)
+        fitter = bq.Fitter(val, **data)
         for i in range(2):
             n = f"gauss{i}_mu"
             fitter.params[n].set(value=params[n])
