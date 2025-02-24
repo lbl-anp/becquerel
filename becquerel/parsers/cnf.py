@@ -298,9 +298,7 @@ def read(filename, verbose=False, cal_kwargs=None):
     # clean up null characters in any strings
     for key, value in data.items():
         if isinstance(data[key], str):
-            data[key] = value.replace("\x00", " ")
-            data[key] = data[key].replace("\x01", " ")
-            data[key] = data[key].strip()
+            data[key] = value.replace("\x00", " ").replace("\x01", " ").strip()
 
     # create an energy calibration object
     if cal_kwargs is None:
