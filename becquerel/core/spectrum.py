@@ -226,18 +226,9 @@ class Spectrum:
             ]
         ]
         ltups.append(("num_bins", len(self.bin_indices)))
-        if self._counts is None:
-            ltups.append(("gross_counts", None))
-        else:
-            ltups.append(("gross_counts", self.counts.sum()))
-        try:
-            ltups.append(("gross_cps", self.cps.sum()))
-        except SpectrumError:
-            ltups.append(("gross_cps", None))
-        if "infilename" in self.attrs:
-            ltups.append(("filename", self.attrs["infilename"]))
-        else:
-            ltups.append(("filename", None))
+        ltups.append(("gross_counts", self.gross_counts))
+        ltups.append(("gross_cps", self.gross_cps))
+        ltups.append(("filename", self.attrs.get("infilename", None)))
         lines += [f"    {lt[0] + ':':15s} {lt[1]}" for lt in ltups]
         return "\n".join(lines)
 
@@ -288,6 +279,16 @@ class Spectrum:
         return unumpy.std_devs(self.counts)
 
     @property
+    def gross_counts(self) -> UFloat:
+        """Total counts in the Spectrum.
+
+        Returns
+        -------
+        UFloat
+        """
+        return self.counts.sum() if self._counts is not None else None
+
+    @property
     def cps(self) -> np.ndarray:
         """Counts per second in each bin, with uncertainty.
 
@@ -330,6 +331,19 @@ class Spectrum:
         """
 
         return unumpy.std_devs(self.cps)
+
+    @property
+    def gross_cps(self) -> UFloat:
+        """Total count rate in the Spectrum.
+
+        Returns
+        -------
+        UFloat
+        """
+        try:
+            return self.cps.sum()
+        except SpectrumError:
+            return None
 
     @property
     def cpskev(self) -> np.ndarray:
