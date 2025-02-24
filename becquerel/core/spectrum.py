@@ -779,7 +779,7 @@ class Spectrum:
             self.bin_edges_kev, other.bin_edges_kev
         ):
             return False
-        if not self.is_calibrated and not np.array_equal(
+        if not self.is_calibrated and not np.array_equal(  # noqa: SIM103
             self.bin_edges_raw, other.bin_edges_raw
         ):
             return False
