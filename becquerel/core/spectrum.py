@@ -783,7 +783,7 @@ class Spectrum:
             self.bin_edges_raw, other.bin_edges_raw
         ):
             return False
-        return True  # noqa: SIM103
+        return True
 
     def __len__(self) -> int:
         """The number of bins in the spectrum.
