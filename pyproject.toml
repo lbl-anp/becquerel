@@ -108,6 +108,17 @@ docstring-quotes = "double"
 lines-after-imports = -1
 known-first-party = ["becquerel"]
 
+[tool.ruff.lint.per-file-ignores]
+# ignore false positives in certain notebooks
+"examples/misc.ipynb" = [
+    "F821",  # Undefined name
+    "S110",  # `try`-`except`-`pass` detected, consider logging the exception
+    "E722",  # Do not use bare `except`
+]
+"examples/overview.ipynb" = [
+    "F821",  # Undefined name
+]
+
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 88
 
