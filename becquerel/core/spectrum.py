@@ -6,7 +6,7 @@ from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
-from uncertainties import UFloat, unumpy
+from uncertainties import UFloat, unumpy, ufloat
 
 from .. import io, parsers, tools
 from . import fitting, plotting
@@ -286,7 +286,8 @@ class Spectrum:
         -------
         UFloat
         """
-        return self.counts.sum() if self._counts is not None else None
+        n = self.counts_vals.sum()
+        return ufloat(n, np.sqrt(n))
 
     @property
     def cps(self) -> np.ndarray:
@@ -341,9 +342,11 @@ class Spectrum:
         UFloat
         """
         try:
-            return self.cps.sum()
+            n = self.counts_vals.sum()
         except SpectrumError:
             return None
+        else:
+            return ufloat(n / self.livetime, np.sqrt(n) / self.livetime)
 
     @property
     def cpskev(self) -> np.ndarray:
