@@ -6,7 +6,7 @@ from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
-from uncertainties import UFloat, unumpy, ufloat
+from uncertainties import UFloat, ufloat, unumpy
 
 from .. import io, parsers, tools
 from . import fitting, plotting
