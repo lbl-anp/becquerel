@@ -343,11 +343,7 @@ class Spectrum:
         """
         if self.livetime is None:
             return None
-        try:
-            n = self.counts_vals.sum()
-        except SpectrumError:
-            return None
-        return ufloat(n / self.livetime, np.sqrt(n) / self.livetime)
+        return self.gross_counts / self.livetime
 
     @property
     def cpskev(self) -> np.ndarray:
