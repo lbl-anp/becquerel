@@ -280,7 +280,7 @@ class Spectrum:
 
     @property
     def gross_counts(self) -> UFloat:
-        """Total counts in the Spectrum.
+        """Total counts in the Spectrum, with uncertainty.
 
         Uncertainty sqrt(n) is computed directly, rather than using the
         uncertainties package, to avoid issues with the 0 ± 1 bin convention.
@@ -338,7 +338,7 @@ class Spectrum:
 
     @property
     def gross_cps(self) -> UFloat:
-        """Total count rate in the Spectrum.
+        """Total count rate in the Spectrum, with uncertainty.
 
         Returns
         -------
