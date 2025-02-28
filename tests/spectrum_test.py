@@ -595,9 +595,7 @@ def test_cps(spec_data, construction_kwargs):
     assert np.allclose(spec.cps_vals, spec_data / spec.livetime)
     assert np.allclose(spec.cps_uncs, spec.counts_uncs / spec.livetime)
     assert np.isclose(spec.gross_cps.nominal_value, spec_data.sum() / spec.livetime)
-    assert np.isclose(
-        spec.gross_cps.std_dev, np.sqrt(spec_data.sum()) / spec.livetime, rtol=1e-2
-    )  # TODO: not sure why this is only good to ~1%
+    assert np.isclose(spec.gross_cps.std_dev, np.sqrt(spec_data.sum()) / spec.livetime)
     assert np.isclose(spec.gross_counts.nominal_value, spec_data.sum())
     assert np.isclose(spec.gross_counts.std_dev**2, spec_data.sum())
 
