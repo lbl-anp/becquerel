@@ -282,8 +282,8 @@ class Spectrum:
     def gross_counts(self) -> UFloat:
         """Total counts in the Spectrum.
 
-        Uncertainty sqrt(n) is computed directly to avoid issues with the
-        0 ± 1 bin convention.
+        Uncertainty sqrt(n) is computed directly, rather than using the
+        uncertainties package, to avoid issues with the 0 ± 1 bin convention.
 
         Returns
         -------
