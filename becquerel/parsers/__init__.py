@@ -1,6 +1,6 @@
 """Code for parsing spectrum file types."""
 
-from . import cnf, h5, iec1455, spc, spe
+from . import cnf, h5, iec1455, n42, spc, spe
 from .parsers import BecquerelParserError, BecquerelParserWarning
 
 __all__ = [
@@ -9,6 +9,7 @@ __all__ = [
     "cnf",
     "h5",
     "iec1455",
+    "n42",
     "spc",
     "spe",
 ]
