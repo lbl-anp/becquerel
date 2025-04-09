@@ -68,8 +68,7 @@ def make_spec(t, lt=None, lam=TEST_COUNTS):
         return bq.Spectrum(cps=make_data(lam=lam), livetime=lt)
     elif t == "data":
         return make_data()
-    else:
-        return t
+    return t
 
 
 @pytest.fixture
@@ -595,6 +594,10 @@ def test_cps(spec_data, construction_kwargs):
     assert np.all(spec.counts_vals == spec_data)
     assert np.allclose(spec.cps_vals, spec_data / spec.livetime)
     assert np.allclose(spec.cps_uncs, spec.counts_uncs / spec.livetime)
+    assert np.isclose(spec.gross_cps.nominal_value, spec_data.sum() / spec.livetime)
+    assert np.isclose(spec.gross_cps.std_dev, np.sqrt(spec_data.sum()) / spec.livetime)
+    assert np.isclose(spec.gross_counts.nominal_value, spec_data.sum())
+    assert np.isclose(spec.gross_counts.std_dev**2, spec_data.sum())
 
 
 def test_cpskev(spec_data, livetime):
@@ -640,6 +643,23 @@ def test_cpskev_errors(spec_data):
     spec = bq.Spectrum(spec_data, livetime=300.9)
     with pytest.raises(bq.UncalibratedError):
         spec.cpskev
+
+
+@pytest.mark.parametrize("spectype", ["uncal", "cal", "uncal_cps", "cal_cps"])
+def test_eq(spectype):
+    spec0 = make_spec(spectype)
+    spec1 = spec0.copy()
+    assert spec0 == spec1
+
+    spec0.filename = "tmp0.h5"
+    spec1.filename = "tmp1.h5"
+    assert spec0 == spec1
+
+    if spectype.startswith("cal"):
+        spec1.bin_edges_kev = spec1.bin_edges_kev / 2.0
+    elif spectype.startswith("uncal"):
+        spec1.bin_edges_raw = spec1.bin_edges_raw / 2.0
+    assert spec0 != spec1
 
 
 # ----------------------------------------------

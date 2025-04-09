@@ -9,7 +9,6 @@ References:
 
 """
 
-import warnings
 from collections.abc import Iterable
 from io import StringIO
 
@@ -219,8 +218,7 @@ class _XCOMQuery:
         elif isinstance(arg, Iterable):
             return {"mixture": arg}
         raise XCOMInputError(
-            f"Cannot determine if argument {arg} "
-            "is a symbol, Z, compound, or mixture"
+            f"Cannot determine if argument {arg} is a symbol, Z, compound, or mixture"
         )
 
     @staticmethod
@@ -382,15 +380,6 @@ class _XCOMQuery:
             self._data["Energies"] = ";".join(
                 [f"{erg / 1000.0:.6f}" for erg in kwargs["energies_kev"]]
             )
-            warnings.warn(
-                "A kludge is being applied to the `energies` input to XCOM "
-                "to account for an apparent bug where the first energy in the "
-                "list gets discarded. If XCOM tests being failing again or "
-                "XCOM returns unexpected results, this kludge may need to be "
-                "removed.",
-                XCOMWarning,
-            )
-            self._data["Energies"] = "0.001000;" + self._data["Energies"]
 
     def _request(self):
         """Request data table from the URL."""

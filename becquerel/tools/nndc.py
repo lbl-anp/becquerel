@@ -13,7 +13,6 @@ import numpy as np
 import pandas as pd
 import requests
 import uncertainties
-from future.builtins import super
 
 from ._nndc_dummy_text import (
     _DECAY_RADIATION_QUERY_DUMMY_TEXT,
