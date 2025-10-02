@@ -25,7 +25,7 @@ __classifiers__ = [
 ]
 __license__ = "Other/Proprietary License (see LICENSE.txt)"
 __copyright__ = """\
-becquerel (bq) Copyright (c) 2017-2021, The Regents of the University of
+becquerel (bq) Copyright (c) 2017-2025, The Regents of the University of
 California, through Lawrence Berkeley National Laboratory (subject to receipt
 of any required approvals from the U.S. Dept. of Energy) and University of
 California, Berkeley. All rights reserved.
