@@ -5,8 +5,6 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 
 import matplotlib.pyplot as plt
 import numpy as np
-from future.builtins import dict, super, zip
-from future.utils import viewitems
 
 
 class EnergyCalError(Exception):
@@ -44,8 +42,8 @@ class EnergyCalBase:
           none
         """
 
-        self._calpoints = dict()
-        self._coeffs = dict()
+        self._calpoints = {}
+        self._coeffs = {}
         # initialize fit constraints?
         warnings.warn(
             "The use of bq.EnergyCalBase classes is deprecated "
@@ -102,7 +100,7 @@ class EnergyCalBase:
 
         cal = cls()
 
-        for coeff, val in viewitems(coeffs):
+        for coeff, val in coeffs.items():
             cal._set_coeff(coeff, val)
 
         # TODO make sure all coefficients are specified

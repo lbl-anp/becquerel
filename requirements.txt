@@ -1,7 +1,6 @@
 asteval
 beautifulsoup4
 black>=22.3.0
-future
 h5py
 html5lib
 iminuit

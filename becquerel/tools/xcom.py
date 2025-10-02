@@ -103,6 +103,10 @@ COLUMNS_LONG = {
 }
 
 
+class XCOMWarning(UserWarning):
+    """Warning related to XCOM tools."""
+
+
 class XCOMError(Exception):
     """General XCOM error."""
 
@@ -214,8 +218,7 @@ class _XCOMQuery:
         elif isinstance(arg, Iterable):
             return {"mixture": arg}
         raise XCOMInputError(
-            f"Cannot determine if argument {arg} "
-            "is a symbol, Z, compound, or mixture"
+            f"Cannot determine if argument {arg} is a symbol, Z, compound, or mixture"
         )
 
     @staticmethod

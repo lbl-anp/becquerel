@@ -1,7 +1,7 @@
 """Read in a Canberra CNF file.
 
-The CNF format specification appears to be proprietary, so this code is
-based on the CNF parsing code in the xylib project:
+The CNF data format is not readily available to build a custom parser so this
+code is based on the CNF parsing code in the open source xylib project:
     https://github.com/wojdyr/xylib
 
 The relevant code is in these files:
@@ -296,11 +296,9 @@ def read(filename, verbose=False, cal_kwargs=None):
     data["counts"] = counts
 
     # clean up null characters in any strings
-    for key in data:
+    for key, value in data.items():
         if isinstance(data[key], str):
-            data[key] = data[key].replace("\x00", " ")
-            data[key] = data[key].replace("\x01", " ")
-            data[key] = data[key].strip()
+            data[key] = value.replace("\x00", " ").replace("\x01", " ").strip()
 
     # create an energy calibration object
     if cal_kwargs is None:

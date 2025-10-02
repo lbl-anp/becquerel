@@ -6,7 +6,7 @@
 
 [tool.ruff]
 namespace-packages = ["becquerel"]
-target-version = "py38"
+target-version = "py39"
 fix = true
 show-fixes = true
 preview = false
@@ -107,6 +107,17 @@ docstring-quotes = "double"
 [tool.ruff.lint.isort]
 lines-after-imports = -1
 known-first-party = ["becquerel"]
+
+[tool.ruff.lint.per-file-ignores]
+# ignore false positives in certain notebooks
+"examples/misc.ipynb" = [
+    "F821",  # Undefined name
+    "S110",  # `try`-`except`-`pass` detected, consider logging the exception
+    "E722",  # Do not use bare `except`
+]
+"examples/overview.ipynb" = [
+    "F821",  # Undefined name
+]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 88

@@ -2,7 +2,6 @@
 
 import pandas as pd
 import uncertainties
-from future.builtins import super
 
 from . import df_cache, nndc
 

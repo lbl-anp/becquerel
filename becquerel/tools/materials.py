@@ -143,7 +143,7 @@ def _write_materials_csv(materials):
         for name in mat_list:
             line = ""
             data = materials[name]
-            line = f"\"{name}\",\"{data['formula']}\",{data['density']:.6f},"
+            line = f'"{name}","{data["formula"]}",{data["density"]:.6f},'
             line += ";".join(data["weight_fractions"])
             line += f",{data['source']}"
             print(line, file=f)

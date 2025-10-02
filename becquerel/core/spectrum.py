@@ -6,7 +6,7 @@ from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
-from uncertainties import UFloat, unumpy
+from uncertainties import UFloat, ufloat, unumpy
 
 from .. import io, parsers, tools
 from . import fitting, plotting
@@ -191,8 +191,7 @@ class Spectrum:
             and self.start_time is not None
         ):
             raise SpectrumError(
-                "Specify no more than 2 out of 3 args: "
-                "realtime, stop_time, start_time"
+                "Specify no more than 2 out of 3 args: realtime, stop_time, start_time"
             )
         elif self.start_time is not None and self.stop_time is not None:
             if self.start_time > self.stop_time:
@@ -206,8 +205,8 @@ class Spectrum:
         elif self.realtime is not None and self.stop_time is not None:
             self.start_time = self.stop_time - datetime.timedelta(seconds=self.realtime)
 
-        for key in kwargs:
-            self.attrs[key] = kwargs[key]
+        for key, value in kwargs.items():
+            self.attrs[key] = value
 
         # These two lines make sure operators between a Spectrum
         # and a numpy arrays are forbidden and cause a TypeError
@@ -227,18 +226,9 @@ class Spectrum:
             ]
         ]
         ltups.append(("num_bins", len(self.bin_indices)))
-        if self._counts is None:
-            ltups.append(("gross_counts", None))
-        else:
-            ltups.append(("gross_counts", self.counts.sum()))
-        try:
-            ltups.append(("gross_cps", self.cps.sum()))
-        except SpectrumError:
-            ltups.append(("gross_cps", None))
-        if "infilename" in self.attrs:
-            ltups.append(("filename", self.attrs["infilename"]))
-        else:
-            ltups.append(("filename", None))
+        ltups.append(("gross_counts", self.gross_counts))
+        ltups.append(("gross_cps", self.gross_cps))
+        ltups.append(("filename", self.attrs.get("infilename", None)))
         lines += [f"    {lt[0] + ':':15s} {lt[1]}" for lt in ltups]
         return "\n".join(lines)
 
@@ -289,6 +279,20 @@ class Spectrum:
         return unumpy.std_devs(self.counts)
 
     @property
+    def gross_counts(self) -> UFloat:
+        """Total counts in the Spectrum, with uncertainty.
+
+        Uncertainty sqrt(n) is computed directly, rather than using the
+        uncertainties package, to avoid issues with the 0 ± 1 bin convention.
+
+        Returns
+        -------
+        UFloat
+        """
+        n = self.counts_vals.sum()
+        return ufloat(n, np.sqrt(n))
+
+    @property
     def cps(self) -> np.ndarray:
         """Counts per second in each bin, with uncertainty.
 
@@ -331,6 +335,18 @@ class Spectrum:
         """
 
         return unumpy.std_devs(self.cps)
+
+    @property
+    def gross_cps(self) -> UFloat:
+        """Total count rate in the Spectrum, with uncertainty.
+
+        Returns
+        -------
+        UFloat
+        """
+        if self.livetime is None:
+            return None
+        return self.gross_counts / self.livetime
 
     @property
     def cpskev(self) -> np.ndarray:
@@ -772,6 +788,33 @@ class Spectrum:
 
         return deepcopy(self)
 
+    def __eq__(self, other: object) -> bool:
+        """Test if two Spectrum objects have the same spectral data."""
+        if not self.__class__ == other.__class__:
+            return False
+        for k in ["start_time", "stop_time", "realtime", "livetime", "is_calibrated"]:
+            if getattr(self, k) != getattr(other, k):
+                return False
+        if self._counts is None:
+            if not np.array_equal(self.cps_vals, other.cps_vals):
+                return False
+            if not np.array_equal(self.cps_uncs, other.cps_uncs, equal_nan=True):
+                return False
+        if self._counts is not None:
+            if not np.array_equal(self.counts_vals, other.counts_vals):
+                return False
+            if not np.array_equal(self.counts_uncs, other.counts_uncs, equal_nan=True):
+                return False
+        if self.is_calibrated and not np.array_equal(
+            self.bin_edges_kev, other.bin_edges_kev
+        ):
+            return False
+        if not self.is_calibrated and not np.array_equal(  # noqa: SIM103
+            self.bin_edges_raw, other.bin_edges_raw
+        ):
+            return False
+        return True
+
     def __len__(self) -> int:
         """The number of bins in the spectrum.
 
@@ -874,8 +917,7 @@ class Spectrum:
                 kwargs = {"counts": self.counts_vals - other.counts_vals}
                 kwargs["uncs"] = [np.nan] * len(self)
                 warnings.warn(
-                    "Subtraction of counts-based spectra, "
-                    "livetimes have been ignored.",
+                    "Subtraction of counts-based spectra, livetimes have been ignored.",
                     SpectrumWarning,
                 )
             except SpectrumError as exc:
@@ -921,8 +963,7 @@ class Spectrum:
             and not np.all(self.bin_edges_kev == other.bin_edges_kev)
         ):
             raise NotImplementedError(
-                "Addition/subtraction for arbitrary calibrated spectra "
-                "not implemented"
+                "Addition/subtraction for arbitrary calibrated spectra not implemented"
             )
             # TODO: if both spectra are calibrated but with different
             #   calibrations, should one be rebinned to match?

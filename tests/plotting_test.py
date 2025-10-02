@@ -516,10 +516,9 @@ def test_errornone(uncal_spec):
     for i in ax.get_children():
         if type(i) is mpl.collections.LineCollection:
             colls = colls + 1
-        if type(i) is mpl.collections.PolyCollection:
+        elif type(i) is mpl.collections.PolyCollection:
             polys = polys + 1
-
-        if type(i) is mpl.lines.Line2D:
+        elif type(i) is mpl.lines.Line2D:
             lines = lines + 1
     assert colls == 0
     assert polys == 0
@@ -537,7 +536,7 @@ def test_errorbars(uncal_spec):
     for i in ax.get_children():
         if type(i) is mpl.collections.LineCollection:
             colls = colls + 1
-        if type(i) is mpl.lines.Line2D:
+        elif type(i) is mpl.lines.Line2D:
             lines = lines + 1
     assert colls == 1
     assert lines >= 1
@@ -552,8 +551,12 @@ def test_errorband(uncal_spec):
     colls = 0
     lines = 0
     for i in ax.get_children():
-        if type(i) is mpl.collections.PolyCollection:
-            colls = colls + 1
+        try:
+            if type(i) is mpl.collections.FillBetweenPolyCollection:
+                colls = colls + 1
+        except AttributeError:
+            if type(i) is mpl.collections.PolyCollection:
+                colls = colls + 1
         if type(i) is mpl.lines.Line2D:
             lines = lines + 1
     assert colls == 1
