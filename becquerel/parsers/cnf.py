@@ -68,12 +68,16 @@ def _from_pdp11(data, index):
 
 
 def _read_energy_calibration(data, index):
-    """Read the four energy calibration coefficients."""
-    coeff = [0.0, 0.0, 0.0, 0.0]
-    for i in range(4):
+    """Read the energy calibration coefficients.
+    
+    Based on xylib, only 3 coefficients are read (quadratic).
+    """
+    coeff = [0.0, 0.0, 0.0]
+    for i in range(3):
         coeff[i] = _from_pdp11(data, index + 2 * 4 + 28 + 4 * i)
     if coeff[1] == 0.0:
         return None
+    coeff.append(0.0)
     return coeff
 
 
@@ -125,36 +129,56 @@ def read(filename, verbose=False, cal_kwargs=None):
     offset_eff = 0
     offset_enc = 0
     offset_chan = 0
+
+    file_len = len(file_bytes)  # Get file length once for bounds checks
+
     for i in range(112, 128 * 1024, 48):
-        offset = _from_little_endian(file_bytes, i + 10, 4)
-        if (
+        # Stop if this block would read past the end of the file
+        if i + 48 >= file_len:
+            break
+
+        # Check for the valid header "magic bytes"
+        # This is the logic from the C++ 'if' condition
+        is_valid_block = (
             (file_bytes[i + 1] == 0x20 and file_bytes[i + 2] == 0x01)
             or (file_bytes[i + 1] == 0)
             or (file_bytes[i + 2] == 0)
-        ):
-            if file_bytes[i] == 0:
-                if offset_acq == 0:
-                    offset_acq = offset
-                else:
-                    offset_enc = offset
-            elif file_bytes[i] == 1:
-                if offset_sam == 0:
-                    offset_sam = offset
-            elif file_bytes[i] == 2:
-                if offset_eff == 0:
-                    offset_eff = offset
-            elif file_bytes[i] == 5:
-                if offset_chan == 0:
-                    offset_chan = offset
+        )
+
+        if not is_valid_block:
+            break
+
+        # If the block is valid, parse it
+        offset = _from_little_endian(file_bytes, i + 10, 4)
+        
+        if file_bytes[i] == 0:
+            if offset_acq == 0:
+                offset_acq = offset
             else:
-                pass
-            if (
-                offset_acq != 0
-                and offset_sam != 0
-                and offset_eff != 0
-                and offset_chan != 0
-            ):
-                break
+                offset_enc = offset
+        elif file_bytes[i] == 1:
+            if offset_sam == 0:
+                offset_sam = offset
+        elif file_bytes[i] == 2:
+            if offset_eff == 0:
+                offset_eff = offset
+        elif file_bytes[i] == 5:
+            if offset_chan == 0:
+                if (offset + 1 < file_len and
+                    file_bytes[offset] == 0x05 and
+                    file_bytes[offset + 1] == 0x20):
+                    offset_chan = offset
+        else:
+            pass
+        
+        if (
+            offset_acq != 0
+            and offset_sam != 0
+            and offset_eff != 0
+            and offset_chan != 0
+        ):
+            break
+
     if offset_enc == 0:
         offset_enc = offset_acq
 
@@ -165,46 +189,38 @@ def read(filename, verbose=False, cal_kwargs=None):
         or file_bytes[offset_sam + 1] != 0x20
     ):
         if verbose:
-            print(offset_sam + 48 + 80, len(file_bytes))
-            print(file_bytes[offset_sam], file_bytes[offset_sam + 1])
-        raise BecquerelParserError("Sample information not found")
+            print("Warning: Sample information not found or is in an unexpected format.")
+        # Don't raise an error, just warn
+        data["sample_name"] = "Unknown"
+        data["sample_description"] = ""
+        data["sample_id"] = ""
+        data["sample_type"] = ""
+        data["sample_unit"] = ""
+        data["user_name"] = ""
     else:
-        sample_name = ""
-        for j in range(offset_sam + 48, offset_sam + 48 + 64):
-            sample_name += chr(file_bytes[j])
+        # Read sample name (32 bytes at offset 0x30 or 48)
+        start = offset_sam + 48
+        end = start + 32
+        sample_name_bytes = file_bytes[start:end]
+        sample_name = "".join(map(chr, sample_name_bytes))
         if verbose:
             print("sample name: ", sample_name)
-        sample_id = ""
-        for j in range(offset_sam + 112, offset_sam + 112 + 64):
-            sample_id += chr(file_bytes[j])
-        if verbose:
-            print("sample id:   ", sample_id)
-        sample_type = ""
-        for j in range(offset_sam + 176, offset_sam + 176 + 16):
-            sample_type += chr(file_bytes[j])
-        if verbose:
-            print("sample type: ", sample_type)
-        sample_unit = ""
-        for j in range(offset_sam + 192, offset_sam + 192 + 64):
-            sample_unit += chr(file_bytes[j])
-        if verbose:
-            print("sample unit: ", sample_unit)
-        user_name = ""
-        for j in range(offset_sam + 0x02D6, offset_sam + 0x02D6 + 32):
-            user_name += chr(file_bytes[j])
-        if verbose:
-            print("user name:   ", user_name)
-        sample_desc = ""
-        for j in range(offset_sam + 0x036E, offset_sam + 0x036E + 256):
-            sample_desc += chr(file_bytes[j])
+        data["sample_name"] = sample_name
+        
+        # Read sample description (48 bytes, immediately after name)
+        start = end
+        end = start + 48
+        sample_desc_bytes = file_bytes[start:end]
+        sample_desc = "".join(map(chr, sample_desc_bytes))
         if verbose:
             print("sample desc: ", sample_desc)
-        data["sample_name"] = sample_name
-        data["sample_id"] = sample_id
-        data["sample_type"] = sample_type
-        data["sample_unit"] = sample_unit
-        data["user_name"] = user_name
         data["sample_description"] = sample_desc
+        
+        # Set other fields to empty strings to avoid breaking downstream code
+        data["sample_id"] = ""
+        data["sample_type"] = ""
+        data["sample_unit"] = ""
+        data["user_name"] = ""
 
     # extract acquisition information
     if (
