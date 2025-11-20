@@ -93,13 +93,11 @@ def _decode_string(data, start, length):
     """Safely decode a string from bytes, stripping nulls and padding."""
     if start + length > len(data):
         return ""
-    try:
-        raw = data[start : start + length]
-        # Latin-1 is robust for legacy scientific instruments (preserves bytes)
-        # We also strip common control characters if they wrap the text
-        return raw.decode("latin-1", "replace").strip("\x00").strip()
-    except UnicodeDecodeError:
-        return ""
+
+    raw = data[start : start + length]
+    # Latin-1 is robust for legacy scientific instruments (preserves bytes)
+    # We also strip common control characters if they wrap the text
+    return raw.decode("latin-1", "replace").strip("\x00").strip()
 
 
 def read(filename, verbose=False, cal_kwargs=None):
@@ -202,10 +200,11 @@ def read(filename, verbose=False, cal_kwargs=None):
     ptr_cal = int.from_bytes(file_bytes[acq_start + 34 : acq_start + 36], "little")
     ptr_date = int.from_bytes(file_bytes[acq_start + 36 : acq_start + 38], "little")
 
+    # Defaults set to None/0.0 to correctly indicate missing data
     data = {
         "start_time": None,
-        "realtime": 1.0,
-        "livetime": 1.0,
+        "realtime": 0.0,
+        "livetime": 0.0,
     }
 
     if ptr_date > 0:
@@ -213,13 +212,11 @@ def read(filename, verbose=False, cal_kwargs=None):
         dt = _parse_vms_time(file_bytes[dl : dl + 8])
         if dt:
             data["start_time"] = dt
-        else:
-            # Default for empty/geometry files
-            data["start_time"] = datetime.datetime(1970, 1, 1)
 
         rt = _parse_vms_duration(file_bytes[dl + 8 : dl + 16])
         lt = _parse_vms_duration(file_bytes[dl + 16 : dl + 24])
 
+        # Only update if valid, otherwise keep 0.0 default
         if rt > 0:
             data["realtime"] = rt
         if lt > 0:
@@ -298,10 +295,12 @@ def read(filename, verbose=False, cal_kwargs=None):
         c0, c1 = int(counts[0]), int(counts[1])
         rt_int, lt_int = int(data["realtime"]), int(data["livetime"])
 
-        if c0 > 0 and (abs(c0 - rt_int) <= 1 or abs(c0 - lt_int) <= 1):
-            counts[0] = 0.0
-        if c1 > 0 and (abs(c1 - rt_int) <= 1 or abs(c1 - lt_int) <= 1):
-            counts[1] = 0.0
+        # Only run check if we have valid non-zero times.
+        if rt_int > 0 or lt_int > 0:
+            if c0 > 0 and (abs(c0 - rt_int) <= 1 or abs(c0 - lt_int) <= 1):
+                counts[0] = 0.0
+            if c1 > 0 and (abs(c1 - rt_int) <= 1 or abs(c1 - lt_int) <= 1):
+                counts[1] = 0.0
 
     data["counts"] = counts
 
@@ -317,6 +316,11 @@ def read(filename, verbose=False, cal_kwargs=None):
 
     if cal_coeff is None:
         cal_coeff = [0.0, 1.0, 0.0, 0.0]
+
+    # Final cleanup
+    for k, v in data.items():
+        if isinstance(v, str):
+            data[k] = v.strip()
 
     # Create calibration object
     if cal_kwargs is None:
