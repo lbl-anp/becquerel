@@ -70,6 +70,38 @@ def _from_pdp11(data, index):
     return sign * h * pow(2.0, exb - 128.0)
 
 
+def _read_energy_calibration(data, index):
+    """Read the energy calibration coefficients."""
+    base_idx = index + 36
+    coeff = []
+    if base_idx + 12 > len(data):
+        return None
+
+    for i in range(3):
+        val = _from_pdp11(data, base_idx + (4 * i))
+        coeff.append(val)
+
+    # If linear term is 0, the calibration is invalid/default
+    if coeff[1] == 0.0:
+        return None
+
+    coeff.append(0.0)
+    return coeff
+
+
+def _decode_string(data, start, length):
+    """Safely decode a string from bytes, stripping nulls and padding."""
+    if start + length > len(data):
+        return ""
+    try:
+        raw = data[start : start + length]
+        # Latin-1 is robust for legacy scientific instruments (preserves bytes)
+        # We also strip common control characters if they wrap the text
+        return raw.decode("latin-1", "replace").strip("\x00").strip()
+    except UnicodeDecodeError:
+        return ""
+
+
 def read(filename, verbose=False, cal_kwargs=None):
     """Parse the CNF file and return a dictionary of data.
 
@@ -134,7 +166,8 @@ def read(filename, verbose=False, cal_kwargs=None):
     best_acq = None
     acq_candidates = [h for h in headers if h["type"] == 0]
 
-    for h in acq_candidates:
+    # Iterate backwards (Genie appends active data to the end)
+    for h in reversed(acq_candidates):
         off = h["d_off"]
         if off + 40 > file_len:
             continue
@@ -146,7 +179,7 @@ def read(filename, verbose=False, cal_kwargs=None):
                 lt = _parse_vms_duration(file_bytes[dl + 16 : dl + 24])
                 if lt > 0.0:
                     best_acq = h
-                    # Keep searching to find the *last* valid one (appended data)
+                    break
 
     # Fallback: If no block has valid time (e.g. derived/geometry files),
     # use the last available block.
@@ -173,8 +206,6 @@ def read(filename, verbose=False, cal_kwargs=None):
         "start_time": None,
         "realtime": 1.0,
         "livetime": 1.0,
-        "sample_name": "",
-        "sample_description": "",
     }
 
     if ptr_date > 0:
@@ -183,7 +214,7 @@ def read(filename, verbose=False, cal_kwargs=None):
         if dt:
             data["start_time"] = dt
         else:
-            # Default for empty files
+            # Default for empty/geometry files
             data["start_time"] = datetime.datetime(1970, 1, 1)
 
         rt = _parse_vms_duration(file_bytes[dl + 8 : dl + 16])
@@ -194,33 +225,39 @@ def read(filename, verbose=False, cal_kwargs=None):
         if lt > 0:
             data["livetime"] = lt
 
-    # Sample Info (Type 1)
-    # Find the Type 1 block closest to the selected Acquisition block.
-    # Usually, the last Sample block corresponds to the last Acquisition block.
-    sam_candidates = [h for h in headers if h["type"] == 1]
-    if sam_candidates:
-        s_off = sam_candidates[-1]["d_off"]
-        if s_off + 128 <= file_len:
-            # Name is at +48 (32 bytes), Description at +80 (48 bytes)
-            data["sample_name"] = (
-                file_bytes[s_off + 48 : s_off + 80]
-                .decode("latin-1", "replace")
-                .strip("\x00")
-            )
-            data["sample_description"] = (
-                file_bytes[s_off + 80 : s_off + 128]
-                .decode("latin-1", "replace")
-                .strip("\x00")
-            )
-
-    # Fill required fields
+    # --- STEP 4: SAMPLE INFO ---
+    # Initialize all fields to ensure they exist even if the block is missing
+    data["sample_name"] = ""
     data["sample_id"] = ""
     data["sample_type"] = ""
     data["sample_unit"] = ""
     data["user_name"] = ""
+    data["sample_description"] = ""
 
-    # --- STEP 4: READ SPECTRUM ---
+    # Find the Type 1 block closest to the selected Acquisition block.
+    # Usually, the last Sample block corresponds to the last Acquisition block.
+    sam_candidates = [h for h in headers if h["type"] == 1]
+    if sam_candidates:
+        # Heuristic: pick the last one found (appended data)
+        s_off = sam_candidates[-1]["d_off"]
+
+        if s_off + 256 <= file_len:
+            # Name: Offset 48 (32 bytes)
+            data["sample_name"] = _decode_string(file_bytes, s_off + 48, 64)
+            # ID: Offset 112 (64 bytes)
+            data["sample_id"] = _decode_string(file_bytes, s_off + 112, 64)
+            # Type: Offset 176 (16 bytes)
+            data["sample_type"] = _decode_string(file_bytes, s_off + 176, 16)
+            # Unit: Offset 196 (Was 192, shifted by 4 to skip binary prefix)
+            data["sample_unit"] = _decode_string(file_bytes, s_off + 196, 64)
+            # User Name: Offset 726 (32 bytes)
+            data["user_name"] = _decode_string(file_bytes, s_off + 726, 32)
+            # Description: Offset 878 (256 bytes)
+            data["sample_description"] = _decode_string(file_bytes, s_off + 878, 256)
+
+    # --- STEP 5: READ SPECTRUM ---
     # 1. Get Channel Count from Header (Offset 186)
+    # This is critical to avoiding "scrambled" data from reading footers.
     count_offset = acq_start + 186
     num_channels = 0
     if count_offset + 2 <= file_len:
@@ -268,26 +305,18 @@ def read(filename, verbose=False, cal_kwargs=None):
 
     data["counts"] = counts
 
-    # --- STEP 5: CALIBRATION ---
+    # --- STEP 6: CALIBRATION ---
     offset_cal = acq_start + 48 + 32 + ptr_cal
     cal_coeff = None
 
     if ptr_cal > 0 and offset_cal < file_len:
-        base_idx = offset_cal + 36
-        if base_idx + 12 <= file_len:
-            c = [_from_pdp11(file_bytes, base_idx + (4 * i)) for i in range(3)]
-
-            # If linear term is not zero, it's a valid calibration
-            if c[1] != 0.0:
-                cal_coeff = [*c, 0.0]  # Add cubic term for compatibility
+        cal_coeff = _read_energy_calibration(file_bytes, offset_cal)
+        # Fallback: try relative offset if absolute failed
+        if cal_coeff is None:
+            cal_coeff = _read_energy_calibration(file_bytes, offset_cal - ptr_cal)
 
     if cal_coeff is None:
         cal_coeff = [0.0, 1.0, 0.0, 0.0]
-
-    # Clean strings
-    for k, v in data.items():
-        if isinstance(v, str):
-            data[k] = v.strip()
 
     # Create calibration object
     if cal_kwargs is None:
