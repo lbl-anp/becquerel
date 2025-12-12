@@ -557,3 +557,68 @@ def test_gauss_dbl_exp(method):
         rtol=0.05,
         fitter=fitter,
     )
+
+
+def test_migrad_kws_parameter():
+    """Test that migrad_kws parameter is properly passed to Minuit.migrad()."""
+    # Generate synthetic close doublet that challenges default convergence
+    x = np.linspace(500, 600, 500)
+    y_true = (
+        1000 * np.exp(-((x - 540) ** 2) / (2 * 1.5**2)) +
+        800 * np.exp(-((x - 545) ** 2) / (2 * 1.5**2)) +
+        100
+    )
+    np.random.seed(42)
+    y = np.random.poisson(y_true)
+    y_unc = np.sqrt(y + 1)
+    
+    model = (
+        bq.fitting.GaussModel(prefix='peak1_') + 
+        bq.fitting.GaussModel(prefix='peak2_') + 
+        bq.fitting.ConstantModel(prefix='bkg_')
+    )
+    
+    guess = {
+        'peak1_amp': 1000, 'peak1_mu': 540, 'peak1_sigma': 1.5,
+        'peak2_amp': 800, 'peak2_mu': 545, 'peak2_sigma': 1.5,
+        'bkg_c': 100
+    }
+    
+    # Test 1: Default settings (may have higher EDM)
+    fitter1 = bq.Fitter(model, x=x, y=y, y_unc=y_unc)
+    fitter1.fit(backend='minuit-pml', guess=guess)
+    edm1 = fitter1.result.fmin.edm
+    
+    # Test 2: Custom migrad_kws for tighter convergence
+    fitter2 = bq.Fitter(model, x=x, y=y, y_unc=y_unc)
+    fitter2.fit(
+        backend='minuit-pml',
+        guess=guess,
+        migrad_kws={'ncall': 50000, 'iterate': 10, 'precision': 10.0}
+    )
+    edm2 = fitter2.result.fmin.edm
+    
+    # Custom settings should achieve better (lower) EDM
+    assert edm2 < edm1, f"Custom migrad_kws should improve EDM: {edm2} vs {edm1}"
+    
+    # With high precision parameter, EDM should be reasonably low
+    assert edm2 < 0.1, f"EDM should be low with custom settings: {edm2}"
+    
+    # Test 3: Verify backward compatibility (migrad_kws=None works)
+    fitter3 = bq.Fitter(model, x=x, y=y, y_unc=y_unc)
+    fitter3.fit(backend='minuit-pml', guess=guess, migrad_kws=None)
+    assert fitter3.result is not None, "fit() should work with migrad_kws=None"
+
+
+def test_migrad_kws_non_minuit_backend():
+    """Test that migrad_kws is safely ignored for non-Minuit backends."""
+    x = np.linspace(0, 10, 100)
+    y = 2 * x + 5 + np.random.normal(0, 1, 100)
+    y_unc = np.ones_like(y)
+    
+    model = bq.fitting.LineModel()
+    fitter = bq.Fitter(model, x=x, y=y, y_unc=y_unc)
+    
+    # Should not raise error even though migrad_kws provided for lmfit backend
+    fitter.fit(backend='lmfit', migrad_kws={'ncall': 10000})
+    assert fitter.success, "lmfit fit should succeed and ignore migrad_kws"
