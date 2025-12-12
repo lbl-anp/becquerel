@@ -753,7 +753,7 @@ class Fitter:
                 self.set_param(*dp)
         return defaults
 
-    def fit(self, backend="lmfit", guess=None, limits=None):
+    def fit(self, backend="lmfit", guess=None, limits=None, migrad_kws=None):
         """Perform the weighted fit to data.
 
         Parameters
@@ -768,6 +768,16 @@ class Fitter:
             User-specified parameter limits that override limits provided by
             the Model.guess() or Fitter.guess_param_defaults() methods.
             Currently only implemented for backend="lmfit" and "iminuit".
+        migrad_kws : dict, optional
+            Keyword arguments to pass to Minuit.migrad() for Minuit backends.
+            Common options include:
+            
+            - ncall (int): Maximum number of function calls (default ~10000)
+            - iterate (int): Number of iteration cycles (default 5)
+            - precision (float): Convergence tolerance. EDM goal ≈ 0.002 × precision.
+              For example, precision=5.0 gives EDM goal ≈ 0.01
+            
+            Only used for minuit-pml backend. See iminuit documentation for details.
 
         Raises
         ------
@@ -907,7 +917,9 @@ class Fitter:
             self.result.strategy = 2
 
             # Run the minimizer
-            self.result.migrad()
+            if migrad_kws is None:
+                migrad_kws = {}
+            self.result.migrad(**migrad_kws)
 
             # Compute errors
             self.result.hesse()
