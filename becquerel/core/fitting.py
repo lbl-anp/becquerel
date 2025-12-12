@@ -916,9 +916,17 @@ class Fitter:
             # Specify extra checks
             self.result.strategy = 2
 
-            # Run the minimizer
+            # Apply migrad settings if provided
             if migrad_kws is None:
                 migrad_kws = {}
+            else:
+                migrad_kws = migrad_kws.copy()  # Don't modify caller's dict
+            
+            # Set tolerance if provided (controls EDM goal)
+            if 'tol' in migrad_kws:
+                self.result.tol = migrad_kws.pop('tol')
+            
+            # Run the minimizer (ncall, iterate, use_simplex are valid params)
             self.result.migrad(**migrad_kws)
 
             # Compute errors
