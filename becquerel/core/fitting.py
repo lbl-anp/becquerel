@@ -771,12 +771,12 @@ class Fitter:
         migrad_kws : dict, optional
             Keyword arguments to pass to Minuit.migrad() for Minuit backends.
             Common options include:
-            
+
             - ncall (int): Maximum number of function calls (default ~10000)
             - iterate (int): Number of iteration cycles (default 5)
-            - precision (float): Convergence tolerance. EDM goal ≈ 0.002 × precision.
+            - precision (float): Convergence tolerance. EDM goal ≈ 0.002 * precision.
               For example, precision=5.0 gives EDM goal ≈ 0.01
-            
+
             Only used for minuit-pml backend. See iminuit documentation for details.
 
         Raises
@@ -921,11 +921,11 @@ class Fitter:
                 migrad_kws = {}
             else:
                 migrad_kws = migrad_kws.copy()  # Don't modify caller's dict
-            
+
             # Set tolerance if provided (controls EDM goal)
-            if 'tol' in migrad_kws:
-                self.result.tol = migrad_kws.pop('tol')
-            
+            if "tol" in migrad_kws:
+                self.result.tol = migrad_kws.pop("tol")
+
             # Run the minimizer (ncall, iterate, use_simplex are valid params)
             self.result.migrad(**migrad_kws)
 
