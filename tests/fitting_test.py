@@ -561,7 +561,7 @@ def test_gauss_dbl_exp(method):
 
 def test_migrad_kws_parameter():
     """Test that migrad_kws parameter is properly passed to Minuit.migrad()."""
-    # Generate synthetic close doublet that challenges default convergence
+    # Generate synthetic close doublet
     x = np.linspace(500, 600, 500)
     y_true = (
         1000 * np.exp(-((x - 540) ** 2) / (2 * 1.5**2))
@@ -588,32 +588,35 @@ def test_migrad_kws_parameter():
         "bkg_c": 100,
     }
 
-    # Test 1: Default settings (may have higher EDM)
+    # Test 1: Default settings
     fitter1 = bq.Fitter(model, x=x, y=y, y_unc=y_unc)
     fitter1.fit(backend="minuit-pml", guess=guess)
-    edm1 = fitter1.result.fmin.edm
+    assert fitter1.result is not None, "Default fit should produce a result"
+    assert fitter1.success, "Default fit should succeed"
 
-    # Test 2: Custom migrad_kws for better convergence
+    # Test 2: Custom migrad_kws with relaxed tolerance
+    # Note: tol=10.0 relaxes convergence criterion (EDM goal ≈ 0.002 * tol),
+    # so Minuit may stop earlier with higher EDM. This tests that the parameter
+    # is actually passed through to migrad().
     fitter2 = bq.Fitter(model, x=x, y=y, y_unc=y_unc)
     fitter2.fit(
         backend="minuit-pml",
         guess=guess,
         migrad_kws={"ncall": 50000, "iterate": 10, "tol": 10.0},
     )
-    edm2 = fitter2.result.fmin.edm
-
-    # Custom settings should achieve better (lower) EDM or at least comparable
-    # (more iterations and higher tolerance both help convergence)
-    assert edm2 < edm1 * 2, (
-        f"Custom migrad_kws should not worsen EDM significantly: {edm2} vs {edm1}"
+    assert fitter2.result is not None, "Fit with migrad_kws should produce a result"
+    # With relaxed tolerance (tol=10.0), the fit should succeed even if EDM is higher
+    assert fitter2.success, (
+        f"Fit with relaxed tolerance should succeed, EDM={fitter2.result.fmin.edm}"
     )
 
-    # With relaxed tolerance, EDM should be accepted by Minuit
-    assert fitter2.success or edm2 < 0.1, (
-        f"Fit should succeed or have reasonable EDM: {edm2}"
+    # Test 3: Verify that tol parameter actually affects the Minuit object
+    # The tolerance should be set on the Minuit object
+    assert fitter2.result.tol == 10.0, (
+        f"Tolerance should be set to 10.0, got {fitter2.result.tol}"
     )
 
-    # Test 3: Verify backward compatibility (migrad_kws=None works)
+    # Test 4: Verify backward compatibility (migrad_kws=None works)
     fitter3 = bq.Fitter(model, x=x, y=y, y_unc=y_unc)
     fitter3.fit(backend="minuit-pml", guess=guess, migrad_kws=None)
     assert fitter3.result is not None, "fit() should work with migrad_kws=None"
