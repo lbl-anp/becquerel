@@ -640,6 +640,19 @@ class Spectrum:
                 verbose=verbose,
                 cal_kwargs=cal_kwargs,
             )
+        elif ext.lower() == ".n42":
+            data, cal = parsers.n42.read(
+                infilename,
+                verbose=verbose,
+                cal_kwargs=cal_kwargs,
+            )
+            if len(data) > 1 or len(cal) > 1:
+                raise SpectrumError(
+                    "Spectrum.from_file cannot handle multiple measurements in "
+                    "the same .n42 file. Use `parsers.n42.read` directly."
+                )
+            data = next(iter(data.values()))
+            cal = next(iter(cal.values()))
         else:
             raise NotImplementedError(f"File type {ext} can not be read")
 
