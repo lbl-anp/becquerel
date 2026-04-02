@@ -7,6 +7,10 @@ References:
 
 """
 
+import functools
+import json
+import re
+import time
 import warnings
 
 import numpy as np
@@ -68,6 +72,47 @@ WALLET_DECAY_MODE.update(
         "bdf": "DF",
     }
 )
+
+_WALLET_SEARCH_URL = "https://www.nndc.bnl.gov/walletcards/StandardSearchServlet"
+_NNDC_TIMEOUT_SECONDS = 60
+_NNDC_MAX_RETRIES = 5
+_WALLET_TOO_MANY_RESULTS = 3000
+_WALLET_NUCLIDE_PATTERN = re.compile(
+    r"^\s*(?:(?P<symbol>[A-Za-z]{1,3})-?(?P<mass>\d+)(?P<meta>m\d*)?|"
+    r"(?P<mass2>\d+)-?(?P<symbol2>[A-Za-z]{1,3})(?P<meta2>m\d*)?)\s*$"
+)
+_WALLET_TIME_UNITS = {
+    "fs": 1e-15,
+    "ps": 1e-12,
+    "ns": 1e-9,
+    "us": 1e-6,
+    "ms": 1e-3,
+    "s": 1.0,
+    "m": 60.0,
+    "h": 3600.0,
+    "d": 86400.0,
+    "y": 31557600.0,
+    "ky": 31557600.0e3,
+    "my": 31557600.0e6,
+    "gy": 31557600.0e9,
+}
+_WALLET_DECAY_KEYS = {
+    "A": frozenset({"a", "2a"}),
+    "B-": frozenset({"B-"}),
+    "ECBP": frozenset({"EC", "B+", "EC+B+"}),
+    "IT": frozenset({"IT"}),
+    "N": frozenset({"n", "2n", "3n", "4n"}),
+    "P": frozenset({"p", "2p", "3p"}),
+    "SF": frozenset({"f"}),
+    "DB": frozenset({"2B-", "2EC"}),
+    "DN": frozenset({"B-n", "B-2n", "B-3n", "B-4n", "B-5n", "B-6n", "B-7n"}),
+    "DP": frozenset({"B+p", "B+2p", "B+3p", "ECp", "EC2p", "EC3p", "B-p"}),
+    "DA": frozenset({"B-a", "B+a", "ECa", "ECap"}),
+    "DF": frozenset({"B-f", "ECf", "EC+B+f"}),
+}
+_WALLET_NON_CLUSTER_DECAY_KEYS = frozenset(
+    key for keys in _WALLET_DECAY_KEYS.values() for key in keys
+).union({"IT", "EC+B+", "EC", "B+", "B-"})
 
 
 DECAYRAD_RADIATION_TYPE = {
@@ -323,6 +368,187 @@ def _format_range(x_range):
     return x1, x2
 
 
+def _wallet_format_nuclide(nuclide):
+    """Convert legacy isotope strings like `Co-60` into NNDC wallet format."""
+    nuclide = str(nuclide).strip()
+    match = _WALLET_NUCLIDE_PATTERN.match(nuclide)
+    if match is None:
+        return nuclide
+    groups = match.groupdict()
+    symbol = groups["symbol"] or groups["symbol2"]
+    mass = groups["mass"] or groups["mass2"]
+    meta = groups["meta"] or groups["meta2"]
+    if meta:
+        raise NNDCRequestError(
+            "Request failed: wallet card search does not support "
+            f"metastable nuclides: {nuclide}"
+        )
+    symbol = symbol[0].upper() + symbol[1:].lower()
+    return f"{mass}{symbol}"
+
+
+def _wallet_int_or_none(value):
+    """Convert a numeric wallet search parameter to int or None."""
+    if value in ("", None):
+        return None
+    return int(float(value))
+
+
+def _wallet_float_or_none(value):
+    """Convert a numeric wallet value to float or None."""
+    if value in ("", None):
+        return None
+    return float(value)
+
+
+def _wallet_value(entry, scale=1.0):
+    """Extract a scalar value from a wallet JSON quantity."""
+    if not entry or entry.get("value") is None:
+        return None
+    return float(entry["value"]) / scale
+
+
+def _wallet_half_life_seconds(row):
+    """Return the half-life in seconds, or inf for stable isotopes."""
+    if row.get("stable") is True:
+        return np.inf
+    half_life = row.get("halfLife")
+    if not half_life or half_life.get("value") is None:
+        return None
+    unit = str(half_life.get("unit", "")).lower()
+    factor = _WALLET_TIME_UNITS.get(unit)
+    if factor is None:
+        return None
+    return float(half_life["value"]) * factor
+
+
+def _wallet_level_energy_mev(row):
+    """Return the level energy in MeV."""
+    level_energy = row.get("levelEnergy")
+    if not level_energy or level_energy.get("value") is None:
+        return None
+    if level_energy.get("isRelative") is True:
+        return None
+    unit = str(level_energy.get("unit", "")).lower()
+    scale = 1000.0 if unit == "kev" else 1.0
+    return float(level_energy["value"]) / scale
+
+
+def _wallet_abundance(row):
+    """Return a scalar abundance percentage if available."""
+    abundance = _wallet_value(row.get("abundance"))
+    if abundance is not None:
+        return abundance
+    abundance_range = row.get("abundanceRange")
+    if not abundance_range:
+        return None
+    minimum = _wallet_float_or_none(abundance_range.get("minimum"))
+    maximum = _wallet_float_or_none(abundance_range.get("maximum"))
+    if minimum is None or maximum is None:
+        return None
+    return 0.5 * (minimum + maximum)
+
+
+def _wallet_branching_ratios(row):
+    """Return the branching ratio mapping for a wallet JSON row."""
+    return row.get("branchingRatios") or {}
+
+
+def _wallet_primary_branching(row):
+    """Return the dominant decay mode and branching ratio for a wallet row."""
+    branching = _wallet_branching_ratios(row)
+    if not branching:
+        return None, None
+    mode, branch = max(
+        branching.items(),
+        key=lambda item: float(item[1].get("value", 0.0)),
+    )
+    return mode, _wallet_value(branch)
+
+
+def _wallet_matches_decay_mode(mode, row):
+    """Return whether a wallet row matches a legacy decay mode code."""
+    branching = _wallet_branching_ratios(row)
+    if mode == "ANY":
+        return True
+    if mode == "C":
+        return any(key not in _WALLET_NON_CLUSTER_DECAY_KEYS for key in branching)
+    return any(key in branching for key in _WALLET_DECAY_KEYS.get(mode, frozenset()))
+
+
+@functools.lru_cache(maxsize=256)
+def _nndc_request_text(url, payload_items):
+    """POST a classic NNDC form request with retry/caching."""
+    payload = dict(payload_items)
+    last_response = None
+    headers = {"User-Agent": "Mozilla/5.0"}
+    if url.startswith("https://www.nndc.bnl.gov/"):
+        index_url = (
+            url.replace("dec_searchi.jsp", "indx_dec.jsp")
+            .replace("sigma_searchi.jsp", "indx_sigma.jsp")
+            .replace("dec_search.jsp", "indx_dec.jsp")
+            .replace("sigma_search.jsp", "indx_sigma.jsp")
+        )
+        headers.update(
+            {
+                "Referer": index_url,
+                "Origin": "https://www.nndc.bnl.gov",
+            }
+        )
+    else:
+        index_url = None
+    for attempt in range(_NNDC_MAX_RETRIES):
+        with requests.Session() as session, warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=ResourceWarning)
+            if index_url is not None:
+                session.get(index_url, headers=headers, timeout=_NNDC_TIMEOUT_SECONDS)
+            resp = session.post(
+                url,
+                data=payload,
+                headers=headers,
+                stream=False,
+                timeout=_NNDC_TIMEOUT_SECONDS,
+            )
+        last_response = resp
+        if resp.status_code != 429:
+            break
+        retry_after = resp.headers.get("Retry-After")
+        try:
+            delay = float(retry_after)
+        except (TypeError, ValueError):
+            delay = 0.5 * (2**attempt)
+        time.sleep(delay)
+    if not last_response.ok or last_response.status_code != 200:
+        reason = last_response.reason or f"HTTP {last_response.status_code}"
+        raise NNDCRequestError("Request failed: " + reason)
+    return last_response.text
+
+
+@functools.lru_cache(maxsize=128)
+def _wallet_search(url, payload_json):
+    """Fetch wallet card data from the current NNDC JSON endpoint."""
+    with requests.Session() as session, warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=ResourceWarning)
+        resp = session.post(
+            url,
+            data=payload_json,
+            headers={"Content-Type": "application/json"},
+            stream=False,
+            timeout=_NNDC_TIMEOUT_SECONDS,
+        )
+    if not resp.ok or resp.status_code != 200:
+        raise NNDCRequestError("Request failed: " + resp.reason)
+    if not resp.text.strip():
+        return []
+    try:
+        data = json.loads(resp.text)
+    except json.JSONDecodeError as exc:
+        raise NNDCRequestError("Unable to parse wallet card JSON response") from exc
+    if not isinstance(data, list):
+        raise NNDCRequestError("Unexpected wallet card response format")
+    return data
+
+
 class _NNDCQuery:
     """National Nuclear Data Center database query base class.
 
@@ -432,24 +658,18 @@ class _NNDCQuery:
 
     def _request(self):
         """Request data table from the URL."""
-        # Use the context manager to automatically cleanup the session
-        with requests.Session() as session:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", category=ResourceWarning)
-                resp = session.post(self._URL, data=self._data, stream=False)
-            if not resp.ok or resp.status_code != 200:
-                raise NNDCRequestError("Request failed: " + resp.reason)
-            for msg in [
-                "Your search was unsuccessful",
-                "Your search exceeded the maximum number of results",
-                "There are too many results for your search",
-            ]:
-                if msg in resp.text:
-                    raise NNDCRequestError("Request failed: " + msg)
-            msg = "No datasets were found within the specified search"
-            if msg in resp.text:
-                raise NoDataFound(msg)
-        return resp.text
+        text = _nndc_request_text(self._URL, tuple(sorted(self._data.items())))
+        for msg in [
+            "Your search was unsuccessful",
+            "Your search exceeded the maximum number of results",
+            "There are too many results for your search",
+        ]:
+            if msg in text:
+                raise NNDCRequestError("Request failed: " + msg)
+        msg = "No datasets were found within the specified search"
+        if msg in text:
+            raise NoDataFound(msg)
+        return text
 
     def update(self, **kwargs):
         """Update the search criteria."""
@@ -680,7 +900,7 @@ class _NuclearWalletCardQuery(_NNDCQuery):
 
     """
 
-    _URL = "https://www.nndc.bnl.gov/nudat3/sigma_searchi.jsp"
+    _URL = _WALLET_SEARCH_URL
     _DATA = dict(_NNDCQuery._DATA)
     _DATA.update(
         {
@@ -708,11 +928,6 @@ class _NuclearWalletCardQuery(_NNDCQuery):
                         WALLET_DECAY_MODE.keys(), kwargs["decay"].lower()
                     )
                 )
-            warnings.warn(
-                'query kwarg "decay" may not be working on NNDC, '
-                "and the user is advised to check the "
-                '"Decay Mode" column of the resulting DataFrame'
-            )
             self._data["dmed"] = "enabled"
             self._data["dmn"] = WALLET_DECAY_MODE[kwargs["decay"].lower()]
         # handle energy level condition
@@ -736,6 +951,143 @@ class _NuclearWalletCardQuery(_NNDCQuery):
                 )
             self._data["jled"] = "enabled"
             self._data["plv"] = kwargs["parity"].upper()
+
+    def _build_wallet_payload(self):
+        """Translate legacy wallet query parameters into the new NNDC JSON payload."""
+        payload = {
+            "nuclide": "",
+            "element": None,
+            "zMin": None,
+            "zMax": None,
+            "nMin": None,
+            "nMax": None,
+            "aMin": None,
+            "aMax": None,
+        }
+        if self._data["spnuc"] == "name":
+            payload["nuclide"] = _wallet_format_nuclide(self._data["nuc"])
+            return payload
+        payload["zMin"] = _wallet_int_or_none(self._data["zmin"])
+        payload["zMax"] = _wallet_int_or_none(self._data["zmax"])
+        payload["nMin"] = _wallet_int_or_none(self._data["nmin"])
+        payload["nMax"] = _wallet_int_or_none(self._data["nmax"])
+        payload["aMin"] = _wallet_int_or_none(self._data["amin"])
+        payload["aMax"] = _wallet_int_or_none(self._data["amax"])
+        return payload
+
+    def _filter_wallet_results(self, results):
+        """Apply legacy wallet filters that now exist only client-side on NNDC."""
+        if self._data["jled"] == "enabled":
+            if self._data["jlv"] != "":
+                raise NNDCRequestError(
+                    "Request failed: wallet card spin filtering is not supported"
+                )
+            if self._data["plv"] not in ("", "ANY"):
+                raise NNDCRequestError(
+                    "Request failed: wallet card parity filtering is not supported"
+                )
+        filtered = list(results)
+        for field_code, json_field in [
+            ("z", "atomicNumber"),
+            ("a", "atomicMass"),
+            ("n", "neutronNumber"),
+        ]:
+            parity = self._data["even" + field_code]
+            if parity == "even":
+                filtered = [row for row in filtered if row[json_field] % 2 == 0]
+            elif parity == "odd":
+                filtered = [row for row in filtered if row[json_field] % 2 == 1]
+        if self._data["tled"] == "enabled":
+            t_min = _wallet_float_or_none(self._data["tlmin"])
+            t_max = _wallet_float_or_none(self._data["tlmax"])
+            if self._data["notlim"] == "enabled":
+                t_min = None
+                t_max = None
+            if t_min is not None or t_max is not None:
+                if t_min is None:
+                    t_min = 0.0
+                if t_max is None:
+                    t_max = np.inf
+                filtered = [
+                    row
+                    for row in filtered
+                    if (seconds := _wallet_half_life_seconds(row)) is not None
+                    and t_min <= seconds <= t_max
+                ]
+        if self._data["dmed"] == "enabled":
+            filtered = [
+                row
+                for row in filtered
+                if _wallet_matches_decay_mode(self._data["dmn"], row)
+            ]
+        if self._data["eled"] == "enabled":
+            e_min = _wallet_float_or_none(self._data["elmin"])
+            e_max = _wallet_float_or_none(self._data["elmax"])
+            if e_min is None:
+                e_min = 0.0
+            if e_max is None:
+                e_max = np.inf
+            filtered = [
+                row
+                for row in filtered
+                if (energy := _wallet_level_energy_mev(row)) is not None
+                and e_min <= energy <= e_max
+            ]
+        return filtered
+
+    def _wallet_to_dataframe(self, results):
+        """Convert wallet JSON rows into the legacy DataFrame schema."""
+        records = []
+        for row in results:
+            level_index = int(row.get("levelIndex", 0))
+            decay_mode, branching_ratio = _wallet_primary_branching(row)
+            records.append(
+                {
+                    "Z": int(row["atomicNumber"]),
+                    "Element": row.get("elementCode"),
+                    "A": int(row["atomicMass"]),
+                    "m": (
+                        ""
+                        if level_index == 0
+                        else ("m" if level_index == 1 else f"m{level_index}")
+                    ),
+                    "M": level_index,
+                    "N": int(row["neutronNumber"]),
+                    "JPi": (row.get("spinParityRecord") or {}).get("evaluatorInput"),
+                    "T1/2": (
+                        "STABLE"
+                        if row.get("stable") is True
+                        else " ".join(row.get("halfLifeNDS") or [])
+                    ),
+                    "Energy Level (MeV)": _wallet_level_energy_mev(row),
+                    "Decay Mode": decay_mode,
+                    "Branching (%)": branching_ratio,
+                    "Mass Excess (MeV)": _wallet_value(
+                        row.get("massExcess"), scale=1000.0
+                    ),
+                    "T1/2 (s)": _wallet_half_life_seconds(row),
+                    "Abundance (%)": _wallet_abundance(row),
+                }
+            )
+        self.df = pd.DataFrame(records)
+        self._sort_columns()
+
+    def perform(self):
+        """Perform the wallet card query using the current NNDC JSON endpoint."""
+        if self._data["spnuc"] == "":
+            self.update(z_range=(None, None))
+        payload = self._build_wallet_payload()
+        payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        results = _wallet_search(self._URL, payload_json)
+        results = self._filter_wallet_results(results)
+        if len(results) == 0:
+            raise NNDCRequestError("Request failed: Your search was unsuccessful")
+        if len(results) > _WALLET_TOO_MANY_RESULTS:
+            raise NNDCRequestError(
+                "Request failed: There are too many results for your search"
+            )
+        self._text = json.dumps(results)
+        self._wallet_to_dataframe(results)
 
 
 def fetch_wallet_card(**kwargs):
