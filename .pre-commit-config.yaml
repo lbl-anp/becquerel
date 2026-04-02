@@ -24,7 +24,6 @@ repos:
         exclude: tests/utils.py
       - id: pretty-format-json
         exclude_types: [jupyter]
-      - id: requirements-txt-fixer
       - id: sort-simple-yaml
       - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -58,4 +57,3 @@ repos:
     hooks:
       - id: liccheck
         language: system
-        args: ["-s=.liccheck.ini", "-r=requirements.txt"]

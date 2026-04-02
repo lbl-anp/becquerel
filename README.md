@@ -44,21 +44,19 @@ For a feature request, please create an issue and label it as a `new feature`.
 
 ## Dependencies
 
-External dependencies are listed in `requirements.txt` and will be installed
+Runtime dependencies are declared in `pyproject.toml` and are installed
 automatically with the standard `pip` installation. They can also be installed
 manually with the package manager of your choice (`pip`, `conda`, etc).
 The dependencies `beautifulsoup4`, `lxml` and `html5lib` are necessary for
 [`pandas`][1].
 
-Developers require additional requirements which are listed in
-`requirements-dev.txt`. We use [`pytest`][2] for unit testing, [`ruff`][3] for
-code formatting and linting, and are planning to eventually support
-[`numpydoc`][4] docstrings.
+Developers can install the `dev` extra with `pip install -e ".[dev]"` or
+`uv sync --extra dev`. We use [`pytest`][2] for unit testing and [`ruff`][3]
+for code formatting and linting.
 
 [1]: https://pandas.pydata.org/pandas-docs/stable/install.html#dependencies
 [2]: https://docs.pytest.org/en/latest/
 [3]: https://docs.astral.sh/ruff/
-[4]: https://numpydoc.readthedocs.io/en/latest/format.html
 
 ## Copyright Notice
 

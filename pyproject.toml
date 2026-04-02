@@ -1,4 +1,111 @@
 
+[build-system]
+requires = ["setuptools>=80", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "becquerel"
+description = "Tools for radiation spectral analysis."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{name = "The Becquerel Development Team", email = "becquerel-dev@lbl.gov"}]
+maintainers = [{name = "The Becquerel Development Team", email = "becquerel-dev@lbl.gov"}]
+urls = {Homepage = "https://github.com/lbl-anp/becquerel", Download = "https://github.com/lbl-anp/becquerel/releases"}
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: Other/Proprietary License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+  "asteval",
+  "beautifulsoup4",
+  "black>=22.3.0",
+  "h5py",
+  "html5lib",
+  "iminuit",
+  "llvmlite",
+  "lmfit",
+  "lxml",
+  "matplotlib",
+  "numba>=0.47.0",
+  "numdifftools",
+  "numpy",
+  "pandas",
+  "python-dateutil",
+  "requests",
+  "scipy",
+  "setuptools",
+  "uncertainties>=3.0.3",
+]
+license-files = ["LICENSE.txt", "COPYRIGHT.txt"]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+  "bump2version",
+  "coverage",
+  "liccheck",
+  "pip",
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "pytest-rerunfailures",
+  "pytest-xdist",
+  "ruff",
+  "setuptools<81",
+]
+
+[tool.setuptools.packages.find]
+include = ["becquerel*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "becquerel.__metadata__.__version__"}
+
+[tool.liccheck]
+dependencies = true
+authorized_licenses = [
+  "bsd",
+  "new bsd",
+  "bsd license",
+  "new bsd license",
+  "simplified bsd",
+  "bsd license (revised bsd license)",
+  "BSD-3-Clause",
+  "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+  "BSD-2-Clause AND Apache-2.0 WITH LLVM-exception",
+  "apache",
+  "apache 2.0",
+  "apache-2.0",
+  "apache software",
+  "apache software license",
+  "gnu lgpl",
+  "lgpl with exceptions or zpl",
+  "isc license",
+  "isc license (iscl)",
+  "mit",
+  "mit license",
+  "CMU License (MIT-CMU)",
+  "MIT-CMU",
+  "mozilla public license 2.0 (mpl 2.0)",
+  "python software foundation",
+  "python software foundation license",
+  "PSF-2.0",
+  "zpl 2.1",
+  "historical permission notice and disclaimer (hpnd)",
+]
+unauthorized_licenses = ["gpl v3"]
+
 # all of ruff's settings
 # https://docs.astral.sh/ruff/settings/
 # all of ruff's rules:

@@ -21,9 +21,10 @@ jobs:
         with:
           python-version: 3.13
       - name: Install dev dependencies
-        run: pip install -r requirements-dev.txt
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install --only-binary=numpy,scipy ".[dev]"
       - name: Run pre-commit
         run: |
-          pip install pre-commit
           pre-commit install
           pre-commit run --all-files --show-diff-on-failure

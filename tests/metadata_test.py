@@ -18,4 +18,7 @@ class TestCopyright:
         assert README.endswith(COPYRIGHT)
 
     def test_metadata(self):
-        assert bq.__metadata__.__copyright__ == COPYRIGHT
+        assert (
+            bq.__metadata__.__copyright__ == "For copyright notice see COPYRIGHT.txt."
+        )
+        assert bq.__metadata__.__license__ == "For license terms see LICENSE.txt."
