@@ -454,6 +454,41 @@ def _wallet_branching_ratios(row):
     return row.get("branchingRatios") or {}
 
 
+def _wallet_decay_mode_code(mode):
+    """Translate a wallet JSON decay mode key into the legacy table code."""
+    if mode in {"EC", "B+"}:
+        return mode
+    for legacy_mode, wallet_modes in _WALLET_DECAY_KEYS.items():
+        if mode in wallet_modes:
+            return legacy_mode
+    return mode
+
+
+def _wallet_branching_value(branch):
+    """Extract a branching ratio value from a wallet decay-mode entry."""
+    value = branch.get("value")
+    if value is not None and float(value) != 0.0:
+        return float(value)
+    measurements = (branch.get("measurements") or {}).get("measuredValues") or []
+    for measured in measurements:
+        if measured.get("isIncluded") and measured.get("value") is not None:
+            return float(measured["value"])
+    if value is not None:
+        return float(value)
+    return None
+
+
+def _wallet_decay_modes(row):
+    """Return all decay modes and branching ratios for a wallet row."""
+    branching = _wallet_branching_ratios(row)
+    if not branching:
+        return [(None, None)]
+    return [
+        (_wallet_decay_mode_code(mode), _wallet_branching_value(branch))
+        for mode, branch in branching.items()
+    ]
+
+
 def _wallet_primary_branching(row):
     """Return the dominant decay mode and branching ratio for a wallet row."""
     branching = _wallet_branching_ratios(row)
@@ -461,9 +496,9 @@ def _wallet_primary_branching(row):
         return None, None
     mode, branch = max(
         branching.items(),
-        key=lambda item: float(item[1].get("value", 0.0)),
+        key=lambda item: _wallet_branching_value(item[1]) or 0.0,
     )
-    return mode, _wallet_value(branch)
+    return _wallet_decay_mode_code(mode), _wallet_branching_value(branch)
 
 
 def _wallet_matches_decay_mode(mode, row):
@@ -1040,35 +1075,38 @@ class _NuclearWalletCardQuery(_NNDCQuery):
         records = []
         for row in results:
             level_index = int(row.get("levelIndex", 0))
-            decay_mode, branching_ratio = _wallet_primary_branching(row)
-            records.append(
-                {
-                    "Z": int(row["atomicNumber"]),
-                    "Element": row.get("elementCode"),
-                    "A": int(row["atomicMass"]),
-                    "m": (
-                        ""
-                        if level_index == 0
-                        else ("m" if level_index == 1 else f"m{level_index}")
-                    ),
-                    "M": level_index,
-                    "N": int(row["neutronNumber"]),
-                    "JPi": (row.get("spinParityRecord") or {}).get("evaluatorInput"),
-                    "T1/2": (
-                        "STABLE"
-                        if row.get("stable") is True
-                        else " ".join(row.get("halfLifeNDS") or [])
-                    ),
-                    "Energy Level (MeV)": _wallet_level_energy_mev(row),
-                    "Decay Mode": decay_mode,
-                    "Branching (%)": branching_ratio,
-                    "Mass Excess (MeV)": _wallet_value(
-                        row.get("massExcess"), scale=1000.0
-                    ),
-                    "T1/2 (s)": _wallet_half_life_seconds(row),
-                    "Abundance (%)": _wallet_abundance(row),
-                }
+            half_life_text = (
+                "STABLE"
+                if row.get("stable") is True
+                else " ".join(row.get("halfLifeNDS") or [])
             )
+            base_record = {
+                "Z": int(row["atomicNumber"]),
+                "Element": row.get("elementCode"),
+                "A": int(row["atomicMass"]),
+                "m": (
+                    ""
+                    if level_index == 0
+                    else ("m" if level_index == 1 else f"m{level_index}")
+                ),
+                "M": level_index,
+                "N": int(row["neutronNumber"]),
+                "JPi": (row.get("spinParityRecord") or {}).get("evaluatorInput"),
+                "T1/2": half_life_text,
+                "T1/2 (txt)": half_life_text,
+                "Energy Level (MeV)": _wallet_level_energy_mev(row),
+                "Mass Excess (MeV)": _wallet_value(row.get("massExcess"), scale=1000.0),
+                "T1/2 (s)": _wallet_half_life_seconds(row),
+                "Abundance (%)": _wallet_abundance(row),
+            }
+            for decay_mode, branching_ratio in _wallet_decay_modes(row):
+                records.append(
+                    {
+                        **base_record,
+                        "Decay Mode": decay_mode,
+                        "Branching (%)": branching_ratio,
+                    }
+                )
         self.df = pd.DataFrame(records)
         self._sort_columns()
 

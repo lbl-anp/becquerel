@@ -351,7 +351,8 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        data = df["T1/2 (txt)"].tolist()
+        half_life_col = "T1/2 (txt)" if "T1/2 (txt)" in df.columns else "T1/2"
+        data = df[half_life_col].tolist()
         assert len(np.unique(data)) == 1
         return "STABLE" in data
 
