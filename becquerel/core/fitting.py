@@ -1,5 +1,6 @@
 import inspect
 import warnings
+from abc import ABC, abstractmethod
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -477,6 +478,354 @@ def _parameters_to_bq_guess(params: Parameters):
 
 
 # -----------------------------------------------------------------------------
+# Fitting backends
+# -----------------------------------------------------------------------------
+
+
+class FittingBackend(ABC):
+    """Abstract interface for fitting backends.
+
+    Each backend encapsulates the mechanics of a specific optimization library
+    (lmfit, iminuit, etc.) and loss function (least-squares, Poisson likelihood).
+    The ``Fitter`` class delegates all backend-specific behavior here.
+    """
+
+    result = None
+
+    @abstractmethod
+    def fit(self, model, params, x, y, y_unc, dx, guess, limits):
+        """Perform the fit. Store results internally on ``self.result``."""
+
+    @abstractmethod
+    def param_val(self, param: str) -> float:
+        """Return the best-fit value of *param*."""
+
+    @abstractmethod
+    def param_unc(self, param: str) -> float:
+        """Return the fit uncertainty of *param*."""
+
+    @property
+    @abstractmethod
+    def best_values(self) -> dict:
+        """Dictionary of best-fit parameter values."""
+
+    @property
+    @abstractmethod
+    def init_values(self) -> dict:
+        """Dictionary of initial parameter values."""
+
+    @property
+    @abstractmethod
+    def success(self) -> bool:
+        """Whether the fit converged successfully."""
+
+    @property
+    @abstractmethod
+    def covariance(self):
+        """Covariance matrix of the fit parameters."""
+
+    @abstractmethod
+    def fit_report(self, param_dataframe=None) -> str:
+        """Text summary of the fit result, for use in plot panels."""
+
+    @property
+    def warns_unreliable_errors(self) -> bool:
+        """Whether this backend's error estimates should be treated with caution."""
+        return False
+
+    def eval_uncertainty(self, x, sigma):
+        """Return model uncertainty band at *x* for the given *sigma* level.
+
+        Not all backends support this; the default returns ``None``.
+        """
+        return None
+
+
+class LmfitBackend(FittingBackend):
+    """Weighted least-squares fitting via lmfit."""
+
+    def fit(self, model, params, x, y, y_unc, dx, guess, limits):
+        y_fit = y
+        if dx is not None:
+            y_fit = y / dx
+        weights = y_unc**-1.0
+        self.result = model.fit(
+            y_fit,
+            params,
+            x=x,
+            weights=weights,
+        )
+
+    def param_val(self, param):
+        if param in self.result.params:
+            return self.result.params[param].value
+        elif param in self.result.best_values:
+            return self.result.best_values[param]
+        else:
+            raise FittingError(f"Unknown param: {param}")
+
+    def param_unc(self, param):
+        if param in self.result.params:
+            return self.result.params[param].stderr
+        elif param in self.result.best_values:
+            return np.nan
+        else:
+            raise FittingError(f"Unknown param: {param}")
+
+    @property
+    def best_values(self):
+        return self.result.best_values
+
+    @property
+    def init_values(self):
+        return self.result.init_values
+
+    @property
+    def success(self):
+        return self.result.success
+
+    @property
+    def covariance(self):
+        return self.result.covar
+
+    @property
+    def warns_unreliable_errors(self):
+        return True
+
+    def eval_uncertainty(self, x, sigma):
+        return self.result.eval_uncertainty(x=x, sigma=sigma)
+
+    def fit_report(self, param_dataframe=None):
+        # Remove first 2 lines of fit report (long model description)
+        s = "\n".join(self.result.fit_report().split("\n")[2:])
+        if param_dataframe is not None:
+            s += "\n"
+            for model_name, sdf in param_dataframe.groupby(level="model"):
+                s += model_name + "\n"
+                for (_, param_name), param_data in sdf.iterrows():
+                    v = param_data["val"]
+                    e = param_data["unc"]
+                    s += (
+                        f"    {param_name:24}: "
+                        f"{v: .6e} +/- {e:.5e} "
+                        f"({np.abs(e / v):6.1%})\n"
+                    )
+        return s
+
+
+def _likelihood_residual(model_self, params, data, weights, **kwargs):
+    """Poisson likelihood residual for use with lmfit.
+
+    Replaces lmfit's default least-squares residual with a Poisson
+    log-likelihood cost.  The signature matches what lmfit expects
+    for ``Model._residual`` (the first arg is the Model instance).
+    """
+    model = model_self.eval(params, **kwargs)
+    if weights is not None:
+        model *= weights
+    if model_self.nan_policy == "raise" and not np.all(np.isfinite(model)):
+        msg = (
+            "The model function generated NaN values and the fit "
+            "aborted! Please check your model function and/or set "
+            "boundaries on parameters where applicable. In cases "
+            "like this, using \"nan_policy='omit'\" will probably "
+            "not work."
+        )
+        raise ValueError(msg)
+    mask = model <= 0
+    diff = model - scipy.special.xlogy(data, model)
+    diff[mask] = 1e32
+    if np.issubdtype(diff.dtype, complex):
+        diff = diff.ravel().view(float)
+    return np.asarray(diff).ravel()
+
+
+class LmfitPMLBackend(LmfitBackend):
+    """Poisson maximum likelihood fitting via lmfit."""
+
+    def fit(self, model, params, x, y, y_unc, dx, guess, limits):
+        # Monkey-patch the model residual for Poisson likelihood
+        model._residual = _likelihood_residual.__get__(model, Model)
+
+        self.result = model.fit(
+            y,
+            params,
+            x=x,
+            weights=dx,
+            fit_kws={"reduce_fcn": lambda r: np.sum(r)},
+            method="Nelder-Mead",
+            calc_covar=False,
+        )
+
+
+class MinuitPMLBackend(FittingBackend):
+    """Poisson maximum likelihood fitting via iminuit."""
+
+    def fit(self, model, params, x, y, y_unc, dx, guess, limits):
+        if not _is_count_like(y):
+            warnings.warn(
+                "Passing non-count-like data to a Poisson loss fit", FittingWarning
+            )
+
+        def model_loss(*args):
+            """Poisson loss given the model specified by args."""
+            kwargs = {model.param_names[i]: arg for i, arg in enumerate(args)}
+            y_eval = model.eval(x=x, **kwargs)
+            if dx is not None:
+                y_eval *= dx
+            return poisson_loss(y_eval, y)
+
+        # Filter out fixed params
+        free_vars = [p for p in params if params[p].vary]
+
+        # Parameter guesses: extract from lmfit params
+        guess_i = {}
+        for p in free_vars:
+            if params[p].value is not None:
+                guess_i[p] = params[p].value
+
+        # Override with user input
+        if guess is not None:
+            guess_i.update(guess)
+
+        # Parameter limits: extract from lmfit params
+        limits_i = {}
+        for p in free_vars:
+            lo = params[p].min if np.isfinite(params[p].min) else None
+            hi = params[p].max if np.isfinite(params[p].max) else None
+            limits_i[p] = (lo, hi)
+
+        # Override with user input
+        if limits is not None:
+            limits_i.update(limits)
+
+        # Since Minuit requires guesses for every parameter, if we don't
+        # have a guess, use limits_i midpoint, or zero barring that.
+        for p in free_vars:
+            if p not in guess_i:
+                warn_str = f"No guess provided for parameter {p}. "
+                if (
+                    p in limits_i
+                    and limits_i[p][0] is not None
+                    and limits_i[p][1] is not None
+                ):
+                    warnings.warn(warn_str + "Setting to limits midpoint.")
+                    guess_i[p] = 0.5 * (limits_i[p][0] + limits_i[p][1])
+                else:
+                    warnings.warn(warn_str + "Setting to 0.")
+                    guess_i[p] = 0.0
+
+        # Set up the Minuit minimizer with initial guess
+        self.result = Minuit(model_loss, name=free_vars, **guess_i)
+
+        # Set user parameter limits
+        for k, v in limits_i.items():
+            self.result.limits[k] = v
+
+        # Specify proper error definition for likelihood model
+        self.result.errordef = Minuit.LIKELIHOOD
+
+        # Specify extra checks
+        self.result.strategy = 2
+
+        # Run the minimizer
+        self.result.migrad()
+
+        # Compute errors
+        self.result.hesse()
+        try:
+            self.result.minos()
+        except RuntimeError as exc:
+            warnings.warn(f"Could not compute Minos errors: {exc}")
+
+        # Update the interfaces to best_values and init_values
+        self._best_values, self._init_values = {}, {}
+        for i in range(self.result.npar):
+            p = self.result.parameters[i]
+            self._best_values[p] = self.result.values[i]  # noqa: PD011
+            self._init_values[p] = self.result.init_params[p].value
+
+        # Arg order sanity checks
+        assert list(self._best_values.keys()) == free_vars
+        assert list(self._init_values.keys()) == free_vars
+        assert list(self.result.parameters) == free_vars
+
+    def param_val(self, param):
+        if param in self.result.parameters:
+            return self.result.params[param].value
+        raise FittingError(f"Unknown param: {param}")
+
+    def param_unc(self, param):
+        if param in self.result.parameters:
+            return self.result.params[param].error
+        raise FittingError(f"Unknown param: {param}")
+
+    @property
+    def best_values(self):
+        return self._best_values
+
+    @property
+    def init_values(self):
+        return self._init_values
+
+    @property
+    def success(self):
+        return self.result.valid
+
+    @property
+    def covariance(self):
+        return self.result.covariance
+
+    def fit_report(self, param_dataframe=None):
+        return str(self.result) + "\n"
+
+
+class MinuitBackend(FittingBackend):
+    """Placeholder for least-squares Minuit fitting (not yet implemented)."""
+
+    def fit(self, model, params, x, y, y_unc, dx, guess, limits):
+        raise NotImplementedError(
+            "Minuit with least-squares loss not yet supported. "
+            "Use minuit-pml for Poisson loss or lmfit for least-squares."
+        )
+
+    def param_val(self, param):
+        raise FittingError("No fit result available")
+
+    def param_unc(self, param):
+        raise FittingError("No fit result available")
+
+    @property
+    def best_values(self):
+        raise FittingError("No fit result available")
+
+    @property
+    def init_values(self):
+        raise FittingError("No fit result available")
+
+    @property
+    def success(self):
+        return False
+
+    @property
+    def covariance(self):
+        return None
+
+    def fit_report(self, param_dataframe=None):
+        return ""
+
+
+BACKENDS = {
+    "lmfit": LmfitBackend,
+    "lmfit-pml": LmfitPMLBackend,
+    "iminuit-pml": MinuitPMLBackend,
+    "minuit-pml": MinuitPMLBackend,
+    "iminuit": MinuitBackend,
+    "minuit": MinuitBackend,
+}
+
+
+# -----------------------------------------------------------------------------
 # Fitters
 # -----------------------------------------------------------------------------
 
@@ -763,11 +1112,9 @@ class Fitter:
         guess : dict of {str: numeric}, optional
             User-specified parameter guesses that override guesses provided by
             the Model.guess() or Fitter.guess_param_defaults() methods.
-            Currently only implemented for backend="lmfit" and "iminuit".
         limits : dict of {str: tuple}, optional
             User-specified parameter limits that override limits provided by
             the Model.guess() or Fitter.guess_param_defaults() methods.
-            Currently only implemented for backend="lmfit" and "iminuit".
 
         Raises
         ------
@@ -779,184 +1126,24 @@ class Fitter:
 
         assert self.y is not None, "No data initialized, did you call set_data?"
         self.result = None
-        y_roi_norm = self.y_roi
-        if self.dx is not None:
-            y_roi_norm = self.y_roi / self.dx_roi
-
         self.backend = backend.lower().strip()
 
-        if self.backend == "lmfit":
-            # Perform the fit, weighted by 1/uncertainties.
-            weights = self.y_unc_roi**-1.0
-            self.result = self.model.fit(
-                y_roi_norm,
-                self.params,
-                x=self.x_roi,
-                weights=weights,
-            )
-
-        elif self.backend == "lmfit-pml":
-            self._set_likelihood_residual()
-            # Perform the fit. PML automatically applies 1/sqrt(y) weights, so
-            # additional weights here just convert back to counts.
-            self.result = self.model.fit(
-                self.y_roi,
-                self.params,  # self.result.params,
-                x=self.x_roi,
-                weights=self.dx_roi,
-                fit_kws={"reduce_fcn": lambda r: np.sum(r)},
-                method="Nelder-Mead",
-                calc_covar=False,
-            )  # no, bounds, default would be L-BFGS-B'
-            # NOTE: Calculating errors in lmfit-pml breaks minimization
-
-        elif self.backend in ["iminuit", "minuit"]:
-            raise NotImplementedError(
-                f"Backend {self.backend} with least-squares loss not yet "
-                f"supported. Use {self.backend}-pml for Poisson loss or "
-                "lmfit for least-squares."
-            )
-
-        elif self.backend in ["iminuit-pml", "minuit-pml"]:
-            # Translate a model from lmfit to minuit
-
-            if not _is_count_like(self.y_roi):
-                warnings.warn(
-                    "Passing non-count-like data to a Poisson loss fit", FittingWarning
-                )
-
-            def model_loss(*args):
-                """Poisson loss given the model specified by args."""
-                # Convert args to kwargs as lmfit.model.eval _requires_ kwargs,
-                # while the cost function passed to the Minuit object seems to
-                # _require_ args.
-                kwargs = {self.model.param_names[i]: arg for i, arg in enumerate(args)}
-                y_eval = self.model.eval(x=self.x_roi, **kwargs)
-                if self.dx_roi is not None:
-                    y_eval *= self.dx_roi
-                return poisson_loss(y_eval, self.y_roi)
-
-            # Filter out fixed params and have one consistent variable name
-            # instead of all the params / param_names / parameters / etc.
-            free_vars = [p for p in self.params if self.params[p].vary]
-
-            # Parameter guesses
-            try:
-                # First try parsing the lmfit guess into iminuit
-                guess_l = self.guess_param_defaults()
-                guess_i = {
-                    g[0]: g[2]
-                    for g in guess_l
-                    if (g[1] == "value" and g[0] in free_vars)
-                }
-            except NotImplementedError:
-                # If the model/component does not have a guess() method
-                guess_i = {}
-            # Then override with user input
-            if guess is not None:
-                guess_i.update(guess)
-                del guess  # eliminate subscript confusion
-
-            # Handle user parameter limits
-            # Supplying guesses and/or bounds seems more important for minuit
-            try:
-                # First try parsing the lmfit limits into iminuit
-                limits_l = self.guess_param_defaults()
-                min_vals, max_vals = {}, {}
-                for lim in limits_l:
-                    if lim[1] == "min":
-                        min_vals[lim[0]] = lim[2]
-                    elif lim[1] == "max":
-                        max_vals[lim[0]] = lim[2]
-                limits_i = {p: (min_vals.get(p), max_vals.get(p)) for p in free_vars}
-            except NotImplementedError:
-                # If the model/component does not have a guess() method
-                limits_i = {}
-            # Then override with user input
-            if limits is not None:
-                limits_i.update(limits)
-                del limits  # eliminate subscript confusion
-
-            # Since Minuit requires guesses for every parameter, if we don't
-            # have a guess, use limits_i midpoint, or zero barring that.
-            for p in free_vars:
-                if p not in guess_i:
-                    warn_str = f"No guess provided for parameter {p}. "
-                    if (
-                        p in limits_i
-                        and limits_i[p][0] is not None
-                        and limits_i[p][1] is not None
-                    ):
-                        warnings.warn(warn_str + "Setting to limits midpoint.")
-                        guess_i[p] = 0.5 * (limits_i[p][0] + limits_i[p][1])
-                    else:
-                        warnings.warn(warn_str + "Setting to 0.")
-                        guess_i[p] = 0.0
-
-            # Set up the Minuit minimizer with initial guess
-            self.result = Minuit(model_loss, name=free_vars, **guess_i)
-
-            # Set user parameter limits
-            for k, v in limits_i.items():
-                self.result.limits[k] = v
-
-            # Specify proper error definition for likelihood model
-            self.result.errordef = Minuit.LIKELIHOOD
-
-            # Specify extra checks
-            self.result.strategy = 2
-
-            # Run the minimizer
-            self.result.migrad()
-
-            # Compute errors
-            self.result.hesse()
-            try:
-                self.result.minos()
-            except RuntimeError as exc:
-                warnings.warn(f"Could not compute Minos errors: {exc}")
-
-            # Update the interfaces to best_values and init_values
-            self._best_values, self._init_values = {}, {}
-            for i in range(self.result.npar):
-                p = self.result.parameters[i]
-                self._best_values[p] = self.result.values[i]  # noqa: PD011
-                self._init_values[p] = self.result.init_params[p].value
-
-            # Arg order sanity checks
-            assert list(self._best_values.keys()) == free_vars
-            assert list(self._init_values.keys()) == free_vars
-            assert list(self.result.parameters) == free_vars
-
-        else:
+        backend_cls = BACKENDS.get(self.backend)
+        if backend_cls is None:
             raise FittingError(f"Unknown fitting backend: {backend}")
 
-    def _set_likelihood_residual(self):
-        def _likelihood_residual(self, params, data, weights, **kwargs):
-            """same as model._residual of lmfit"""
-            model = self.eval(params, **kwargs)
-            if weights is not None:
-                model *= weights
-            if self.nan_policy == "raise" and not np.all(np.isfinite(model)):
-                msg = (
-                    "The model function generated NaN values and the fit "
-                    "aborted! Please check your model function and/or set "
-                    "boundaries on parameters where applicable. In cases "
-                    "like this, using \"nan_policy='omit'\" will probably "
-                    "not work."
-                )
-                raise ValueError(msg)
-            mask = model <= 0  # This should not be necessary
-            diff = model - scipy.special.xlogy(data, model)
-            diff[mask] = 1e32
-            if np.issubdtype(diff.dtype, complex):
-                # data/model are complex
-                diff = diff.ravel().view(float)
-            return np.asarray(diff).ravel()  # for compatibility with pandas.Series
-
-        # This overwrites the  model residual method, is an ugly hack to make
-        # poisson fitting possible. This is not undone for now.
-        self.model._residual = _likelihood_residual.__get__(self.model, Model)
+        self._backend = backend_cls()
+        self._backend.fit(
+            model=self.model,
+            params=self.params,
+            x=self.x_roi,
+            y=self.y_roi,
+            y_unc=self.y_unc_roi,
+            dx=self.dx_roi,
+            guess=guess,
+            limits=limits,
+        )
+        self.result = self._backend.result
 
     def eval(self, x, params=None, **kwargs):
         return self.model.eval(x=x, params=params, **kwargs)
@@ -987,7 +1174,7 @@ class Fitter:
 
         """
 
-        if "lmfit" in self.backend:
+        if self._backend.warns_unreliable_errors:
             warnings.warn(
                 "`lmfit` error estimates are unreliable. "
                 "`minuit` is recommended where possible",
@@ -1056,18 +1243,7 @@ class Fitter:
         """
         if self.result is None:
             return None
-        if "lmfit" in self.backend:
-            if param in self.result.params:
-                return self.result.params[param].value
-            elif param in self.result.best_values:
-                return self.result.best_values[param]
-            else:
-                raise FittingError(f"Unknown param: {param}")
-        elif "minuit" in self.backend:
-            if param in self.result.parameters:
-                return self.result.params[param].value
-            raise FittingError(f"Unknown param: {param}")
-        raise FittingError(f"Unknown backend: {self.backend}")
+        return self._backend.param_val(param)
 
     def param_unc(self, param) -> float:
         """
@@ -1075,19 +1251,7 @@ class Fitter:
         """
         if self.result is None:
             return None
-        if "lmfit" in self.backend:
-            if param in self.result.params:
-                return self.result.params[param].stderr
-            elif param in self.result.best_values:
-                # This is the case for the `erf_form` key
-                return np.nan
-            else:
-                raise FittingError(f"Unknown param: {param}")
-        elif "minuit" in self.backend:
-            if param in self.result.parameters:
-                return self.result.params[param].error  # TODO minos vs hesse?
-            raise FittingError(f"Unknown param: {param}")
-        raise FittingError(f"Unknown backend: {self.backend}")
+        return self._backend.param_unc(param)
 
     def param_rel_unc(self, param) -> float:
         """
@@ -1105,21 +1269,13 @@ class Fitter:
 
     @property
     def best_values(self) -> dict:
-        """Wrapper for dictionary of best_values."""
-        if "lmfit" in self.backend:
-            return self.result.best_values
-        elif "minuit" in self.backend:
-            return self._best_values
-        raise FittingError(f"Unknown backend: {self.backend}")
+        """Dictionary of best-fit parameter values."""
+        return self._backend.best_values
 
     @property
     def init_values(self) -> dict:
-        """Wrapper for dictionary of init_values."""
-        if "lmfit" in self.backend:
-            return self.result.init_values
-        elif "minuit" in self.backend:
-            return self._init_values
-        raise FittingError(f"Unknown backend: {self.backend}")
+        """Dictionary of initial parameter values."""
+        return self._backend.init_values
 
     @property
     def uncertainties(self) -> dict:
@@ -1132,20 +1288,13 @@ class Fitter:
 
     @property
     def success(self) -> bool:
-        if "lmfit" in self.backend:
-            return self.result.success
-        elif "minuit" in self.backend:
-            return self.result.valid
-        raise FittingError(f"Unknown backend: {self.backend}")
+        """Whether the fit converged successfully."""
+        return self._backend.success
 
     @property
     def covariance(self):
-        """Wrapper for fit covariance matrix."""
-        if "lmfit" in self.backend:
-            return self.result.covar
-        elif "minuit" in self.backend:
-            return self.result.covariance
-        raise FittingError(f"Unknown backend: {self.backend}")
+        """Covariance matrix of the fit parameters."""
+        return self._backend.covariance
 
     def param_dataframe(self, sort_by_model: bool = False) -> pd.DataFrame:
         """
@@ -1314,19 +1463,19 @@ class Fitter:
         y = self.eval(x_plot, **self.best_values)
         ymin, ymax = min(y.min(), ymin), max(y.max(), ymax)
         fit_ax.plot(x_plot, y, color="#e31a1c", label="best fit", zorder=10)
-        # Plot 1 sigma uncertainty bands
-        # TODO: for minuit, see how_to_draw_error_bands iminuit notebook
-        if self.success and "lmfit" in self.backend:
-            yunc = self.result.eval_uncertainty(x=x_plot, sigma=1)
-            fit_ax.fill_between(
-                x_plot,
-                y - yunc,
-                y + yunc,
-                label=r"$\pm 1\, \sigma$",
-                color="#e31a1c",
-                alpha=0.2,
-                zorder=9,
-            )
+        # Plot 1 sigma uncertainty bands (if supported by the backend)
+        if self.success:
+            yunc = self._backend.eval_uncertainty(x_plot, sigma=1)
+            if yunc is not None:
+                fit_ax.fill_between(
+                    x_plot,
+                    y - yunc,
+                    y + yunc,
+                    label=r"$\pm 1\, \sigma$",
+                    color="#e31a1c",
+                    alpha=0.2,
+                    zorder=9,
+                )
         # Components
         fit_ax.set_prop_cycle(color=COLORS)
         for m in self.model.components:
@@ -1406,53 +1555,10 @@ class Fitter:
         # Fit report (txt_ax)
         # -------------------
         if enable_fit_panel:
-            props = {
-                "boxstyle": "round",
-                "facecolor": "white",
-                "edgecolor": "black",
-                "alpha": 1,
-            }
             props = {"facecolor": "white", "edgecolor": "none", "alpha": 0}
             fp = FontProperties(family="monospace", size=8)
-            if "lmfit" in self.backend:
-                best_fit_values = ""
-                op = self.result.params
-                for p in self.result.params:
-                    if op[p].stderr is None:
-                        pass
-                        # TODO: Calculate errors breaks minimization right now
-                        # warnings.warn(
-                        #     "Package numdifftools is required to have "
-                        #     "stderr calculated.", FittingWarning)
-                    else:
-                        best_fit_values += (
-                            f"{p:15} "
-                            f"{op[p].value: .6e} +/- {op[p].stderr:.5e} "
-                            f"({abs(op[p].stderr / op[p].value):6.1%})\n"
-                        )
-                best_fit_values += "{:15} {: .6e}\n".format(
-                    "Chi Squared:", self.result.chisqr
-                )
-                best_fit_values += "{:15} {: .6e}".format(
-                    "Reduced Chi Sq:", self.result.redchi
-                )
-                # Remove first 2 lines of fit report (long model description)
-                s = "\n".join(self.result.fit_report().split("\n")[2:])
-                # Add some more parameter details
-                s += "\n"
-                param_df = self.param_dataframe(sort_by_model=True)
-                for model_name, sdf in param_df.groupby(level="model"):
-                    s += model_name + "\n"
-                    for (_, param_name), param_data in sdf.iterrows():
-                        v = param_data["val"]
-                        e = param_data["unc"]
-                        s += (
-                            f"    {param_name:24}: "
-                            f"{v: .6e} +/- {e:.5e} "
-                            f"({np.abs(e / v):6.1%})\n"
-                        )
-            elif "minuit" in self.backend:
-                s = str(self.result) + "\n"
+            param_df = self.param_dataframe(sort_by_model=True)
+            s = self._backend.fit_report(param_dataframe=param_df)
 
             # Add info about the ROI and units
             if self.roi:
