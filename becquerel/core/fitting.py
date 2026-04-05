@@ -490,7 +490,8 @@ class FittingBackend(ABC):
     The ``Fitter`` class delegates all backend-specific behavior here.
     """
 
-    result = None
+    def __init__(self):
+        self.result = None
 
     @abstractmethod
     def fit(self, model, params, x, y, y_unc, dx, guess, limits):
