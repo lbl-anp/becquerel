@@ -1,7 +1,5 @@
 """Nuclear isotopes and isomers."""
 
-import ast
-
 import numpy as np
 import uncertainties
 
@@ -13,29 +11,6 @@ N_AV = 6.022141e23  # mol^-1
 
 class IsotopeError(element.ElementError):
     """Problem with isotope properties."""
-
-
-def _wallet_card_quantity(quantity, scale=1.0):
-    """Convert a walletcards quantity into a float or ufloat."""
-    if quantity is None:
-        return None
-    value = quantity["value"] * scale
-    uncertainty = quantity.get("uncertainty", {})
-    if uncertainty.get("type") == "symmetric":
-        return uncertainties.ufloat(value, uncertainty["value"] * scale)
-    return value
-
-
-def _wallet_card_entry(entry):
-    """Parse walletcards dict data after cache CSV round-tripping."""
-    if not isinstance(entry, str):
-        return entry
-    if entry == "":
-        return None
-    try:
-        return ast.literal_eval(entry)
-    except (SyntaxError, ValueError):
-        return entry
 
 
 def _split_element_mass(arg):
@@ -334,17 +309,14 @@ class Isotope(element.Element):
 
         if not wallet_cache.loaded:
             wallet_cache.load()
-        level_index = self.M
-        df = wallet_cache.df[
-            (wallet_cache.df["atomicNumber"] == self.Z)
-            & (wallet_cache.df["atomicMass"] == self.A)
-            & (wallet_cache.df["levelIndex"] == level_index)
-        ]
+        this_isotope = (
+            (wallet_cache.df["Z"] == self.Z)
+            & (wallet_cache.df["A"] == self.A)
+            & (wallet_cache.df["M"] == self.M)
+        )
+        df = wallet_cache.df[this_isotope]
         if len(df) == 0:
-            raise IsotopeError(
-                f"No wallet card data found for isotope {self} "
-                f"(levelIndex={level_index})"
-            )
+            raise IsotopeError(f"No wallet card data found for isotope {self}")
         return df
 
     @property
@@ -393,10 +365,9 @@ class Isotope(element.Element):
 
         df = self._wallet_card()
         data = df["abundance"].tolist()
-        data0 = _wallet_card_entry(data[0])
-        if data0 is None or (isinstance(data0, float) and np.isnan(data0)):
+        if not isinstance(data[0], uncertainties.core.Variable) and np.isnan(data[0]):
             return None
-        return _wallet_card_quantity(data0)
+        return data[0]
 
     @property
     def j_pi(self):
@@ -407,12 +378,7 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        data = [
-            ""
-            if not isinstance(record, dict)
-            else record.get("evaluatorInput", "")
-            for record in [_wallet_card_entry(x) for x in df["spinParityRecord"].tolist()]
-        ]
+        data = df["spinParityRecord"].tolist()
         assert len(np.unique(data)) == 1
         return data[0]
 
@@ -439,10 +405,9 @@ class Isotope(element.Element):
 
         df = self._wallet_card()
         data = df["massExcess"].tolist()
-        data0 = _wallet_card_entry(data[0])
-        if data0 is None or (isinstance(data0, float) and np.isnan(data0)):
+        if not isinstance(data[0], uncertainties.core.Variable) and np.isnan(data[0]):
             return None
-        return _wallet_card_quantity(data0, scale=0.001)
+        return data[0]
 
     @property
     def decay_modes(self):
@@ -453,12 +418,18 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        data = df["branchingRatios"].tolist()
-        data0 = _wallet_card_entry(data[0])
-        if data0 is None or (isinstance(data0, float) and np.isnan(data0)):
+        if "decayMode" not in df or "branchingRatio" not in df:
             return [], []
-        modes = list(data0.keys())
-        branchings = [_wallet_card_quantity(data0[mode]) for mode in modes]
+        data1 = df["decayMode"].tolist()
+        data2 = df["branchingRatio"].tolist()
+        if (
+            len(data1) == 1
+            and not isinstance(data2[0], uncertainties.core.Variable)
+            and np.isnan(data2[0])
+        ):
+            return [], []
+        modes = data1
+        branchings = data2
         values = [
             val.nominal_value if isinstance(val, uncertainties.core.Variable) else val
             for val in branchings

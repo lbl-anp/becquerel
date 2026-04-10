@@ -700,11 +700,16 @@ class _NNDCQuery:
             "m",
             "M",
             "N",
+            "spinParityRecord",
             "JPi",
+            "halfLifeSeconds",
             "T1/2",
+            "levelEnergyMeV",
             "Energy Level (MeV)",
-            "Decay Mode",
-            "Branching (%)",
+            "massExcess",
+            "abundance",
+            "decayMode",
+            "branchingRatio",
             "Radiation",
             "Radiation subtype",
             "Radiation Energy (keV)",
@@ -726,13 +731,11 @@ class _NuclearWalletCardQuery(_NNDCQuery):
       * Energy: Level energy in MeV.
       * JPi: Level spin and parity.
       * Mass Exc: Level Mass Excess in MeV.
-      * T1/2 (txt): Level half-life in the format value+units+uncertainty.
-      * T1/2 (seconds): value of the level half-life in seconds.
+      * halfLifeSeconds: value of the level half-life in seconds.
         Levels that are stable are assigned an "infinity" value.
       * Abund.: Natural abundance.
-      * Dec Mode: Decay Mode name.
-      * Branching (%): Percentual branching ratio for the corresponding
-            decay mode.
+      * decayMode: decay mode name.
+      * branchingRatio: branching ratio for the corresponding decay mode.
 
     Args:
       perform: a boolean dictating whether to immediately perform the query.
@@ -785,7 +788,7 @@ class _NuclearWalletCardQuery(_NNDCQuery):
             warnings.warn(
                 'query kwarg "decay" may not be working on NNDC, '
                 "and the user is advised to check the "
-                '"Decay Mode" column of the resulting DataFrame'
+                '"decayMode" column of the resulting DataFrame'
             )
             self._data["dmed"] = "enabled"
             self._data["dmn"] = WALLET_DECAY_MODE[kwargs["decay"].lower()]
@@ -873,14 +876,12 @@ class _NuclearWalletCardQuery(_NNDCQuery):
         self.df["levelEnergyMeV"] = self.df["levelEnergy"].apply(
             lambda q: np.nan if not isinstance(q, dict) else q["value"] * 0.001
         )
-
-        # Keep the legacy wallet-card column names for direct DataFrame callers.
-        # tests/nndc_test.py and downstream code still access these columns.
+        # Keep only the remaining wallet-card aliases that downstream callers
+        # still access directly.
         self.df["Z"] = self.df["atomicNumber"]
         self.df["A"] = self.df["atomicMass"]
         self.df["N"] = self.df["neutronNumber"]
-        self.df["T1/2 (s)"] = self.df["halfLifeSeconds"]
-        self.df["Energy Level (MeV)"] = self.df["levelEnergyMeV"]
+        self.df["M"] = self.df["levelIndex"]
 
         # The public wallet-card kwargs still include z_even/a_odd/n_even, but
         # the new endpoint does not expose matching server-side filters.
@@ -910,6 +911,7 @@ class _NuclearWalletCardQuery(_NNDCQuery):
                 (self.df["levelEnergyMeV"] >= elmin)
                 & (self.df["levelEnergyMeV"] <= elmax)
             ]
+
         # Mirror the old broad-search failure mode for wallet-card queries so a
         # backend change does not silently widen the public API behavior.
         if (
@@ -923,6 +925,44 @@ class _NuclearWalletCardQuery(_NNDCQuery):
                 "Request failed: There are too many results for your search"
             )
 
+        # Walletcards returns nested quantity/branching objects; flatten them here
+        # so cache and isotope lookups can keep using plain columns.
+
+        def quantity_value(quantity, scale=1.0):
+            if quantity is None or (isinstance(quantity, float) and np.isnan(quantity)):
+                return np.nan
+            if isinstance(quantity, dict):
+                value = quantity["value"] * scale
+                uncertainty = quantity.get("uncertainty", {})
+                if uncertainty.get("type") == "symmetric":
+                    return uncertainties.ufloat(value, uncertainty["value"] * scale)
+                return value
+            return quantity * scale
+
+        rows = []
+        for record in self.df.to_dict("records"):
+            record["abundance"] = quantity_value(record.get("abundance"))
+            record["spinParityRecord"] = (
+                ""
+                if not isinstance(record.get("spinParityRecord"), dict)
+                else record["spinParityRecord"].get("evaluatorInput", "")
+            )
+            record["massExcess"] = quantity_value(record.get("massExcess"), 0.001)
+            branchings = record.pop("branchingRatios", np.nan)
+            if not isinstance(branchings, dict) or len(branchings) == 0:
+                rows.append(record)
+                continue
+            for mode, value in branchings.items():
+                rows.append(
+                    {
+                        **record,
+                        "decayMode": mode,
+                        "branchingRatio": quantity_value(value),
+                    }
+                )
+        self.df = pd.DataFrame(rows)
+        self._sort_columns()
+
 
 def fetch_wallet_card(**kwargs):
     """Perform NNDC Nuclear Wallet Card data query and return a DataFrame.
@@ -933,8 +973,8 @@ def fetch_wallet_card(**kwargs):
     Help page: http://www.nndc.bnl.gov/nudat3/help/wchelp.jsp
 
       Returns the walletcards JSON fields from NNDC, plus the derived numeric
-      columns ``halfLifeSeconds`` and ``levelEnergyMeV`` and the legacy
-      aliases ``Z``, ``A``, ``N``, ``T1/2 (s)``, and ``Energy Level (MeV)``.
+      columns ``halfLifeSeconds`` and ``levelEnergyMeV`` and the remaining
+      aliases ``Z``, ``A``, ``N``, and ``M``.
 
     Args:
       nuc     : (str) : the name of the isotope (e.g., 'Co-60')
