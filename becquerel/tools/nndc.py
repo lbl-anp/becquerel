@@ -878,6 +878,7 @@ class _NuclearWalletCardQuery(_NNDCQuery):
         self.df["levelEnergyMeV"] = self.df["levelEnergy"].apply(
             lambda q: np.nan if not isinstance(q, dict) else q["value"] * 0.001
         )
+
         # Keep only the remaining wallet-card aliases that downstream callers
         # still access directly.
         self.df["Z"] = self.df["atomicNumber"]
