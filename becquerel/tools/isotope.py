@@ -310,9 +310,9 @@ class Isotope(element.Element):
         if not wallet_cache.loaded:
             wallet_cache.load()
         this_isotope = (
-            (wallet_cache.df["Z"] == self.Z)
-            & (wallet_cache.df["A"] == self.A)
-            & (wallet_cache.df["M"] == self.M)
+            (wallet_cache.df["atomicNumber"] == self.Z)
+            & (wallet_cache.df["atomicMass"] == self.A)
+            & (wallet_cache.df["levelIndex"] == self.M)
         )
         df = wallet_cache.df[this_isotope]
         if len(df) == 0:
@@ -418,8 +418,6 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        if "decayMode" not in df or "branchingRatio" not in df:
-            return [], []
         data1 = df["decayMode"].tolist()
         data2 = df["branchingRatio"].tolist()
         if (
@@ -430,6 +428,9 @@ class Isotope(element.Element):
             return [], []
         modes = data1
         branchings = data2
+
+        # NNDC sometimes returns a branching ratio of 0.0, meaning all the rest. We 
+        # fix this here.
         values = [
             val.nominal_value if isinstance(val, uncertainties.core.Variable) else val
             for val in branchings
