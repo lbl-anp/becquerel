@@ -43,19 +43,17 @@ class WalletCardCache(df_cache.DataFrameCache):
         """Format ufloat columns before writing so they keep precision."""
 
         for col in ["Abundance (%)", "Mass Excess (MeV)"]:
-            self.df[col] = self.df[col].apply(format_ufloat)
+            if col in self.df:
+                self.df[col] = self.df[col].apply(format_ufloat)
         super().write_file()
 
     def read_file(self):
         """Ensure some columns are properly converted to float/ufloat."""
 
         super().read_file()
-        if "T1/2 (txt)" not in self.df.columns:
-            raise df_cache.CacheError(
-                "Wallet cache uses an outdated schema and must be refreshed"
-            )
         for col in ["Abundance (%)", "Mass Excess (MeV)"]:
-            self.df[col] = self.df[col].apply(convert_float_ufloat)
+            if col in self.df:
+                self.df[col] = self.df[col].apply(convert_float_ufloat)
 
     def fetch(self):
         """Fetch wallet card data from NNDC for all isotopes."""

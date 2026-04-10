@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+import uncertainties
 
 from becquerel.tools import element, isotope
 
@@ -210,68 +211,80 @@ ISOTOPE_PROPERTIES = [
     (
         "H-3",
         (
-            3.888e8,
+            3.8885590296e8,
             False,
             None,
             "1/2+",
             0.0,
-            14.94980957,
+            14.94981090,
             [["B-"], [100.0]],
-            3.6e14,
+            3.5782149834166506e14,
         ),
     ),
-    ("He-4", (np.inf, True, 99.999866, "0+", 0.0, 2.4249, [[], []], 0.0)),
+    ("He-4", (np.inf, True, 99.9998, "0+", 0.0, 2.42491587, [[], []], 0.0)),
     (
         "K-40",
         (
-            3.938e16,
+            3.93838848e16,
             False,
             0.0117,
             "4-",
             0.0,
-            -33.53540,
-            [["B-", "EC"], [89.28, 10.72]],
-            2.4e5,
+            -33.53550,
+            [["B-", "EC+B+"], [89.28, 10.72]],
+            2.6497069018724945e5,
         ),
     ),
-    ("Co-60", (1.663e8, False, None, "5+", 0.0, -61.6503, [["B-"], [100.0]], 4.2e13)),
+    (
+        "Co-60",
+        (
+            1.663433144543367e8,
+            False,
+            None,
+            "5+",
+            0.0,
+            -61.6504,
+            [["B-"], [100.0]],
+            4.182344276732091e13,
+        ),
+    ),
     (
         "U-238",
         (
-            1.41e17,
+            1.4084883020376e17,
             False,
             99.2742,
             "0+",
             0.0,
             47.3077,
-            [["A", "SF"], [100.00, 5.4e-5]],
-            1.2e4,
+            [["2B-", "f", "a"], [2.2e-10, 5.44e-5, 100.0]],
+            1.2452202633617688e4,
         ),
     ),
     (
         "Pu-244",
         (
-            2.525e15,
+            2.56563288e15,
             False,
             None,
             "0+",
             0.0,
             59.8060,
-            [["A", "SF"], [99.88, 0.12]],
-            6.7e5,
+            [["a", "f"], [99.877, 0.123]],
+            6.66794550347201e5,
         ),
     ),
     (
         "Tc-99m",
         (
-            21624.12,
+            21626.28,
             False,
             None,
             "1/2-",
-            0.1427,
-            -87.1851,
-            [["IT", "B-"], [100.0, 3.7e-3]],
-            1.9e17,
+            0.1426836,
+            -87.1852,
+            [["IT", "B-"], [99.9963, 3.7e-3]],
+            1.9496621679895008e17,
         ),
     ),
     (
@@ -281,36 +294,34 @@ ISOTOPE_PROPERTIES = [
             False,
             None,
             "(0-)",
-            0.0739,
-            40.413,
+            0.0765,
+            40.415,
             [["IT", "B-"], [0.16, 99.84]],
-            2.6e19,
+            2.5652272043418714e19,
         ),
     ),
-    ("Hf-178", (np.inf, True, 27.28, "0+", 0.0, -52.4352, [[], []], 0.0)),
-    ("Hf-178m1", (4.0, False, None, "8-", 1.1474, -51.2878, [["IT"], [100.0]], 5.9e20)),
+    ("Hf-178", (np.inf, True, 27.28, "0+", 0.0, -52.4354, [[], []], 0.0)),
+    (
+        "Hf-178m1",
+        (4.3, False, None, "8-", 1.147416, -51.2880, [["IT"], [100.0]], 5.4536582898934533e20),
+    ),
     (
         "Hf-178m2",
-        (9.783e8, False, None, "16+", 2.4461, -49.9891, [["IT"], [100.0]], 2.4e12),
+        (
+            9.782856e8,
+            False,
+            None,
+            "16+",
+            2.44609,
+            -49.9893,
+            [["IT"], [100.0]],
+            2.3971252000992197e12,
+        ),
     ),
 ]
 # Specific activity data from NRC Regulations Part 71 Appendix A, Table A-1:
 # https://www.nrc.gov/reading-rm/doc-collections/cfr/part071/part071-appa.html
 # except for the Pa and Hf isomers, which are from becquerel instead
-
-
-def _nominal_value(value):
-    """Return the nominal value of a float or ufloat."""
-    return getattr(value, "nominal_value", value)
-
-
-def _mode_aliases(mode):
-    """Return decay-mode labels that should be treated as equivalent in webtests."""
-    aliases = {
-        "EC": ("EC", "ECBP"),
-        "B+": ("B+", "ECBP"),
-    }
-    return aliases.get(mode, (mode,))
 
 
 @pytest.mark.webtest
@@ -329,26 +340,30 @@ def test_isotope_properties(iso_str, props):
         specific_activity,
     ) = props
     if not np.isinf(half_life):
-        assert np.isclose(i.half_life, half_life, rtol=0.10)
+        assert np.isclose(i.half_life, half_life)
     else:
         assert np.isinf(i.half_life)
     assert i.is_stable == is_stable
     if abundance is None:
         assert i.abundance is None
     else:
-        assert np.isclose(_nominal_value(i.abundance), abundance)
+        assert np.isclose(i.abundance.nominal_value, abundance)
     assert i.j_pi == j_pi
-    assert np.isclose(i.energy_level, energy_level, rtol=0.05, atol=1e-6)
+    assert np.isclose(i.energy_level, energy_level)
+    print("mass excess:", i.mass_excess, type(i.mass_excess))
     if mass_excess is None:
         assert i.mass_excess is None
     else:
-        assert np.isclose(_nominal_value(i.mass_excess), mass_excess, atol=0.01)
-    actual_modes = dict(zip(*i.decay_modes))
-    for mode, branch in zip(*modes):
-        matching_mode = next(
-            (alias for alias in _mode_aliases(mode) if alias in actual_modes),
-            None,
-        )
-        assert matching_mode is not None
-        assert np.isclose(actual_modes[matching_mode], branch, rtol=0.05, atol=0.01)
+        print("mass excess:", i.mass_excess.nominal_value)
+        print("mass excess:", mass_excess)
+        print(np.isclose(mass_excess, mass_excess))
+        print(np.isclose(mass_excess, i.mass_excess.nominal_value))
+        print(np.isclose(mass_excess, (i.mass_excess).nominal_value))
+        assert np.isclose(i.mass_excess.nominal_value, mass_excess)
+    assert set(i.decay_modes[0]) == set(modes[0])
+    branchings = [
+        val.nominal_value if isinstance(val, uncertainties.core.Variable) else val
+        for val in i.decay_modes[1]
+    ]
+    assert np.allclose(sorted(branchings), sorted(modes[1]))
     assert np.isclose(specific_activity, i.specific_activity, rtol=0.10)
