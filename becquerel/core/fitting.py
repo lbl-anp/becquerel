@@ -1219,10 +1219,6 @@ class Fitter:
         grad = nd.Gradient(_calc_area)
         g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
 
-        # Compute the gradient with respect to the best fit parameters
-        grad = nd.Gradient(_calc_area)
-        g = np.atleast_2d(grad(values, xvals=xvals, model=model, names=names)).T
-
         # Compute the variance in the area estimate: Tellinghuisen Eq. 1
         if self.covariance is None or np.allclose(self.covariance, 0.0):
             warnings.warn(
