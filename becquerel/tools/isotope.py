@@ -1,9 +1,12 @@
 """Nuclear isotopes and isomers."""
 
+import ast
+
 import numpy as np
 import uncertainties
 
-from . import element, nndc
+from . import element
+from .wallet_cache import wallet_cache
 
 N_AV = 6.022141e23  # mol^-1
 
@@ -21,6 +24,18 @@ def _wallet_card_quantity(quantity, scale=1.0):
     if uncertainty.get("type") == "symmetric":
         return uncertainties.ufloat(value, uncertainty["value"] * scale)
     return value
+
+
+def _wallet_card_entry(entry):
+    """Parse walletcards dict data after cache CSV round-tripping."""
+    if not isinstance(entry, str):
+        return entry
+    if entry == "":
+        return None
+    try:
+        return ast.literal_eval(entry)
+    except (SyntaxError, ValueError):
+        return entry
 
 
 def _split_element_mass(arg):
@@ -225,7 +240,6 @@ class Isotope(element.Element):
         else:
             raise IsotopeError("One, two, or three arguments required")
         self.N = self.A - self.Z
-        self._wallet_card_df = None
         if self.N < 0:
             raise IsotopeError(f"Neutron number N cannot be negative: {args} {self.N}")
 
@@ -318,13 +332,20 @@ class Isotope(element.Element):
           IsotopeError: if no isotope data can be found.
         """
 
-        if self._wallet_card_df is None:
-            df = nndc.fetch_wallet_card(z=self.Z, a=self.A)
-            df = df[df["levelIndex"] == self.M]
-            if len(df) == 0:
-                raise IsotopeError(f"No wallet card data found for isotope {self}")
-            self._wallet_card_df = df
-        return self._wallet_card_df
+        if not wallet_cache.loaded:
+            wallet_cache.load()
+        level_index = self.M
+        df = wallet_cache.df[
+            (wallet_cache.df["atomicNumber"] == self.Z)
+            & (wallet_cache.df["atomicMass"] == self.A)
+            & (wallet_cache.df["levelIndex"] == level_index)
+        ]
+        if len(df) == 0:
+            raise IsotopeError(
+                f"No wallet card data found for isotope {self} "
+                f"(levelIndex={level_index})"
+            )
+        return df
 
     @property
     def half_life(self):
@@ -371,12 +392,11 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        if "abundance" not in df:
-            return None
         data = df["abundance"].tolist()
-        if data[0] is None or (isinstance(data[0], float) and np.isnan(data[0])):
+        data0 = _wallet_card_entry(data[0])
+        if data0 is None or (isinstance(data0, float) and np.isnan(data0)):
             return None
-        return _wallet_card_quantity(data[0])
+        return _wallet_card_quantity(data0)
 
     @property
     def j_pi(self):
@@ -391,7 +411,7 @@ class Isotope(element.Element):
             ""
             if not isinstance(record, dict)
             else record.get("evaluatorInput", "")
-            for record in df["spinParityRecord"].tolist()
+            for record in [_wallet_card_entry(x) for x in df["spinParityRecord"].tolist()]
         ]
         assert len(np.unique(data)) == 1
         return data[0]
@@ -419,9 +439,10 @@ class Isotope(element.Element):
 
         df = self._wallet_card()
         data = df["massExcess"].tolist()
-        if data[0] is None or (isinstance(data[0], float) and np.isnan(data[0])):
+        data0 = _wallet_card_entry(data[0])
+        if data0 is None or (isinstance(data0, float) and np.isnan(data0)):
             return None
-        return _wallet_card_quantity(data[0], scale=0.001)
+        return _wallet_card_quantity(data0, scale=0.001)
 
     @property
     def decay_modes(self):
@@ -432,13 +453,12 @@ class Isotope(element.Element):
         """
 
         df = self._wallet_card()
-        if "branchingRatios" not in df:
-            return [], []
         data = df["branchingRatios"].tolist()
-        if data[0] is None or (isinstance(data[0], float) and np.isnan(data[0])):
+        data0 = _wallet_card_entry(data[0])
+        if data0 is None or (isinstance(data0, float) and np.isnan(data0)):
             return [], []
-        modes = list(data[0].keys())
-        branchings = [_wallet_card_quantity(data[0][mode]) for mode in modes]
+        modes = list(data0.keys())
+        branchings = [_wallet_card_quantity(data0[mode]) for mode in modes]
         values = [
             val.nominal_value if isinstance(val, uncertainties.core.Variable) else val
             for val in branchings
