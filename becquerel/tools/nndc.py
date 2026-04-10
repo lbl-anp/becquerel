@@ -847,7 +847,9 @@ class _NuclearWalletCardQuery(_NNDCQuery):
         try:
             data = resp.json()
         except ValueError as exc:
-            raise NNDCRequestError("Unable to parse wallet card response as JSON") from exc
+            raise NNDCRequestError(
+                "Unable to parse wallet card response as JSON"
+            ) from exc
         if not isinstance(data, list) or len(data) == 0:
             raise NNDCRequestError("No datasets were found within the specified search")
         return data

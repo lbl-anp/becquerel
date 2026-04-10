@@ -54,7 +54,7 @@ class WalletCardCache(df_cache.DataFrameCache):
         try:
             for col in ["abundance", "massExcess", "branchingRatio"]:
                 self.df[col] = self.df[col].apply(convert_float_ufloat)
-        except (KeyError, ValueError, TypeError) as exc:
+        except (KeyError, ValueError, TypeError):
             raise df_cache.CacheError("Outdated cache.")
 
     def fetch(self):

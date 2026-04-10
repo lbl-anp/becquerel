@@ -429,7 +429,7 @@ class Isotope(element.Element):
         modes = data1
         branchings = data2
 
-        # NNDC sometimes returns a branching ratio of 0.0, meaning all the rest. We 
+        # NNDC sometimes returns a branching ratio of 0.0, meaning all the rest. We
         # fix this here.
         values = [
             val.nominal_value if isinstance(val, uncertainties.core.Variable) else val
@@ -437,7 +437,9 @@ class Isotope(element.Element):
         ]
         if len(values) > 1 and not np.isclose(sum(values), 100.0, atol=1e-2):
             zero_idxs = [
-                idx for idx, value in enumerate(values) if np.isclose(value, 0.0, atol=1e-6)
+                idx
+                for idx, value in enumerate(values)
+                if np.isclose(value, 0.0, atol=1e-6)
             ]
             if len(zero_idxs) > 1:
                 raise IsotopeError(
