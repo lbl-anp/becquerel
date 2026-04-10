@@ -1,7 +1,7 @@
 """Read in a Canberra CNF file.
 
-The CNF format specification appears to be proprietary, so this code is
-based on the CNF parsing code in the xylib project:
+The CNF data format is not readily available to build a custom parser so this
+code is based on the CNF parsing code in the open source xylib project:
     https://github.com/wojdyr/xylib
 
 The relevant code is in these files:

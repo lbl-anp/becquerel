@@ -5,7 +5,7 @@ __maintainer__ = __author__
 __email__ = "becquerel-dev@lbl.gov"
 __description__ = "Tools for radiation spectral analysis."
 __url__ = "https://github.com/lbl-anp/becquerel"
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 # classifiers from list at https://pypi.org/classifiers/
 __classifiers__ = [
     "Development Status :: 4 - Beta",
@@ -25,7 +25,7 @@ __classifiers__ = [
 ]
 __license__ = "Other/Proprietary License (see LICENSE.txt)"
 __copyright__ = """\
-becquerel (bq) Copyright (c) 2017-2021, The Regents of the University of
+becquerel (bq) Copyright (c) 2017-2025, The Regents of the University of
 California, through Lawrence Berkeley National Laboratory (subject to receipt
 of any required approvals from the U.S. Dept. of Energy) and University of
 California, Berkeley. All rights reserved.
