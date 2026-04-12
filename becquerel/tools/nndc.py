@@ -833,15 +833,14 @@ class _NuclearWalletCardQuery(_NNDCQuery):
             "aMin": int(self._data["amin"]) if self._data["amin"] != "" else None,
             "aMax": int(self._data["amax"]) if self._data["amax"] != "" else None,
         }
-        with requests.Session() as session:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", category=ResourceWarning)
-                resp = session.post(
-                    self._URL,
-                    json=payload,
-                    headers=_WALLETCARD_HEADERS,
-                    stream=False,
-                )
+        with requests.Session() as session, warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=ResourceWarning)
+            resp = session.post(
+                self._URL,
+                json=payload,
+                headers=_WALLETCARD_HEADERS,
+                stream=False,
+            )
         if not resp.ok or resp.status_code != 200:
             raise NNDCRequestError("Request failed: " + resp.reason)
         try:

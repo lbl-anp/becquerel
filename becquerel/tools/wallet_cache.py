@@ -54,8 +54,8 @@ class WalletCardCache(df_cache.DataFrameCache):
         try:
             for col in ["abundance", "massExcess", "branchingRatio"]:
                 self.df[col] = self.df[col].apply(convert_float_ufloat)
-        except (KeyError, ValueError, TypeError):
-            raise df_cache.CacheError("Outdated cache.")
+        except (KeyError, ValueError, TypeError) as exc:
+            raise df_cache.CacheError("Outdated cache.") from exc
 
     def fetch(self):
         """Fetch wallet card data from NNDC for all isotopes."""
