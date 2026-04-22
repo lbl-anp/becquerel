@@ -963,6 +963,11 @@ class _NuclearWalletCardQuery(_NNDCQuery):
                     }
                 )
         self.df = pd.DataFrame(rows)
+
+        # Preserve the legacy public wallet-card column names during the
+        # refactor so existing callers and tests can still read them.
+        self.df["T1/2 (s)"] = self.df["halfLifeSeconds"]
+        self.df["Energy Level (MeV)"] = self.df["levelEnergyMeV"]
         self._sort_columns()
 
 
