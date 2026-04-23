@@ -3,14 +3,9 @@
 The CNF data format is not readily available to build a custom parser so this
 code is based on the CNF parsing code in the open source xylib project:
     https://github.com/wojdyr/xylib
-
-The relevant code is in these files:
-    https://github.com/wojdyr/xylib/blob/master/xylib/util.cpp
-    https://github.com/wojdyr/xylib/blob/master/xylib/canberra_cnf.cpp
 """
 
 import datetime
-import struct
 from pathlib import Path
 
 import numpy as np
@@ -19,62 +14,90 @@ from ..core import calibration
 from .parsers import BecquerelParserError
 
 
-def _from_little_endian(data, index, n_bytes):
-    """Convert bytes starting from index from little endian to an integer."""
-    return sum(data[index + j] << 8 * j for j in range(n_bytes))
+def _parse_vms_time(data_bytes):
+    """Convert 64-bit VMS time (bytes) to datetime."""
+    if len(data_bytes) < 8:
+        return None
+    val = int.from_bytes(data_bytes, byteorder="little")
+
+    # Check for Empty (0) or Deleted (All Fs)
+    if val in (0, 0xFFFFFFFFFFFFFFFF):
+        return None
+
+    # VMS Time: 100ns ticks since Nov 17, 1858
+    # Unix Offset: 3506716800 seconds
+    try:
+        t = (val / 10000000.0) - 3506716800
+        if t < 0:
+            return None
+        return datetime.datetime.utcfromtimestamp(t)
+    except (ValueError, OverflowError):
+        return None
 
 
-def _convert_date(data, index):
-    """Convert 64-bit number starting at index into a date."""
-    # 'data' is the number of 100ns intervals since 17 November 1858, which
-    # is the start of the Modified Julian Date (MJD) epoch.
-    # 3506716800 is the number of seconds between the start of the MJD epoch
-    # to the start of the Unix epoch on 1 January 1970.
-    d = _from_little_endian(data, index, 8)
-    t = (d / 10000000.0) - 3506716800
-    return datetime.datetime.utcfromtimestamp(t)
+def _parse_vms_duration(data_bytes):
+    """Convert 64-bit VMS duration (ticks) to seconds."""
+    if len(data_bytes) < 8:
+        return 0.0
+    val = int.from_bytes(data_bytes, byteorder="little")
+    if val == 0:
+        return 0.0
 
-
-def _convert_time(data, index):
-    """Convert 64-bit number starting at index into a time."""
-    # 2^(64) - number of 100ns intervals since timing started
-    d = _from_little_endian(data, index, 8)
-    d = (pow(2, 64) - 1) & ~d
-    return d * 1.0e-7
+    # Bitwise inversion (One's Complement) on 64-bit unsigned
+    val_inv = val ^ 0xFFFFFFFFFFFFFFFF
+    return val_inv * 1.0e-7
 
 
 def _from_pdp11(data, index):
-    """Convert 32-bit floating point in DEC PDP-11 format to a double.
+    """Convert 32-bit PDP-11 float to double."""
+    if index + 4 > len(data):
+        return 0.0
 
-    For a description of the format see:
-    http://home.kpn.nl/jhm.bonten/computers/bitsandbytes/wordsizes/hidbit.htm
-    """
     if (data[index + 1] & 0x80) == 0:
         sign = 1
     else:
         sign = -1
+
     exb = ((data[index + 1] & 0x7F) << 1) + ((data[index] & 0x80) >> 7)
     if exb == 0:
-        if sign == -1:
-            return np.nan
-        else:
-            return 0.0
+        return np.nan if sign == -1 else 0.0
+
     h = (
-        data[index + 2] / 256.0 / 256.0 / 256.0
-        + data[index + 3] / 256.0 / 256.0
+        data[index + 2] / 16777216.0
+        + data[index + 3] / 65536.0
         + (128 + (data[index] & 0x7F)) / 256.0
     )
     return sign * h * pow(2.0, exb - 128.0)
 
 
 def _read_energy_calibration(data, index):
-    """Read the four energy calibration coefficients."""
-    coeff = [0.0, 0.0, 0.0, 0.0]
-    for i in range(4):
-        coeff[i] = _from_pdp11(data, index + 2 * 4 + 28 + 4 * i)
+    """Read the energy calibration coefficients."""
+    base_idx = index + 36
+    coeff = []
+    if base_idx + 12 > len(data):
+        return None
+
+    for i in range(3):
+        val = _from_pdp11(data, base_idx + (4 * i))
+        coeff.append(val)
+
+    # If linear term is 0, the calibration is invalid/default
     if coeff[1] == 0.0:
         return None
+
+    coeff.append(0.0)
     return coeff
+
+
+def _decode_string(data, start, length):
+    """Safely decode a string from bytes, stripping nulls and padding."""
+    if start + length > len(data):
+        return ""
+
+    raw = data[start : start + length]
+    # Latin-1 is robust for legacy scientific instruments (preserves bytes)
+    # We also strip common control characters if they wrap the text
+    return raw.decode("latin-1", "replace").strip("\x00").strip()
 
 
 def read(filename, verbose=False, cal_kwargs=None):
@@ -97,210 +120,209 @@ def read(filename, verbose=False, cal_kwargs=None):
         Energy calibration stored in the file.
     """
     filename = Path(filename)
-    print(f"Reading CNF file {filename}")
-    ext = filename.suffix
-    if ext.lower() != ".cnf":
-        raise BecquerelParserError("File extension is incorrect: " + ext)
-
-    # read all of the file into memory
-    file_bytes = []
-    with Path(filename).open("rb") as f:
-        byte = f.read(1)
-        while byte:
-            byte_int = struct.unpack("1B", byte)
-            file_bytes.append(byte_int[0])
-            byte = f.read(1)
     if verbose:
-        print("file size (bytes):", len(file_bytes))
+        print(f"Reading CNF file {filename}")
 
-    # initialize a dictionary of spectrum data to populate as we parse
-    data = {}
+    with filename.open("rb") as f:
+        file_bytes = f.read()
 
-    # step through the stored data and parse it
-    # skip first 112 bytes of file
-    i = 112
-    # scan for offsets
-    offset_acq = 0
-    offset_sam = 0
-    offset_eff = 0
-    offset_enc = 0
-    offset_chan = 0
-    for i in range(112, 128 * 1024, 48):
-        offset = _from_little_endian(file_bytes, i + 10, 4)
-        if (
-            (file_bytes[i + 1] == 0x20 and file_bytes[i + 2] == 0x01)
-            or (file_bytes[i + 1] == 0)
-            or (file_bytes[i + 2] == 0)
-        ):
-            if file_bytes[i] == 0:
-                if offset_acq == 0:
-                    offset_acq = offset
-                else:
-                    offset_enc = offset
-            elif file_bytes[i] == 1:
-                if offset_sam == 0:
-                    offset_sam = offset
-            elif file_bytes[i] == 2:
-                if offset_eff == 0:
-                    offset_eff = offset
-            elif file_bytes[i] == 5:
-                if offset_chan == 0:
-                    offset_chan = offset
-            else:
-                pass
-            if (
-                offset_acq != 0
-                and offset_sam != 0
-                and offset_eff != 0
-                and offset_chan != 0
-            ):
-                break
-    if offset_enc == 0:
-        offset_enc = offset_acq
+    file_len = len(file_bytes)
 
-    # extract sample information
-    if (
-        (offset_sam + 48 + 80) >= len(file_bytes)
-        or file_bytes[offset_sam] != 1
-        or file_bytes[offset_sam + 1] != 0x20
-    ):
+    # --- STEP 1: GLOBAL SIGNATURE SCAN ---
+    # We scan the ENTIRE file for section headers.
+    # Signature: [Type Byte] [20] [01] [00]
+    # This bypasses potentially corrupted or incomplete header tables in new files.
+    headers = []
+    offset = 0
+    while offset < file_len:
+        # Find magic bytes \x20\x01
+        loc = file_bytes.find(b"\x20\x01", offset)
+        if loc == -1:
+            break
+
+        h_start = loc - 1
+        if h_start < 0 or h_start + 14 > file_len:
+            offset = loc + 2
+            continue
+
+        d_off = int.from_bytes(file_bytes[h_start + 10 : h_start + 14], "little")
+        block_type = file_bytes[h_start]
+
+        if 0 < d_off < file_len:
+            headers.append({"type": block_type, "d_off": d_off})
+
+        offset = loc + 2
+
+    if not headers:
+        raise BecquerelParserError("No valid CNF headers found.")
+
+    # --- STEP 2: SELECT ACTIVE ACQUISITION BLOCK ---
+    # Filter for Type 0 (Acq) blocks.
+    # Logic: Iterate through all candidates. The "Active" block is the one
+    # that contains valid Live Time (> 0). Genie 4 files often have empty
+    # templates at the start which must be ignored.
+    best_acq = None
+    acq_candidates = [h for h in headers if h["type"] == 0]
+
+    # Iterate backwards (Genie appends active data to the end)
+    for h in reversed(acq_candidates):
+        off = h["d_off"]
+        if off + 40 > file_len:
+            continue
+
+        ptr_date = int.from_bytes(file_bytes[off + 36 : off + 38], "little")
+        if ptr_date > 0:
+            dl = off + 48 + ptr_date + 1
+            if dl + 24 <= file_len:
+                lt = _parse_vms_duration(file_bytes[dl + 16 : dl + 24])
+                if lt > 0.0:
+                    best_acq = h
+                    break
+
+    # Fallback: If no block has valid time (e.g. derived/geometry files),
+    # use the last available block.
+    if not best_acq:
+        if acq_candidates:
+            best_acq = acq_candidates[-1]
+            if verbose:
+                print(
+                    "Warning: No Acquisition block with valid time found. "
+                    "Using last candidate."
+                )
+        else:
+            raise BecquerelParserError("No Acquisition Block found.")
+
+    acq_start = best_acq["d_off"]
+    if verbose:
+        print(f"Selected Acquisition Block at offset {acq_start}")
+
+    # --- STEP 3: EXTRACT METADATA ---
+    ptr_cal = int.from_bytes(file_bytes[acq_start + 34 : acq_start + 36], "little")
+    ptr_date = int.from_bytes(file_bytes[acq_start + 36 : acq_start + 38], "little")
+
+    # Defaults set to None/0.0 to correctly indicate missing data
+    data = {
+        "start_time": None,
+        "realtime": 0.0,
+        "livetime": 0.0,
+    }
+
+    if ptr_date > 0:
+        dl = acq_start + 48 + ptr_date + 1
+        dt = _parse_vms_time(file_bytes[dl : dl + 8])
+        if dt:
+            data["start_time"] = dt
+
+        rt = _parse_vms_duration(file_bytes[dl + 8 : dl + 16])
+        lt = _parse_vms_duration(file_bytes[dl + 16 : dl + 24])
+
+        # Only update if valid, otherwise keep 0.0 default
+        if rt > 0:
+            data["realtime"] = rt
+        if lt > 0:
+            data["livetime"] = lt
+
+    # --- STEP 4: SAMPLE INFO ---
+    # Initialize all fields to ensure they exist even if the block is missing
+    data["sample_name"] = ""
+    data["sample_id"] = ""
+    data["sample_type"] = ""
+    data["sample_unit"] = ""
+    data["user_name"] = ""
+    data["sample_description"] = ""
+
+    # Find the Type 1 block closest to the selected Acquisition block.
+    # Usually, the last Sample block corresponds to the last Acquisition block.
+    sam_candidates = [h for h in headers if h["type"] == 1]
+    if sam_candidates:
+        # Heuristic: pick the last one found (appended data)
+        s_off = sam_candidates[-1]["d_off"]
+
+        if s_off + 256 <= file_len:
+            # Name: Offset 48 (32 bytes)
+            data["sample_name"] = _decode_string(file_bytes, s_off + 48, 64)
+            # ID: Offset 112 (64 bytes)
+            data["sample_id"] = _decode_string(file_bytes, s_off + 112, 64)
+            # Type: Offset 176 (16 bytes)
+            data["sample_type"] = _decode_string(file_bytes, s_off + 176, 16)
+            # Unit: Offset 196 (Was 192, shifted by 4 to skip binary prefix)
+            data["sample_unit"] = _decode_string(file_bytes, s_off + 196, 64)
+            # User Name: Offset 726 (32 bytes)
+            data["user_name"] = _decode_string(file_bytes, s_off + 726, 32)
+            # Description: Offset 878 (256 bytes)
+            data["sample_description"] = _decode_string(file_bytes, s_off + 878, 256)
+
+    # --- STEP 5: READ SPECTRUM ---
+    # 1. Get Channel Count from Header (Offset 186)
+    # This is critical to avoiding "scrambled" data from reading footers.
+    count_offset = acq_start + 186
+    num_channels = 0
+    if count_offset + 2 <= file_len:
+        chunks = int.from_bytes(file_bytes[count_offset : count_offset + 2], "little")
+        num_channels = chunks * 256
+
+    if num_channels == 0:
         if verbose:
-            print(offset_sam + 48 + 80, len(file_bytes))
-            print(file_bytes[offset_sam], file_bytes[offset_sam + 1])
-        raise BecquerelParserError("Sample information not found")
+            print("Warning: Header channel count is 0. Defaulting to 8192.")
+        num_channels = 8192
+
+    # 2. Find Spectrum Block (Type 5)
+    spec_candidates = [h for h in headers if h["type"] == 5]
+    if not spec_candidates:
+        raise BecquerelParserError("No Spectrum Block found.")
+
+    # Use the last one (matches Active Data logic)
+    best_spec = spec_candidates[-1]
+    spec_start = best_spec["d_off"]
+
+    data_start = spec_start + 512  # Skip 512 byte header
+    data_len = num_channels * 4
+
+    # Read Data
+    if data_start + data_len > file_len:
+        if verbose:
+            print("Warning: File truncated, padding spectrum with zeros.")
+        raw_counts = file_bytes[data_start:file_len]
+        raw_counts += b"\x00" * (data_len - len(raw_counts))
     else:
-        sample_name = ""
-        for j in range(offset_sam + 48, offset_sam + 48 + 64):
-            sample_name += chr(file_bytes[j])
-        if verbose:
-            print("sample name: ", sample_name)
-        sample_id = ""
-        for j in range(offset_sam + 112, offset_sam + 112 + 64):
-            sample_id += chr(file_bytes[j])
-        if verbose:
-            print("sample id:   ", sample_id)
-        sample_type = ""
-        for j in range(offset_sam + 176, offset_sam + 176 + 16):
-            sample_type += chr(file_bytes[j])
-        if verbose:
-            print("sample type: ", sample_type)
-        sample_unit = ""
-        for j in range(offset_sam + 192, offset_sam + 192 + 64):
-            sample_unit += chr(file_bytes[j])
-        if verbose:
-            print("sample unit: ", sample_unit)
-        user_name = ""
-        for j in range(offset_sam + 0x02D6, offset_sam + 0x02D6 + 32):
-            user_name += chr(file_bytes[j])
-        if verbose:
-            print("user name:   ", user_name)
-        sample_desc = ""
-        for j in range(offset_sam + 0x036E, offset_sam + 0x036E + 256):
-            sample_desc += chr(file_bytes[j])
-        if verbose:
-            print("sample desc: ", sample_desc)
-        data["sample_name"] = sample_name
-        data["sample_id"] = sample_id
-        data["sample_type"] = sample_type
-        data["sample_unit"] = sample_unit
-        data["user_name"] = user_name
-        data["sample_description"] = sample_desc
+        raw_counts = file_bytes[data_start : data_start + data_len]
 
-    # extract acquisition information
-    if (
-        (offset_acq + 48 + 128 + 10 + 4) >= len(file_bytes)
-        or file_bytes[offset_acq] != 0
-        or file_bytes[offset_acq + 1] != 0x20
-    ):
-        if verbose:
-            print(offset_acq + 48 + 128 + 10 + 4, len(file_bytes))
-            print(file_bytes[offset_acq], file_bytes[offset_acq + 1])
-        raise BecquerelParserError("Acquisition information not found")
-    else:
-        offset1 = _from_little_endian(file_bytes, offset_acq + 34, 2)
-        offset2 = _from_little_endian(file_bytes, offset_acq + 36, 2)
-        offset_pha = offset_acq + 48 + 128
-        if (
-            chr(file_bytes[offset_pha + 0]) != "P"
-            and chr(file_bytes[offset_pha + 1]) != "H"
-            and chr(file_bytes[offset_pha + 2]) != "A"
-        ):
-            raise BecquerelParserError("PHA keyword not found")
-        num_channels = 256 * _from_little_endian(file_bytes, offset_pha + 10, 2)
-        if num_channels < 256 or num_channels > 16384:
-            raise BecquerelParserError("Unexpected number of channels: ", num_channels)
-        if verbose:
-            print("Number of channels: ", num_channels)
+    counts = np.frombuffer(raw_counts, dtype="<u4").astype(float)
 
-    # extract date and time information
-    offset_date = offset_acq + 48 + offset2 + 1
-    if offset_date + 24 >= len(file_bytes):
-        raise BecquerelParserError("Problem with date offset")
-    collection_start = _convert_date(file_bytes, offset_date)
-    realtime = _convert_time(file_bytes, offset_date + 8)
-    if verbose:
-        print("realtime: ", realtime)
-    livetime = _convert_time(file_bytes, offset_date + 16)
-    if verbose:
-        print("livetime: ", livetime)
-        print(f"{collection_start:%Y-%m-%d %H:%M:%S}")
+    # Legacy Artifact Cleanup
+    # If counts[0] or counts[1] match the time integers, zero them out.
+    if len(counts) > 1:
+        c0, c1 = int(counts[0]), int(counts[1])
+        rt_int, lt_int = int(data["realtime"]), int(data["livetime"])
 
-    # check data and time information
-    if realtime <= 0.0:
-        raise BecquerelParserError(f"Realtime not parsed correctly: {realtime}")
-    if livetime <= 0.0:
-        raise BecquerelParserError(f"Livetime not parsed correctly: {livetime}")
-    if livetime > realtime:
-        raise BecquerelParserError(f"Livetime > realtime: {livetime} > {realtime}")
+        # Only run check if we have valid non-zero times.
+        if rt_int > 0 or lt_int > 0:
+            if c0 > 0 and (abs(c0 - rt_int) <= 1 or abs(c0 - lt_int) <= 1):
+                counts[0] = 0.0
+            if c1 > 0 and (abs(c1 - rt_int) <= 1 or abs(c1 - lt_int) <= 1):
+                counts[1] = 0.0
 
-    # extract energy calibration information
-    offset_cal = offset_enc + 48 + 32 + offset1
-    if offset_cal >= len(file_bytes):
-        raise BecquerelParserError("Problem with energy calibration offset")
-    cal_coeff = _read_energy_calibration(file_bytes, offset_cal)
-    if verbose:
-        print("calibration coefficients:", cal_coeff)
-    if cal_coeff is None:
-        if verbose:
-            print("Energy calibration - second try")
-        cal_coeff = _read_energy_calibration(file_bytes, offset_cal - offset1)
-        if verbose:
-            print("calibration coefficients:", cal_coeff)
-    if cal_coeff is None:
-        raise BecquerelParserError("Energy calibration not found")
-
-    # extract channel count data
-    if (
-        offset_chan + 512 + 4 * num_channels > len(file_bytes)
-        or file_bytes[offset_chan] != 5
-        or file_bytes[offset_chan + 1] != 0x20
-    ):
-        raise BecquerelParserError("Channel data not found")
-    channels = np.array([], dtype=float)
-    counts = np.array([], dtype=float)
-    for i in range(2):
-        y = _from_little_endian(file_bytes, offset_chan + 512 + 4 * i, 4)
-        if y == int(realtime) or y == int(livetime):
-            y = 0
-        counts = np.append(counts, y)
-        channels = np.append(channels, i)
-    for i in range(2, num_channels):
-        y = _from_little_endian(file_bytes, offset_chan + 512 + 4 * i, 4)
-        counts = np.append(counts, y)
-        channels = np.append(channels, i)
-
-    # finish populating data dict
-    data["realtime"] = realtime
-    data["livetime"] = livetime
-    data["start_time"] = collection_start
     data["counts"] = counts
 
-    # clean up null characters in any strings
-    for key, value in data.items():
-        if isinstance(data[key], str):
-            data[key] = value.replace("\x00", " ").replace("\x01", " ").strip()
+    # --- STEP 6: CALIBRATION ---
+    offset_cal = acq_start + 48 + 32 + ptr_cal
+    cal_coeff = None
 
-    # create an energy calibration object
+    if ptr_cal > 0 and offset_cal < file_len:
+        cal_coeff = _read_energy_calibration(file_bytes, offset_cal)
+        # Fallback: try relative offset if absolute failed
+        if cal_coeff is None:
+            cal_coeff = _read_energy_calibration(file_bytes, offset_cal - ptr_cal)
+
+    if cal_coeff is None:
+        cal_coeff = [0.0, 1.0, 0.0, 0.0]
+
+    # Final cleanup
+    for k, v in data.items():
+        if isinstance(v, str):
+            data[k] = v.strip()
+
+    # Create calibration object
     if cal_kwargs is None:
         cal_kwargs = {}
     cal = calibration.Calibration.from_polynomial(cal_coeff, **cal_kwargs)
