@@ -15,5 +15,5 @@ pandas
 python-dateutil
 requests
 scipy
-setuptools
+setuptools<81
 uncertainties>=3.0.3
