@@ -6,6 +6,7 @@ import pytest
 from parsers_test import SAMPLES_PATH
 
 import becquerel as bq
+from becquerel.core.fitting import FittingBackend
 
 # TODO: use these for fitting actual data
 SAMPLES = {}
@@ -17,6 +18,12 @@ for extension in [".spe", ".spc", ".cnf"]:
         if ext.lower() == extension:
             filenames_filtered.append(filename)
     SAMPLES[extension] = filenames_filtered
+
+
+def test_fitting_backend_abc():
+    """Test that FittingBackend cannot be instantiated directly."""
+    with pytest.raises(TypeError):
+        FittingBackend()
 
 
 def get_model_name(x):
