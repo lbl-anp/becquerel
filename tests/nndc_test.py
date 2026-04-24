@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from uncertainties import unumpy
 from utils import nndc_is_up
 
 from becquerel.tools import nndc
@@ -10,17 +11,8 @@ from becquerel.tools import nndc
 
 def ufloats_overlap_range(ufloats, vmin, vmax):
     """Return whether the +/- 1 sigma range overlaps the value range."""
-    vals = []
-    sigmas = []
-    for val in ufloats:
-        if isinstance(val, float):
-            vals.append(val)
-            sigmas.append(0)
-        else:
-            vals.append(val.nominal_value)
-            sigmas.append(val.std_dev)
-    vals = np.array(vals)
-    sigmas = np.array(sigmas)
+    vals = unumpy.nominal_values(ufloats)
+    sigmas = unumpy.std_devs(ufloats)
     return ((vals - sigmas <= vmax) | (vals + sigmas >= vmin)).all()
 
 
@@ -415,35 +407,36 @@ class NNDCQueryTests:
         d = self.fetch(z_range=(9, 10), t_range=(None, 1e4))
         assert len(d) > 0
         assert ((9 <= d.Z) & (d.Z <= 10)).all()
-        assert (d["T1/2 (s)"] <= 1e4).all()
+        assert (unumpy.nominal_values(d["T1/2 (s)"]) <= 1e4).all()
 
     def test_query_zrange_9_10_trange_0_1E4(self):
         """Test NNDCQuery: z_range=(9, 10), t_range=(0, 1e4)..............."""
         d = self.fetch(z_range=(9, 10), t_range=(0, 1e4))
         assert len(d) > 0
         assert ((9 <= d.Z) & (d.Z <= 10)).all()
-        assert (d["T1/2 (s)"] <= 1e4).all()
+        assert (unumpy.nominal_values(d["T1/2 (s)"]) <= 1e4).all()
 
     def test_query_zrange_9_10_trange_1E3_1E9(self):
         """Test NNDCQuery: z_range=(9, 10), t_range=(1e3, 1e9)............."""
         d = self.fetch(z_range=(9, 10), t_range=(1e3, 1e9))
         assert len(d) > 0
         assert ((9 <= d.Z) & (d.Z <= 10)).all()
-        assert ((1e3 <= d["T1/2 (s)"]) & (d["T1/2 (s)"] <= 1e9)).all()
+        half_lives = unumpy.nominal_values(d["T1/2 (s)"])
+        assert ((1e3 <= half_lives) & (half_lives <= 1e9)).all()
 
     def test_query_zrange_5_10_trange_1E9_None(self):
         """Test NNDCQuery: z_range=(5, 10), t_range=(1e9, None)............"""
         d = self.fetch(z_range=(5, 10), t_range=(1e9, None))
         assert len(d) > 0
         assert ((5 <= d.Z) & (d.Z <= 10)).all()
-        assert (d["T1/2 (s)"] >= 1e9).all()
+        assert (unumpy.nominal_values(d["T1/2 (s)"]) >= 1e9).all()
 
     def test_query_zrange_5_10_trange_1E9_inf(self):
         """Test NNDCQuery: z_range=(5, 10), t_range=(1e9, np.inf).........."""
         d = self.fetch(z_range=(5, 10), t_range=(1e9, np.inf))
         assert len(d) > 0
         assert ((5 <= d.Z) & (d.Z <= 10)).all()
-        assert (d["T1/2 (s)"] >= 1e9).all()
+        assert (unumpy.nominal_values(d["T1/2 (s)"]) >= 1e9).all()
 
     def test_query_nuc_Pu239_decay_ANY(self):
         """Test NNDCQuery: nuc='Pu-239', decay='ANY'......................."""
@@ -726,7 +719,7 @@ class TestDecayRadiationQuery(NNDCQueryTests):
         assert len(d) == 0
         assert (d.Z == 91).all()
         assert (d.A == 234).all()
-        assert (d["Energy Level (MeV)"] > 0).all()
+        assert (unumpy.nominal_values(d["Energy Level (MeV)"]) > 0).all()
 
     def test_decay_zrange_230_250(self):
         """Test fetch_decay_radiation: z_range=(230, 250) dataframe empty.."""

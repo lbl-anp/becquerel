@@ -3,6 +3,7 @@ import datetime
 
 import numpy as np
 import pytest
+import uncertainties
 from dateutil.parser import parse as dateutil_parse
 from uncertainties import ufloat
 
@@ -23,6 +24,8 @@ from becquerel.tools.isotope_qty import (
 
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     """function to work with uncertainties too."""
+    a = uncertainties.nominal_value(a)
+    b = uncertainties.nominal_value(b)
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 

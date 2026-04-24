@@ -16,7 +16,9 @@ def convert_float_ufloat(x):
     if isinstance(x, str):
         if "+/-" in x:
             tokens = x.split("+/-")
-            return uncertainties.ufloat(float(tokens[0]), float(tokens[1]))
+            nominal = float(tokens[0])
+            std_dev = float(tokens[1])
+            return uncertainties.Variable(nominal, std_dev)
         if x == "":
             return None
     return float(x)
