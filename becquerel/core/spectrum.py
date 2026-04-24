@@ -152,7 +152,7 @@ class Spectrum:
         if counts is not None:
             if len(counts) == 0:
                 raise SpectrumError("Empty spectrum counts")
-            if uncs is None and np.any(np.asarray(counts) < 0):
+            if uncs is None and np.any(np.asarray(unumpy.nominal_values(counts)) < 0):
                 raise SpectrumError(
                     "Negative values encountered in counts. Uncertainties "
                     "are most likely not Poisson-distributed. Provide uncs "

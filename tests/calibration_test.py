@@ -289,6 +289,20 @@ domain = [0, 3500]
 rng = [0, 1000]
 
 
+def fit_kwargs(name):
+    """Keep nonlinear fit tests inside their valid parameter regions."""
+    if name in {"cal3", "sqrt2"}:
+        return {"bounds": ([0.0, 0.0, 0.0], [np.inf, np.inf, np.inf])}
+    if name == "cal4":
+        return {
+            "bounds": (
+                [-np.inf, -np.inf, -np.inf, 1e-12],
+                [np.inf, np.inf, np.inf, np.inf],
+            )
+        }
+    return {}
+
+
 def make_calibration(name, args):
     """Make an instance of the desired Calibration type."""
     attrs = {"comment": "Test of Calibration class", "name": name}
@@ -382,19 +396,20 @@ def test_calibration_set_add_points(name, args):
 @pytest.mark.parametrize("name, args", name_args)
 def test_calibration_fit_from_points(name, args):
     """Test Calibration.fit and from_points methods."""
+    kwargs = fit_kwargs(name)
     # test fit()
     cal1 = make_calibration(name, args)
     cal1.add_points(points_x, points_y)
-    cal1.fit()
+    cal1.fit(**kwargs)
     # alternate: call fit_points() instead of add_points() and fit()
-    cal1.fit_points(points_x, points_y)
+    cal1.fit_points(points_x, points_y, **kwargs)
 
     # skip any instances that require a factory method
     if len(args) != 2:
         cal2 = None
     else:
         # test from_points()
-        cal2 = Calibration.from_points(args[0], points_x, points_y)
+        cal2 = Calibration.from_points(args[0], points_x, points_y, fit_kwargs=kwargs)
         cal2 = Calibration.from_points(
             args[0],
             points_x,
@@ -402,22 +417,25 @@ def test_calibration_fit_from_points(name, args):
             params0=args[1],
             domain=cal1.domain,
             rng=cal1.range,
+            fit_kwargs=kwargs,
         )
         assert cal2 == cal1
 
     # test fit() with weights
     cal1 = make_calibration(name, args)
     cal1.add_points(points_x, points_y, weights)
-    cal1.fit()
+    cal1.fit(**kwargs)
     # alternate: call fit_points() with weights
-    cal1.fit_points(points_x, points_y, weights)
+    cal1.fit_points(points_x, points_y, weights, **kwargs)
 
     # skip any instances that require a factory method
     if len(args) != 2:
         cal2 = None
     else:
         # test from_points() with weights
-        cal2 = Calibration.from_points(args[0], points_x, points_y, weights)
+        cal2 = Calibration.from_points(
+            args[0], points_x, points_y, weights, fit_kwargs=kwargs
+        )
         cal2 = Calibration.from_points(
             args[0],
             points_x,
@@ -426,6 +444,7 @@ def test_calibration_fit_from_points(name, args):
             params0=args[1],
             domain=cal1.domain,
             rng=cal1.range,
+            fit_kwargs=kwargs,
         )
         assert cal2 == cal1
 

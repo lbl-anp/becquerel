@@ -378,8 +378,17 @@ def _fit_expression(
             f"Starting parameters have length {len(params0)}, but expression "
             f"requires {n_params} parameters"
         )
+    # Validate the initial expression over the fit data span rather than the
+    # full default domain when no explicit domain is given.
+    validation_domain = domain
+    if validation_domain is None and len(points_x) > 1 and points_x[0] < points_x[-1]:
+        validation_domain = (points_x[0], points_x[-1])
     expression = _validate_expression(
-        expression, params=params0, aux_params=aux_params, domain=domain, rng=rng
+        expression,
+        params=params0,
+        aux_params=aux_params,
+        domain=validation_domain,
+        rng=rng,
     )
 
     # check that we have enough points

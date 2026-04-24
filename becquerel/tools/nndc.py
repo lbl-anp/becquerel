@@ -346,7 +346,7 @@ def _parse_float_uncertainty(x, dx):
         raise NNDCRequestError(
             f'Uncertainty cannot be parsed as float: "{dx}"'
         ) from exc
-    return uncertainties.ufloat(x2, dx2)
+    return uncertainties.Variable(x2, dx2)
 
 
 def _format_range(x_range):
@@ -599,6 +599,8 @@ class _NNDCQuery:
         self.df["M"] = [0] * len(self)
         # add string m giving the isomer level name (e.g., '' or 'm' or 'm2')
         self.df["m"] = [""] * len(self)
+        energy_levels = self["Energy Level (MeV)"]
+        energy_levels_nominal = energy_levels.map(uncertainties.nominal_value)
         # loop over each isotope in the dataframe
         A_Z = list(zip(self["A"], self["Z"]))
         A_Z = set(A_Z)
@@ -606,17 +608,13 @@ class _NNDCQuery:
             isotope = (self["A"] == a) & (self["Z"] == z)
             e_levels = []
             e_levels_nominal = []
-            for e_level in self["Energy Level (MeV)"][isotope]:
-                if isinstance(e_level, uncertainties.core.Variable):
-                    e_level_nominal = e_level.nominal_value
-                else:
-                    e_level_nominal = e_level
+            for e_level_nominal in energy_levels_nominal[isotope]:
                 if e_level_nominal not in e_levels_nominal:
-                    e_levels.append(e_level)
+                    e_levels.append(e_level_nominal)
                     e_levels_nominal.append(e_level_nominal)
             e_levels = sorted(e_levels)
             for M, e_level in enumerate(e_levels):
-                isomer = isotope & (abs(self["Energy Level (MeV)"] - e_level) < 1e-10)
+                isomer = isotope & (np.abs(energy_levels_nominal - e_level) < 1e-10)
                 self.df.loc[isomer, "M"] = M
                 if M > 0:
                     if len(e_levels) > 2:
@@ -937,7 +935,8 @@ class _NuclearWalletCardQuery(_NNDCQuery):
                 value = quantity["value"] * scale
                 uncertainty = quantity.get("uncertainty", {})
                 if uncertainty.get("type") == "symmetric":
-                    return uncertainties.ufloat(value, uncertainty["value"] * scale)
+                    uncertainty_value = uncertainty["value"] * scale
+                    return uncertainties.Variable(value, uncertainty_value)
                 return value
             return quantity * scale
 
@@ -1151,7 +1150,7 @@ def fetch_decay_radiation(**kwargs):
 
     query = _DecayRadiationQuery(**kwargs)
     # apply elevel_range filter (hack around the web API)
-    elevel = query.df["Energy Level (MeV)"]
+    elevel = query.df["Energy Level (MeV)"].map(uncertainties.nominal_value)
     keep = (elevel >= query.elevel_range[0]) & (elevel <= query.elevel_range[1])
     query.df = query.df[keep]
     return query.df
