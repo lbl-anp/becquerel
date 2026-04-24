@@ -234,6 +234,42 @@ class Spectrum:
 
     __repr__ = __str__
 
+    def to_ascii(
+        self, ncols: int = 80, nrows: int = 10, char: str = ".", fill: bool = False
+    ) -> str:
+        """Represent Spectrum counts as a printable ASCII string.
+
+        Parameters
+        ----------
+        ncols, nrows : int, optional
+            Number of columns and rows in the output. Default 80, 10.
+        char : str, optional
+            ASCII character used as plot marker. Default ".".
+        fill : bool, optional
+            If True, plot as a filled histogram, otherwise, plot as an unfilled
+            histogram. Default False.
+
+        Returns
+        -------
+        str
+        """
+        assert ncols > 0
+        assert nrows > 0
+        assert len(char) == 1
+        edges, _, _ = self.get_bin_properties(use_kev=self.is_calibrated)
+        new = self.copy().rebin(out_edges=np.linspace(edges.min(), edges.max(), ncols))
+        arr = np.zeros((nrows, ncols), dtype=bool)
+        for i, c in enumerate(new.counts_vals):
+            r = int(c / new.counts_vals.max() * (nrows - 1))
+            if fill:
+                arr[: r + 1, i] = True
+            else:
+                arr[r, i] = True
+        row_strs = []
+        for row in arr:
+            row_strs.append("".join([char if elem else " " for elem in row]))
+        return "\n".join(row_strs[::-1])
+
     @property
     def counts(self) -> np.ndarray:
         """Counts in each bin, with uncertainty.
