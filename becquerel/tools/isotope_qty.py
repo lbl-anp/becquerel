@@ -6,6 +6,7 @@ import warnings
 from collections import OrderedDict
 
 import numpy as np
+from uncertainties import nominal_value
 
 from ..core import utils
 from .isotope import Isotope
@@ -202,7 +203,8 @@ class IsotopeQuantity:
         """
 
         val *= 1.0  # convert to float, or preserve ufloat, as appropriate
-        if val < 0:
+        val_nominal = nominal_value(val)
+        if val_nominal < 0:
             raise ValueError(f"Mass or activity must be a positive quantity: {val}")
         return val
 

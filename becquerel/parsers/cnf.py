@@ -32,7 +32,9 @@ def _convert_date(data, index):
     # to the start of the Unix epoch on 1 January 1970.
     d = _from_little_endian(data, index, 8)
     t = (d / 10000000.0) - 3506716800
-    return datetime.datetime.utcfromtimestamp(t)
+    return datetime.datetime.fromtimestamp(t, datetime.timezone.utc).replace(
+        tzinfo=None
+    )
 
 
 def _convert_time(data, index):

@@ -13,7 +13,7 @@ from lmfit.model import Model
 from lmfit.parameter import Parameters
 from matplotlib.font_manager import FontProperties
 from matplotlib.gridspec import GridSpec
-from uncertainties import ufloat
+from uncertainties import Variable, ufloat
 
 FWHM_SIG_RATIO = np.sqrt(8 * np.log(2))  # 2.35482
 SQRT_TWO = np.sqrt(2)  # 1.414213562
@@ -1232,7 +1232,7 @@ class Fitter:
         area_variance = area_variance[0, 0]
         # We don't divide by the binwidth here because we are summing bins: if we double
         # the binwidth, we double the counts per bin but halve the number of bins.
-        return ufloat(area, np.sqrt(area_variance))
+        return Variable(area, np.sqrt(area_variance))
 
     def param_val(self, param) -> float:
         """
