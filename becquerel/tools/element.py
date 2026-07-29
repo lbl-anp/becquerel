@@ -183,7 +183,7 @@ def validated_z(z):
 
     try:
         int(z)
-    except ValueError as exc:
+    except (ValueError, TypeError) as exc:
         raise ElementZError(f'Element Z="{z}" invalid') from exc
     if int(z) not in ZS:
         raise ElementZError(f'Element Z="{z}" not found')

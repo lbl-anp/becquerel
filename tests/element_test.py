@@ -186,3 +186,19 @@ class TestElementStrFormat:
     def test_og(self):
         """Test Element string formatting: Og.............................."""
         assert "{:%n (%s) %z}".format(element.Element("Og")) == "Oganesson (Og) 118"
+
+
+class TestElementBadTypeInput:
+    """Non-convertible types should raise the documented element errors."""
+
+    @pytest.mark.parametrize("bad", [None, [1], {}, (1, 2)])
+    def test_validated_z_bad_type(self, bad):
+        """Test validated_z(non-convertible type) raises ElementZError....."""
+        with pytest.raises(element.ElementZError):
+            element.validated_z(bad)
+
+    @pytest.mark.parametrize("bad", [None, [1], {}])
+    def test_element_init_bad_type(self, bad):
+        """Test Element(non-convertible type) raises ElementError.........."""
+        with pytest.raises(element.ElementError):
+            element.Element(bad)
