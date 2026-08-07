@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import warnings
 from abc import ABC, abstractmethod
@@ -1242,7 +1244,7 @@ class Fitter:
             return None
         return self._backend.param_val(param)
 
-    def param_unc(self, param) -> float:
+    def param_unc(self, param: str) -> float | None:
         """
         Fit error of fit parameter `param`
         """
@@ -1250,7 +1252,7 @@ class Fitter:
             return None
         return self._backend.param_unc(param)
 
-    def param_rel_unc(self, param) -> float:
+    def param_rel_unc(self, param: str) -> float | None:
         """
         Relative error of fit parameter `param`
         """
@@ -1258,7 +1260,7 @@ class Fitter:
             return self.param_unc(param) / np.abs(self.param_val(param))
         return None
 
-    def param_val_and_unc(self, param: str) -> ufloat:
+    def param_val_and_unc(self, param: str) -> ufloat | None:
         """Value and fit uncertainty of `param`, as a ufloat."""
         if self.param_unc(param):
             return ufloat(self.param_val(param), self.param_unc(param))
